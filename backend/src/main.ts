@@ -21,10 +21,11 @@ async function bootstrap() {
   });
 
   // 3. SE SÈLMAN NAN DENYÈ LIY LAN NOU METE LISTEN
-  const port = process.env.PORT || 3001;
+ const port = process.env.PORT || 3001;
 
-await app.listen(port);
-  console.log("OZAMA Sèvè pare sou port 3001 ak limit 50MB! ✅");
+await app.listen(port, '0.0.0.0');
+
+console.log(`OZAMA Sèvè pare sou port ${port} ak limit 50MB! ✅`);
 }
 
 bootstrap();
