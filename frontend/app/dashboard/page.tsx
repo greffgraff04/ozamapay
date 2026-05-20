@@ -1,0 +1,1282 @@
+"use client";
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, 
+  Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
+  ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings, 
+  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera
+} from 'lucide-react';
+ 
+const PAYMENT_INFO = {
+  bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
+  bank_htg: { acc: "000-000-000", name: "Ralph Olivier Greffin", bank: "Capital Bank (Gourdes)" },
+  wise: { acc: "contact@ozamapay.com", name: "OzamaPay Business" },
+  meru: { acc: "oliou04@gmail.com", name: "Ralph Olivier Greffin" },
+  zelle: { acc: "786 868 6782", name: "Ralph Olivier Greffin" },
+  cashapp: { acc: "$Pascoue93", name: "Ralph Olivier Greffin" },
+  usdt: { acc: "https://ozamapay.com/pay/usdt-link", name: "TRC20 Network" }
+};
+ 
+const formatTimeAgo = (dateString: string) => {
+  if (!dateString) return "Kounye a";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (diffInSeconds < 60) return "Kounye a";
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) return `${diffInMinutes}m`;
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h`;
+  return date.toLocaleDateString();
+};
+ 
+const signOut = async () => {
+  localStorage.clear();
+  document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  window.location.replace("/login");
+};
+ 
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [user, setUser] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isCardFrozen, setIsCardFrozen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('');
+ 
+
+  const [virtualCard, setVirtualCard] = useState<any>(null);
+  const [showCardDetails, setShowCardDetails] = useState<boolean>(false);
+  const [selectedMethod, setSelectedMethod] = useState('moncash');
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [withdrawAccountInfo, setWithdrawAccountInfo] = useState('');
+  
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
+ 
+  const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
+  const [financeDetails, setFinanceDetails] = useState({ 
+    email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' 
+  });
+  const [selectedFinanceService, setSelectedFinanceService] = useState<any>(null);
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- NEW KYC STATES (STROWALLET DYNAMIC) ---
+  const [showKycForm, setShowKycForm] = useState(false);
+  const [kycLoading, setKycLoading] = useState(false);
+  
+  const [kycData, setKycData] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    phoneNumber: '',
+    idType: 'PASSPORT',
+    idNumber: '',
+    line1: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'HT',
+  });
+  
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [userPhotoFile, setUserPhotoFile] = useState<File | null>(null);
+  
+  const idCardInputRef = useRef<HTMLInputElement>(null);
+  const userPhotoInputRef = useRef<HTMLInputElement>(null);
+ 
+  const backendUrl = "http://localhost:3001"; // IP Backend ou a
+ 
+  const paymentMethods = [
+    { id: 'zelle', label: 'Zelle', img: 'zelle.png', info: "786 868 6782", name: "Ralph Olivier Greffin" },
+    { id: 'cashapp', label: 'CashApp', img: 'cashapp.png', info: "$Pascoue93", name: "Ralph Olivier Greffin" },
+    { id: 'moncash', label: 'MonCash', img: 'moncash.png', info: "Nimewo MonCash la", name: "Ralph Olivier Greffin" },
+    { id: 'natcash', label: 'NatCash', img: 'natcash.png', info: "55187047", name: "Ralph Olivier Greffin" },
+    { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" }
+  ];
+ 
+  const showToast = (message: string, type: 'error' | 'success' | 'warning' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+ 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showToast("Kopye ak siksè!", "success");
+  };
+ 
+  const calculateFees = (amt: string, rate: number = 0.02) => {
+    const val = parseFloat(amt) || 0;
+    const fee = val * rate;
+    return { 
+        fee: fee.toFixed(2), 
+        total: (val + fee).toFixed(2),
+        totalWithdraw: (val - fee).toFixed(2)
+    };
+  };
+ 
+  const fetchData = async () => {
+    try {
+      const localToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!localToken) {
+        setLoading(false);
+        return;
+      }
+
+      const headers = { Authorization: `Bearer ${localToken}` };
+      const API_BASE = "http://localhost:3001"; 
+      
+      // 1. Nou rale sèlman route ki valid yo pou kounye a
+      const [sRes, rRes, tTxRes] = await Promise.all([
+        fetch(`${API_BASE}/wallet/stats`, { headers }),
+        fetch(`${API_BASE}/rates`, { headers }),
+        fetch(`${API_BASE}/wallet/transactions`, { headers })
+      ]);
+
+      const sData = await sRes.json();
+      const rData = await rRes.json();
+      const txData = await tTxRes.json();
+
+      // 2. Mete tranzaksyon yo nan state la
+      // @ts-ignore
+      if (typeof setTransactions === 'function') {
+        // @ts-ignore
+        setTransactions(Array.isArray(txData) ? txData : []);
+      }
+
+      // 3. Mete statistik yo ajou (nou ka mete yon fo chif pou itilizatè si w bezwen)
+      // @ts-ignore
+      if (typeof setStats === 'function') {
+        // @ts-ignore
+        setStats({
+          totalProfit: sData.totalProfit || 0,
+          transactions: sData.transactionCount || 0,
+          users: 1 // oswa yon lòt valè default kòm se pa admin kont lan
+        });
+      }
+
+      // 4. Mete pousantaj yo
+      // @ts-ignore
+      if (Array.isArray(rData) && typeof setRates === 'function') {
+        const ratesMap = rData.reduce((acc: any, curr: any) => {
+          acc[curr.key] = curr.value;
+          return acc;
+        }, {});
+        // @ts-ignore
+        setRates(ratesMap);
+      }
+    } catch (e) {
+      console.error("SYNC ERROR:", e);
+    } finally {
+      // 🌟 SA SE PI ENPÒTAN AN: Nenpòt sa k pase, nou kanpe loader a pou UI a ka parèt!
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) { 
+      setUser(JSON.parse(savedUser)); 
+      fetchData(); 
+    } else { 
+      signOut(); 
+    }
+  }, []);
+ 
+  const handlePaymentLogic = async () => {
+    if (!topUpAmount || Number(topUpAmount) <= 0) {
+      setToast({ message: "Tanpri antre yon montan valid", type: 'error' });
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (selectedMethod === 'moncash') {
+      try {
+        const res = await fetch(`${backendUrl}/payments/moncash/topup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ amount: Number(topUpAmount) })
+        });
+        const data = await res.json();
+        if (data.redirectUrl) { window.location.href = data.redirectUrl; } 
+        else { setToast({ message: "Erè nan jenerasyon link MonCash la", type: 'error' }); }
+      } catch (e) { setToast({ message: "Erè koneksyon ak sèvè MonCash", type: 'error' }); }
+    } else {
+      try {
+        const res = await fetch(`${backendUrl}/wallet/manual-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ method: selectedMethod.toUpperCase(), amount: Number(topUpAmount) })
+        });
+        if (res.ok) {
+          setToast({ message: `Demann ${selectedMethod} voye! Tann admin konfime l. ✅`, type: 'success' });
+          setTopUpAmount('');
+        }
+      } catch (e) { setToast({ message: "Erè nan voye demann manuel la", type: 'error' }); }
+    }
+  };
+ 
+  const handleSendMoney = async (recipientId: string, amt: string) => {
+  const token = localStorage.getItem('token');
+  
+  // 1️⃣ LOG POU TÈS: Pou n wè si bouton an rive rele fonksyon an nèt
+  console.log("👉 handleSendMoney deklanche! Done resevwa:", { recipientId, amt });
+
+  const value = parseFloat(amt);
+  
+  if (!recipientId) {
+    console.log("❌ Bloke: recipientId vid!");
+    showToast('Mete imèl moun k ap resevwa a');
+    return;
+  }
+
+  if (isNaN(value) || value <= 0) { 
+    console.log("❌ Bloke: Montan an pa valid oswa li se NaN! Valè konvèti a se:", value);
+    showToast('Mete yon montan valid'); 
+    return; 
+  }
+
+  try {
+  console.log("🚀 Lanse fetch la bay backend lan...");
+  
+  // Si backendUrl la vid, nou fòse l pran http://localhost:3001 dirèkteman
+  const finalUrl = backendUrl || "http://localhost:3001";
+  
+  const response = await fetch(`${finalUrl}/wallet/transfer`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ recipientEmail: recipientId, amount: value }),
+  });
+  
+  const data = await response.json();
+  console.log("📥 Repons Backend:", data);
+
+    if (response.ok) {
+      showToast(`Transfè voye bay ${recipientId}`, 'success');
+      setRecipient('');
+      setAmount('');
+      fetchData();
+      setActiveTab('home'); 
+    } else { 
+      showToast(data.message || 'Tranzaksyon an echwe'); 
+    }
+  } catch (error) { 
+    console.error("💥 Erè Catch:", error);
+    showToast('Koneksyon echwe'); 
+  }
+};
+
+
+  const handleWithdraw = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${backendUrl}/wallet/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ amount: parseFloat(withdrawAmount), method: withdrawMethod, accountInfo: withdrawAccountInfo })
+      });
+      if (res.ok) { alert("Demann retrè voye !"); fetchData(); }
+    } catch (e) { alert("Erè koneksyon"); }
+  };
+
+  // --- SUBMIT KYC WITH TWO PHOTOS (ID + PROFILE PHOTO) ---
+  // --- SUBMIT KYC WITH TWO PHOTOS (ID + PROFILE PHOTO) ---
+  const handleKycSubmit = async () => {
+    if (!kycData.firstName || !kycData.lastName || !kycData.idNumber || !kycData.line1 || !kycData.city) {
+      showToast("Tanpri ranpli tout chan ki obligatwa yo", "error");
+      return;
+    }
+    if (!idCardFile) {
+      showToast("Tanpri upload foto pyès idantite w la", "error");
+      return;
+    }
+    if (!userPhotoFile) {
+      showToast("Tanpri mete yon foto pa w (Selfie) pou verifikasyon", "error");
+      return;
+    }
+
+    const kycCostHtg = 3375; // $25 USD = 3375 HTG
+    const currentBalance = user?.wallet?.balance || 0;
+
+    if (currentBalance < kycCostHtg) {
+      showToast(`Balans ou pa ase. Ou bezwen omwen ${kycCostHtg} HTG ($25 USD).`, "error");
+      return;
+    }
+
+    setKycLoading(true);
+    const token = localStorage.getItem('token');
+    const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('idType', kycData.idType);
+      formDataToSend.append('idNumber', kycData.idNumber);
+      formDataToSend.append('idCardFile', idCardFile);
+      formDataToSend.append('userPhotoFile', userPhotoFile);
+
+      formDataToSend.append('additionalData', JSON.stringify({
+        firstName: kycData.firstName,
+        lastName: kycData.lastName,
+        phoneNumber: kycData.phoneNumber,
+        line1: kycData.line1,
+        city: kycData.city,
+        state: kycData.state,
+        zipCode: kycData.zipCode,
+        country: kycData.country,
+        dateOfBirth: kycData.dateOfBirth,
+      }));
+
+      const res = await fetch(`${currentBackendUrl}/user/submit-kyc`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`
+          // REMAK: Pa mete 'Content-Type': 'application/json' lè w ap voye FormData
+        },
+        body: formDataToSend
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast("Verifikasyon soumèt epi $25 USD debite ak siksè! 🎉", "success");
+        setShowKycForm(false);
+        
+        // 1. Kreye nouvo objè user a ak status PENDING lan
+        const updatedUser = { 
+          ...user, 
+          kyc: { status: 'PENDING' },
+          wallet: { balance: currentBalance - kycCostHtg } // Nou soustrè kòb la nan UI a tou
+        };
+        
+        // 2. Mete l nan State la pou l chanje sou ekran an kounye a
+        setUser(updatedUser);
+        
+        // 3. SOVE L NAN LOCALSTORAGE pou lè w refresh li pa disparèt!
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // 4. Reload done yo depi nan sèvè a pou sekirite
+        fetchData();
+      } else {
+        showToast(data.message || "Erè pandan n ap soumèt KYC a.", "error");
+      }
+    } catch (err) {
+      console.error("Détail erè KYC nan Console lan:", err);
+      showToast("Erè rezo! Verifye si backend la ap kouri.", "error");
+    } finally {
+      setKycLoading(false);
+    }
+  };
+ 
+  if (loading || !user) return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="font-black italic text-[#0F121E] text-2xl uppercase tracking-[0.3em]">OZAMA...</div>
+    </div>
+  );
+ 
+  const displayName = user?.name || user?.email?.split('@')[0] || 'Itilizatè';
+ 
+  return (
+    <main className="min-h-screen bg-white text-[#0F121E] font-sans overflow-x-hidden relative pb-28">
+      
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div style={{ backdropFilter: 'blur(20px)', background: 'rgba(15,18,30,0.95)' }}
+          className="fixed top-6 left-4 right-4 z-[999] border border-white/10 text-white px-6 py-5 rounded-[2rem] shadow-2xl animate-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-center gap-3">
+            <Zap size={16} className={toast.type === 'success' ? 'text-green-400' : 'text-[#FF7A00]'} />
+            <span className="font-black italic uppercase text-[10px] tracking-widest">{toast.message}</span>
+          </div>
+        </div>
+      )}
+ 
+      {/* HEADER */}
+      <header className="px-8 pt-12 pb-8 flex justify-between items-center">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
+             {displayName.substring(0, 2).toUpperCase()}
+             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+              <ShieldCheck size={16} className="text-[#FF7A00]" />
+            </div>
+            <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+          </div>
+        </div>
+        <button className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative">
+          <Bell size={20} className="text-[#0F121E]" />
+          <span className="absolute top-3 right-3 w-2 h-2 bg-[#FF7A00] rounded-full"></span>
+        </button>
+      </header>
+ 
+      <div className="px-8">
+        
+        {/* --- HOME SECTION --- */}
+        {activeTab === 'home' && (
+          <div className="animate-in fade-in duration-500">
+            <div className="relative w-full aspect-[1.586/1] bg-cover bg-center bg-no-repeat rounded-none shadow-none overflow-hidden group" 
+                 style={{ backgroundImage: "url('/card.png')" }}>
+              <div className="h-full flex flex-col justify-end p-10 text-white relative z-10">
+                <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
+                <h2 className="text-5xl font-black tracking-tighter italic">
+                  {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
+                </h2>
+              </div>
+            </div>
+ 
+            {/* QUICK ACTIONS */}
+            <div className="grid grid-cols-4 gap-4 mt-12 mb-12">
+              {[
+                { id: 'SEND', icon: <Send size={22} />, tab: 'send' },
+                { id: 'TOPUP', icon: <PlusCircle size={22} />, tab: 'topup' },
+                { id: 'RETRAIT', icon: <Banknote size={22} />, tab: 'withdraw' },
+                { id: 'CARDS', icon: <CreditCard size={22} />, tab: 'cards' }
+              ].map((item) => (
+                <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-3 active:scale-95 transition-all">
+                  <div className="w-full aspect-square rounded-[1.8rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    {item.icon}
+                  </div>
+                  <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                </button>
+              ))}
+            </div>
+ 
+            <div className="flex justify-between items-end mb-6">
+              <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
+                <Activity size={18} className="text-[#FF7A00]" /> Recent Activity
+              </h3>
+              <button onClick={() => setActiveTab('history')} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
+            </div>
+ 
+            <div className="space-y-3">
+              {transactions.length === 0 ? (
+                <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-[2.2rem] border border-black/[0.04]">
+                  Pa gen okenn tranzaksyon pou kounye a.
+                </p>
+              ) : (
+                transactions.slice(0, 4).map((t: any, idx) => {
+                  const isSent = t.type === 'DEBIT' || t.type === 'sent';
+                  
+                  return (
+                    <div key={idx} className="group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isSent ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                          {isSent ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        </div>
+                        <div>
+                          <p className="font-black text-[13px] uppercase italic leading-none tracking-tight text-black">
+  {isSent 
+    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Amanda') 
+    : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
+</p>
+                          <p className="text-[9px] text-[#8E929B] font-bold uppercase mt-1 tracking-tighter">
+                            {t.description || (isSent ? 'Transfè Voye' : 'Lajan Resevwa')} • {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`font-black italic text-sm ${isSent ? 'text-red-500' : 'text-[#00C566]'}`}>
+                        {isSent ? '-' : '+'}{(t.amount || 0).toLocaleString()} <span className="text-[10px]">HTG</span>
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+ 
+        {/* --- HISTORY SECTION --- */}
+        {activeTab === 'history' && (
+          <div className="animate-in slide-in-from-right duration-500">
+            <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] flex items-center gap-2">
+              <ChevronRight size={14} className="rotate-180" /> Retounen
+            </button>
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-8 text-[#0F121E]">Istorik Konplè</h2>
+            <div className="space-y-3">
+              {transactions.length === 0 ? (
+                <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-xl border border-black/5 shadow-sm">
+                  Pa gen okenn istwa tranzaksyon.
+                </p>
+              ) : (
+                transactions.map((t: any, idx) => {
+                  const isSent = t.type === 'DEBIT' || t.type === 'sent';
+                  
+                  return (
+                    <div key={idx} className="flex items-center justify-between p-6 bg-white border border-black/5 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSent ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                          {isSent ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        </div>
+                        <div>
+<p className="font-black text-sm uppercase italic leading-none tracking-tight text-black">
+  {isSent 
+    ? (t.recipient?.name || t.recipientName || t.recipientEmail || 'Amanda') 
+    : (t.sender?.name || t.senderName || t.senderEmail || 'Ozama User')}
+</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">
+                            {t.description || (isSent ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`font-black italic text-base ${isSent ? 'text-red-500' : 'text-[#00C566]'}`}>
+                        {isSent ? '-' : '+'}{(t.amount || 0).toLocaleString()} HTG
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+ 
+        {/* --- SEND SECTION --- */}
+        {activeTab === 'send' && (
+          <div className="animate-in slide-in-from-right duration-500">
+            <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+              <ArrowLeftRight size={14} className="rotate-180" /> Back Home
+            </button>
+            <h2 className="text-4xl font-black italic uppercase mb-10 tracking-tighter">Send<br/>Money</h2>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Recipient Email</label>
+                <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white transition-all" placeholder="example@ozamapay.com" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Amount (HTG) <span className="text-[#FF7A00] ml-2">FEE: 0%</span></label>
+                <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-black italic text-4xl outline-none border border-black/5 focus:bg-white" placeholder="0.00" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              </div>
+              <button onClick={() => handleSendMoney(recipient, amount)} className="w-full bg-[#0F121E] text-white py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs">
+                Confirm Transfer
+              </button>
+            </div>
+          </div>
+        )}
+ 
+        {/* --- TOPUP SECTION --- */}
+        {activeTab === 'topup' && (
+          <div className="animate-in slide-in-from-bottom duration-500">
+            <button onClick={() => setActiveTab('home')} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+              <PlusCircle size={14} /> Back Home
+            </button>
+            <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Add Funds</h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Chaje bous ou ak sekirite</p>
+ 
+            <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 mb-8 border border-black/5">
+              <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
+              <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
+            </div>
+ 
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
+                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">Montan an HTG</label>
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
+                {topUpAmount && (
+                  <div className="mt-4 pt-4 border-t border-black/5 flex justify-between items-center animate-in fade-in">
+                    <span className="text-[10px] font-black uppercase italic text-gray-400">Frais (6.0%): {calculateFees(topUpAmount).fee} HTG</span>
+                    <span className="text-xs font-black italic text-[#FF7A00]">Total: {calculateFees(topUpAmount).total} HTG</span>
+                  </div>
+                )}
+              </div>
+ 
+              <div className="space-y-3">
+                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Chwazi Mwayen Peman</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {paymentMethods.map((m) => (
+                    <button key={m.id} onClick={() => setSelectedMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
+                      <div className="flex items-center gap-3">
+                        <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
+                        <span className="font-black italic uppercase text-[10px]">{m.label}</span>
+                      </div>
+                      {selectedMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+ 
+              {topUpType === 'MANUAL' && selectedMethod && (
+                <div className="animate-in zoom-in duration-300 bg-[#0F121E] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+                  <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-2 tracking-widest">Instruction Peman</p>
+                  <h4 className="text-xl font-black italic uppercase mb-1">Voye kòb la sou:</h4>
+                  <p className="text-[10px] font-bold text-white/40 uppercase mb-6">{paymentMethods.find(x => x.id === selectedMethod)?.name}</p>
+                  
+                  <div className="flex items-center justify-between bg-white/5 p-5 rounded-2xl border border-white/10 mb-6">
+                    <span className="font-black italic text-lg text-white truncate pr-4">
+                        {paymentMethods.find(x => x.id === selectedMethod)?.info}
+                    </span>
+                    <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-3 bg-[#FF7A00] rounded-xl active:scale-90">
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                  
+                  <button onClick={() => fileInputRef.current?.click()} className="w-full py-6 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center gap-2 hover:bg-white/5 transition-all mb-4">
+                    <Upload size={20} className="text-[#FF7A00]" />
+                    <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'Upload Screenshot Resi'}</span>
+                  </button>
+                </div>
+              )}
+ 
+              <button 
+                onClick={handlePaymentLogic}
+                className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${
+                  topUpAmount && selectedMethod ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
+                }`}
+              >
+                Confirm TopUp
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --- WITHDRAW SECTION --- */}
+        {activeTab === 'withdraw' && (
+          <div className="animate-in slide-in-from-bottom duration-500">
+            <button onClick={() => setActiveTab('home')} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+              <Banknote size={14} /> Back Home
+            </button>
+            <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Withdraw</h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Retire kòb ou rapidman</p>
+ 
+            <div className="space-y-6">
+              <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
+                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">Kòb pou retire (HTG)</label>
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-white" placeholder="0" type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+                {withdrawAmount && (
+                  <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center animate-in fade-in">
+                    <span className="text-[10px] font-black uppercase italic text-white/40">Frais Ozama (2.0%): -{calculateFees(withdrawAmount).fee} HTG</span>
+                    <span className="text-xs font-black italic text-green-400">Wap Resevwa: {calculateFees(withdrawAmount).totalWithdraw} HTG</span>
+                  </div>
+                )}
+              </div>
+ 
+              <div className="space-y-3">
+                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Ki kote pou n voye kòb la?</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {paymentMethods.map((m) => (
+                    <button key={m.id} onClick={() => setWithdrawMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
+                      <div className="flex items-center gap-3">
+                        <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
+                        <span className="font-black italic uppercase text-[10px]">{m.label}</span>
+                      </div>
+                      {withdrawMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+ 
+              {withdrawMethod && (
+                <div className="animate-in slide-in-from-top duration-300 space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Enfòmasyon Kont ou ({withdrawMethod})</label>
+                    <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white" 
+                           placeholder={withdrawMethod === 'bank' ? "Nimewo Kont & Non Bank..." : "Nimewo Telefòn oswa Tag..."} 
+                           value={withdrawAccountInfo} 
+                           onChange={(e) => setWithdrawAccountInfo(e.target.value)} />
+                  </div>
+                  <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 flex gap-4">
+                    <Info size={20} className="text-blue-500 shrink-0" />
+                    <p className="text-[9px] font-bold text-blue-700 uppercase leading-relaxed">
+                      Pwosesis retrè a ka pran ant 30 minit a 2 è tan pou l konfime. Tanpri asire enfòmasyon yo kòrèk.
+                    </p>
+                  </div>
+                </div>
+              )}
+ 
+              <button onClick={handleWithdraw} className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${withdrawAmount && withdrawMethod ? 'bg-[#0F121E] text-white' : 'bg-gray-200 text-gray-400'}`}>
+                Confirm Withdrawal
+              </button>
+            </div>
+          </div>
+        )}
+ 
+        {/* --- GLOBAL FINANCE SECTION --- */}
+        {activeTab === 'finance' && !selectedFinanceService && (
+          <div className="animate-in slide-in-from-right duration-500">
+            <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+              <Landmark size={14} /> Back Home
+            </button>
+            <h2 className="text-4xl font-black italic uppercase mb-8 tracking-tighter leading-none">Ozama<br/>Exchange</h2>
+            <div className="grid gap-4">
+              {[
+                { id: 'wise', name: 'Wise', desc: 'USD Transfer', img: 'wise.png' },
+                { id: 'meru', name: 'Meru', desc: 'USD Transfer', img: 'meru.png' },
+                { id: 'zelle', name: 'Zelle', desc: 'USD Transfer', img: 'zelle.png' },
+                { id: 'cashapp', name: 'CashApp', desc: 'USD Transfer', img: 'cashapp.png' },
+                { id: 'natcash', name: 'Natcash', desc: 'HTG Transfer', img: 'natcash.png' },
+                { id: 'usdt', name: 'USDT ONLY', desc: 'TRC20 Network', img: 'usdt.png' },
+                { id: 'gaming', name: 'Gaming Topup', desc: 'Diamonds & Coins', img: 'gaming.png' }
+              ].map(item => (
+                <button key={item.id} onClick={() => setSelectedFinanceService(item)} className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5 flex items-center justify-between group active:scale-95 transition-all hover:bg-white hover:shadow-xl">
+                  <div className="flex items-center gap-6 text-left">
+                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-[#FF7A00] shadow-sm p-3">
+                       <img src={`/${item.img}`} alt="" className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <h4 className="font-black italic uppercase text-sm">{item.name}</h4>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase mt-1 tracking-widest">{item.desc}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} className="text-[#FF7A00] group-hover:translate-x-1 transition-transform" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+ 
+        {/* --- SERVICE DETAIL --- */}
+        {activeTab === 'finance' && selectedFinanceService && (
+          <div className="animate-in zoom-in duration-500 pb-10">
+            <button onClick={() => { setSelectedFinanceService(null); setReceipt(null); }} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+              <ChevronRight size={14} className="rotate-180" /> Back to Services
+            </button>
+            
+            <div className="flex items-center gap-4 mb-8">
+                <img src={`/${selectedFinanceService.img}`} className="w-12 h-12 object-contain" alt="" />
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter">{selectedFinanceService.name}</h2>
+            </div>
+ 
+            {financeType === 'BUY' && (
+              <div className="bg-[#0F121E] p-8 text-white mb-8 rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
+                <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest italic">Info Peman Benefisyè</p>
+                <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                  <p className="text-[10px] font-bold text-white/40 uppercase mb-1">
+                    {selectedFinanceService.id === 'bank' ? 'Capital Bank USD' : selectedFinanceService.name}
+                  </p>
+                  <p className="font-black italic text-xl tracking-tight mb-2">
+                    {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
+                    {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
+                    {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
+                    {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
+                    {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
+                    {selectedFinanceService.id === 'usdt' && PAYMENT_INFO.usdt.acc}
+                  </p>
+                  <p className="text-[10px] font-black uppercase text-[#FF7A00]">{PAYMENT_INFO.zelle.name}</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="bg-gray-100 p-2 rounded-3xl flex gap-2 mb-8">
+              <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Buy / Deposit</button>
+              <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Sell / Cashout</button>
+            </div>
+ 
+            <div className="space-y-5">
+              {selectedFinanceService.id === 'gaming' && (
+                <div className="space-y-4">
+                  <select className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]">
+                    <option>CHWAZI JWÈT LA</option>
+                    <option>FREE FIRE (Diamonds)</option>
+                    <option>PUBG MOBILE (UC)</option>
+                    <option>CALL OF COD (CP)</option>
+                  </select>
+                  <input className="w-full p-6 bg-gray-50 rounded-2xl font-bold uppercase text-xs border border-black/5 outline-none" placeholder="METE PLAYER ID OU LA..." />
+                </div>
+              )}
+ 
+              <div className="bg-gray-50 p-8 rounded-3xl border border-black/5">
+                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-widest">Montan ({selectedFinanceService.id === 'usdt' ? 'USDT' : 'USD'})</label>
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" value={financeDetails.amount} onChange={(e) => setFinanceDetails({...financeDetails, amount: e.target.value})} />
+                <div className="mt-4 pt-4 border-t border-black/5 flex justify-between">
+                    <span className="text-[10px] font-black italic uppercase text-gray-400">Frais Echanj: 6%</span>
+                    <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = 135 HTG</span>
+                </div>
+              </div>
+              
+              {selectedFinanceService.id !== 'gaming' && (
+                <input className="w-full p-8 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5" placeholder="Email oswa Username Sèvis la..." onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})} />
+              )}
+              
+              {financeType === 'BUY' && (
+                <div className="p-8 bg-orange-50/30 border border-orange-100 rounded-3xl">
+                    <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">Etap Final: Upload Prèv Peman</p>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-white flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
+                        <Upload size={24} className="text-[#FF7A00]" />
+                        <span className="text-[9px] font-black uppercase italic text-gray-500">{receipt ? receipt.name : 'Chwazi Screenshot la'}</span>
+                    </button>
+                </div>
+              )}
+              
+              <button className="w-full bg-[#0F121E] text-white py-8 rounded-3xl font-black uppercase italic tracking-[0.3em] shadow-xl text-xs active:scale-95 transition-all hover:bg-[#FF7A00]">
+                Execute {selectedFinanceService.name} Order
+              </button>
+            </div>
+          </div>
+        )}
+ 
+        {/* --- CARDS SECTION --- */}
+        {activeTab === 'cards' && (
+          <div className="animate-in fade-in duration-700">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-10">Ozama<br/>Virtual Card</h2>
+            
+            {!virtualCard ? (
+              <div className="p-10 border-2 border-dashed border-black/10 rounded-[2.5rem] text-center bg-gray-50/50 mb-10 animate-in fade-in duration-500">
+                <p className="text-[11px] font-black italic uppercase tracking-widest text-black/40 mb-6">Ou pa gen yon kat vityèl aktif pou kounye a.</p>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const token = localStorage.getItem('token');
+                      const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                      
+                      const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
+                        method: 'POST',
+                        headers: { 
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ amount: 1, currency: 'USD' })
+                      });
+
+                      const contentType = res.headers.get("content-type");
+                      if (res.ok && contentType && contentType.includes("application/json")) {
+                        const data = await res.json();
+                        setVirtualCard(data);
+                        fetchData();
+                      } else {
+                        const errorText = contentType && contentType.includes("application/json") 
+                          ? (await res.json()).message 
+                          : await res.text();
+                          
+                        alert(errorText || "Erreur pandan kreyasyon kat la.");
+                      }
+                    } catch (err) {
+                      console.error("Erreur kreyasyon kat:", err);
+                      alert("Sèvè a pa ka jwenn requete a, tcheke koneksyon w.");
+                    }
+                  }}
+                  className="px-8 py-5 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
+                >
+                  Kòmande yon Kat Virtuelle
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className={`relative w-full aspect-[1.586/1] bg-cover bg-center bg-no-repeat transition-all duration-700 rounded-none shadow-none overflow-hidden mb-10 ${isCardFrozen ? 'grayscale opacity-60 scale-95' : 'hover:scale-[1.02]'}`} style={{ backgroundImage: "url('/card.png')" }}>
+                  <div className="absolute inset-0 p-10 flex flex-col justify-between text-white font-mono">
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={async () => {
+                          if (!showCardDetails) {
+                            try {
+                              const token = localStorage.getItem('token');
+                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                              
+                              const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                setVirtualCard((prev: any) => ({ ...prev, card_number: data.card_number, cvv: data.cvv }));
+                                setShowCardDetails(true);
+                                setTimeout(() => setShowCardDetails(false), 10000);
+                              }
+                            } catch (err) {
+                              console.error("Erreur demaske kat:", err);
+                            }
+                          } else {
+                            setShowCardDetails(false);
+                          }
+                        }}
+                        className="p-2 bg-black/20 hover:bg-black/40 rounded-full transition-all text-white active:scale-90"
+                      >
+                        {showCardDetails ? '🙈' : '👁️'}
+                      </button>
+                    </div>
+
+                    <div className="text-xl md:text-2xl font-black tracking-[0.25em] text-center my-auto drop-shadow-md">
+                      {showCardDetails && virtualCard.card_number
+                        ? virtualCard.card_number.replace(/(\d{4})/g, '$1 ').trim()
+                        : `••••  ••••  ••••  ${virtualCard.last4 || virtualCard.cardId?.slice(-4) || '0000'}`}
+                    </div>
+
+                    <div className="flex justify-between items-end font-sans italic uppercase font-black tracking-[0.2em] text-[10px]">
+                      <div>
+                        <div className="opacity-50 mb-1 font-sans">CARD HOLDER</div>
+                        <div className="font-sans">{displayName}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="opacity-50 mb-1 font-sans">EXPIRES / CVV</div>
+                        <div className="font-mono tracking-normal text-sm">
+                          {virtualCard.expiry_month || 'MM'}/{virtualCard.expiry_year?.slice(-2) || 'AA'} 
+                          {showCardDetails ? ` | CVV: ${virtualCard.cvv || '***'}` : ' | CVV: ***'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <button onClick={() => setIsCardFrozen(!isCardFrozen)} className="w-full py-8 bg-[#0F121E] text-white rounded-[2.5rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-lg">
+                      {isCardFrozen ? 'UNFREEZE CARD' : 'FREEZE CARD'}
+                  </button>
+                  
+                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5">
+                      <h4 className="font-black italic uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2"><Settings size={14} /> Card Security</h4>
+                      <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-black uppercase italic opacity-40">Contactless</span>
+                              <div className={`w-10 h-5 rounded-full flex items-center px-1 cursor-pointer transition-all ${virtualCard.is_nfc_enabled !== false ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start'}`}>
+                                <div className="w-3 h-3 bg-white rounded-full"></div>
+                              </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-black uppercase italic opacity-40">Online Payments</span>
+                              <div className="w-10 h-5 bg-green-500 rounded-full flex items-center px-1 justify-end">
+                                <div className="w-3 h-3 bg-white rounded-full"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+ 
+        {/* --- PROFILE SECTION --- */}
+        {activeTab === 'profile' && (
+          <div className="animate-in slide-in-from-bottom duration-700">
+            
+            {showKycForm ? (
+              <div className="animate-in zoom-in duration-300 bg-white border border-black/5 p-8 rounded-[3rem] shadow-2xl text-left">
+                <button onClick={() => setShowKycForm(false)} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                  <ArrowLeftRight size={14} className="rotate-180" /> Anile / Tounen
+                </button>
+                
+                <h2 className="text-3xl font-black italic uppercase mb-1 tracking-tighter">KYC Verification</h2>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-8">Mete enfòmasyon reyèl ou yo pou w deboke limit kont lan</p>
+                
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Premye Non (First Name)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="Eg: Ralph"
+                        value={kycData.firstName}
+                        onChange={(e) => setKycData({ ...kycData, firstName: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Siyati (Last Name)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="Eg: Greffin"
+                        value={kycData.lastName}
+                        onChange={(e) => setKycData({ ...kycData, lastName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Dat Nesans</label>
+                      <input 
+                        type="date" 
+                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        value={kycData.dateOfBirth}
+                        onChange={(e) => setKycData({ ...kycData, dateOfBirth: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Telefòn (StroWallet Format)</label>
+                      <input 
+                        type="tel" 
+                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="Eg: 50933333333"
+                        value={kycData.phoneNumber}
+                        onChange={(e) => setKycData({ ...kycData, phoneNumber: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Adrès Liy 1 (Ri, Nimewo Kay)</label>
+                    <input 
+                      type="text" 
+                      className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                      placeholder="Eg: 45, Rue Faubert"
+                      value={kycData.line1}
+                      onChange={(e) => setKycData({ ...kycData, line1: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Vil (City)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="Pétion-Ville"
+                        value={kycData.city}
+                        onChange={(e) => setKycData({ ...kycData, city: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Depatman (State)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="Ouest"
+                        value={kycData.state}
+                        onChange={(e) => setKycData({ ...kycData, state: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Kòd Postal (Zip)</label>
+                      <input 
+                        type="text" 
+                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
+                        placeholder="6110"
+                        value={kycData.zipCode}
+                        onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Kalite Dokiman</label>
+                    <select 
+                      value={kycData.idType} 
+                      onChange={(e) => setKycData({ ...kycData, idType: e.target.value })}
+                      className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]"
+                    >
+                      <option value="NATIONAL_ID">CIN (Kat Elektoral)</option>
+                      <option value="PASSPORT">Paspò (Passport)</option>
+                      <option value="DRIVERS_LICENSE">Lisans Kondwi</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Nimewo Dokiman An</label>
+                    <input 
+                      type="text" 
+                      className="w-full p-6 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white"
+                      placeholder="Eg: 01-01-99-1990-00-00000"
+                      value={kycData.idNumber}
+                      onChange={(e) => setKycData({ ...kycData, idNumber: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Foto Pyès Idantite (Devan)</label>
+                    <button 
+                      type="button"
+                      onClick={() => idCardInputRef.current?.click()} 
+                      className="w-full p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center gap-2 hover:bg-gray-100 transition-all"
+                    >
+                      <FileText size={24} className="text-[#FF7A00]" />
+                      <span className="text-[9px] font-black uppercase italic text-gray-500">
+                        {idCardFile ? idCardFile.name : 'Chwazi foto pyès la'}
+                      </span>
+                    </button>
+                    <input type="file" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Foto pa w (Selfie oswa Portrait)</label>
+                    <button 
+                      type="button"
+                      onClick={() => userPhotoInputRef.current?.click()} 
+                      className="w-full p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center gap-2 hover:bg-gray-100 transition-all"
+                    >
+                      <Camera size={24} className="text-[#FF7A00]" />
+                      <span className="text-[9px] font-black uppercase italic text-gray-500">
+                        {userPhotoFile ? userPhotoFile.name : 'Pran oswa chwazi yon bèl foto vizaj ou'}
+                      </span>
+                    </button>
+                    <input type="file" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
+                  </div>
+
+                  <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 flex gap-4 mt-4">
+                    <Info size={20} className="text-[#FF7A00] shrink-0" />
+                    <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">
+                      Sistèm lan pral debite kont ou otomatikman yon frè de <span className="text-black font-black">3,375 HTG ($25 USD)</span> kòm frè verifikasyon ajans.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={handleKycSubmit}
+                    disabled={kycLoading}
+                    className="w-full bg-[#0F121E] text-white py-7 rounded-2xl font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 hover:bg-[#FF7A00] flex items-center justify-center gap-2"
+                  >
+                    {kycLoading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : "Peye $25 & Soumèt"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-[#0F121E] p-12 rounded-[4rem] text-center relative border border-white/5 shadow-2xl overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FF7A00]/10 to-transparent"></div>
+                  <div className="w-32 h-32 bg-gradient-to-tr from-[#FF7A00] to-[#FF9D42] rounded-[3.5rem] mx-auto mb-8 flex items-center justify-center border-4 border-white/10 shadow-lg relative z-10">
+                    <span className="text-white text-4xl font-black italic">{displayName.substring(0, 1)}</span>
+                  </div>
+                  <h3 className="text-white font-black italic text-3xl uppercase tracking-tighter relative z-10">{displayName}</h3>
+                  <p className="text-white/40 text-[9px] font-black uppercase italic mt-2 tracking-widest relative z-10">JUST PAY !</p>
+                </div>
+                
+                <div className="mt-10 space-y-4">
+                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
+                    <span className="text-[10px] font-black uppercase opacity-40">Account Email</span>
+                    <span className="text-xs font-black italic">{user?.email}</span>
+                  </div>
+     
+                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
+                    <span className="text-[10px] font-black uppercase opacity-40">Phone Number</span>
+                    <span className="text-xs font-black italic">{user?.phone || '+509 4XXX-XXXX'}</span>
+                  </div>
+     
+                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
+                    <div className="flex flex-col text-left">
+                      <span className="text-[10px] font-black uppercase opacity-40">Account Status</span>
+                      <span className={`text-[8px] font-bold italic mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-500'}`}>
+                        {user?.kyc?.status === 'APPROVED' ? 'FULL ACCESS' : 'LIMITS APPLIED'}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-black italic ${user?.kyc?.status === 'APPROVED' ? 'text-green-600' : 'text-orange-600'}`}>
+                      {user?.kyc?.status === 'APPROVED' ? 'VERIFIED' : user?.kyc?.status === 'PENDING' ? 'PENDING' : 'NOT VERIFIED'}
+                    </span>
+                  </div>
+     
+                  {user?.kyc?.status === 'APPROVED' ? (
+  /* --- SA ITILIZATÈ A AP WÈ LÈ KONT LAN FIN VERIFYE (APPROVED) --- */
+  <div className="bg-green-50/50 rounded-[3rem] p-8 border border-green-100 mt-6 overflow-hidden">
+    <div className="flex items-center gap-4 mb-6">
+      <div className="bg-green-500 p-3 rounded-2xl text-white shadow-lg shadow-green-200">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+      </div>
+      <div className="text-left">
+        <h4 className="text-[10px] font-black italic text-gray-900 uppercase">Account Verified</h4>
+        <p className="text-[9px] font-bold text-green-700/60 italic uppercase tracking-tighter">Full features and limits unlocked</p>
+      </div>
+    </div>
+
+    <button 
+      disabled
+      className="w-full bg-green-600 text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest cursor-not-allowed shadow-xl shadow-green-100"
+    >
+      Verified Account ✓
+    </button>
+  </div>
+) : (
+  /* --- SA L AP WÈ SI L PENDING OYSA NOT VERIFIED --- */
+  <div className="bg-orange-50/50 rounded-[3rem] p-8 border border-orange-100 mt-6 overflow-hidden">
+    <div className="flex items-center gap-4 mb-6">
+      <div className="bg-orange-500 p-3 rounded-2xl text-white shadow-lg shadow-orange-200">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        </svg>
+      </div>
+      <div className="text-left">
+        <h4 className="text-[10px] font-black italic text-gray-900 uppercase">Verification Required</h4>
+        <p className="text-[9px] font-bold text-orange-700/60 italic uppercase tracking-tighter">Submit ID to unlock full limits</p>
+      </div>
+    </div>
+
+    <button 
+      onClick={() => { if (user?.kyc?.status !== 'PENDING') setShowKycForm(true); }}
+      className="w-full bg-black text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+    >
+      {user?.kyc?.status === 'PENDING' ? 'Under Review...' : 'Verify Now ($25 USD)'}
+    </button>
+
+    {user?.kyc?.status !== 'PENDING' && (
+      <p className="text-[8px] text-center text-gray-400 mt-4 italic font-bold uppercase tracking-widest opacity-50">
+        * $25 Fee deducted from balance automatically
+      </p>
+    )}
+  </div>
+)}
+                  
+                  <button onClick={signOut} className="w-full py-8 bg-red-50 text-red-500 rounded-[2.5rem] font-black italic uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 active:bg-red-100 transition-all border border-red-100 mt-4">
+                    <LogOut size={16} /> Logout Account
+                  </button>
+                </div>
+              </>
+            )}
+            {/* 📊 TARIF SYSTÈM NAN - NAN PROFIL SÈLMAN */}
+<div className="mt-8 pt-6 border-t border-black/[0.05]">
+  <h4 className="font-black italic uppercase text-[11px] tracking-widest text-[#8E929B] mb-4">
+    Tarif & Kondisyon Ozama
+  </h4>
+  
+  <div className="bg-[#0F121E]/[0.02] p-5 rounded-[1.8rem] border border-black/[0.03] space-y-3.5">
+    
+    {/* Taux BRH */}
+    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
+      <span className="text-xs font-bold text-black uppercase tracking-tight">Taux BRH (Live)</span>
+      <span className="font-black italic text-xs text-[#00C566] tracking-tight">
+        135.00 HTG
+      </span>
+    </div>
+
+    {/* Frè P2P */}
+    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
+      <span className="text-xs font-bold text-black uppercase tracking-tight">Transfè P2P</span>
+      <span className="text-[9px] font-black uppercase italic bg-green-50 text-green-500 px-2 py-0.5 rounded-md tracking-wider">
+        Gratis 0%
+      </span>
+    </div>
+
+    {/* Frè Topup */}
+    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
+      <span className="text-xs font-bold text-black uppercase tracking-tight">Topup (Depo)</span>
+      <span className="font-black italic text-xs text-black">6%</span>
+    </div>
+
+    {/* Frè Retrait */}
+    <div className="flex justify-between items-center">
+      <span className="text-xs font-bold text-black uppercase tracking-tight">Retrait (Bak)</span>
+      <span className="font-black italic text-xs text-black">2%</span>
+    </div>
+
+  </div>
+  
+  <p className="text-[9px] text-[#8E929B] italic font-medium mt-3 text-center uppercase tracking-tighter">
+    * Tarif yo ka varye selon mache a ak taux ofisyèl BRH la.
+  </p>
+</div>
+          </div>
+        )} 
+        
+      </div>
+      
+ 
+      {/* BOTTOM NAVIGATION */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50">
+        {[
+          { id: 'home', icon: <Home size={24} />, label: 'HOME' },
+          { id: 'finance', icon: <Landmark size={24} />, label: 'FINANCE' },
+          { id: 'cards', icon: <CreditCard size={24} />, label: 'CARDS' },
+          { id: 'profile', icon: <User size={24} />, label: 'PROFILE' }
+        ].map((item) => (
+          <button 
+            key={item.id} 
+            onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
+            className={`w-14 h-14 flex flex-col items-center justify-center transition-all ${activeTab === item.id ? 'text-[#FF7A00] scale-110' : 'text-[#8E929B] opacity-30 hover:opacity-100'}`}
+          >
+            {item.icon}
+            <span className="text-[7px] font-black uppercase mt-1 tracking-widest">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+      
+      <input type="file" ref={fileInputRef} hidden onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
+    </main>
+  );
+}

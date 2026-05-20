@@ -1,0 +1,490 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// ENUMS
+//
+
+enum UserRole {
+  USER
+  AGENT
+  SUPPORT
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER
+  PAYMENT
+  EXCHANGE
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REJECTED
+  CANCELLED
+}
+
+enum LedgerType {
+  CREDIT
+  DEBIT
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ServiceType {
+  WISE
+  MERU
+  ZELLE
+  CASHAPP
+  USDT
+  GAMING
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum AgentStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+//
+// USERS
+//
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  virtualCard VirtualCard?
+  name        String?
+  phone       String?
+  role        UserRole @default(USER)
+  isSuspended Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallet Wallet?
+  kyc   Kyc?
+
+  notifications Notification[]
+
+  serviceRequests ServiceRequest[]
+
+  topups      TopUpRequest[]
+  withdrawals WithdrawalRequest[]
+
+  adminLogs AdminActionLog[]
+
+  agent Agent?
+
+  @@index([email])
+  @@index([role])
+}
+
+//
+// WALLET
+//
+
+model Wallet {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  balance  Decimal @default(0.00) @db.Decimal(18, 2)
+  currency String  @default("HTG")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  sentTransactions     Transaction[] @relation("SenderTransactions")
+  receivedTransactions Transaction[] @relation("ReceiverTransactions")
+
+  ledgerEntries LedgerEntry[]
+
+  @@index([userId])
+}
+
+//
+// TRANSACTIONS
+//
+
+model Transaction {
+  id String @id @default(uuid())
+
+  reference String @unique
+
+  senderWalletId   String?
+  receiverWalletId String?
+
+  amount Decimal @db.Decimal(18, 2)
+
+  fee Decimal @default(0.00) @db.Decimal(18, 2)
+
+  netAmount Decimal @db.Decimal(18, 2)
+
+  type   TransactionType
+  status TransactionStatus @default(PENDING)
+
+  method String?
+
+  title       String?
+  description String?
+
+  proofImage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  senderWallet Wallet? @relation("SenderTransactions", fields: [senderWalletId], references: [id])
+
+  receiverWallet Wallet? @relation("ReceiverTransactions", fields: [receiverWalletId], references: [id])
+
+  ledgerEntries LedgerEntry[]
+
+  @@index([reference])
+  @@index([status])
+  @@index([type])
+}
+
+//
+// LEDGER SYSTEM
+//
+
+model LedgerEntry {
+  id String @id @default(uuid())
+
+  walletId      String
+  transactionId String
+
+  type LedgerType
+
+  amount Decimal @db.Decimal(18, 2)
+
+  balanceBefore Decimal @db.Decimal(18, 2)
+  balanceAfter  Decimal @db.Decimal(18, 2)
+
+  description String?
+
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([walletId])
+  @@index([transactionId])
+}
+
+//
+// TOPUP
+//
+
+model TopUpRequest {
+  id String @id @default(uuid())
+
+  userId String
+
+  amount Decimal @db.Decimal(18, 2)
+
+  fee Decimal @db.Decimal(18, 2)
+
+  totalAmount Decimal @db.Decimal(18, 2)
+
+  method String
+
+  proofImage String?
+
+  status TransactionStatus @default(PENDING)
+
+  adminNote String?
+
+  completedById String?
+
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+//
+// WITHDRAW
+//
+
+model WithdrawalRequest {
+  id String @id @default(uuid())
+
+  userId String
+
+  amount Decimal @db.Decimal(18, 2)
+
+  fee Decimal @db.Decimal(18, 2)
+
+  netAmount Decimal @db.Decimal(18, 2)
+
+  method String
+
+  accountInfo String
+
+  status TransactionStatus @default(PENDING)
+
+  adminNote String?
+
+  proofImage String?
+
+  completedById String?
+
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+//
+// SERVICES
+//
+
+model ServiceRequest {
+  id String @id @default(uuid())
+
+  userId String
+
+  serviceType ServiceType
+
+  amount Decimal @db.Decimal(18, 2)
+
+  fee Decimal @default(0.00) @db.Decimal(18, 2)
+
+  details String?
+
+  proofImage String?
+
+  status TransactionStatus @default(PENDING)
+
+  adminNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([serviceType])
+}
+
+//
+// KYC
+//
+
+model Kyc {
+  id            String   @id @default(cuid())
+
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+
+  firstName     String
+  lastName      String
+
+  dateOfBirth   DateTime
+
+  phoneNumber   String
+
+  idType        String
+  idNumber      String
+
+  idImage       String
+  userPhoto     String
+
+  line1         String
+  city          String
+  state         String
+  zipCode       String
+  country       String
+
+  status        KycStatus @default(PENDING)
+
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+//
+// NOTIFICATIONS
+//
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId String
+
+  title   String
+  message String
+
+  type NotificationType @default(INFO)
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+//
+// SYSTEM SETTINGS
+//
+
+model SystemSetting {
+  id String @id @default(uuid())
+
+  key String @unique
+
+  value String
+
+  updatedAt DateTime @updatedAt
+}
+
+//
+// EXCHANGE RATE HISTORY
+//
+
+model ExchangeRateHistory {
+  id String @id @default(uuid())
+
+  pair String
+
+  rate Decimal @db.Decimal(18, 4)
+
+  createdAt DateTime @default(now())
+
+  @@index([pair])
+}
+
+//
+// AGENTS
+//
+
+model Agent {
+  id String @id @default(uuid())
+
+  userId String @unique
+
+  businessName String?
+
+  status AgentStatus @default(PENDING)
+
+  commissionRate Decimal @default(0.00) @db.Decimal(5, 2)
+
+  dailyLimit Decimal @default(0.00) @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//
+// ADMIN LOGS
+//
+
+model AdminActionLog {
+  id String @id @default(uuid())
+
+  adminId String
+
+  action String
+
+  targetType String?
+  targetId   String?
+  details    String?
+
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+}
+model Rate {
+  id            String   @id @default(uuid())
+  key           String   @unique // Egz: 'USDT_BUY', 'USDT_SELL', 'CARD_RATE'
+  value         Float
+  currency      String   @default("HTG")
+  updatedAt     DateTime @updatedAt
+}
+
+//
+// VIRTUAL CARDS (STROWALLET INTEGRATION)
+//
+
+enum CardStatus {
+  ACTIVE
+  FROZEN
+  TERMINATED
+}
+
+model VirtualCard {
+  id        String     @id @default(uuid())
+  userId    String     @unique // Yon kat pou chak itilizatè pou kòmansman an (MVP)
+  
+  // Done ki soti dirèkteman nan StroWallet
+  cardId    String     @unique // ID inik StroWallet bay pou kat la
+  cardName  String     // Non ki ekri sou kat la
+  last4     String     // Sèlman 4 dènye chif yo pou n afiche sou UI a an sekirite
+  expiry    String     // Dat ekspirasyon (Fòma: MM/YY)
+  brand     String     @default("VISA")
+  
+  // Balans an Dola ($) ki sou kat la nan moman an
+  balance   Decimal    @default(0.00) @db.Decimal(18, 2)
+  status    CardStatus @default(ACTIVE)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relasyon ak modèl User ki egziste deja a
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([cardId])
+  @@index([status])
+}
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
