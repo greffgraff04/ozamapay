@@ -20,12 +20,12 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  // 3. SE SÈLMAN NAN DENYÈ LIY LAN NOU METE LISTEN
- const port = process.env.PORT || 3001;
+  // 3. Chanje pò sekou a pou l koute sou 10000 si Render pa voye PORT la
+  const port = process.env.PORT || 10000;
 
-await app.listen(port, '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
 
-console.log(`OZAMA Sèvè pare sou port ${port} ak limit 50MB! ✅`);
+  console.log(`OZAMA Sèvè pare sou port ${port} ak limit 50MB! ✅`);
 }
 
 bootstrap();
