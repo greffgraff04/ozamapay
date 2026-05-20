@@ -1,18 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // 1. Nou pase limit 50mb yo dirèkteman nan kreyasyon aplikasyon an pou evite konfli body-parser
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+  });
 
-  // 1. Mete limit yo AVAN sèvè a kòmanse koute
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  // Konfigirasyon limit pou JSON ak URL-encoded atravè vèsyon Express ki anndan NestJS la
+  const server = app.getHttpAdapter().getInstance();
+  server.use(require('express').json({ limit: '50mb' }));
+  server.use(require('express').urlencoded({ limit: '50mb', extended: true }));
 
-  // 2. Debloke CORS ak konfigirasyon dinamik (Bypass Chrome CORS Block)
+  // 2. Debloke CORS nèt (Bypass Chrome CORS Block) pou Next.js ak aplikasyon mobil lan
   app.enableCors({
     origin: (origin, callback) => {
-      // Sa pèmèt nou aksepte localhost:3000, 127.0.0.1 oswa IP lokal la an menm tan san navigatè a pa bloke credentials
+      // Sa pèmèt nou aksepte nenpòt orijin (localhost, vercel, render) san navigatè a pa bloke credentials
       callback(null, true);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -20,9 +23,10 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  // 3. Chanje pò sekou a pou l koute sou 10000 si Render pa voye PORT la
+  // 3. Render ap toujou voye process.env.PORT, si li pa jwenn li l ap pran 10000 kòm sekou
   const port = process.env.PORT || 10000;
 
+  // Nou fòse koute sou '0.0.0.0' pou Render ka louvri pò a sou entènèt la
   await app.listen(port, '0.0.0.0');
 
   console.log(`OZAMA Sèvè pare sou port ${port} ak limit 50MB! ✅`);
