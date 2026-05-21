@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { AppController } from './app.controller'; // ← AJOUTE SA
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -25,8 +26,9 @@ import { StrowalletModule } from './strowallet/strowallet.module';
     AdminModule,
     RatesModule,
     PaymentsModule,
-    StrowalletModule, // Tout brik yo konekte ansanm isit la!
+    StrowalletModule,
   ],
+  controllers: [AppController], // ← AJOUTE SA
   providers: [
     {
       provide: APP_GUARD,
