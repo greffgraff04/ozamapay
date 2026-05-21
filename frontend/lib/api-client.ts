@@ -29,15 +29,15 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Jesyon erè jeneral pou nou wè klè nan konsòl la si gen yon pwoblèm
+// Jesyon erè jeneral ak sekirite ? pou evite Next.js "stale" oswa "crash"
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (process.env.NEXT_PUBLIC_DEBUG_API === 'true') {
       console.error('❌ API Error Details:', {
-        url: error.config?.url,
-        status: error.response?.status,
-        data: error.response?.data,
+        url: error?.config?.url || 'Unknown URL',
+        status: error?.response?.status || 'No Status',
+        data: error?.response?.data || error?.message || 'No Data',
       });
     }
     return Promise.reject(error);
