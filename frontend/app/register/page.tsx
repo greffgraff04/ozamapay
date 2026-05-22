@@ -13,8 +13,12 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
 
+    // Li varyab Vercel la, si l pa jwenn li li pran localhost kòm sekirite
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
     try {
-      const res = await fetch('http://localhost:3001/auth/register', {
+      // Itilize dinamik URL avèk bèl ti backticks yo
+      const res = await fetch(`${backendUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
@@ -74,7 +78,7 @@ export default function RegisterPage() {
             type="submit" disabled={loading}
             className="w-full bg-[#0F121E] text-white p-6 rounded-2xl font-black uppercase text-xs tracking-[0.2em] mt-6 active:scale-95 transition-all shadow-lg"
           >
-            {loading ? 'CHAJMAN...' : 'KREYE KÒT MWEN'}
+            {loading ? 'CHAJMAN...' : 'KREYE KONT MWEN'}
           </button>
         </form>
 

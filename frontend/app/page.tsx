@@ -1,20 +1,38 @@
 'use client';
-import { useEffect } from 'react';
 
-export default function RootPage() {
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    // Si li deja konekte, voye l sou dashboard. Sinon, voye l login.
-    if (user) {
-      window.location.href = "/dashboard";
-    } else {
-      window.location.href = "/login";
-    }
-  }, []);
+// Nou chanje chemen yo pou yo soti nan dosye 'app' a dirèkteman
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Hero from './components/sections/Hero';
+import Trust from './components/sections/Trust';
+import Features from './components/sections/Features';
+import OzamaCard from './components/sections/OzamaCard';
+import Business from './components/sections/Business';
+import SuperAppVision from './components/sections/SuperAppVision';
+import Security from './components/sections/Security';
+import HowItWorks from './components/sections/HowItWorks';
+import Testimonials from './components/sections/Testimonials';
+import WhyOzamapay from './components/sections/WhyOzamapay';
+import FAQ from './components/sections/FAQ';
+import FinalCTA from './components/sections/FinalCTA';
 
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <h1 className="font-black italic text-2xl animate-pulse">OZAMA PAY...</h1>
-    </div>
+    <main className="bg-ozama-dark min-h-screen text-white">
+      <Navbar />
+      <Hero />
+      <Trust />
+      <Features />
+      <OzamaCard />
+      <Business />
+      <SuperAppVision />
+      <Security />
+      <HowItWorks />
+      <Testimonials />
+      <WhyOzamapay />
+      <FAQ />
+      <FinalCTA />
+      <Footer />
+    </main>
   );
 }

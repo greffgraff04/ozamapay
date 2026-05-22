@@ -13,7 +13,7 @@ export default function LoginPage() {
     setError('');
     
     // Nou pran localhost:3001 kòm sekirite si .env lan pa moute
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
     try {
       // 🔥 KORÈK: Nou kase adrès 192.168... la ki t ap bay timeout a!
