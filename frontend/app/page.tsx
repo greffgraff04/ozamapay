@@ -1,7 +1,6 @@
 'use client';
 
-// Nou chanje chemen yo pou yo soti nan dosye 'app' a dirèkteman
-import Navbar from './components/Navbar';
+import  Header  from './components/Navbar';
 import Footer from './components/Footer';
 import Hero from './components/sections/Hero';
 import Trust from './components/sections/Trust';
@@ -18,8 +17,8 @@ import FinalCTA from './components/sections/FinalCTA';
 
 export default function HomePage() {
   return (
-    <main className="bg-ozama-dark min-h-screen text-white">
-      <Navbar />
+    <main className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <Header />
       <Hero />
       <Trust />
       <Features />

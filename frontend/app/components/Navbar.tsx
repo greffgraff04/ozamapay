@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Menu, X, Moon, Sun } from 'lucide-react';
 
@@ -41,15 +42,19 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center font-bold text-white group-hover:shadow-lg group-hover:shadow-orange-500/50 transition-all">
-              OZ
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent hidden sm:inline">
-              OZAMAPAY
-            </span>
-          </Link>
+          {/* Logo - LARGER, NO TEXT */}
+          <Link href="/" className="flex items-center group">
+  <div className="w-32 h-32 rounded-lg overflow-hidden hover:shadow-lg hover:shadow-one transition-all">
+    <Image
+      src="/logo.png"
+      alt="OZAMAPAY"
+      width={128}
+      height={128}
+      className="w-full h-full object-cover"
+      priority
+    />
+  </div>
+</Link>
 
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-8">
