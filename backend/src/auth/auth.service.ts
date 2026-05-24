@@ -5,9 +5,16 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+
 import { JwtService } from '@nestjs/jwt';
+
 import { PrismaService } from '../prisma/prisma.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+
+import {
+  LoginDto,
+  RegisterDto,
+} from './dto/auth.dto';
+
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -21,14 +28,18 @@ export class AuthService {
   // REGISTER
   // =========================
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email.toLowerCase(),
-      },
-    });
+    const existing =
+      await this.prisma.user.findUnique({
+        where: {
+          email:
+            dto.email.toLowerCase(),
+        },
+      });
 
     if (existing) {
-      throw new ConflictException('Email deja itilize');
+      throw new ConflictException(
+        'Email deja itilize',
+      );
     }
 
     if (dto.password.length < 6) {
@@ -37,27 +48,67 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    // 🔥 Agent referral
+    let referredByAgentId:
+      | string
+      | null = null;
 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
-        data: {
-          email: dto.email.toLowerCase(),
-          password: hashedPassword,
-          name: dto.name,
-          role: 'USER',
+    if (dto.agentCode) {
+      const agent =
+        await this.prisma.agent.findUnique(
+          {
+            where: {
+              agentCode:
+                dto.agentCode,
+            },
+          },
+        );
+
+      if (!agent) {
+        throw new BadRequestException(
+          'Code agent invalide',
+        );
+      }
+
+      referredByAgentId = agent.id;
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(
+        dto.password,
+        10,
+      );
+
+    const user =
+      await this.prisma.$transaction(
+        async (tx) => {
+          const newUser =
+            await tx.user.create({
+              data: {
+                email:
+                  dto.email.toLowerCase(),
+
+                password:
+                  hashedPassword,
+
+                name: dto.name,
+
+                role: 'USER',
+
+                referredByAgentId,
+              },
+            });
+
+          await tx.wallet.create({
+            data: {
+              userId: newUser.id,
+              balance: 0,
+            },
+          });
+
+          return newUser;
         },
-      });
-
-      await tx.wallet.create({
-        data: {
-          userId: newUser.id,
-          balance: 0,
-        },
-      });
-
-      return newUser;
-    });
+      );
 
     const token = this.signToken(
       user.id,
@@ -66,13 +117,19 @@ export class AuthService {
     );
 
     return {
-      message: 'Kont kreye avèk siksè',
+      message:
+        'Kont kreye avèk siksè',
+
       token,
+
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
+
+        referredByAgentId:
+          user.referredByAgentId,
       },
     };
   }
@@ -81,15 +138,18 @@ export class AuthService {
   // LOGIN
   // =========================
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email.toLowerCase(),
-      },
-      include: {
-        wallet: true,
-        kyc: true,
-      },
-    });
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          email:
+            dto.email.toLowerCase(),
+        },
+
+        include: {
+          wallet: true,
+          kyc: true,
+        },
+      });
 
     if (!user) {
       throw new UnauthorizedException(
@@ -97,10 +157,11 @@ export class AuthService {
       );
     }
 
-    const passwordMatch = await bcrypt.compare(
-      dto.password,
-      user.password,
-    );
+    const passwordMatch =
+      await bcrypt.compare(
+        dto.password,
+        user.password,
+      );
 
     if (!passwordMatch) {
       throw new UnauthorizedException(
@@ -116,20 +177,28 @@ export class AuthService {
 
     return {
       message: 'Koneksyon reyisi',
+
       token,
+
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
 
+        referredByAgentId:
+          user.referredByAgentId,
+
         wallet: {
-          balance: user.wallet?.balance || 0,
+          balance:
+            user.wallet?.balance || 0,
         },
 
         kyc: user.kyc
           ? {
-              status: user.kyc.status,
+              status:
+                user.kyc.status,
+
               fullName: `${user.kyc.firstName} ${user.kyc.lastName}`,
             }
           : null,
@@ -137,20 +206,26 @@ export class AuthService {
     };
   }
 
-  // ========================================================
-  // GET ME (Sa k ap voye done fre yo bay Frontend lan sou reload)
-  // ========================================================
+  // =========================
+  // GET ME
+  // =========================
   async getMe(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        wallet: true,
-        kyc: true,
-      },
-    });
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+
+        include: {
+          wallet: true,
+          kyc: true,
+        },
+      });
 
     if (!user) {
-      throw new NotFoundException('Itilizatè sa a pa egziste.');
+      throw new NotFoundException(
+        'Itilizatè sa a pa egziste.',
+      );
     }
 
     return {
@@ -159,8 +234,23 @@ export class AuthService {
       name: user.name,
       phone: user.phone,
       role: user.role,
-      wallet: user.wallet ? { balance: user.wallet.balance } : null,
-      kyc: user.kyc ? { status: user.kyc.status } : null,
+
+      referredByAgentId:
+        user.referredByAgentId,
+
+      wallet: user.wallet
+        ? {
+            balance:
+              user.wallet.balance,
+          }
+        : null,
+
+      kyc: user.kyc
+        ? {
+            status:
+              user.kyc.status,
+          }
+        : null,
     };
   }
 

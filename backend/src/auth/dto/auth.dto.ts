@@ -4,6 +4,8 @@ import {
   IsEmail,
   IsNotEmpty,
   MinLength,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -15,6 +17,11 @@ export class RegisterDto {
 
   @MinLength(6)
   password: string;
+
+  // 🔥 Agent referral code
+  @IsOptional()
+  @IsString()
+  agentCode?: string;
 }
 
 export class LoginDto {

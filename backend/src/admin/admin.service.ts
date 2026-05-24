@@ -215,7 +215,7 @@ export class AdminService {
         amount: amount,
         fee: 0,
         netAmount: amount,
-        type: 'DEPOSIT',
+        type: 'TOPUP',
         status: 'COMPLETED',
         title: `Admin TopUp — ${amount} HTG`,
         method: 'ADMIN',

@@ -27,7 +27,7 @@ export class StrowalletService {
     if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
 
     const rateValue = rateSettings.value;
-    const amountHtg = cleanAmountUsd * rateValue;
+    const amountHtg = cleanAmountUsd * Number(rateValue);
 
     return await this.prisma.$transaction(async (tx) => {
       // 2️⃣ Jwenn itilizatè a ak tout relasyon reyèl li yo
@@ -191,7 +191,8 @@ if (!isKycApproved) {
     if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
 
     const cleanAmountUsd = amountUsd ? Number(amountUsd) : 0;
-    const amountHtg = cleanAmountUsd * rateSettings.value;
+    const amountHtg =
+  cleanAmountUsd * Number(rateSettings.value);
 
     return await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, include: { wallet: true, virtualCard: true } });

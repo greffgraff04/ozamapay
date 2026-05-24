@@ -420,7 +420,7 @@ async transfer(
 
         netAmount: amount,
 
-        type: 'DEPOSIT',
+        type: 'TOPUP',
 
         status: 'PENDING',
 
@@ -592,7 +592,7 @@ async transfer(
 
         netAmount: amount,
 
-        type: 'WITHDRAW',
+        type: 'WITHDRAWAL',
 
         status: 'PENDING',
 
@@ -682,7 +682,7 @@ async transfer(
 
             netAmount: amount,
 
-            type: 'DEPOSIT',
+            type: 'TOPUP',
 
             status: 'COMPLETED',
 

@@ -11,6 +11,8 @@ import { AdminModule } from './admin/admin.module';
 import { RatesModule } from './rates/rates.module';
 import { PaymentsModule } from './payments/payments.module'; 
 import { StrowalletModule } from './strowallet/strowallet.module';
+import { AgentsModule } from './agents/agents.module';
+import { CommissionsModule } from './commissions/commissions.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { StrowalletModule } from './strowallet/strowallet.module';
     RatesModule,
     PaymentsModule,
     StrowalletModule,
+    AgentsModule,
+    CommissionsModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

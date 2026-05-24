@@ -1,6 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, IsISO8601 } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsISO8601,
+} from 'class-validator';
 
 export class CreateKycDto {
+  @IsOptional()
+  @IsString()
+  agentId?: string;
+
   @IsString()
   @IsNotEmpty()
   firstName: string;
@@ -11,7 +20,7 @@ export class CreateKycDto {
 
   @IsISO8601()
   @IsNotEmpty()
-  dateOfBirth: string; // Fòma "YYYY-MM-DD"
+  dateOfBirth: string;
 
   @IsString()
   @IsNotEmpty()
@@ -19,7 +28,7 @@ export class CreateKycDto {
 
   @IsString()
   @IsNotEmpty()
-  idType: string; // PASSPORT, NATIONAL_ID, DRIVERS_LICENSE
+  idType: string;
 
   @IsString()
   @IsNotEmpty()
@@ -27,15 +36,15 @@ export class CreateKycDto {
 
   @IsString()
   @IsNotEmpty()
-  idImage: string; // Lyen URL foto pyès la
+  idImage: string;
 
   @IsString()
   @IsNotEmpty()
-  userPhoto: string; // Lyen URL selfie a
+  userPhoto: string;
 
   @IsString()
   @IsNotEmpty()
-  line1: string; // Adrès kay la
+  line1: string;
 
   @IsString()
   @IsNotEmpty()
@@ -51,5 +60,5 @@ export class CreateKycDto {
 
   @IsString()
   @IsNotEmpty()
-  country: string; // Pa egzanp "HT"
+  country: string;
 }
