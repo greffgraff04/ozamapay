@@ -5,7 +5,8 @@ import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
-  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X
+  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
+  Shield, BadgeCheck, Briefcase, TrendingUp, Star
 } from 'lucide-react';
  
 const PAYMENT_INFO = {
@@ -61,6 +62,8 @@ export default function Dashboard() {
   
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
   const [toastFading, setToastFading] = useState(false);
+  const [showSecurityCard, setShowSecurityCard] = useState(false);
+  const [showRates, setShowRates] = useState(false);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
   const [financeDetails, setFinanceDetails] = useState({
@@ -1281,379 +1284,279 @@ try {
  
         {/* --- PROFILE SECTION --- */}
         {activeTab === 'profile' && (
-          <div className="animate-in slide-in-from-bottom duration-700">
-            
+          <div className="animate-in slide-in-from-bottom duration-700 pb-8">
             {showKycForm ? (
-              <div className="animate-in zoom-in duration-300 bg-white border border-black/5 p-8 rounded-[3rem] shadow-2xl text-left">
-                <button onClick={() => setShowKycForm(false)} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                  <ArrowLeftRight size={14} className="rotate-180" /> Anile / Tounen
-                </button>
-                
-                <h2 className="text-3xl font-black italic uppercase mb-1 tracking-tighter">KYC Verification</h2>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-8">Mete enfòmasyon reyèl ou yo pou w deboke limit kont lan</p>
-                
-                <div className="space-y-5">
+              /* KYC FORM */
+              <div className="animate-in zoom-in duration-300">
+                <div className="pb-4 mb-6">
+                  <button onClick={() => setShowKycForm(false)} className="flex items-center gap-2 text-[#FF6B00] font-black italic uppercase text-[10px] tracking-widest mb-4">
+                    <ChevronRight size={14} className="rotate-180" /> Anile / Tounen
+                  </button>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">KYC Verification</h2>
+                    <span className="text-[10px] font-black bg-orange-50 text-[#FF6B00] px-3 py-1 rounded-full border border-orange-100">Etap 1/2</span>
+                  </div>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Mete enfòmasyon reyèl pou deboke limit lan</p>
+                </div>
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Premye Non (First Name)</label>
-                      <input 
-                        type="text" 
-                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="Eg: Ralph"
-                        value={kycData.firstName}
-                        onChange={(e) => setKycData({ ...kycData, firstName: e.target.value })}
-                      />
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Premye Non</label>
+                      <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Eg: Ralph" value={kycData.firstName} onChange={(e) => setKycData({ ...kycData, firstName: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Siyati (Last Name)</label>
-                      <input 
-                        type="text" 
-                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="Eg: Greffin"
-                        value={kycData.lastName}
-                        onChange={(e) => setKycData({ ...kycData, lastName: e.target.value })}
-                      />
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Siyati</label>
+                      <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Eg: Greffin" value={kycData.lastName} onChange={(e) => setKycData({ ...kycData, lastName: e.target.value })} />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Dat Nesans</label>
-                      <input 
-                        type="date" 
-                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        value={kycData.dateOfBirth}
-                        onChange={(e) => setKycData({ ...kycData, dateOfBirth: e.target.value })}
-                      />
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Dat Nesans</label>
+                      <input type="date" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" value={kycData.dateOfBirth} onChange={(e) => setKycData({ ...kycData, dateOfBirth: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Telefòn (StroWallet Format)</label>
-                      <input 
-                        type="tel" 
-                        className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="Eg: 50933333333"
-                        value={kycData.phoneNumber}
-                        onChange={(e) => setKycData({ ...kycData, phoneNumber: e.target.value })}
-                      />
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Telefòn</label>
+                      <input type="tel" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="50933333333" value={kycData.phoneNumber} onChange={(e) => setKycData({ ...kycData, phoneNumber: e.target.value })} />
                     </div>
                   </div>
-
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Adrès Liy 1 (Ri, Nimewo Kay)</label>
-                    <input 
-                      type="text" 
-                      className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                      placeholder="Eg: 45, Rue Faubert"
-                      value={kycData.line1}
-                      onChange={(e) => setKycData({ ...kycData, line1: e.target.value })}
-                    />
+                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Adrès</label>
+                    <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="45, Rue Faubert" value={kycData.line1} onChange={(e) => setKycData({ ...kycData, line1: e.target.value })} />
                   </div>
-
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Vil (City)</label>
-                      <input 
-                        type="text" 
-                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="Pétion-Ville"
-                        value={kycData.city}
-                        onChange={(e) => setKycData({ ...kycData, city: e.target.value })}
-                      />
+                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vil</label>
+                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Pétion-Ville" value={kycData.city} onChange={(e) => setKycData({ ...kycData, city: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Depatman (State)</label>
-                      <input 
-                        type="text" 
-                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="Ouest"
-                        value={kycData.state}
-                        onChange={(e) => setKycData({ ...kycData, state: e.target.value })}
-                      />
+                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Depatman</label>
+                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Ouest" value={kycData.state} onChange={(e) => setKycData({ ...kycData, state: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase opacity-40 ml-2 tracking-widest">Kòd Postal (Zip)</label>
-                      <input 
-                        type="text" 
-                        className="w-full p-4 bg-gray-50 rounded-xl font-bold outline-none border border-black/5 focus:bg-white text-xs"
-                        placeholder="6110"
-                        value={kycData.zipCode}
-                        onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })}
-                      />
+                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Zip</label>
+                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="6110" value={kycData.zipCode} onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })} />
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Kalite Dokiman</label>
-                    <select 
-                      value={kycData.idType} 
-                      onChange={(e) => setKycData({ ...kycData, idType: e.target.value })}
-                      className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]"
-                    >
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Kalite Dokiman</label>
+                    <select value={kycData.idType} onChange={(e) => setKycData({ ...kycData, idType: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-black uppercase italic text-xs outline-none text-gray-900 transition-colors">
                       <option value="NATIONAL_ID">CIN (Kat Elektoral)</option>
                       <option value="PASSPORT">Paspò (Passport)</option>
                       <option value="DRIVERS_LICENSE">Lisans Kondwi</option>
                     </select>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Nimewo Dokiman An</label>
-                    <input 
-                      type="text" 
-                      className="w-full p-6 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 focus:bg-white"
-                      placeholder="Eg: 01-01-99-1990-00-00000"
-                      value={kycData.idNumber}
-                      onChange={(e) => setKycData({ ...kycData, idNumber: e.target.value })}
-                    />
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Nimewo Dokiman</label>
+                    <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="01-01-99-1990-00-00000" value={kycData.idNumber} onChange={(e) => setKycData({ ...kycData, idNumber: e.target.value })} />
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Foto Pyès Idantite (Devan)</label>
-                    <button 
-                      type="button"
-                      onClick={() => idCardInputRef.current?.click()} 
-                      className="w-full p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center gap-2 hover:bg-gray-100 transition-all"
-                    >
-                      <FileText size={24} className="text-[#FF7A00]" />
-                      <span className="text-[9px] font-black uppercase italic text-gray-500">
-                        {idCardFile ? idCardFile.name : 'Chwazi foto pyès la'}
-                      </span>
-                    </button>
-                    <input type="file" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Foto Pyès Idantite</label>
+                      <button type="button" onClick={() => idCardInputRef.current?.click()} className="w-full p-5 rounded-2xl border-2 border-dashed border-[#FF6B00]/30 bg-orange-50/50 flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
+                        <FileText size={22} className="text-[#FF6B00]" />
+                        <span className="text-[8px] font-black uppercase italic text-gray-500 text-center">{idCardFile ? idCardFile.name : 'Chwazi foto pyès'}</span>
+                      </button>
+                      <input type="file" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Selfie / Portrait</label>
+                      <button type="button" onClick={() => userPhotoInputRef.current?.click()} className="w-full p-5 rounded-2xl border-2 border-dashed border-[#FF6B00]/30 bg-orange-50/50 flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
+                        <Camera size={22} className="text-[#FF6B00]" />
+                        <span className="text-[8px] font-black uppercase italic text-gray-500 text-center">{userPhotoFile ? userPhotoFile.name : 'Chwazi selfie'}</span>
+                      </button>
+                      <input type="file" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
+                    </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Foto pa w (Selfie oswa Portrait)</label>
-                    <button 
-                      type="button"
-                      onClick={() => userPhotoInputRef.current?.click()} 
-                      className="w-full p-8 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex flex-col items-center gap-2 hover:bg-gray-100 transition-all"
-                    >
-                      <Camera size={24} className="text-[#FF7A00]" />
-                      <span className="text-[9px] font-black uppercase italic text-gray-500">
-                        {userPhotoFile ? userPhotoFile.name : 'Pran oswa chwazi yon bèl foto vizaj ou'}
-                      </span>
-                    </button>
-                    <input type="file" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
-                  </div>
-
-                  <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 flex gap-4 mt-4">
-                    <Info size={20} className="text-[#FF7A00] shrink-0" />
+                  <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-3">
+                    <Info size={18} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">
-                      Sistèm lan pral debite kont ou otomatikman yon frè de <span className="text-black font-black">3,375 HTG ($25 USD)</span> kòm frè verifikasyon ajans.
+                      Sistèm lan ap debite <span className="text-black font-black">3,375 HTG ($25 USD)</span> otomatikman pou frè verifikasyon.
                     </p>
                   </div>
-
-                  <button 
-                    onClick={handleKycSubmit}
-                    disabled={kycLoading}
-                    className="w-full bg-[#0F121E] text-white py-7 rounded-2xl font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 hover:bg-[#FF7A00] flex items-center justify-center gap-2"
-                  >
-                    {kycLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : "Peye $25 & Soumèt"}
+                  <button onClick={handleKycSubmit} disabled={kycLoading} className="w-full bg-[#FF6B00] text-white py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-lg text-xs transition-all active:scale-95 hover:bg-[#e66000] flex items-center justify-center gap-2 disabled:opacity-50">
+                    {kycLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Peye $25 & Soumèt'}
                   </button>
                 </div>
               </div>
             ) : (
+              /* PROFILE VIEW */
               <>
-                <div className="bg-[#0F121E] p-12 rounded-[4rem] text-center relative border border-white/5 shadow-2xl overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#FF7A00]/10 to-transparent"></div>
-                  <div className="w-32 h-32 bg-gradient-to-tr from-[#FF7A00] to-[#FF9D42] rounded-[3.5rem] mx-auto mb-8 flex items-center justify-center border-4 border-white/10 shadow-lg relative z-10">
-                    <span className="text-white text-4xl font-black italic">{displayName.substring(0, 1)}</span>
-                  </div>
-                  <h3 className="text-white font-black italic text-3xl uppercase tracking-tighter relative z-10">{displayName}</h3>
-                  <p className="text-white/40 text-[9px] font-black uppercase italic mt-2 tracking-widest relative z-10">JUST PAY !</p>
-                </div>
-                
-                <div className="mt-10 space-y-4">
-                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
-                    <span className="text-[10px] font-black uppercase opacity-40">Account Email</span>
-                    <span className="text-xs font-black italic">{user?.email}</span>
-                  </div>
-     
-                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
-                    <span className="text-[10px] font-black uppercase opacity-40">Phone Number</span>
-                    <span className="text-xs font-black italic">{user?.phone || '+509 4XXX-XXXX'}</span>
-                  </div>
-     
-                  <div className="p-8 bg-gray-50 border border-black/5 rounded-[2.5rem] flex justify-between items-center group hover:bg-white transition-all">
-                    <div className="flex flex-col text-left">
-                      <span className="text-[10px] font-black uppercase opacity-40">Account Status</span>
-                      <span className={`text-[8px] font-bold italic mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-500'}`}>
-                        {user?.kyc?.status === 'APPROVED' ? 'FULL ACCESS' : 'LIMITS APPLIED'}
-                      </span>
+                {/* HERO CARD */}
+                <div className="bg-[#0F121E] rounded-3xl p-6 mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg flex-shrink-0">
+                      <span className="text-white text-2xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
                     </div>
-                    <span className={`text-xs font-black italic ${user?.kyc?.status === 'APPROVED' ? 'text-green-600' : 'text-orange-600'}`}>
-                      {user?.kyc?.status === 'APPROVED' ? 'VERIFIED' : user?.kyc?.status === 'PENDING' ? 'PENDING' : 'NOT VERIFIED'}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
+                      <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {user?.kyc?.status === 'APPROVED' ? (
+                          <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
+                        ) : user?.kyc?.status === 'PENDING' ? (
+                          <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
+                        ) : (
+                          <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
+                        )}
+                        {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') && (
+                          <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <UserSecurityCard />
-     
-                  {user?.kyc?.status === 'APPROVED' ? (
-  /* --- SA ITILIZATÈ A AP WÈ LÈ KONT LAN FIN VERIFYE (APPROVED) --- */
-  <div className="bg-green-50/50 rounded-[3rem] p-8 border border-green-100 mt-6 overflow-hidden">
-    <div className="flex items-center gap-4 mb-6">
-      <div className="bg-green-500 p-3 rounded-2xl text-white shadow-lg shadow-green-200">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-        </svg>
-      </div>
-      <div className="text-left">
-        <h4 className="text-[10px] font-black italic text-gray-900 uppercase">Account Verified</h4>
-        <p className="text-[9px] font-bold text-green-700/60 italic uppercase tracking-tighter">Full features and limits unlocked</p>
-      </div>
-    </div>
-
-    <button 
-      disabled
-      className="w-full bg-green-600 text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest cursor-not-allowed shadow-xl shadow-green-100"
-    >
-      Verified Account ✓
-    </button>
-
-  </div>
-) : (
-  /* --- SA L AP WÈ SI L PENDING OYSA NOT VERIFIED --- */
-  <div className="bg-orange-50/50 rounded-[3rem] p-8 border border-orange-100 mt-6 overflow-hidden">
-    <div className="flex items-center gap-4 mb-6">
-      <div className="bg-orange-500 p-3 rounded-2xl text-white shadow-lg shadow-orange-200">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-        </svg>
-      </div>
-      <div className="text-left">
-        <h4 className="text-[10px] font-black italic text-gray-900 uppercase">Verification Required</h4>
-        <p className="text-[9px] font-bold text-orange-700/60 italic uppercase tracking-tighter">Submit ID to unlock full limits</p>
-      </div>
-    </div>
-
-    <button 
-      onClick={() => { if (user?.kyc?.status !== 'PENDING') setShowKycForm(true); }}
-      className="w-full bg-black text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
-    >
-      {user?.kyc?.status === 'PENDING' ? 'Under Review...' : 'Verify Now ($25 USD)'}
-    </button>
-
-    {user?.kyc?.status !== 'PENDING' && (
-      <p className="text-[8px] text-center text-gray-400 mt-4 italic font-bold uppercase tracking-widest opacity-50">
-        * $25 Fee deducted from balance automatically
-      </p>
-    )}
-  </div>
-)}
-                  {/* 🏦 OZAMA AGENT INTERACTION SYSTEM */}
-<div className="mt-6 pt-4 border-t border-black/5 space-y-3">
-  {user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE' ? (
-    /* SI L SE AJAN DEJA: REDIREKSYON NAN NOUVO DASHBOARD LI */
-    <button 
-      onClick={() => {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/agent-dashboard';
-        }
-      }}
-      className="w-full bg-[#FF7A00] hover:bg-[#e66e00] text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
-    >
-      <Zap size={16} /> Open Agent Dashboard
-    </button>
-  ) : user?.agent?.status === 'PENDING' ? (
-    /* APPLICATION EN ATTENTE */
-    <button
-      disabled
-      className="w-full bg-gray-100 text-gray-400 py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
-    >
-      <ShieldCheck size={16} /> Application en cours...
-    </button>
-  ) : (
-    /* USER KLASIK: BOUTON POU VIN AJAN */
-    <button
-      onClick={async () => {
-        if (user?.kyc?.status !== 'APPROVED') {
-          showToast("Ou dwe verifye kont ou (KYC Approved) anvan ou apliké kòm Ajan.", "error");
-          return;
-        }
-        const token = localStorage.getItem('token');
-        try {
-          const res = await fetch(`${backendUrl}/agents/apply`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` })
-          });
-          const data = await res.json();
-          if (res.ok) {
-            showToast("Aplikasyon w lan soumèt! Yon admin ap apwouve l. 🚀", "success");
-            fetchData();
-          } else {
-            showToast(data.message || "Erè pandan aplikasyon an.", "error");
-          }
-        } catch {
-          showToast("Erè rezo! Verifye si backend la ap kouri.", "error");
-        }
-      }}
-      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
-    >
-      <ShieldCheck size={16} /> Become an Agent
-    </button>
-  )}
-</div>
-
-                  
-                  <button onClick={signOut} className="w-full py-8 bg-red-50 text-red-500 rounded-[2.5rem] font-black italic uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 active:bg-red-100 transition-all border border-red-100 mt-4">
-                    <LogOut size={16} /> Logout Account
-                  </button>
                 </div>
+
+                {/* STATS ROW */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
+                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Balans</p>
+                    <p className="text-sm font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
+                    <p className="text-[8px] text-gray-400 font-bold">HTG</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
+                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">KYC</p>
+                    <div className="flex justify-center">
+                      <BadgeCheck size={22} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-300'} />
+                    </div>
+                    <p className={`text-[8px] font-black uppercase mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                      {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
+                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Wòl</p>
+                    <div className="flex justify-center">
+                      {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') ? (
+                        <Briefcase size={22} className="text-[#FF6B00]" />
+                      ) : (
+                        <User size={22} className="text-gray-400" />
+                      )}
+                    </div>
+                    <p className="text-[8px] font-black uppercase text-gray-500 mt-1">{user?.role || 'USER'}</p>
+                  </div>
+                </div>
+
+                {/* MENU LIST */}
+                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-4">
+                  <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                    <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
+                    <div className="flex-1 text-left">
+                      <p className="font-bold text-sm text-[#0F121E]">Sekirite & PIN</p>
+                      <p className="text-xs text-gray-400">Chanje PIN ou</p>
+                    </div>
+                    <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-gray-300`} />
+                  </button>
+                  {showSecurityCard && (
+                    <div className="px-4 pb-4 border-b border-gray-50"><UserSecurityCard /></div>
+                  )}
+
+                  <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                    <div className={`p-2 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
+                      <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-bold text-sm text-[#0F121E]">Verifikasyon KYC</p>
+                      <p className="text-xs text-gray-400">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {user?.kyc?.status === 'APPROVED' ? (
+                        <span className="text-[8px] font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">✓ Done</span>
+                      ) : user?.kyc?.status === 'PENDING' ? (
+                        <span className="text-[8px] font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
+                      ) : (
+                        <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">$25</span>
+                      )}
+                      <ChevronRight size={18} className="text-gray-300" />
+                    </div>
+                  </button>
+
+                  {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') ? (
+                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                      <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-[#0F121E]">Agent Dashboard</p>
+                        <p className="text-xs text-gray-400">Jere kont ajan w lan</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300" />
+                    </button>
+                  ) : user?.agent?.status === 'PENDING' ? (
+                    <div className="w-full flex items-center gap-4 p-5 border-b border-gray-50 opacity-50">
+                      <div className="bg-gray-100 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-gray-400" /></div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-gray-400">Application en cours...</p>
+                        <p className="text-xs text-gray-400">Admin ap revize w</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        if (user?.kyc?.status !== 'APPROVED') {
+                          showToast('Ou dwe verifye kont ou (KYC Approved) anvan ou apliké kòm Ajan.', 'error');
+                          return;
+                        }
+                        const token = localStorage.getItem('token');
+                        try {
+                          const res = await fetch(`${backendUrl}/agents/apply`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` })
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            showToast('Aplikasyon w lan soumèt! Yon admin ap apwouve l. 🚀', 'success');
+                            fetchData();
+                          } else {
+                            showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
+                          }
+                        } catch {
+                          showToast('Erè rezo! Verifye si backend la ap kouri.', 'error');
+                        }
+                      }}
+                      className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors"
+                    >
+                      <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-[#0F121E]">Vin yon Ajan</p>
+                        <p className="text-xs text-gray-400">Requis: KYC Approved</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300" />
+                    </button>
+                  )}
+
+                  <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-gray-50 transition-colors">
+                    <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
+                    <div className="flex-1 text-left">
+                      <p className="font-bold text-sm text-[#0F121E]">Taux & Frè</p>
+                      <p className="text-xs text-gray-400">BRH, P2P, Topup, Retrait</p>
+                    </div>
+                    <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-gray-300`} />
+                  </button>
+                  {showRates && (
+                    <div className="px-5 pb-5 border-t border-gray-50 space-y-2 pt-3">
+                      {[
+                        { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
+                        { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
+                        { label: 'Topup (Depo)', value: '6%', color: 'text-[#0F121E]' },
+                        { label: 'Retrait', value: '2%', color: 'text-[#0F121E]' },
+                      ].map(r => (
+                        <div key={r.label} className="flex justify-between items-center py-1">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{r.label}</span>
+                          <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* LOGOUT */}
+                <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 active:bg-red-100 transition-all">
+                  <LogOut size={18} className="text-red-500" />
+                  <span className="text-red-500 font-black text-sm uppercase">Dekonekte</span>
+                </button>
               </>
             )}
-            {/* 📊 TARIF SYSTÈM NAN - NAN PROFIL SÈLMAN */}
-<div className="mt-8 pt-6 border-t border-black/[0.05]">
-  <h4 className="font-black italic uppercase text-[11px] tracking-widest text-[#8E929B] mb-4">
-    Tarif & Kondisyon Ozama
-  </h4>
-  
-  <div className="bg-[#0F121E]/[0.02] p-5 rounded-[1.8rem] border border-black/[0.03] space-y-3.5">
-    
-    {/* Taux BRH */}
-    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
-      <span className="text-xs font-bold text-black uppercase tracking-tight">Taux BRH (Live)</span>
-      <span className="font-black italic text-xs text-[#00C566] tracking-tight">
-        135.00 HTG
-      </span>
-    </div>
-
-    {/* Frè P2P */}
-    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
-      <span className="text-xs font-bold text-black uppercase tracking-tight">Transfè P2P</span>
-      <span className="text-[9px] font-black uppercase italic bg-green-50 text-green-500 px-2 py-0.5 rounded-md tracking-wider">
-        Gratis 0%
-      </span>
-    </div>
-
-    {/* Frè Topup */}
-    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.03]">
-      <span className="text-xs font-bold text-black uppercase tracking-tight">Topup (Depo)</span>
-      <span className="font-black italic text-xs text-black">6%</span>
-    </div>
-
-    {/* Frè Retrait */}
-    <div className="flex justify-between items-center">
-      <span className="text-xs font-bold text-black uppercase tracking-tight">Retrait (Bak)</span>
-      <span className="font-black italic text-xs text-black">2%</span>
-    </div>
-
-  </div>
-  
-  <p className="text-[9px] text-[#8E929B] italic font-medium mt-3 text-center uppercase tracking-tighter">
-    * Tarif yo ka varye selon mache a ak taux ofisyèl BRH la.
-  </p>
-</div>
           </div>
-        )} 
-        
-      </div>
-      
- 
+        )}
+
       {/* BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50">
         {[
