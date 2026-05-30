@@ -1,11 +1,15 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service'; 
+import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async getDashboardStats() {
     const walletAggregates = await this.prisma.wallet.aggregate({ _sum: { balance: true } });
@@ -91,7 +95,10 @@ export class AdminService {
 }
 
   async reviewKyc(kycId: string, status: 'APPROVED' | 'REJECTED', adminId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    // Capture kyc before transaction for email use after
+    const kycBefore = await this.prisma.kyc.findUnique({ where: { id: kycId } });
+
+    const updatedKyc = await this.prisma.$transaction(async (tx) => {
       // 1. Tcheke si KYC a egziste
       const kyc = await tx.kyc.findUnique({
         where: { id: kycId },
@@ -102,7 +109,7 @@ export class AdminService {
       }
 
       // 2. Mete estati KYC a ajou (APPROVED oswa REJECTED)
-      const updatedKyc = await tx.kyc.update({
+      const updated = await tx.kyc.update({
         where: { id: kycId },
         data: { status },
       });
@@ -116,10 +123,10 @@ export class AdminService {
         if (agentExists) {
           await tx.agent.update({
             where: { userId: kyc.userId },
-            data: { status: 'ACTIVE' }, // Itilize string 'ACTIVE' piske se sa ki nan enum AgentStatus la
+            data: { status: 'ACTIVE' },
           });
         }
-        
+
         await tx.user.update({
           where: { id: kyc.userId },
           data: { role: 'AGENT' },
@@ -130,15 +137,13 @@ export class AdminService {
       let validAdminId = adminId;
 
       if (!adminId || adminId === 'ADMIN-SYS') {
-        // Chèche premye Admin oswa Super Admin reyèl ki nan baz done a pou n mete nan Log la
         const fallbackAdmin = await tx.user.findFirst({
           where: { role: { in: ['SUPER_ADMIN', 'ADMIN'] } },
         });
-        
+
         if (fallbackAdmin) {
           validAdminId = fallbackAdmin.id;
         } else {
-          // Si pa gen okenn admin ditou (pou tès), nou itilize ID moun ki gen KYC a pou evite crash
           validAdminId = kyc.userId;
         }
       }
@@ -154,8 +159,23 @@ export class AdminService {
         },
       });
 
-      return updatedKyc;
+      return updated;
     });
+
+    // Send KYC email outside transaction so failure never rolls back the review
+    if (kycBefore) {
+      const kycUser = await this.prisma.user.findUnique({ where: { id: kycBefore.userId } });
+      if (kycUser) {
+        const name = `${kycBefore.firstName} ${kycBefore.lastName}`;
+        if (status === 'APPROVED') {
+          await this.mailService.sendKycApproved(kycUser.email, name);
+        } else {
+          await this.mailService.sendKycRejected(kycUser.email, name, '');
+        }
+      }
+    }
+
+    return updatedKyc;
   }
 
 
@@ -275,7 +295,13 @@ export class AdminService {
   }
 
   async processManualTransaction(txId: string, status: 'COMPLETED' | 'REJECTED', adminId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    // Capture transaction info before DB changes for email use after
+    const txBefore = await this.prisma.transaction.findUnique({
+      where: { id: txId },
+      include: { receiverWallet: true, senderWallet: true },
+    });
+
+    const updatedTx = await this.prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.findUnique({
         where: { id: txId },
         include: { receiverWallet: true, senderWallet: true },
@@ -321,22 +347,19 @@ export class AdminService {
             });
           }
         }
-      }
-      else if (transaction.type === 'WITHDRAWAL' && transaction.senderWalletId) {
+      } else if (transaction.type === 'WITHDRAWAL' && transaction.senderWalletId) {
         if (Number(transaction.fee) > 0) {
-          const masterWallet = await tx.wallet.findFirst({
-            where: { userId: MASTER_ID }
-          });
+          const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
           if (masterWallet) {
             await tx.wallet.update({
               where: { id: masterWallet.id },
-              data: { balance: { increment: transaction.fee } }
+              data: { balance: { increment: transaction.fee } },
             });
           }
         }
       }
 
-      const updatedTx = await tx.transaction.update({
+      const result = await tx.transaction.update({
         where: { id: txId },
         data: { status: 'COMPLETED' },
       });
@@ -367,7 +390,29 @@ export class AdminService {
         });
       }
 
-      return updatedTx;
+      return result;
     });
+
+    // Send confirmation email outside transaction so failure never rolls back DB changes
+    if (status === 'COMPLETED' && txBefore) {
+      const userId = txBefore.type === 'TOPUP'
+        ? txBefore.receiverWallet?.userId
+        : txBefore.senderWallet?.userId;
+      if (userId) {
+        const txUser = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (txUser) {
+          const name = txUser.name || 'Kliyan';
+          const amount = Number(txBefore.amount);
+          const method = (txBefore as any).method || 'N/A';
+          if (txBefore.type === 'TOPUP') {
+            await this.mailService.sendTopupConfirmed(txUser.email, name, amount, method);
+          } else if (txBefore.type === 'WITHDRAWAL') {
+            await this.mailService.sendWithdrawalConfirmed(txUser.email, name, amount, method);
+          }
+        }
+      }
+    }
+
+    return updatedTx;
   }
 }

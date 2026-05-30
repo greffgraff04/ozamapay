@@ -141,19 +141,13 @@ export class AuthService {
             },
           });
 
-          // =========================
-          // SEND VERIFICATION EMAIL
-          // =========================
-
-          await this.mailService.sendVerificationEmail(
-            newUser.email,
-
-            verificationToken,
-          );
-
           return newUser;
         },
       );
+
+    // Emails sent outside transaction so failures don't roll back user creation
+    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    await this.mailService.sendWelcome(user.email, user.name || 'Kliyan');
 
     // =========================
     // JWT TOKEN
