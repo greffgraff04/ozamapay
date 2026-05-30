@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isCardFrozen, setIsCardFrozen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [minLoadDone, setMinLoadDone] = useState(false);
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
  
@@ -236,6 +237,11 @@ try {
       setFinanceLoading(false);
     }
   };
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinLoadDone(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -526,7 +532,7 @@ try {
     }
   };
  
-  if (loading || !user) return (
+  if (loading || !user || !minLoadDone) return (
     <div className="min-h-screen bg-[#0A0B0F] flex flex-col items-center justify-center gap-6">
       <img src="/logoicon.png" alt="OzamaPay" className="w-16 h-16 object-contain animate-pulse" />
       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>

@@ -57,7 +57,7 @@ function LoginForm() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9FAFB] p-6 font-sans">
       <div className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-100">
         <div className="text-center mb-10">
-          <img src="/logo.png" alt="OzamaPay" style={{ height: '60px', objectFit: 'contain' }} className="mx-auto" />
+          <img src="/ozamapaylogo2.png" alt="OzamaPay" style={{ height: '60px', objectFit: 'contain' }} className="mx-auto" />
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
