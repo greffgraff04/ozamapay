@@ -23,7 +23,13 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://ozamapay.vercel.app', /\.vercel\.app$/],
+    origin: [
+      'http://localhost:3000',
+      'https://ozamapay.vercel.app',
+      'https://ozamapay.com',
+      'https://www.ozamapay.com',
+      /\.vercel\.app$/,
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

@@ -6,9 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class StrowalletService {
   private readonly baseUrl = 'https://strowallet.com/api/bitvcard';
-  
-  private readonly publicKey = 'pub_whaBCkzaSkiBDCkBRc81YmsWgNGZfnmMHFtaxbFu';
-  private readonly secretKey = 'sec_DnkOJ9pucdDpz5mWKrEi5KJQ6BzI9fa0zvyWiKQE';
+  private readonly publicKey = process.env.STROWALLET_PUBLIC_KEY!;
+  private readonly secretKey = process.env.STROWALLET_SECRET_KEY!;
 
   constructor(private prisma: PrismaService) {}
 
@@ -85,8 +84,8 @@ if (!isKycApproved) {
         country: 'HT',
         idType: "PASSPORT", 
         idNumber: user.kyc?.idNumber || ("PASSPORT-" + Math.floor(100000 + Math.random() * 900000)), 
-        idImage: "https://ozamapay.com/assets/mock-id.jpg", 
-        userPhoto: "https://ozamapay.com/assets/mock-photo.jpg"
+        idImage: user.kyc?.idImage || 'https://ozamapay.com/assets/mock-id.jpg',
+        userPhoto: user.kyc?.userPhoto || 'https://ozamapay.com/assets/mock-photo.jpg'
       };
 
       let customerId = '';
@@ -197,10 +196,24 @@ if (!isKycApproved) {
     return await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, include: { wallet: true, virtualCard: true } });
       if (!user || !user.virtualCard || !user.wallet) throw new BadRequestException("Kat la oswa wallet pa egziste.");
-      
-      // 🌟 KOREKSYON: Konvèti Decimal an number isit la tou
+
       const currentBalance = Number(user.wallet.balance);
       if (currentBalance < amountHtg) throw new BadRequestException("Solde HTG insuffisant.");
+
+      const stroRes = await axios.post(
+        `${this.baseUrl}/fund-card/`,
+        {
+          public_key: this.publicKey,
+          secret_key: this.secretKey,
+          card_id: user.virtualCard.cardId,
+          amount: cleanAmountUsd.toString(),
+        },
+        { headers: this.getStroHeaders() },
+      );
+      const stroData = stroRes.data;
+      if (!stroData || stroData.success !== true) {
+        throw new BadRequestException('Rechajman kat echwe: ' + (stroData?.message || 'Erè enkoni'));
+      }
 
       await tx.wallet.update({ where: { userId }, data: { balance: { decrement: amountHtg } } });
 
