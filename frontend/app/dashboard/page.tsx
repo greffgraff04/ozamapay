@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete l nan yon lòt katab
 import { 
-  Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, 
+  Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
-  ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings, 
-  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera
+  ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
+  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X
 } from 'lucide-react';
  
 const PAYMENT_INFO = {
@@ -60,6 +60,7 @@ export default function Dashboard() {
   const [pin, setPin] = useState('');
   
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
+  const [toastFading, setToastFading] = useState(false);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
   const [financeDetails, setFinanceDetails] = useState({
@@ -115,8 +116,15 @@ export default function Dashboard() {
   const withdrawHTG = withdrawIsIntl ? Math.round(Number(withdrawAmount) * exchangeRate) : Number(withdrawAmount);
  
   const showToast = (message: string, type: 'error' | 'success' | 'warning' = 'error') => {
+    setToastFading(false);
     setToast({ message, type });
+    setTimeout(() => setToastFading(true), 3600);
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const closeToast = () => {
+    setToastFading(true);
+    setTimeout(() => { setToast(null); setToastFading(false); }, 350);
   };
  
   const copyToClipboard = (text: string) => {
@@ -255,6 +263,24 @@ try {
     return () => clearInterval(interval);
   }, []);
  
+  useEffect(() => {
+    if (activeTab !== 'home') return;
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => {
+        if (e.isIntersecting) {
+          (e.target as HTMLElement).classList.add('tx-visible');
+          observer.unobserve(e.target);
+        }
+      }),
+      { threshold: 0.1, rootMargin: '0px 0px -10px 0px' }
+    );
+    document.querySelectorAll('.tx-item').forEach((el, i) => {
+      (el as HTMLElement).style.transitionDelay = `${i * 0.07}s`;
+      observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [transactions, activeTab]);
+
   const handlePaymentLogic = async () => {
   if (
     !topUpAmount ||
@@ -546,17 +572,28 @@ try {
       
       {/* TOAST NOTIFICATION */}
       {toast && (
-        <div style={{ backdropFilter: 'blur(20px)', background: 'rgba(15,18,30,0.95)' }}
-          className="fixed top-6 left-4 right-4 z-[999] border border-white/10 text-white px-6 py-5 rounded-[2rem] shadow-2xl animate-in slide-in-from-top duration-300">
-          <div className="flex items-center justify-center gap-3">
-            <Zap size={16} className={toast.type === 'success' ? 'text-green-400' : 'text-[#FF7A00]'} />
-            <span className="font-black italic uppercase text-[10px] tracking-widest">{toast.message}</span>
+        <div
+          style={{
+            backdropFilter: 'blur(20px)',
+            background: 'rgba(15,18,30,0.95)',
+            opacity: toastFading ? 0 : 1,
+            transform: toastFading ? 'translateY(-6px)' : 'translateY(0)',
+            transition: 'opacity 0.35s ease, transform 0.35s ease',
+          }}
+          className="fixed top-6 left-4 right-4 z-[999] border border-white/10 text-white px-4 py-4 rounded-2xl shadow-xl"
+        >
+          <div className="flex items-center gap-3">
+            <Zap size={15} className={`flex-shrink-0 ${toast.type === 'success' ? 'text-green-400' : toast.type === 'warning' ? 'text-yellow-400' : 'text-[#FF7A00]'}`} />
+            <span className="flex-1 font-black italic uppercase text-[10px] tracking-widest leading-relaxed">{toast.message}</span>
+            <button onClick={closeToast} className="flex-shrink-0 p-1.5 rounded-full hover:bg-white/10 active:scale-90 transition-all">
+              <X size={13} className="text-white/50" />
+            </button>
           </div>
         </div>
       )}
  
       {/* HEADER */}
-      <header className="px-8 pt-12 pb-8 flex justify-between items-center">
+      <header className="px-4 pt-4 pb-4 flex justify-between items-center">
         <div className="flex items-center gap-5">
           <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
              {displayName.substring(0, 2).toUpperCase()}
@@ -576,39 +613,42 @@ try {
         </button>
       </header>
  
-      <div className="px-8">
+      <div className="px-4">
         
         {/* --- HOME SECTION --- */}
         {activeTab === 'home' && (
           <div className="animate-in fade-in duration-500">
-            <div className="relative w-full aspect-[1.586/1] bg-cover bg-center bg-no-repeat rounded-none shadow-none overflow-hidden group" 
-                 style={{ backgroundImage: "url('/card.png')" }}>
-              <div className="h-full flex flex-col justify-end p-10 text-white relative z-10">
-                <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                <h2 className="text-5xl font-black tracking-tighter italic">
-                  {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
-                </h2>
+            {/* STICKY HERO: balance card + action buttons */}
+            <div className="sticky top-0 z-40 bg-white -mx-4 px-4 pb-4 pt-1">
+              <div className="relative w-full overflow-hidden rounded-2xl shadow-lg"
+                   style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
+                <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
+                  <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
+                  <h2 className="text-5xl font-black tracking-tighter italic">
+                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
+                  </h2>
+                </div>
+              </div>
+ 
+              {/* QUICK ACTIONS */}
+              <div className="grid grid-cols-4 gap-3 mt-4">
+                {[
+                  { id: 'SEND', icon: <Send size={22} />, tab: 'send' },
+                  { id: 'TOPUP', icon: <PlusCircle size={22} />, tab: 'topup' },
+                  { id: 'RETRAIT', icon: <Banknote size={22} />, tab: 'withdraw' },
+                  { id: 'CARDS', icon: <CreditCard size={22} />, tab: 'cards' }
+                ].map((item) => (
+                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-3 active:scale-95 transition-all">
+                    <div className="w-full aspect-square rounded-[1.8rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                      {item.icon}
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                  </button>
+                ))}
               </div>
             </div>
  
-            {/* QUICK ACTIONS */}
-            <div className="grid grid-cols-4 gap-4 mt-12 mb-12">
-              {[
-                { id: 'SEND', icon: <Send size={22} />, tab: 'send' },
-                { id: 'TOPUP', icon: <PlusCircle size={22} />, tab: 'topup' },
-                { id: 'RETRAIT', icon: <Banknote size={22} />, tab: 'withdraw' },
-                { id: 'CARDS', icon: <CreditCard size={22} />, tab: 'cards' }
-              ].map((item) => (
-                <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-3 active:scale-95 transition-all">
-                  <div className="w-full aspect-square rounded-[1.8rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
-                    {item.icon}
-                  </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
-                </button>
-              ))}
-            </div>
- 
-            <div className="flex justify-between items-end mb-6">
+            <div className="flex justify-between items-end mb-5 mt-6">
               <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
                 <Activity size={18} className="text-[#FF7A00]" /> Recent Activity
               </h3>
@@ -626,7 +666,7 @@ try {
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   return (
-                    <div key={idx} className="group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
+                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
