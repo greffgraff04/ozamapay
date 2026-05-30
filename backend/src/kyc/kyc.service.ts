@@ -28,10 +28,14 @@ export class KycService {
         where: { userId },
       });
 
-    if (existing) {
+    if (existing && existing.status !== 'REJECTED') {
       throw new BadRequestException(
         'Ou deja soumèt KYC ou a',
       );
+    }
+
+    if (existing && existing.status === 'REJECTED') {
+      await this.prisma.kyc.delete({ where: { userId } });
     }
 
     return this.prisma.$transaction(
@@ -107,69 +111,6 @@ export class KycService {
             `Ou bezwen ${feeInHTG} HTG ($25) pou KYC.`,
           );
         }
-
-        // =========================
-        // DEBIT USER
-        // =========================
-        const updatedWallet =
-          await tx.wallet.update({
-            where: { userId },
-
-            data: {
-              balance: {
-                decrement:
-                  feeInHTG,
-              },
-            },
-          });
-
-        // =========================
-        // USER TRANSACTION
-        // =========================
-        const transaction =
-          await tx.transaction.create({
-            data: {
-              reference: `KYC-${Date.now()}`,
-
-              amount: feeInHTG,
-
-              netAmount: feeInHTG,
-
-              type: 'PAYMENT',
-
-              status: 'COMPLETED',
-
-              title: 'Frè KYC',
-
-              description:
-                'Peman KYC $25',
-
-              senderWalletId:
-                wallet.id,
-            },
-          });
-
-        // =========================
-        // USER LEDGER
-        // =========================
-        await tx.ledgerEntry.create({
-          data: {
-            walletId: wallet.id,
-
-            transactionId:
-              transaction.id,
-
-            type: 'DEBIT',
-
-            amount: feeInHTG,
-
-            balanceBefore:
-              wallet.balance,
-
-            balanceAfter:
-              updatedWallet.balance,
-          },
-        });
 
         // =========================
         // CREATE KYC

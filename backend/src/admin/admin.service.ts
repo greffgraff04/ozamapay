@@ -114,8 +114,50 @@ export class AdminService {
         data: { status },
       });
 
-      // 3. Si yo apwouve l, n ap aktive Ajan an epi ba li wòl li
+      // 3. Si yo apwouve l, n ap debite frè KYC a epi aktive Ajan an
       if (status === 'APPROVED') {
+        const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
+        const currentRate = Number(rateEntry?.value || 140);
+        const feeInHTG = 25 * currentRate;
+
+        const userWallet = await tx.wallet.findUnique({ where: { userId: kyc.userId } });
+        if (!userWallet) throw new NotFoundException('Wallet itilizatè a pa jwenn');
+
+        if (Number(userWallet.balance) < feeInHTG) {
+          throw new BadRequestException(
+            `Itilizatè a pa gen ase fon pou frè KYC (${feeInHTG} HTG requis)`,
+          );
+        }
+
+        const updatedUserWallet = await tx.wallet.update({
+          where: { userId: kyc.userId },
+          data: { balance: { decrement: feeInHTG } },
+        });
+
+        const kycTx = await tx.transaction.create({
+          data: {
+            reference: `KYC-${Date.now()}`,
+            amount: feeInHTG,
+            netAmount: feeInHTG,
+            type: 'PAYMENT',
+            status: 'COMPLETED',
+            title: 'Frè KYC',
+            description: 'Peman KYC $25 - Apwouve pa Admin',
+            senderWalletId: userWallet.id,
+          },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: userWallet.id,
+            transactionId: kycTx.id,
+            type: 'DEBIT',
+            amount: feeInHTG,
+            balanceBefore: userWallet.balance,
+            balanceAfter: updatedUserWallet.balance,
+          },
+        });
+
         const agentExists = await tx.agent.findUnique({
           where: { userId: kyc.userId },
         });
