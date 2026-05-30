@@ -10,11 +10,25 @@ export class ImageKitService {
   });
 
   async uploadFile(file: Express.Multer.File, folder: string): Promise<string> {
-    const result = await this.imagekit.upload({
-      file: file.buffer,
-      fileName: `${Date.now()}-${file.originalname}`,
-      folder: `/ozamapay/${folder}`,
+    console.log('ImageKit upload attempt:', {
+      fileName: file.originalname,
+      bufferSize: file.buffer?.length,
+      folder,
+      hasPublicKey: !!process.env.IMAGEKIT_PUBLIC_KEY,
+      hasPrivateKey: !!process.env.IMAGEKIT_PRIVATE_KEY,
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
     });
-    return result.url;
+    try {
+      const result = await this.imagekit.upload({
+        file: file.buffer,
+        fileName: `${Date.now()}-${file.originalname}`,
+        folder: `/ozamapay/${folder}`,
+      });
+      console.log('ImageKit upload success:', result.url);
+      return result.url;
+    } catch (error) {
+      console.error('ImageKit upload FAILED:', error.message);
+      return '';
+    }
   }
 }
