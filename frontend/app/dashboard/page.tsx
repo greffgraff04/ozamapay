@@ -592,34 +592,56 @@ try {
         </div>
       )}
  
-      {/* HEADER */}
-      <header className="px-4 pt-4 pb-4 flex justify-between items-center">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
-             {displayName.substring(0, 2).toUpperCase()}
-             <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
-              <ShieldCheck size={16} className="text-[#FF7A00]" />
+      {/* HEADER - non-home tabs only; home tab has it inside the fixed hero */}
+      {activeTab !== 'home' && (
+        <header className="px-4 pt-4 pb-4 flex justify-between items-center">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
+               {displayName.substring(0, 2).toUpperCase()}
+               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
-            <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+                <ShieldCheck size={16} className="text-[#FF7A00]" />
+              </div>
+              <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+            </div>
           </div>
-        </div>
-        <button className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative">
-          <Bell size={20} className="text-[#0F121E]" />
-          <span className="absolute top-3 right-3 w-2 h-2 bg-[#FF7A00] rounded-full"></span>
-        </button>
-      </header>
+          <button className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative">
+            <Bell size={20} className="text-[#0F121E]" />
+            <span className="absolute top-3 right-3 w-2 h-2 bg-[#FF7A00] rounded-full"></span>
+          </button>
+        </header>
+      )}
  
       <div className="px-4">
         
         {/* --- HOME SECTION --- */}
         {activeTab === 'home' && (
-          <div className="animate-in fade-in duration-500">
-            {/* STICKY HERO: balance card + action buttons */}
-            <div className="sticky top-0 z-40 bg-white -mx-4 px-4 pb-4 pt-1">
+          <div className="animate-in fade-in duration-500" style={{ paddingTop: '420px' }}>
+            {/* FIXED HERO: header + balance card + action buttons */}
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
+              <header className="px-4 pt-4 pb-4 flex justify-between items-center">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
+                     {displayName.substring(0, 2).toUpperCase()}
+                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+                      <ShieldCheck size={16} className="text-[#FF7A00]" />
+                    </div>
+                    <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+                  </div>
+                </div>
+                <button className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative">
+                  <Bell size={20} className="text-[#0F121E]" />
+                  <span className="absolute top-3 right-3 w-2 h-2 bg-[#FF7A00] rounded-full"></span>
+                </button>
+              </header>
+              <div className="px-4 pb-4">
               <div className="relative w-full overflow-hidden rounded-2xl shadow-lg"
                    style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
                 <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
@@ -646,9 +668,11 @@ try {
                   </button>
                 ))}
               </div>
+              </div>
             </div>
  
-            <div className="flex justify-between items-end mb-5 mt-6">
+            <div style={{ height: 'calc(100vh - 420px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div className="flex justify-between items-end mb-5 mt-2">
               <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
                 <Activity size={18} className="text-[#FF7A00]" /> Recent Activity
               </h3>
@@ -692,9 +716,10 @@ try {
                 })
               )}
             </div>
+            </div>
           </div>
         )}
- 
+
         {/* --- HISTORY SECTION --- */}
         {activeTab === 'history' && (
           <div className="animate-in slide-in-from-right duration-500">
