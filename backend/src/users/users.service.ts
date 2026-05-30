@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { KYCStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -125,7 +126,7 @@ export class UserService {
     await this.prisma.user.update({
       where: { id: stringUserId },
       data: {
-        transactionPin: newPin,
+        transactionPin: await bcrypt.hash(newPin, 10),
       },
     });
 

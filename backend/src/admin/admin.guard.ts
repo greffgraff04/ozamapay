@@ -3,11 +3,10 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 @Injectable()
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user; // Sa sipoze soti nan AuthMiddleware ou a
-
-    if (!user || user.role !== 'ADMIN') {
-      throw new ForbiddenException('Ou pa gen dwa akses nan zòn sa a');
+    const req = context.switchToHttp().getRequest();
+    const role = req.user?.role;
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Aksè refize — Admin sèlman');
     }
     return true;
   }

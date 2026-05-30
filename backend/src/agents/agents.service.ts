@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 import {
   AgentTopupDto,
@@ -530,11 +531,9 @@ export class AgentsService {
     }
 
     // VERIFY PIN
-    if (
-      !clientUser.transactionPin ||
-      clientUser.transactionPin !==
-        dto.userPin
-    ) {
+    const agentPinValid = clientUser.transactionPin &&
+      await bcrypt.compare(dto.userPin, clientUser.transactionPin);
+    if (!agentPinValid) {
       throw new BadRequestException(
         'PIN kliyan an enkòrèk.',
       );

@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { NestExpressApplication } from '@nestjs/platform-express'; // 1. Ajoute sa pou sipòte static assets
-import { join } from 'path'; // 2. Ajoute sa pou jere chemen dosye yo
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import helmet from 'helmet';
 
 async function bootstrap() {
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
@@ -19,15 +20,13 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  // Debloke CORS nèt (Bypass Chrome CORS Block) pou Next.js ak aplikasyon mobil lan
+  app.use(helmet());
+
   app.enableCors({
-    origin: (origin, callback) => {
-      // Sa pèmèt nou aksepte nenpòt orijin (localhost, vercel, render) san navigatè a pa bloke credentials
-      callback(null, true);
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true, // Pèmèt Next.js voye cookies/headers yo san lafimen
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    origin: ['http://localhost:3000', 'https://ozamapay.vercel.app', /\.vercel\.app$/],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Render ap toujou voye process.env.PORT, si li pa jwenn li l ap pran 10000 kòm sekou

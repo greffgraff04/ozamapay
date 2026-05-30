@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 
 const FEES = {
@@ -135,7 +136,8 @@ export class WalletService {
     if (!sender) {
       throw new NotFoundException('Itilizatè sa a pa egziste.');
     }
-    if (!sender.transactionPin || sender.transactionPin !== pin) {
+    const pinValid = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
+    if (!pinValid) {
       throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
     }
 
@@ -230,7 +232,8 @@ export class WalletService {
     if (!sender) {
       throw new NotFoundException('Itilizatè sa a pa egziste.');
     }
-    if (!sender.transactionPin || sender.transactionPin !== pin) {
+    const pinValid2 = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
+    if (!pinValid2) {
       throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
     }
 

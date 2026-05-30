@@ -1,8 +1,10 @@
 import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AdminGuard } from './admin.guard';
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -81,7 +83,6 @@ export class AdminController {
     return this.adminService.getPendingRequests();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('transactions/:id/process')
   async processManualTransaction(
     @Param('id') txId: string,
