@@ -348,9 +348,91 @@ export class AdminService {
     if (!req) throw new NotFoundException('Demann finans sa a pa jwenn');
     if (req.status !== 'PENDING') throw new BadRequestException('Demann sa a trete deja');
 
-    return this.prisma.serviceRequest.update({
-      where: { id },
-      data: { status, adminNote: adminNote ?? null },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.serviceRequest.update({
+        where: { id },
+        data: { status, adminNote: adminNote ?? null },
+      });
+
+      let parsed: { mode?: string } = {};
+      try { parsed = JSON.parse(req.details || '{}'); } catch {}
+      const mode = parsed.mode; // 'BUY' or 'SELL'
+
+      const wallet = await tx.wallet.findUnique({ where: { userId: req.userId } });
+
+      if (status === 'COMPLETED') {
+        if (mode === 'BUY' && wallet) {
+          // User paid USD externally → credit equivalent HTG minus fee
+          const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
+          const rate = Number(rateEntry?.value || 140);
+          const amount = Number(req.amount);
+          const fee = Number(req.fee);
+          const creditHTG = (amount - fee) * rate;
+
+          await tx.wallet.update({
+            where: { userId: req.userId },
+            data: { balance: { increment: creditHTG } },
+          });
+
+          await tx.transaction.create({
+            data: {
+              reference: `FIN-BUY-${Date.now()}`,
+              amount: creditHTG,
+              netAmount: creditHTG,
+              fee,
+              type: 'TOPUP',
+              status: 'COMPLETED',
+              title: `Finance ${req.serviceType} - BUY`,
+              description: `Kredi HTG apre apwobasyon demann ${req.serviceType}`,
+              receiverWalletId: wallet.id,
+            },
+          });
+        } else if (mode === 'SELL' && wallet) {
+          // User wants to receive USD → debit the HTG amount from their wallet
+          const amount = Number(req.amount);
+          const fee = Number(req.fee);
+
+          await tx.wallet.update({
+            where: { userId: req.userId },
+            data: { balance: { decrement: amount } },
+          });
+
+          await tx.transaction.create({
+            data: {
+              reference: `FIN-SELL-${Date.now()}`,
+              amount,
+              netAmount: amount - fee,
+              fee,
+              type: 'WITHDRAWAL',
+              status: 'COMPLETED',
+              title: `Finance ${req.serviceType} - SELL`,
+              description: `Debi HTG apre apwobasyon demann ${req.serviceType}`,
+              senderWalletId: wallet.id,
+            },
+          });
+        }
+
+        await tx.notification.create({
+          data: {
+            userId: req.userId,
+            title: 'Finance Request Konfime',
+            message: `Demann ${req.serviceType} ou an apwouve pa admin`,
+            type: 'SUCCESS',
+          },
+        });
+      } else {
+        // REJECTED — nothing was debited on submission, so no refund needed
+        await tx.notification.create({
+          data: {
+            userId: req.userId,
+            title: 'Finance Request Rejte',
+            message: `Demann ${req.serviceType} ou an rejte pa admin`,
+            type: 'ERROR',
+          },
+        });
+      }
+
+      return updated;
     });
   }
 
