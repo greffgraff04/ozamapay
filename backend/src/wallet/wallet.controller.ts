@@ -145,15 +145,28 @@ export class WalletController {
   // KREYE DEMANN FINANCE / SERVICE
   // ======================================================
   @Post('finance-request')
+  @UseInterceptors(FileInterceptor('proofImage', {
+    storage: diskStorage({
+      destination: './uploads/finance',
+      filename: (_, file, cb) => {
+        cb(null, `finance-${Date.now()}${extname(file.originalname)}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+  }))
   async createFinanceRequest(
     @Req() req: any,
-    @Body() body: { serviceType: any; amount: number; details: string },
+    @Body() body: { serviceType: any; amount: string; details: string },
+    @UploadedFile() file?: Express.Multer.File,
   ) {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:10000';
+    const proofImage = file ? `${backendUrl}/uploads/finance/${file.filename}` : undefined;
     return this.walletService.createFinanceRequest(
       req.user.id,
       body.serviceType,
-      body.amount,
+      Number(body.amount),
       body.details,
+      proofImage,
     );
   }
 }

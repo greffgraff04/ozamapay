@@ -60,12 +60,14 @@ export default function Dashboard() {
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
-  const [financeDetails, setFinanceDetails] = useState({ 
-    email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' 
+  const [financeDetails, setFinanceDetails] = useState({
+    email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: ''
   });
   const [selectedFinanceService, setSelectedFinanceService] = useState<any>(null);
   const [receipt, setReceipt] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<number>(135);
 
   // --- NEW KYC STATES (STROWALLET DYNAMIC) ---
   const [showKycForm, setShowKycForm] = useState(false);
@@ -158,11 +160,72 @@ try {
       } catch (err) {
         console.error("auth/me FAILED", err);
       }
+
+      // Fetch live exchange rate for finance tab
+      try {
+        const rateRes = await fetch(`${API_BASE}/rates/USD_HTG`);
+        if (rateRes.ok) {
+          const rateData = await rateRes.json();
+          if (rateData?.value) setExchangeRate(Number(rateData.value));
+        }
+      } catch {
+        // keep default 135
+      }
     } catch (e) {
       console.error("SYNC ERROR:", e);
     } finally {
-      // 🌟 SA SE PI ENPÒTAN AN: Nenpòt sa k pase, nou kanpe loader a pou UI a ka parèt!
       setLoading(false);
+    }
+  };
+
+  const handleFinanceSubmit = async () => {
+    if (!selectedFinanceService || !financeDetails.amount || Number(financeDetails.amount) <= 0) {
+      showToast('Tanpri antre yon montan valid', 'error');
+      return;
+    }
+    if (financeType === 'BUY' && !receipt) {
+      showToast('Ou dwe upload prèv peman ou anvan soumèt', 'error');
+      return;
+    }
+
+    setFinanceLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const details = JSON.stringify({
+        mode: financeType,
+        service: selectedFinanceService.id,
+        email: financeDetails.email,
+        gameId: financeDetails.gameId,
+        gamePack: financeDetails.gamePack,
+        currency: selectedFinanceService.id === 'usdt' ? 'USDT' : 'USD',
+      });
+
+      const formData = new FormData();
+      formData.append('serviceType', selectedFinanceService.id.toUpperCase());
+      formData.append('amount', financeDetails.amount);
+      formData.append('details', details);
+      if (receipt) formData.append('proofImage', receipt);
+
+      const res = await fetch(`${backendUrl}/wallet/finance-request`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Demann ou an voye avèk siksè! Admin ap revize li.', 'success');
+        setSelectedFinanceService(null);
+        setReceipt(null);
+        setFinanceDetails({ email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' });
+        setFinanceType('BUY');
+      } else {
+        showToast(data.message || 'Erè pandan soumisyon an', 'error');
+      }
+    } catch {
+      showToast('Sèvè a pa reponn. Verifye koneksyon ou.', 'error');
+    } finally {
+      setFinanceLoading(false);
     }
   };
 
@@ -947,7 +1010,7 @@ try {
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" value={financeDetails.amount} onChange={(e) => setFinanceDetails({...financeDetails, amount: e.target.value})} />
                 <div className="mt-4 pt-4 border-t border-black/5 flex justify-between">
                     <span className="text-[10px] font-black italic uppercase text-gray-400">Frais Echanj: 6%</span>
-                    <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = 135 HTG</span>
+                    <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = {exchangeRate} HTG</span>
                 </div>
               </div>
               
@@ -965,8 +1028,19 @@ try {
                 </div>
               )}
               
-              <button className="w-full bg-[#0F121E] text-white py-8 rounded-3xl font-black uppercase italic tracking-[0.3em] shadow-xl text-xs active:scale-95 transition-all hover:bg-[#FF7A00]">
-                Execute {selectedFinanceService.name} Order
+              <button
+                onClick={handleFinanceSubmit}
+                disabled={financeLoading}
+                className="w-full bg-[#0F121E] text-white py-8 rounded-3xl font-black uppercase italic tracking-[0.3em] shadow-xl text-xs active:scale-95 transition-all hover:bg-[#FF7A00] disabled:opacity-50 flex items-center justify-center gap-3"
+              >
+                {financeLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Voye demann...
+                  </>
+                ) : (
+                  `Execute ${selectedFinanceService.name} Order`
+                )}
               </button>
             </div>
           </div>

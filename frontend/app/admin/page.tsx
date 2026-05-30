@@ -38,6 +38,8 @@ export default function AdminDashboard() {
 
   const [liquidityRequests, setLiquidityRequests] = useState<any[]>([]);
   const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+  const [financeRequests, setFinanceRequests] = useState<any[]>([]);
+  const [financeRejectNote, setFinanceRejectNote] = useState<Record<string, string>>({});
 
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
@@ -88,12 +90,13 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/liquidity-requests`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/transactions/pending`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/finance-requests`, { headers: H() }).catch(() => null),
       ]);
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
@@ -104,6 +107,8 @@ export default function AdminDashboard() {
       setLiquidityRequests(Array.isArray(liqData) ? liqData : []);
       const pendingTxData = pendingTxRes && pendingTxRes.ok ? await pendingTxRes.json() : [];
       setPendingTransactions(Array.isArray(pendingTxData) ? pendingTxData : []);
+      const financeData = financeRes && financeRes.ok ? await financeRes.json() : [];
+      setFinanceRequests(Array.isArray(financeData) ? financeData : []);
 
       setStats(statsData || {});
       const userList = Array.isArray(usersData) ? usersData : [];
@@ -312,6 +317,8 @@ export default function AdminDashboard() {
 
   const pendingLiquidityCount = liquidityRequests.filter(r => r.status === 'PENDING').length;
 
+  const pendingFinanceCount = financeRequests.filter(r => r.status === 'PENDING').length;
+
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'Itilizatè (Users)', icon: Users },
@@ -319,6 +326,7 @@ export default function AdminDashboard() {
     { id: 'kyc', label: 'KYC Review', icon: ShieldCheck, badge: pendingKyc.length },
     { id: 'liquidity', label: 'Retrè Likidite', icon: Banknote, badge: pendingLiquidityCount || undefined },
     { id: 'transactions', label: 'Topup & Retrè Manuel', icon: FileText, badge: pendingTransactions.length || undefined },
+    { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined },
     { id: 'rates', label: 'Taux & Frè', icon: Activity },
   ];
 
@@ -1129,6 +1137,171 @@ export default function AdminDashboard() {
                     )}
                   </div>
                   <TxTable rows={withdrawals} emptyLabel="Pa gen demann retrè an pant" />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ==================== TAB: FINANCE / EXCHANGE ==================== */}
+          {activeTab === 'finance' && (() => {
+            const SVC_BADGE: Record<string, string> = {
+              WISE: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+              MERU: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+              ZELLE: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+              CASHAPP: 'bg-green-500/10 text-green-400 border-green-500/20',
+              NATCASH: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+              USDT: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+              GAMING: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+            };
+
+            return (
+              <div className="space-y-6">
+                <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                  <div className="p-6 border-b border-white/[0.03] flex items-center justify-between">
+                    <div>
+                      <h3 className="font-black text-xs uppercase tracking-widest text-white/80">
+                        {financeRequests.length} Demann Finance / Exchange
+                      </h3>
+                      <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mt-0.5">
+                        Revize ak trete demann Wise, Zelle, USDT, Gaming ak lòt sèvis
+                      </p>
+                    </div>
+                    {pendingFinanceCount > 0 && (
+                      <span className="bg-[#FF6B00] text-white text-[9px] font-black px-2.5 py-1 rounded-lg">
+                        {pendingFinanceCount} an pant
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/[0.03]">
+                          {['Kliyan', 'Email', 'Sèvis', 'Montan', 'Frè', 'Mode', 'Detay', 'Prèv', 'Estati', 'Dat', 'Aksyon'].map(h => (
+                            <th key={h} className="px-5 py-4 text-[9px] font-black uppercase tracking-widest text-white/30">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {financeRequests.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="text-center py-16 text-white/20 text-xs font-mono uppercase tracking-widest">
+                              Pa gen demann finance pou kounye a
+                            </td>
+                          </tr>
+                        ) : (
+                          financeRequests.map((req: any) => {
+                            let parsedDetails: any = {};
+                            try { parsedDetails = req.details ? JSON.parse(req.details) : {}; } catch {}
+                            return (
+                              <tr key={req.id} className="border-b border-white/[0.01] hover:bg-white/[0.01] transition">
+                                <td className="px-5 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-white/[0.02] border border-white/[0.05] flex items-center justify-center font-black text-[#FF6B00] text-xs uppercase">
+                                      {(req.user?.name || req.user?.email)?.[0]}
+                                    </div>
+                                    <span className="font-bold text-xs text-white/90">{req.user?.name || 'Anonim'}</span>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 text-white/40 text-xs font-mono">{req.user?.email}</td>
+                                <td className="px-5 py-4">
+                                  <span className={`text-[8px] font-mono font-black px-2 py-0.5 rounded-md border uppercase ${SVC_BADGE[req.serviceType] || 'bg-white/[0.03] text-white/60 border-white/[0.05]'}`}>
+                                    {req.serviceType}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 font-mono font-black text-xs text-[#FF6B00] italic">
+                                  {Number(req.amount).toLocaleString('fr-FR')}
+                                  <span className="block text-[8px] text-white/30 font-normal not-italic">
+                                    Frè: {Number(req.fee).toLocaleString('fr-FR')}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 font-mono text-xs text-white/50">
+                                  {Number(req.fee).toLocaleString('fr-FR')}
+                                </td>
+                                <td className="px-5 py-4">
+                                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-md ${parsedDetails.mode === 'BUY' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                    {parsedDetails.mode || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 text-white/40 text-[10px] font-mono max-w-[140px]">
+                                  {parsedDetails.email && <div className="truncate">{parsedDetails.email}</div>}
+                                  {parsedDetails.gameId && <div className="truncate text-white/30">ID: {parsedDetails.gameId}</div>}
+                                </td>
+                                <td className="px-5 py-4">
+                                  {req.proofImage ? (
+                                    <a href={req.proofImage} target="_blank" rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 bg-white/[0.03] hover:bg-[#FF6B00]/10 border border-white/[0.06] hover:border-[#FF6B00]/30 text-white/60 hover:text-[#FF6B00] px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition">
+                                      <FileText size={10} /> Wè
+                                    </a>
+                                  ) : (
+                                    <span className="text-white/20 text-[9px] font-mono">—</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-4">
+                                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                    req.status === 'COMPLETED' ? 'bg-green-500/10 text-green-400'
+                                    : req.status === 'REJECTED' ? 'bg-red-500/10 text-red-400'
+                                    : 'bg-[#FF6B00]/10 text-[#FF6B00]'
+                                  }`}>
+                                    {req.status}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 text-white/30 text-[9px] font-mono whitespace-nowrap">
+                                  {new Date(req.createdAt).toLocaleDateString('fr-FR')}
+                                </td>
+                                <td className="px-5 py-4">
+                                  {req.status === 'PENDING' && (
+                                    <div className="flex flex-col gap-1.5 min-w-[140px]">
+                                      <button
+                                        onClick={async () => {
+                                          const res = await fetch(`${API}/admin/finance-requests/${req.id}/process`, {
+                                            method: 'PATCH', headers: H(),
+                                            body: JSON.stringify({ status: 'COMPLETED' }),
+                                          });
+                                          const data = await res.json();
+                                          if (res.ok) { showToast('✅ Demann finans apwouve'); await fetchData(); }
+                                          else { showToast(data.message || 'Erè apwobasyon', 'error'); }
+                                        }}
+                                        className="bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition"
+                                      >
+                                        Apwouve
+                                      </button>
+                                      <div className="flex gap-1">
+                                        <input
+                                          type="text"
+                                          placeholder="Rezon rejet..."
+                                          value={financeRejectNote[req.id] || ''}
+                                          onChange={(e) => setFinanceRejectNote(prev => ({ ...prev, [req.id]: e.target.value }))}
+                                          className="flex-1 bg-white/[0.02] border border-white/[0.06] rounded-lg px-2 py-1 text-[9px] text-white/70 outline-none focus:border-red-500/30 placeholder:text-white/20 min-w-0"
+                                        />
+                                        <button
+                                          onClick={async () => {
+                                            const res = await fetch(`${API}/admin/finance-requests/${req.id}/process`, {
+                                              method: 'PATCH', headers: H(),
+                                              body: JSON.stringify({ status: 'REJECTED', adminNote: financeRejectNote[req.id] || '' }),
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok) {
+                                              showToast('Demann rejte ❌');
+                                              setFinanceRejectNote(prev => { const n = { ...prev }; delete n[req.id]; return n; });
+                                              await fetchData();
+                                            } else { showToast(data.message || 'Erè rejet', 'error'); }
+                                          }}
+                                          className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition shrink-0"
+                                        >
+                                          Rejte
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             );

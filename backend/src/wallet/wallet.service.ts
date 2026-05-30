@@ -484,14 +484,21 @@ export class WalletService {
     serviceType: any,
     amount: number,
     details: string,
+    proofImage?: string,
   ) {
+    // HTG services get 2% fee, USD/USDT services get 6% fee
+    const isHtgService = serviceType === 'NATCASH';
+    const feeRate = isHtgService ? FEES.WITHDRAW : FEES.TOPUP;
+    const fee = amount * feeRate;
+
     return this.prisma.serviceRequest.create({
       data: {
         userId,
         serviceType,
         amount,
-        fee: 0,
+        fee,
         details,
+        proofImage: proofImage ?? null,
         status: 'PENDING',
       },
     });

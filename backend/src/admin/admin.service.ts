@@ -294,6 +294,24 @@ export class AdminService {
     });
   }
 
+  async getFinanceRequests() {
+    return this.prisma.serviceRequest.findMany({
+      include: { user: { include: { wallet: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async processFinanceRequest(id: string, status: 'COMPLETED' | 'REJECTED', adminNote?: string) {
+    const req = await this.prisma.serviceRequest.findUnique({ where: { id } });
+    if (!req) throw new NotFoundException('Demann finans sa a pa jwenn');
+    if (req.status !== 'PENDING') throw new BadRequestException('Demann sa a trete deja');
+
+    return this.prisma.serviceRequest.update({
+      where: { id },
+      data: { status, adminNote: adminNote ?? null },
+    });
+  }
+
   async processManualTransaction(txId: string, status: 'COMPLETED' | 'REJECTED', adminId: string) {
     // Capture transaction info before DB changes for email use after
     const txBefore = await this.prisma.transaction.findUnique({

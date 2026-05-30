@@ -359,6 +359,7 @@ enum ServiceType {
   MERU
   ZELLE
   CASHAPP
+  NATCASH
   USDT
   GAMING
 }

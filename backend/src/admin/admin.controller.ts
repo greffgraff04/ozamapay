@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
@@ -76,6 +76,20 @@ export class AdminController {
     @Body() body: { adminNote?: string },
   ) {
     return this.adminService.rejectLiquidityRequest(id, body.adminNote);
+  }
+
+  @Get('finance-requests')
+  async getFinanceRequests() {
+    return this.adminService.getFinanceRequests();
+  }
+
+  @Patch('finance-requests/:id/process')
+  @HttpCode(HttpStatus.OK)
+  async processFinanceRequest(
+    @Param('id') id: string,
+    @Body() body: { status: 'COMPLETED' | 'REJECTED'; adminNote?: string },
+  ) {
+    return this.adminService.processFinanceRequest(id, body.status, body.adminNote);
   }
 
   @Get('transactions/pending')
