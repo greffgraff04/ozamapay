@@ -7,12 +7,12 @@
   "theme_color": "#f97316",
   "icons": [
     {
-      "src": "/incon.png",
+      "src": "/faveiconozamapay.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/incon.png",
+      "src": "/faveiconozamapay.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <img src="/ozamapaylogo2.png" alt="OzamaPay" style={{ height: '50px', objectFit: 'contain' }} className="mx-auto" />
+          <img src="/ozamapaylogo2.png" alt="OzamaPay" style={{ height: '120px', objectFit: 'contain', width: 'auto' }} className="mx-auto" />
         </div>
 
         <div className="bg-[#111318] border border-white/[0.06] rounded-3xl p-8">

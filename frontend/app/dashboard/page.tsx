@@ -534,7 +534,7 @@ try {
  
   if (loading || !user || !minLoadDone) return (
     <div className="min-h-screen bg-[#0A0B0F] flex flex-col items-center justify-center gap-6">
-      <img src="/logoicon.png" alt="OzamaPay" className="w-16 h-16 object-contain animate-pulse" />
+      <img src="/logoicon.png" alt="OzamaPay" className="w-44 h-44 object-contain animate-pulse" />
       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
     </div>
   );

@@ -13,8 +13,14 @@ export const metadata = {
   icons: {
     icon: "/faveiconozamapay.png",
     apple: "/faveiconozamapay.png",
+    shortcut: "/faveiconozamapay.png",
   },
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black',
+    title: 'OZAMAPAY',
+  },
   openGraph: {
     title: "OZAMAPAY",
     description: "Financial operating system for Haiti and the diaspora",
