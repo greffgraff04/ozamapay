@@ -527,9 +527,9 @@ try {
   };
  
   if (loading || !user) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="font-black italic text-[#0F121E] text-2xl uppercase tracking-[0.3em]">OZAMA...</div>
+    <div className="min-h-screen bg-[#0A0B0F] flex flex-col items-center justify-center gap-6">
+      <img src="/logoicon.png" alt="OzamaPay" className="w-16 h-16 object-contain animate-pulse" />
+      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
     </div>
   );
  

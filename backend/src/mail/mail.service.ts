@@ -22,7 +22,7 @@ export class MailService {
         <!-- Header -->
         <tr>
           <td style="background:#1A1A2E;padding:32px 40px;text-align:center;">
-            <span style="font-size:26px;font-weight:900;letter-spacing:2px;color:#D4630A;">OZAMA</span><span style="font-size:26px;font-weight:900;letter-spacing:2px;color:#ffffff;">PAY</span>
+            <img src="https://ozamapay.com/logo.png" alt="OZAMAPAY" style="height:50px;object-fit:contain;display:block;margin:0 auto;" />
           </td>
         </tr>
 

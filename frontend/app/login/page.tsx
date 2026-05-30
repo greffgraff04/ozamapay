@@ -57,8 +57,7 @@ function LoginForm() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9FAFB] p-6 font-sans">
       <div className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-100">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black italic tracking-tighter text-black uppercase">OZAMA PAY</h1>
-          <div className="h-1 w-12 bg-[#FF7A00] mx-auto mt-2 rounded-full" />
+          <img src="/logo.png" alt="OzamaPay" style={{ height: '60px', objectFit: 'contain' }} className="mx-auto" />
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -77,7 +76,7 @@ function LoginForm() {
             placeholder="EMAIL"
             value={email}
             required
-            className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
+            className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm text-gray-900"
             onChange={(e) => setEmail(e.target.value)}
           />
           <div>
@@ -86,7 +85,7 @@ function LoginForm() {
               placeholder="PASSWORD"
               value={password}
               required
-              className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
+              className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm text-gray-900"
               onChange={(e) => setPassword(e.target.value)}
             />
             <div className="text-right mt-2">

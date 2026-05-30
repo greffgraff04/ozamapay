@@ -11,8 +11,8 @@ export const metadata = {
   title: "OZAMAPAY - Fintech Haiti",
   description: "Financial operating system for Haiti and the diaspora. Fast, secure, and borderless payments.",
   icons: {
-    icon: "/incon.png",
-    apple: "/incon.png",
+    icon: "/faveiconozamapay.png",
+    apple: "/faveiconozamapay.png",
   },
   manifest: "/manifest.json",
   openGraph: {

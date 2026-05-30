@@ -70,9 +70,7 @@ function ResetPasswordForm() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <span className="text-3xl font-black tracking-[0.15em] text-[#FF6B00]">OZAMA</span>
-          <span className="text-3xl font-black tracking-[0.15em] text-white">PAY</span>
-          <div className="h-0.5 w-10 bg-[#FF6B00] mx-auto mt-3 rounded-full" />
+          <img src="/logo.png" alt="OzamaPay" style={{ height: '50px', objectFit: 'contain' }} className="mx-auto" />
         </div>
 
         <div className="bg-[#111318] border border-white/[0.06] rounded-3xl p-8">
