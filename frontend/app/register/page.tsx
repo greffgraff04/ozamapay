@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -7,25 +7,32 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [agentCode, setAgentCode] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) setAgentCode(ref);
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Li varyab Vercel la, si l pa jwenn li li pran localhost kòm sekirite
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      'http://localhost:10000';
 
     try {
-      // Itilize dinamik URL avèk bèl ti backticks yo
       const res = await fetch(`${backendUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, agentCode: agentCode || undefined }),
       });
 
       const data = await res.json();
-
       if (res.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -49,6 +56,17 @@ export default function RegisterPage() {
           <p className="text-[#8E929B] text-xs font-bold uppercase italic mt-4">Kreye yon kont gratis</p>
         </div>
 
+        {/* BADGE REFERRAL */}
+        {agentCode && (
+          <div className="bg-[#FFF6F0] border border-[#FF7A00]/20 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#FF7A00] rounded-xl flex items-center justify-center text-white text-xs font-black">✓</div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-[#FF7A00] tracking-widest">Referral Aktif</p>
+              <p className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Kòd: {agentCode}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleRegister} className="space-y-4">
           {error && (
             <div className="bg-red-50 text-red-500 text-[10px] p-4 rounded-2xl text-center font-black uppercase italic border border-red-100">
@@ -61,13 +79,11 @@ export default function RegisterPage() {
             className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
             onChange={(e) => setName(e.target.value)}
           />
-
           <input
             type="email" placeholder="EMAIL" value={email} required
             className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
             onChange={(e) => setEmail(e.target.value)}
           />
-
           <input
             type="password" placeholder="MODPAS" value={password} required
             className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"

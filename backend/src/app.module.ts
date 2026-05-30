@@ -13,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { StrowalletModule } from './strowallet/strowallet.module';
 import { AgentsModule } from './agents/agents.module';
 import { CommissionsModule } from './commissions/commissions.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CommissionsModule } from './commissions/commissions.module';
     UsersModule,
     AuthModule,
     WalletModule,
+    MailModule,
     KycModule,
     AdminModule,
     RatesModule,

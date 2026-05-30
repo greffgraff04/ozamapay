@@ -10,7 +10,8 @@ export function middleware(request: NextRequest) {
   const isProtected =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/kyc');
+    pathname.startsWith('/kyc') ||
+    pathname.startsWith('/agent-dashboard');
 
   // 1. Pa gen token epi l ap eseye antre nan paj sekirize -> Voye l sou /login
   if (!token && isProtected) {
@@ -36,5 +37,6 @@ export const config = {
     '/dashboard/:path*',
     '/admin/:path*',
     '/kyc/:path*',
+    '/agent-dashboard/:path*',
   ],
 };

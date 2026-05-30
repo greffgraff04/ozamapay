@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ozamapay-backend.onrender.com';
+const API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'http://localhost:10000';
+
+
 const TIMEOUT = Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000;
 
 export const apiClient = axios.create({

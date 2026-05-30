@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,18 +18,66 @@ export class AgentsService {
   ) {}
 
   // ========================================
+  // CREATE LIQUIDITY REQUEST
+  // ========================================
+  async createLiquidityRequest(
+    userId: string,
+    amount: number,
+    method: 'MONCASH' | 'ZELLE' | 'CASH' | 'BANK',
+    accountInfo: string,
+  ) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { userId },
+      include: { wallet: true },
+    });
+
+    if (!agent) {
+      throw new BadRequestException('Agent pa jwenn');
+    }
+
+    if (agent.status !== 'ACTIVE') {
+      throw new BadRequestException('Agent pa apwouve');
+    }
+
+    if (Number(agent.wallet?.balance || 0) < amount) {
+      throw new BadRequestException(
+        'AgentWallet balance ensifizan pou demand sa a',
+      );
+    }
+
+    return this.prisma.liquidityRequest.create({
+      data: {
+        agentId: agent.id,
+        amount,
+        method,
+        accountInfo,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  // ========================================
+  // GET MY LIQUIDITY REQUESTS
+  // ========================================
+  async getMyLiquidityRequests(userId: string) {
+    const agent = await this.prisma.agent.findUnique({ where: { userId } });
+    if (!agent) throw new BadRequestException('Agent pa jwenn');
+    return this.prisma.liquidityRequest.findMany({
+      where: { agentId: agent.id },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // ========================================
   // APPLY AS AGENT
   // ========================================
-
   async applyAsAgent(
     userId: string,
     businessName?: string,
   ) {
     const existing =
       await this.prisma.agent.findUnique({
-        where: {
-          userId,
-        },
+        where: { userId },
       });
 
     if (existing) {
@@ -69,15 +118,12 @@ export class AgentsService {
   // ========================================
   // GET MY DASHBOARD
   // ========================================
-
   async getMyAgentDashboard(
     userId: string,
   ) {
     const agent =
       await this.prisma.agent.findUnique({
-        where: {
-          userId,
-        },
+        where: { userId },
 
         include: {
           wallet: true,
@@ -98,23 +144,18 @@ export class AgentsService {
       );
     }
 
-    return {
-      agent,
-    };
+    return { agent };
   }
 
   // ========================================
   // GET COMMISSIONS
   // ========================================
-
   async getMyCommissions(
     userId: string,
   ) {
     const agent =
       await this.prisma.agent.findUnique({
-        where: {
-          userId,
-        },
+        where: { userId },
       });
 
     if (!agent) {
@@ -135,9 +176,8 @@ export class AgentsService {
   }
 
   // ========================================
-  // AGENT WITHDRAW COMMISSION
+  // WITHDRAW AGENT COMMISSION
   // ========================================
-
   async withdrawCommission(
     userId: string,
     amount: number,
@@ -146,9 +186,7 @@ export class AgentsService {
       async (tx) => {
         const agent =
           await tx.agent.findUnique({
-            where: {
-              userId,
-            },
+            where: { userId },
 
             include: {
               wallet: true,
@@ -161,13 +199,12 @@ export class AgentsService {
           );
         }
 
-        const currentBalance = Number(
-          agent.wallet?.balance || 0,
-        );
+        const currentBalance =
+          Number(
+            agent.wallet?.balance || 0,
+          );
 
-        if (
-          currentBalance < amount
-        ) {
+        if (currentBalance < amount) {
           throw new BadRequestException(
             'Balance insuffisant',
           );
@@ -175,9 +212,7 @@ export class AgentsService {
 
         const userWallet =
           await tx.wallet.findUnique({
-            where: {
-              userId,
-            },
+            where: { userId },
           });
 
         if (!userWallet) {
@@ -186,6 +221,7 @@ export class AgentsService {
           );
         }
 
+        // DEBIT AGENT
         await tx.agentWallet.update({
           where: {
             agentId: agent.id,
@@ -198,10 +234,9 @@ export class AgentsService {
           },
         });
 
+        // CREDIT USER
         await tx.wallet.update({
-          where: {
-            userId,
-          },
+          where: { userId },
 
           data: {
             balance: {
@@ -221,13 +256,13 @@ export class AgentsService {
   // ========================================
   // AGENT TOPUP USER
   // ========================================
-
   async topupUser(
     agentUserId: string,
     dto: AgentTopupDto,
   ) {
     return this.prisma.$transaction(
       async (tx) => {
+        // VERIFY AGENT
         const agent =
           await tx.agent.findUnique({
             where: {
@@ -253,26 +288,48 @@ export class AgentsService {
           );
         }
 
+        // VERIFY CLIENT EMAIL
+        if (!dto.email) {
+          throw new BadRequestException(
+            'Email kliyan an obligatwa',
+          );
+        }
+
+        // FIND CLIENT
+        const clientUser =
+          await tx.user.findUnique({
+            where: {
+              email: dto.email
+                .toLowerCase()
+                .trim(),
+            },
+          });
+
+        if (!clientUser) {
+          throw new NotFoundException(
+            'Kliyan an pa jwenn',
+          );
+        }
+
+        // FIND CLIENT WALLET
         const userWallet =
           await tx.wallet.findUnique({
             where: {
-              userId: dto.userId,
+              userId: clientUser.id,
             },
           });
 
         if (!userWallet) {
           throw new BadRequestException(
-            'Wallet user pa jwenn',
+            'Wallet kliyan an pa jwenn',
           );
         }
 
-        const amount =
-          Number(dto.amount);
+        const amount = Number(
+          dto.amount,
+        );
 
-        // =========================
         // FEES
-        // =========================
-
         const totalFee =
           amount * 0.06;
 
@@ -285,13 +342,11 @@ export class AgentsService {
         const finalAmount =
           amount - totalFee;
 
-        // =========================
         // VERIFY AGENT BALANCE
-        // =========================
-
         if (
           Number(
-            agent.wallet?.balance || 0,
+            agent.wallet?.balance ||
+              0,
           ) < amount
         ) {
           throw new BadRequestException(
@@ -299,10 +354,7 @@ export class AgentsService {
           );
         }
 
-        // =========================
         // DEBIT AGENT
-        // =========================
-
         await tx.agentWallet.update({
           where: {
             agentId: agent.id,
@@ -315,13 +367,10 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // CREDIT USER
-        // =========================
-
         await tx.wallet.update({
           where: {
-            userId: dto.userId,
+            userId: clientUser.id,
           },
 
           data: {
@@ -332,10 +381,7 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // UPDATE AGENT STATS
-        // =========================
-
         await tx.agent.update({
           where: {
             id: agent.id,
@@ -353,10 +399,7 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // CREDIT AGENT COMMISSION
-        // =========================
-
         await tx.agentWallet.update({
           where: {
             agentId: agent.id,
@@ -370,10 +413,7 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // TRANSACTION
-        // =========================
-
         const transaction =
           await tx.transaction.create({
             data: {
@@ -394,17 +434,14 @@ export class AgentsService {
                 'Agent Topup',
 
               description:
-                'Topup via agent',
+                `Topup via agent pou ${dto.email}`,
 
               receiverWalletId:
                 userWallet.id,
             },
           });
 
-        // =========================
         // COMMISSION LOG
-        // =========================
-
         await tx.commission.create({
           data: {
             agentId: agent.id,
@@ -421,17 +458,11 @@ export class AgentsService {
 
         return {
           success: true,
-
           amount,
-
           fee: totalFee,
-
           agentCommission,
-
           ozamaRevenue,
-
-          received:
-            finalAmount,
+          received: finalAmount,
         };
       },
     );
@@ -440,91 +471,126 @@ export class AgentsService {
   // ========================================
   // AGENT WITHDRAW USER
   // ========================================
-
   async withdrawForUser(
     agentUserId: string,
     dto: AgentWithdrawDto,
   ) {
+    // VERIFY AGENT
+    const agent =
+      await this.prisma.agent.findUnique(
+        {
+          where: {
+            userId: agentUserId,
+          },
+
+          include: {
+            wallet: true,
+          },
+        },
+      );
+
+    if (!agent) {
+      throw new BadRequestException(
+        'Agent pa jwenn',
+      );
+    }
+
+    if (
+      agent.status !== 'ACTIVE'
+    ) {
+      throw new BadRequestException(
+        'Agent pa apwouve',
+      );
+    }
+
+    // VERIFY EMAIL
+    if (!dto.email) {
+      throw new BadRequestException(
+        'Email kliyan an obligatwa',
+      );
+    }
+
+    // FIND CLIENT
+    const clientUser =
+      await this.prisma.user.findUnique(
+        {
+          where: {
+            email:
+              dto.email
+                .toLowerCase()
+                .trim(),
+          },
+        },
+      );
+
+    if (!clientUser) {
+      throw new NotFoundException(
+        'Kliyan sa a pa egziste.',
+      );
+    }
+
+    // VERIFY PIN
+    if (
+      !clientUser.transactionPin ||
+      clientUser.transactionPin !==
+        dto.userPin
+    ) {
+      throw new BadRequestException(
+        'PIN kliyan an enkòrèk.',
+      );
+    }
+
+    // FIND WALLET
+    const userWallet =
+      await this.prisma.wallet.findUnique(
+        {
+          where: {
+            userId: clientUser.id,
+          },
+        },
+      );
+
+    if (!userWallet) {
+      throw new BadRequestException(
+        'Wallet kliyan an pa jwenn',
+      );
+    }
+
+    const amount = Number(
+      dto.amount,
+    );
+
+    // FEES
+    const totalFee =
+      amount * 0.02;
+
+    const agentCommission =
+      amount * 0.0075;
+
+    const ozamaRevenue =
+      amount * 0.0125;
+
+    const totalDebit =
+      amount + totalFee;
+
+    // VERIFY USER BALANCE
+    if (
+      Number(userWallet.balance) <
+      totalDebit
+    ) {
+      throw new BadRequestException(
+        'Balans kliyan an ensifizan.',
+      );
+    }
+
+    // TRANSACTION
     return this.prisma.$transaction(
       async (tx) => {
-        const agent =
-          await tx.agent.findUnique({
-            where: {
-              userId: agentUserId,
-            },
-
-            include: {
-              wallet: true,
-            },
-          });
-
-        if (!agent) {
-          throw new BadRequestException(
-            'Agent pa jwenn',
-          );
-        }
-
-        if (
-          agent.status !== 'ACTIVE'
-        ) {
-          throw new BadRequestException(
-            'Agent pa apwouve',
-          );
-        }
-
-        const userWallet =
-          await tx.wallet.findUnique({
-            where: {
-              userId: dto.userId,
-            },
-          });
-
-        if (!userWallet) {
-          throw new BadRequestException(
-            'Wallet user pa jwenn',
-          );
-        }
-
-        const amount =
-          Number(dto.amount);
-
-        // =========================
-        // FEES
-        // =========================
-
-        const totalFee =
-          amount * 0.02;
-
-        const agentCommission =
-          amount * 0.0075;
-
-        const ozamaRevenue =
-          amount * 0.0125;
-
-        const totalDebit =
-          amount + totalFee;
-
-        // =========================
-        // VERIFY USER BALANCE
-        // =========================
-
-        if (
-          Number(
-            userWallet.balance,
-          ) < totalDebit
-        ) {
-          throw new BadRequestException(
-            'Balance insuffisant',
-          );
-        }
-
-        // =========================
         // DEBIT USER
-        // =========================
-
         await tx.wallet.update({
           where: {
-            userId: dto.userId,
+            userId:
+              clientUser.id,
           },
 
           data: {
@@ -535,10 +601,7 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // CREDIT AGENT
-        // =========================
-
         await tx.agentWallet.update({
           where: {
             agentId: agent.id,
@@ -553,10 +616,7 @@ export class AgentsService {
           },
         });
 
-        // =========================
         // UPDATE STATS
-        // =========================
-
         await tx.agent.update({
           where: {
             id: agent.id,
@@ -576,18 +636,17 @@ export class AgentsService {
           },
         });
 
-        // =========================
-        // TRANSACTION
-        // =========================
-
+        // CREATE TRANSACTION
         const transaction =
           await tx.transaction.create({
             data: {
               reference: `AW-${Date.now()}`,
 
-              type: 'WITHDRAWAL',
+              type:
+                'WITHDRAWAL',
 
-              status: 'COMPLETED',
+              status:
+                'COMPLETED',
 
               amount,
 
@@ -600,17 +659,14 @@ export class AgentsService {
                 'Agent Withdraw',
 
               description:
-                'Retrait via agent',
+                `Retrait via agent pou ${dto.email}`,
 
               senderWalletId:
                 userWallet.id,
             },
           });
 
-        // =========================
         // COMMISSION LOG
-        // =========================
-
         await tx.commission.create({
           data: {
             agentId: agent.id,
@@ -618,7 +674,8 @@ export class AgentsService {
             transactionId:
               transaction.id,
 
-            type: 'WITHDRAWAL',
+            type:
+              'WITHDRAWAL',
 
             amount:
               agentCommission,
@@ -627,15 +684,10 @@ export class AgentsService {
 
         return {
           success: true,
-
           amount,
-
           fee: totalFee,
-
           agentCommission,
-
           ozamaRevenue,
-
           debited:
             totalDebit,
         };

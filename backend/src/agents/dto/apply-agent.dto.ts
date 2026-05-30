@@ -1,23 +1,18 @@
 import {
-  IsNotEmpty,
-  IsNumber,
-  IsPositive,
+  IsString,
+  IsNumberString,
+  Length,
+  IsEmail,
 } from 'class-validator';
 
-export class AgentTopupDto {
-  @IsNotEmpty()
-  userId: string;
-
-  @IsNumber()
-  @IsPositive()
-  amount: number;
-}
-
 export class AgentWithdrawDto {
-  @IsNotEmpty()
-  userId: string;
+  @IsEmail()
+  email: string;
 
-  @IsNumber()
-  @IsPositive()
-  amount: number;
+  @IsNumberString()
+  amount: string;
+
+  @IsString()
+  @Length(4, 6)
+  userPin: string;
 }

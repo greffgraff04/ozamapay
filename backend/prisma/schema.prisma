@@ -7,6 +7,311 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String?
+  phone       String?
+  role        UserRole @default(USER)
+  isSuspended Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactionPin String?
+
+  referredByAgentId String?
+  referredByAgent   Agent?  @relation("AgentReferrals", fields: [referredByAgentId], references: [id])
+
+  adminLogs       AdminActionLog[]
+  agent           Agent?
+  kyc             Kyc?
+  notifications   Notification[]
+  serviceRequests ServiceRequest[]
+  topups          TopUpRequest[]
+  virtualCard     VirtualCard?
+  wallet          Wallet?
+  withdrawals     WithdrawalRequest[]
+  emailVerified Boolean @default(false)
+
+  emailVerificationToken String?
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+  emailVerifiedAt DateTime?
+
+  @@index([email])
+  @@index([role])
+}
+
+model Wallet {
+  id                   String        @id @default(uuid())
+  userId               String        @unique
+  balance              Decimal       @default(0.00) @db.Decimal(18, 2)
+  currency             String        @default("HTG")
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  ledgerEntries        LedgerEntry[]
+  receivedTransactions Transaction[] @relation("ReceiverTransactions")
+  sentTransactions     Transaction[] @relation("SenderTransactions")
+  user                 User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Transaction {
+  id               String            @id @default(uuid())
+  reference        String            @unique
+  senderWalletId   String?
+  receiverWalletId String?
+  amount           Decimal           @db.Decimal(18, 2)
+  fee              Decimal           @default(0.00) @db.Decimal(18, 2)
+  netAmount        Decimal           @db.Decimal(18, 2)
+  type             TransactionType
+  status           TransactionStatus @default(PENDING)
+  method           String?
+  title            String?
+  description      String?
+  proofImage       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  commissions      Commission[]
+  ledgerEntries    LedgerEntry[]
+  receiverWallet   Wallet?           @relation("ReceiverTransactions", fields: [receiverWalletId], references: [id])
+  senderWallet     Wallet?           @relation("SenderTransactions", fields: [senderWalletId], references: [id])
+
+  @@index([reference])
+  @@index([status])
+  @@index([type])
+}
+
+model LedgerEntry {
+  id            String      @id @default(uuid())
+  walletId      String
+  transactionId String
+  type          LedgerType
+  amount        Decimal     @db.Decimal(18, 2)
+  balanceBefore Decimal     @db.Decimal(18, 2)
+  balanceAfter  Decimal     @db.Decimal(18, 2)
+  description   String?
+  createdAt     DateTime    @default(now())
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  wallet        Wallet      @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([transactionId])
+}
+
+model TopUpRequest {
+  id            String            @id @default(uuid())
+  userId        String
+  amount        Decimal           @db.Decimal(18, 2)
+  fee           Decimal           @db.Decimal(18, 2)
+  totalAmount   Decimal           @db.Decimal(18, 2)
+  method        String
+  proofImage    String?
+  status        TransactionStatus @default(PENDING)
+  adminNote     String?
+  completedById String?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  agentId       String?
+  agent         Agent?            @relation(fields: [agentId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([status])
+}
+
+model WithdrawalRequest {
+  id            String            @id @default(uuid())
+  userId        String
+  amount        Decimal           @db.Decimal(18, 2)
+  fee           Decimal           @db.Decimal(18, 2)
+  netAmount     Decimal           @db.Decimal(18, 2)
+  method        String
+  accountInfo   String
+  status        TransactionStatus @default(PENDING)
+  adminNote     String?
+  proofImage    String?
+  completedById String?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  agentId       String?
+  agent         Agent?            @relation(fields: [agentId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([status])
+}
+
+model ServiceRequest {
+  id          String            @id @default(uuid())
+  userId      String
+  serviceType ServiceType
+  amount      Decimal           @db.Decimal(18, 2)
+  fee         Decimal           @default(0.00) @db.Decimal(18, 2)
+  details     String?
+  proofImage  String?
+  status      TransactionStatus @default(PENDING)
+  adminNote   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([serviceType])
+}
+
+model Kyc {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  firstName   String
+  lastName    String
+  dateOfBirth DateTime
+  phoneNumber String
+  idType      String
+  idNumber    String
+  idImage     String
+  userPhoto   String
+  line1       String
+  city        String
+  state       String
+  zipCode     String
+  country     String
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  agentId     String?
+  status      KYCStatus @default(PENDING)
+  agent       Agent?    @relation(fields: [agentId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([agentId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model ExchangeRateHistory {
+  id        String   @id @default(uuid())
+  pair      String
+  rate      Decimal  @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+
+  @@index([pair])
+}
+
+model Agent {
+  id                    String              @id @default(uuid())
+  userId                String              @unique
+  businessName          String?
+  status                AgentStatus         @default(PENDING)
+  commissionRate        Decimal             @default(0.00) @db.Decimal(5, 2)
+  dailyLimit            Decimal             @default(0.00) @db.Decimal(18, 2)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  agentCode             String              @unique
+  level                 AgentLevel          @default(BRONZE)
+  totalCommission       Decimal             @default(0.00) @db.Decimal(18, 2)
+  totalKyc              Int                 @default(0)
+  totalTopupVolume      Decimal             @default(0.00) @db.Decimal(18, 2)
+  totalWithdrawalVolume Decimal             @default(0.00) @db.Decimal(18, 2)
+  trustScore            Decimal             @default(100.00) @db.Decimal(5, 2)
+  user                  User                @relation(fields: [userId], references: [id])
+  wallet                AgentWallet?
+  commissions        Commission[]
+  kycs               Kyc[]
+  topups             TopUpRequest[]
+  withdrawals        WithdrawalRequest[]
+  referredUsers      User[]               @relation("AgentReferrals")
+  liquidityRequests  LiquidityRequest[]
+}
+
+model AgentWallet {
+  id        String   @id @default(uuid())
+  agentId   String   @unique
+  balance   Decimal  @default(0.00) @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  agent     Agent    @relation(fields: [agentId], references: [id])
+}
+
+model Commission {
+  id            String         @id @default(uuid())
+  agentId       String
+  transactionId String?
+  type          CommissionType
+  amount        Decimal        @db.Decimal(18, 2)
+  createdAt     DateTime       @default(now())
+  agent         Agent          @relation(fields: [agentId], references: [id])
+  transaction   Transaction?   @relation(fields: [transactionId], references: [id])
+
+  @@index([agentId])
+  @@index([transactionId])
+}
+
+model AdminActionLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+}
+
+model Rate {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Decimal  @db.Decimal(18, 4)
+  currency  String   @default("HTG")
+  updatedAt DateTime @updatedAt
+}
+
+model VirtualCard {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  cardId    String     @unique
+  cardName  String
+  last4     String
+  expiry    String
+  brand     String     @default("VISA")
+  balance   Decimal    @default(0.00) @db.Decimal(18, 2)
+  status    CardStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([cardId])
+  @@index([status])
+}
+
 enum UserRole {
   USER
   AGENT
@@ -22,11 +327,13 @@ enum TransactionType {
   WITHDRAWAL
   CARD
 }
+
 enum KYCStatus {
   PENDING
   APPROVED
   REJECTED
 }
+
 enum TransactionStatus {
   PENDING
   PROCESSING
@@ -83,447 +390,36 @@ enum AgentLevel {
 }
 
 enum CommissionType {
-  KYC
   TOPUP
   WITHDRAWAL
+  KYC
 }
 
-model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
-
-  name  String?
-  phone String?
-
-  role        UserRole @default(USER)
-  isSuspended Boolean  @default(false)
-
-  referredByAgentId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  wallet      Wallet?
-  kyc         Kyc?
-  virtualCard VirtualCard?
-
-  notifications Notification[]
-
-  serviceRequests ServiceRequest[]
-
-  topups      TopUpRequest[]
-  withdrawals WithdrawalRequest[]
-
-  adminLogs AdminActionLog[]
-
-  agent Agent?
-
-  @@index([email])
-  @@index([role])
+enum LiquidityMethod {
+  MONCASH
+  ZELLE
+  CASH
+  BANK
 }
 
-model Wallet {
-  id     String @id @default(uuid())
-  userId String @unique
-
-  balance  Decimal @default(0.00) @db.Decimal(18, 2)
-  currency String  @default("HTG")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  sentTransactions     Transaction[] @relation("SenderTransactions")
-  receivedTransactions Transaction[] @relation("ReceiverTransactions")
-
-  ledgerEntries LedgerEntry[]
-
-  @@index([userId])
+enum LiquidityRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model Transaction {
-  id String @id @default(uuid())
-
-  reference String @unique
-
-  senderWalletId   String?
-  receiverWalletId String?
-
-  amount Decimal @db.Decimal(18, 2)
-
-  fee Decimal @default(0.00) @db.Decimal(18, 2)
-
-  netAmount Decimal @db.Decimal(18, 2)
-
-  type   TransactionType
-  status TransactionStatus @default(PENDING)
-
-  method String?
-
-  title       String?
-  description String?
-
-  proofImage String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  senderWallet Wallet? @relation("SenderTransactions", fields: [senderWalletId], references: [id])
-
-  receiverWallet Wallet? @relation("ReceiverTransactions", fields: [receiverWalletId], references: [id])
-
-  ledgerEntries LedgerEntry[]
-
-  commissions Commission[]
-
-  @@index([reference])
-  @@index([status])
-  @@index([type])
-}
-
-model LedgerEntry {
-  id String @id @default(uuid())
-
-  walletId      String
-  transactionId String
-
-  type LedgerType
-
-  amount Decimal @db.Decimal(18, 2)
-
-  balanceBefore Decimal @db.Decimal(18, 2)
-  balanceAfter  Decimal @db.Decimal(18, 2)
-
-  description String?
-
-  createdAt DateTime @default(now())
-
-  wallet Wallet @relation(fields: [walletId], references: [id])
-
-  transaction Transaction @relation(fields: [transactionId], references: [id])
-
-  @@index([walletId])
-  @@index([transactionId])
-}
-
-model TopUpRequest {
-  id String @id @default(uuid())
-
-  userId  String
-  agentId String?
-
-  amount Decimal @db.Decimal(18, 2)
-
-  fee Decimal @db.Decimal(18, 2)
-
-  totalAmount Decimal @db.Decimal(18, 2)
-
-  method String
-
-  proofImage String?
-
-  status TransactionStatus @default(PENDING)
-
-  adminNote String?
-
-  completedById String?
-
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  agent Agent? @relation(fields: [agentId], references: [id])
-
-  @@index([userId])
-  @@index([agentId])
-  @@index([status])
-}
-
-model WithdrawalRequest {
-  id String @id @default(uuid())
-
-  userId  String
-  agentId String?
-
-  amount Decimal @db.Decimal(18, 2)
-
-  fee Decimal @db.Decimal(18, 2)
-
-  netAmount Decimal @db.Decimal(18, 2)
-
-  method String
-
+model LiquidityRequest {
+  id          String                 @id @default(uuid())
+  agentId     String
+  amount      Decimal                @db.Decimal(18, 2)
+  method      LiquidityMethod
   accountInfo String
-
-  status TransactionStatus @default(PENDING)
-
-  adminNote String?
-
-  proofImage String?
-
-  completedById String?
-
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  agent Agent? @relation(fields: [agentId], references: [id])
-
-  @@index([userId])
-  @@index([agentId])
-  @@index([status])
-}
-
-model ServiceRequest {
-  id String @id @default(uuid())
-
-  userId String
-
-  serviceType ServiceType
-
-  amount Decimal @db.Decimal(18, 2)
-
-  fee Decimal @default(0.00) @db.Decimal(18, 2)
-
-  details String?
-
-  proofImage String?
-
-  status TransactionStatus @default(PENDING)
-
-  adminNote String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([serviceType])
-}
-
-model Kyc {
-  id String @id @default(cuid())
-
-  userId  String  @unique
-  agentId String?
-
-  user User @relation(fields: [userId], references: [id])
-
-  agent Agent? @relation(fields: [agentId], references: [id])
-
-  firstName String
-  lastName  String
-
-  dateOfBirth DateTime
-
-  phoneNumber String
-
-  idType   String
-  idNumber String
-
-  idImage   String
-  userPhoto String
-
-  line1   String
-  city    String
-  state   String
-  zipCode String
-  country String
-
-  status KYCStatus @default(PENDING)
-
-  reviewedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status      LiquidityRequestStatus @default(PENDING)
+  adminNote   String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  agent       Agent                  @relation(fields: [agentId], references: [id])
 
   @@index([agentId])
-}
-
-model Notification {
-  id String @id @default(uuid())
-
-  userId String
-
-  title   String
-  message String
-
-  type NotificationType @default(INFO)
-
-  isRead Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-}
-
-model SystemSetting {
-  id String @id @default(uuid())
-
-  key String @unique
-
-  value String
-
-  updatedAt DateTime @updatedAt
-}
-
-model ExchangeRateHistory {
-  id String @id @default(uuid())
-
-  pair String
-
-  rate Decimal @db.Decimal(18, 4)
-
-  createdAt DateTime @default(now())
-
-  @@index([pair])
-}
-
-model Agent {
-  id String @id @default(uuid())
-
-  userId String @unique
-
-  businessName String?
-
-  agentCode String @unique
-
-  status AgentStatus @default(PENDING)
-
-  level AgentLevel @default(BRONZE)
-
-  trustScore Decimal @default(100.00) @db.Decimal(5, 2)
-
-  commissionRate Decimal @default(0.00) @db.Decimal(5, 2)
-
-  dailyLimit Decimal @default(0.00) @db.Decimal(18, 2)
-
-  totalTopupVolume Decimal @default(0.00) @db.Decimal(18, 2)
-
-  totalWithdrawalVolume Decimal @default(0.00) @db.Decimal(18, 2)
-
-  totalKyc Int @default(0)
-
-  totalCommission Decimal @default(0.00) @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  wallet AgentWallet?
-
-  commissions Commission[]
-
-  topups TopUpRequest[]
-
-  withdrawals WithdrawalRequest[]
-
-  kycs Kyc[]
-}
-
-model AgentWallet {
-  id String @id @default(uuid())
-
-  agentId String @unique
-
-  balance Decimal @default(0.00) @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  agent Agent @relation(fields: [agentId], references: [id])
-}
-
-model Commission {
-  id String @id @default(uuid())
-
-  agentId String
-
-  transactionId String?
-
-  type CommissionType
-
-  amount Decimal @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
-
-  agent Agent @relation(fields: [agentId], references: [id])
-
-  transaction Transaction? @relation(fields: [transactionId], references: [id])
-
-  @@index([agentId])
-  @@index([transactionId])
-}
-
-model AdminActionLog {
-  id String @id @default(uuid())
-
-  adminId String
-
-  action String
-
-  targetType String?
-  targetId   String?
-  details    String?
-
-  ipAddress String?
-
-  createdAt DateTime @default(now())
-
-  admin User @relation(fields: [adminId], references: [id])
-
-  @@index([adminId])
-}
-
-model Rate {
-  id String @id @default(uuid())
-
-  key String @unique
-
-  value Decimal @db.Decimal(18, 4)
-
-  currency String @default("HTG")
-
-  updatedAt DateTime @updatedAt
-}
-
-model VirtualCard {
-  id String @id @default(uuid())
-
-  userId String @unique
-
-  cardId String @unique
-
-  cardName String
-
-  last4 String
-
-  expiry String
-
-  brand String @default("VISA")
-
-  balance Decimal @default(0.00) @db.Decimal(18, 2)
-
-  status CardStatus @default(ACTIVE)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([cardId])
   @@index([status])
 }

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete l nan yon lòt katab
 import { 
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, 
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
@@ -54,6 +55,7 @@ export default function Dashboard() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawAccountInfo, setWithdrawAccountInfo] = useState('');
+  const [pin, setPin] = useState('');
   
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
  
@@ -89,7 +91,9 @@ export default function Dashboard() {
   const idCardInputRef = useRef<HTMLInputElement>(null);
   const userPhotoInputRef = useRef<HTMLInputElement>(null);
  
-  const backendUrl = "http://localhost:3001"; // IP Backend ou a
+ const backendUrl =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'http://localhost:10000';// IP Backend ou a
  
   const paymentMethods = [
     { id: 'zelle', label: 'Zelle', img: 'zelle.png', info: "786 868 6782", name: "Ralph Olivier Greffin" },
@@ -128,46 +132,31 @@ export default function Dashboard() {
       }
 
       const headers = { Authorization: `Bearer ${localToken}` };
-      const API_BASE = "http://localhost:3001"; 
-      
-      // 1. Nou rale sèlman route ki valid yo pou kounye a
-      const [sRes, rRes, tTxRes] = await Promise.all([
-        fetch(`${API_BASE}/wallet/stats`, { headers }),
-        fetch(`${API_BASE}/rates`, { headers }),
-        fetch(`${API_BASE}/wallet/transactions`, { headers })
-      ]);
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-      const sData = await sRes.json();
-      const rData = await rRes.json();
-      const txData = await tTxRes.json();
+console.log("API_BASE =", API_BASE);
+console.log("TOKEN =", localToken);
 
-      // 2. Mete tranzaksyon yo nan state la
-      // @ts-ignore
-      if (typeof setTransactions === 'function') {
-        // @ts-ignore
-        setTransactions(Array.isArray(txData) ? txData : []);
-      }
+let tTxRes;
+try {
+  tTxRes = await fetch(`${API_BASE}/wallet/transactions`, { headers });
+} catch (err) {
+  console.error("wallet/transactions FAILED", err);
+}
 
-      // 3. Mete statistik yo ajou (nou ka mete yon fo chif pou itilizatè si w bezwen)
-      // @ts-ignore
-      if (typeof setStats === 'function') {
-        // @ts-ignore
-        setStats({
-          totalProfit: sData.totalProfit || 0,
-          transactions: sData.transactionCount || 0,
-          users: 1 // oswa yon lòt valè default kòm se pa admin kont lan
-        });
-      }
+      const txData = tTxRes?.ok ? await tTxRes.json() : null;
+      setTransactions(Array.isArray(txData) ? txData : []);
 
-      // 4. Mete pousantaj yo
-      // @ts-ignore
-      if (Array.isArray(rData) && typeof setRates === 'function') {
-        const ratesMap = rData.reduce((acc: any, curr: any) => {
-          acc[curr.key] = curr.value;
-          return acc;
-        }, {});
-        // @ts-ignore
-        setRates(ratesMap);
+      try {
+        const meRes = await fetch(`${API_BASE}/auth/me`, { headers });
+        if (meRes.ok) {
+          const freshUserData = await meRes.json();
+          console.log('user role from API:', freshUserData.role, 'agent:', freshUserData.agent);
+          setUser(freshUserData);
+          localStorage.setItem('user', JSON.stringify(freshUserData));
+        }
+      } catch (err) {
+        console.error("auth/me FAILED", err);
       }
     } catch (e) {
       console.error("SYNC ERROR:", e);
@@ -179,99 +168,193 @@ export default function Dashboard() {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
-    if (savedUser) { 
-      setUser(JSON.parse(savedUser)); 
-      fetchData(); 
-    } else { 
-      signOut(); 
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      fetchData();
+    } else {
+      signOut();
     }
+    const interval = setInterval(fetchData, 15000);
+    return () => clearInterval(interval);
   }, []);
  
   const handlePaymentLogic = async () => {
-    if (!topUpAmount || Number(topUpAmount) <= 0) {
-      setToast({ message: "Tanpri antre yon montan valid", type: 'error' });
-      return;
-    }
-    const token = localStorage.getItem('token');
-    if (selectedMethod === 'moncash') {
-      try {
-        const res = await fetch(`${backendUrl}/payments/moncash/topup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ amount: Number(topUpAmount) })
-        });
-        const data = await res.json();
-        if (data.redirectUrl) { window.location.href = data.redirectUrl; } 
-        else { setToast({ message: "Erè nan jenerasyon link MonCash la", type: 'error' }); }
-      } catch (e) { setToast({ message: "Erè koneksyon ak sèvè MonCash", type: 'error' }); }
-    } else {
-      try {
-        const res = await fetch(`${backendUrl}/wallet/manual-request`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ method: selectedMethod.toUpperCase(), amount: Number(topUpAmount) })
-        });
-        if (res.ok) {
-          setToast({ message: `Demann ${selectedMethod} voye! Tann admin konfime l. ✅`, type: 'success' });
-          setTopUpAmount('');
-        }
-      } catch (e) { setToast({ message: "Erè nan voye demann manuel la", type: 'error' }); }
-    }
-  };
- 
-  const handleSendMoney = async (recipientId: string, amt: string) => {
-  const token = localStorage.getItem('token');
-  
-  // 1️⃣ LOG POU TÈS: Pou n wè si bouton an rive rele fonksyon an nèt
-  console.log("👉 handleSendMoney deklanche! Done resevwa:", { recipientId, amt });
+  if (
+    !topUpAmount ||
+    Number(topUpAmount) <= 0
+  ) {
+    setToast({
+      message:
+        "Tanpri antre yon montan valid",
+      type: 'error',
+    });
 
-  const value = parseFloat(amt);
-  
-  if (!recipientId) {
-    console.log("❌ Bloke: recipientId vid!");
-    showToast('Mete imèl moun k ap resevwa a');
     return;
   }
 
-  if (isNaN(value) || value <= 0) { 
-    console.log("❌ Bloke: Montan an pa valid oswa li se NaN! Valè konvèti a se:", value);
-    showToast('Mete yon montan valid'); 
-    return; 
-  }
+  const token =
+    localStorage.getItem('token');
 
-  try {
-  console.log("🚀 Lanse fetch la bay backend lan...");
-  
-  // Si backendUrl la vid, nou fòse l pran http://localhost:3001 dirèkteman
-  const finalUrl = backendUrl || "http://localhost:3001";
-  
-  const response = await fetch(`${finalUrl}/wallet/transfer`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json', 
-      'Authorization': `Bearer ${token}` 
-    },
-    body: JSON.stringify({ recipientEmail: recipientId, amount: value }),
-  });
-  
-  const data = await response.json();
-  console.log("📥 Repons Backend:", data);
+  // 🔥 Agent ID récupéré localement
+  const agentId =
+    localStorage.getItem(
+      'ozama_agent_id',
+    );
 
-    if (response.ok) {
-      showToast(`Transfè voye bay ${recipientId}`, 'success');
-      setRecipient('');
-      setAmount('');
-      fetchData();
-      setActiveTab('home'); 
-    } else { 
-      showToast(data.message || 'Tranzaksyon an echwe'); 
+  if (selectedMethod === 'moncash') {
+    try {
+      const res = await fetch(
+        `${backendUrl}/payments/moncash/topup`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify({
+            amount:
+              Number(topUpAmount),
+
+            // 🔥 envoyé backend
+            agentId,
+          }),
+        },
+      );
+
+      const data =
+        await res.json();
+
+      if (data.redirectUrl) {
+        window.location.href =
+          data.redirectUrl;
+      } else {
+        setToast({
+          message:
+            "Erè nan jenerasyon link MonCash la",
+
+          type: 'error',
+        });
+      }
+    } catch (e) {
+      setToast({
+        message:
+          "Erè koneksyon ak sèvè MonCash",
+
+        type: 'error',
+      });
     }
-  } catch (error) { 
-    console.error("💥 Erè Catch:", error);
-    showToast('Koneksyon echwe'); 
+  } else {
+    try {
+      const formData = new FormData();
+      formData.append('method', selectedMethod.toUpperCase());
+      formData.append('amount', topUpAmount);
+      if (agentId) formData.append('agentId', agentId);
+      if (receipt) formData.append('receipt', receipt);
+
+      const res = await fetch(
+        `${backendUrl}/wallet/topup`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        },
+      );
+
+      if (res.ok) {
+        setToast({
+          message: `Demann ${selectedMethod} voye! Tann admin konfime l. ✅`,
+          type: 'success',
+        });
+        setTopUpAmount('');
+        setReceipt(null);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setToast({ message: data.message || 'Erè nan voye demann manuel la', type: 'error' });
+      }
+    } catch (e) {
+      setToast({
+        message: "Erè nan voye demann manuel la",
+        type: 'error',
+      });
+    }
   }
 };
+ 
+  const handleSendMoney = async (
+  recipientId: string,
+  value: string,
+  pin: string,
+) => {
+  try {
+    if (!recipientId || !value || !pin) {
+      alert('Ranpli tout chan yo');
+      return;
+    }
 
+    if (pin.length !== 4) {
+      alert('PIN dwe gen 4 chif');
+      return;
+    }
+
+    setLoading(true);
+
+    const token =
+      localStorage.getItem('token');
+
+    const response = await fetch(
+      `${backendUrl}/wallet/transfer`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          recipientEmail: recipientId,
+
+          amount: Number(value),
+
+          pin,
+        }),
+      },
+    );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          'Transfer failed',
+      );
+    }
+
+    alert('Transfer reyisi 🔥');
+
+    setRecipient('');
+    setAmount('');
+    setPin('');
+
+    await fetchData();
+
+  } catch (error: any) {
+    alert(
+      error.message ||
+        'Erreur transfer',
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleWithdraw = async () => {
     const token = localStorage.getItem('token');
@@ -332,7 +415,7 @@ export default function Dashboard() {
         dateOfBirth: kycData.dateOfBirth,
       }));
 
-      const res = await fetch(`${currentBackendUrl}/user/submit-kyc`, {
+      const res = await fetch(`${currentBackendUrl}/kyc/submit`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`
@@ -351,7 +434,6 @@ export default function Dashboard() {
         const updatedUser = { 
           ...user, 
           kyc: { status: 'PENDING' },
-          wallet: { balance: currentBalance - kycCostHtg } // Nou soustrè kòb la nan UI a tou
         };
         
         // 2. Mete l nan State la pou l chanje sou ekran an kounye a
@@ -463,27 +545,30 @@ export default function Dashboard() {
                 </p>
               ) : (
                 transactions.slice(0, 4).map((t: any, idx) => {
-                  const isSent = t.type === 'DEBIT' || t.type === 'sent';
-                  
+                  const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                    (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+
                   return (
                     <div key={idx} className="group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isSent ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                          {isSent ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                          {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
                         </div>
                         <div>
                           <p className="font-black text-[13px] uppercase italic leading-none tracking-tight text-black">
-  {isSent 
-    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Amanda') 
+  {t.type === 'TOPUP' ? (t.method || 'Depot') :
+   t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
+   isDebit
+    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
     : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
 </p>
                           <p className="text-[9px] text-[#8E929B] font-bold uppercase mt-1 tracking-tighter">
-                            {t.description || (isSent ? 'Transfè Voye' : 'Lajan Resevwa')} • {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
+                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : (isDebit ? 'Transfè Voye' : 'Lajan Resevwa')} • {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
                           </p>
                         </div>
                       </div>
-                      <p className={`font-black italic text-sm ${isSent ? 'text-red-500' : 'text-[#00C566]'}`}>
-                        {isSent ? '-' : '+'}{(t.amount || 0).toLocaleString()} <span className="text-[10px]">HTG</span>
+                      <p className={`font-black italic text-sm ${isDebit ? 'text-red-500' : 'text-[#00C566]'}`}>
+                        {isDebit ? '-' : '+'}{(t.amount || 0).toLocaleString()} <span className="text-[10px]">HTG</span>
                       </p>
                     </div>
                   );
@@ -507,27 +592,30 @@ export default function Dashboard() {
                 </p>
               ) : (
                 transactions.map((t: any, idx) => {
-                  const isSent = t.type === 'DEBIT' || t.type === 'sent';
-                  
+                  const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                    (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+
                   return (
                     <div key={idx} className="flex items-center justify-between p-6 bg-white border border-black/5 rounded-xl shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isSent ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                          {isSent ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                          {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
                         </div>
                         <div>
 <p className="font-black text-sm uppercase italic leading-none tracking-tight text-black">
-  {isSent 
-    ? (t.recipient?.name || t.recipientName || t.recipientEmail || 'Amanda') 
-    : (t.sender?.name || t.senderName || t.senderEmail || 'Ozama User')}
+  {t.type === 'TOPUP' ? (t.method || 'Depot') :
+   t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
+   isDebit
+    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
+    : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
 </p>
                           <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">
-                            {t.description || (isSent ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
+                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
                       </div>
-                      <p className={`font-black italic text-base ${isSent ? 'text-red-500' : 'text-[#00C566]'}`}>
-                        {isSent ? '-' : '+'}{(t.amount || 0).toLocaleString()} HTG
+                      <p className={`font-black italic text-base ${isDebit ? 'text-red-500' : 'text-[#00C566]'}`}>
+                        {isDebit ? '-' : '+'}{(t.amount || 0).toLocaleString()} HTG
                       </p>
                     </div>
                   );
@@ -538,28 +626,100 @@ export default function Dashboard() {
         )}
  
         {/* --- SEND SECTION --- */}
-        {activeTab === 'send' && (
-          <div className="animate-in slide-in-from-right duration-500">
-            <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <ArrowLeftRight size={14} className="rotate-180" /> Back Home
-            </button>
-            <h2 className="text-4xl font-black italic uppercase mb-10 tracking-tighter">Send<br/>Money</h2>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Recipient Email</label>
-                <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white transition-all" placeholder="example@ozamapay.com" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Amount (HTG) <span className="text-[#FF7A00] ml-2">FEE: 0%</span></label>
-                <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-black italic text-4xl outline-none border border-black/5 focus:bg-white" placeholder="0.00" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              </div>
-              <button onClick={() => handleSendMoney(recipient, amount)} className="w-full bg-[#0F121E] text-white py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs">
-                Confirm Transfer
-              </button>
-            </div>
-          </div>
-        )}
- 
+{activeTab === 'send' && (
+  <div className="animate-in slide-in-from-right duration-500">
+    
+    <button
+      onClick={() => setActiveTab('home')}
+      className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
+    >
+      <ArrowLeftRight
+        size={14}
+        className="rotate-180"
+      />
+      Back Home
+    </button>
+
+    <h2 className="text-4xl font-black italic uppercase mb-10 tracking-tighter">
+      Send
+      <br />
+      Money
+    </h2>
+
+    <div className="space-y-6">
+      
+      {/* RECIPIENT */}
+      <div className="space-y-2">
+        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
+          Recipient Email
+        </label>
+
+        <input
+          className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white transition-all"
+          placeholder="example@ozamapay.com"
+          value={recipient}
+          onChange={(e) =>
+            setRecipient(e.target.value)
+          }
+        />
+      </div>
+
+      {/* AMOUNT */}
+      <div className="space-y-2">
+        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
+          Amount (HTG)
+
+          <span className="text-[#FF7A00] ml-2">
+            FEE: 0%
+          </span>
+        </label>
+
+        <input
+          className="w-full p-8 bg-gray-50 rounded-[2rem] font-black italic text-4xl outline-none border border-black/5 focus:bg-white"
+          placeholder="0.00"
+          type="number"
+          value={amount}
+          onChange={(e) =>
+            setAmount(e.target.value)
+          }
+        />
+      </div>
+
+      {/* SECURITY PIN */}
+      <div className="space-y-2">
+        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
+          Security PIN
+        </label>
+
+        <input
+          type="password"
+          inputMode="numeric"
+          maxLength={4}
+          className="w-full p-8 bg-gray-50 rounded-[2rem] font-black text-3xl outline-none border border-black/5 focus:bg-white transition-all tracking-[12px]"
+          placeholder="••••"
+          value={pin}
+          onChange={(e) =>
+            setPin(e.target.value)
+          }
+        />
+      </div>
+
+      {/* BUTTON */}
+      <button
+        onClick={() =>
+          handleSendMoney(
+            recipient,
+            amount,
+            pin,
+          )
+        }
+        className="w-full bg-[#0F121E] text-white py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs"
+      >
+        Confirm Transfer
+      </button>
+    </div>
+  </div>
+)}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
           <div className="animate-in slide-in-from-bottom duration-500">
@@ -1150,6 +1310,7 @@ export default function Dashboard() {
                       {user?.kyc?.status === 'APPROVED' ? 'VERIFIED' : user?.kyc?.status === 'PENDING' ? 'PENDING' : 'NOT VERIFIED'}
                     </span>
                   </div>
+                  <UserSecurityCard />
      
                   {user?.kyc?.status === 'APPROVED' ? (
   /* --- SA ITILIZATÈ A AP WÈ LÈ KONT LAN FIN VERIFYE (APPROVED) --- */
@@ -1172,6 +1333,7 @@ export default function Dashboard() {
     >
       Verified Account ✓
     </button>
+
   </div>
 ) : (
   /* --- SA L AP WÈ SI L PENDING OYSA NOT VERIFIED --- */
@@ -1202,6 +1364,64 @@ export default function Dashboard() {
     )}
   </div>
 )}
+                  {/* 🏦 OZAMA AGENT INTERACTION SYSTEM */}
+<div className="mt-6 pt-4 border-t border-black/5 space-y-3">
+  {user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE' ? (
+    /* SI L SE AJAN DEJA: REDIREKSYON NAN NOUVO DASHBOARD LI */
+    <button 
+      onClick={() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/agent-dashboard';
+        }
+      }}
+      className="w-full bg-[#FF7A00] hover:bg-[#e66e00] text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+    >
+      <Zap size={16} /> Open Agent Dashboard
+    </button>
+  ) : user?.agent?.status === 'PENDING' ? (
+    /* APPLICATION EN ATTENTE */
+    <button
+      disabled
+      className="w-full bg-gray-100 text-gray-400 py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
+    >
+      <ShieldCheck size={16} /> Application en cours...
+    </button>
+  ) : (
+    /* USER KLASIK: BOUTON POU VIN AJAN */
+    <button
+      onClick={async () => {
+        if (user?.kyc?.status !== 'APPROVED') {
+          showToast("Ou dwe verifye kont ou (KYC Approved) anvan ou apliké kòm Ajan.", "error");
+          return;
+        }
+        const token = localStorage.getItem('token');
+        try {
+          const res = await fetch(`${backendUrl}/agents/apply`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast("Aplikasyon w lan soumèt! Yon admin ap apwouve l. 🚀", "success");
+            fetchData();
+          } else {
+            showToast(data.message || "Erè pandan aplikasyon an.", "error");
+          }
+        } catch {
+          showToast("Erè rezo! Verifye si backend la ap kouri.", "error");
+        }
+      }}
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-[2rem] text-[10px] font-black italic uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+    >
+      <ShieldCheck size={16} /> Become an Agent
+    </button>
+  )}
+</div>
+
                   
                   <button onClick={signOut} className="w-full py-8 bg-red-50 text-red-500 rounded-[2.5rem] font-black italic uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 active:bg-red-100 transition-all border border-red-100 mt-4">
                     <LogOut size={16} /> Logout Account

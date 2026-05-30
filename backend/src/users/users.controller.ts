@@ -1,52 +1,60 @@
-import { Controller, Post, Get, Body, UseInterceptors, UploadedFiles, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Request, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './users.service';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import * as jwt from 'jsonwebtoken'; // 🛡️ Nou itilize sa pou n dekode token la san pwoblèm chimen
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('submit-kyc')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'idCardFile', maxCount: 1 },
-      { name: 'userPhotoFile', maxCount: 1 },
-    ]),
-  )
-  async submitKyc(
-    @Req() req: any,
-    @Body('idType') idType: string,
-    @Body('idNumber') idNumber: string,
-    @Body('additionalData') additionalDataString: string, // <-- Rekipere string data a isit la
-    @UploadedFiles() files: { idCardFile?: any[]; userPhotoFile?: any[] },
-  ) {
-    const userId = req.user.id || req.user.sub;
-    
-    // Konvèti string additionalData a an objè JSON valid pou sèvis la
-    let parsedAdditionalData = {};
-    if (additionalDataString) {
-      try {
-        parsedAdditionalData = JSON.parse(additionalDataString);
-      } catch (e) {
-        console.error("Erè parsing additionalData string:", e);
+  /**
+   * 🛡️ 1. ENDPOINT POU CHANJE OSWA KREYE PIN TRANZAKSYON
+   */
+  @Post('change-pin')
+  @HttpCode(HttpStatus.OK)
+  async changePin(@Request() req: any, @Body() body: { newPin: string }) {
+    try {
+      // Dekode token la depi nan headers yo pou nou ka jwenn ID David la 100% sekirize
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new UnauthorizedException('Token manquante');
       }
+      
+      const token = authHeader.split(' ')[1];
+      const decoded: any = jwt.decode(token); // Dekode san verifikasyon fòse jis pou pran sub/id la
+      
+      const userId = decoded?.sub || decoded?.id;
+      if (!userId) {
+        throw new UnauthorizedException('Token invalide');
+      }
+
+      return await this.userService.updateTransactionPin(userId, body.newPin);
+    } catch (error) {
+      throw new UnauthorizedException('Erè idantifikasyon');
     }
-
-    return this.userService.submitKyc(userId, idType, idNumber, files, parsedAdditionalData);
   }
 
-  @Get('pending-kyc')
-  async getPendingKyc() {
-    return this.userService.getPendingKyc();
+  /**
+   * 💼 2. ENDPOINT POU RALE PROFIL AJAN AN
+   */
+  @Get('agent/profile')
+  async getAgentProfile(@Request() req: any) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    const decoded: any = jwt.decode(token);
+    const userId = decoded?.sub || decoded?.id;
+    return await this.userService.getAgentProfile(userId);
   }
 
-  @Post('review-kyc')
-  async reviewKyc(
-    @Body('userId') userId: string,
-    @Body('action') action: 'APPROVE' | 'REJECT'
-  ) {
-    return this.userService.reviewKyc(userId, action);
+  /**
+   * 💰 3. ENDPOINT POU AJAN RECHAJE PWÒP KONT LI
+   */
+  @Post('agent/topup')
+  @HttpCode(HttpStatus.OK)
+  async agentTopup(@Request() req: any, @Body() body: { amount: number }) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    const decoded: any = jwt.decode(token);
+    const userId = decoded?.sub || decoded?.id;
+    return await this.userService.agentSelfTopup(userId, body.amount);
   }
 }

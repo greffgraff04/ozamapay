@@ -57,4 +57,12 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
 
-/generated/prisma
+# User uploads - ignore file contents, preserve directory structure via .gitkeep
+uploads/*
+!uploads/.gitkeep
+!uploads/kyc/
+uploads/kyc/*
+!uploads/kyc/.gitkeep
+!uploads/topup/
+uploads/topup/*
+!uploads/topup/.gitkeep

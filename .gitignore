@@ -4,5 +4,12 @@ node_modules
 
 /generated/prisma
 .DS_Store
-backend/uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+!backend/uploads/kyc/
+backend/uploads/kyc/*
+!backend/uploads/kyc/.gitkeep
+!backend/uploads/topup/
+backend/uploads/topup/*
+!backend/uploads/topup/.gitkeep
 node_modules

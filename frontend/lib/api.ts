@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // Ranplase sa ak IP VPS ou a oswa api.ozamapay.com si DNS la fin pwopaje
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', 
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000', 
 });
 
 // Sa ap ajoute Token JWT ou a otomatikman nan chak requèt

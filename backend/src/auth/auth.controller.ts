@@ -12,6 +12,7 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { MailModule } from '../mail/mail.module';
 
 @Controller('auth')
 export class AuthController {

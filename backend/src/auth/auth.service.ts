@@ -3,10 +3,14 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
-  NotFoundException,
+ NotFoundException,
 } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
+
+import { randomBytes } from 'crypto';
+
+import { MailService } from '../mail/mail.service';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -21,12 +25,16 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
+
     private jwtService: JwtService,
+
+    private mailService: MailService,
   ) {}
 
   // =========================
   // REGISTER
   // =========================
+
   async register(dto: RegisterDto) {
     const existing =
       await this.prisma.user.findUnique({
@@ -48,7 +56,10 @@ export class AuthService {
       );
     }
 
-    // 🔥 Agent referral
+    // =========================
+    // AGENT REFERRAL
+    // =========================
+
     let referredByAgentId:
       | string
       | null = null;
@@ -73,11 +84,28 @@ export class AuthService {
       referredByAgentId = agent.id;
     }
 
+    // =========================
+    // HASH PASSWORD
+    // =========================
+
     const hashedPassword =
       await bcrypt.hash(
         dto.password,
         10,
       );
+
+    // =========================
+    // EMAIL VERIFICATION TOKEN
+    // =========================
+
+    const verificationToken =
+      randomBytes(32).toString(
+        'hex',
+      );
+
+    // =========================
+    // CREATE USER
+    // =========================
 
     const user =
       await this.prisma.$transaction(
@@ -96,23 +124,46 @@ export class AuthService {
                 role: 'USER',
 
                 referredByAgentId,
+
+                //emailVerificationToken: verificationToken,
               },
             });
+
+          // =========================
+          // CREATE WALLET
+          // =========================
 
           await tx.wallet.create({
             data: {
               userId: newUser.id,
+
               balance: 0,
             },
           });
+
+          // =========================
+          // SEND VERIFICATION EMAIL
+          // =========================
+
+          await this.mailService.sendVerificationEmail(
+            newUser.email,
+
+            verificationToken,
+          );
 
           return newUser;
         },
       );
 
+    // =========================
+    // JWT TOKEN
+    // =========================
+
     const token = this.signToken(
       user.id,
+
       user.email,
+
       user.role,
     );
 
@@ -124,12 +175,20 @@ export class AuthService {
 
       user: {
         id: user.id,
+
         email: user.email,
+
         name: user.name,
+
         role: user.role,
 
         referredByAgentId:
           user.referredByAgentId,
+
+        transactionPin:
+          user.transactionPin
+            ? true
+            : false,
       },
     };
   }
@@ -137,6 +196,7 @@ export class AuthService {
   // =========================
   // LOGIN
   // =========================
+
   async login(dto: LoginDto) {
     const user =
       await this.prisma.user.findUnique({
@@ -147,6 +207,7 @@ export class AuthService {
 
         include: {
           wallet: true,
+
           kyc: true,
         },
       });
@@ -160,6 +221,7 @@ export class AuthService {
     const passwordMatch =
       await bcrypt.compare(
         dto.password,
+
         user.password,
       );
 
@@ -171,27 +233,39 @@ export class AuthService {
 
     const token = this.signToken(
       user.id,
+
       user.email,
+
       user.role,
     );
 
     return {
-      message: 'Koneksyon reyisi',
+      message:
+        'Koneksyon reyisi',
 
       token,
 
       user: {
         id: user.id,
+
         email: user.email,
+
         name: user.name,
+
         role: user.role,
 
         referredByAgentId:
           user.referredByAgentId,
 
+        transactionPin:
+          user.transactionPin
+            ? true
+            : false,
+
         wallet: {
           balance:
-            user.wallet?.balance || 0,
+            user.wallet?.balance ||
+            0,
         },
 
         kyc: user.kyc
@@ -209,6 +283,7 @@ export class AuthService {
   // =========================
   // GET ME
   // =========================
+
   async getMe(userId: string) {
     const user =
       await this.prisma.user.findUnique({
@@ -218,7 +293,10 @@ export class AuthService {
 
         include: {
           wallet: true,
+
           kyc: true,
+
+          agent: true,
         },
       });
 
@@ -230,10 +308,19 @@ export class AuthService {
 
     return {
       id: user.id,
+
       email: user.email,
+
       name: user.name,
+
       phone: user.phone,
+
       role: user.role,
+
+      transactionPin:
+        user.transactionPin
+          ? true
+          : false,
 
       referredByAgentId:
         user.referredByAgentId,
@@ -251,20 +338,33 @@ export class AuthService {
               user.kyc.status,
           }
         : null,
+
+      agent: user.agent
+        ? {
+            status: user.agent.status,
+            agentCode: user.agent.agentCode,
+            level: user.agent.level,
+          }
+        : null,
     };
   }
 
   // =========================
-  // TOKEN
+  // JWT TOKEN
   // =========================
+
   private signToken(
     userId: string,
+
     email: string,
+
     role: string,
   ): string {
     return this.jwtService.sign({
       sub: userId,
+
       email,
+
       role,
     });
   }

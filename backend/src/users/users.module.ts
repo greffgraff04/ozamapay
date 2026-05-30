@@ -9,4 +9,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   providers: [UserService],
   exports: [UserService],
 })
-export class UsersModule {}
+export class UsersModule {} // ← ASIRE W SE "UsersModule" KI EKRI LA AK YON "s"

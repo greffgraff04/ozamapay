@@ -7,10 +7,11 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 
+
 const FEES = {
   TOPUP: 0.06,
   TRANSFER: 0.0099,
-  WITHDRAW: 0.06,
+  WITHDRAW: 0.02,
 };
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
@@ -88,7 +89,6 @@ export class WalletService {
           },
         ],
       },
-      // 🌟 NOUVO: Nou enkli relasyon yo pou n ka jwenn non moun yo
       include: {
         senderWallet: {
           include: {
@@ -118,23 +118,33 @@ export class WalletService {
   }
 
   // ======================================================
-  // P2P TRANSFER (SAN FRAIS ET SÉCURISÉ)
+  // P2P TRANSFER (SEKIRIZE AVÈK PIN & 0% FRAIS)
   // ======================================================
 
   async transferP2P(
     senderId: string,
     recipientEmail: string,
     amount: number,
+    pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a
   ) {
     // 1. Verifye si moun k ap voye a gen KYC approved
     await this.checkKyc(senderId);
+
+    // 2. 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
+    const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
+    if (!sender) {
+      throw new NotFoundException('Itilizatè sa a pa egziste.');
+    }
+    if (!sender.transactionPin || sender.transactionPin !== pin) {
+      throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
+    }
 
     const transferAmount = Number(amount);
     if (isNaN(transferAmount) || transferAmount <= 0) {
       throw new BadRequestException('Montan invalid');
     }
 
-    // 2. Jwenn bous moun k ap voye a
+    // 3. Jwenn bous moun k ap voye a
     const senderWallet = await this.prisma.wallet.findUnique({
       where: { userId: senderId },
     });
@@ -143,12 +153,12 @@ export class WalletService {
       throw new NotFoundException('Wallet sender pa jwenn');
     }
 
-    // 3. Verifye si li gen ase kòb (Frè a se 0, donk nou jis tcheke montan an)
+    // 4. Verifye si li gen ase kòb
     if (Number(senderWallet.balance) < transferAmount) {
       throw new BadRequestException('Balans ensifizan');
     }
 
-    // 4. Jwenn moun k ap resevwa a pa imèl li
+    // 5. Jwenn moun k ap resevwa a pa imèl li
     const recipient = await this.prisma.user.findUnique({
       where: { email: recipientEmail.toLowerCase().trim() },
       include: { wallet: true },
@@ -162,9 +172,8 @@ export class WalletService {
       throw new BadRequestException('Ou pa ka voye kòb bay tèt ou');
     }
 
-    // 5. Kouri tranzaksyon sekirize a nan Prisma ($transaction)
+    // 6. Kouri tranzaksyon an nan Prisma ($transaction)
     return this.prisma.$transaction(async (tx) => {
-      // Debite moun k ap voye a
       await tx.wallet.update({
         where: { userId: senderId },
         data: {
@@ -172,7 +181,6 @@ export class WalletService {
         },
       });
 
-      // Kredite moun k ap resevwa a
       await tx.wallet.update({
         where: { userId: recipient.id },
         data: {
@@ -182,19 +190,19 @@ export class WalletService {
 
       const reference = 'P2P-' + Date.now();
 
-      // Kreye istorik tranzaksyon an pou tou de itilizatè yo ka wè l nan tablodbò yo
       const transaction = await tx.transaction.create({
         data: {
           reference,
           senderWalletId: senderWallet.id,
           receiverWalletId: recipient.wallet?.id,
           amount: transferAmount,
-          fee: 0, // 0 frais !
+          fee: 0,
           netAmount: transferAmount,
           type: 'TRANSFER',
           status: 'COMPLETED',
           method: 'OZAMAPAY',
-          title: `P2P bay ${recipient.email}`,
+          title: `Ou voye ${transferAmount} HTG bay ${recipient.name || recipient.email}`,
+          description: `${sender.name || sender.email} voye ${transferAmount} HTG pou ou`,
         },
       });
 
@@ -206,194 +214,122 @@ export class WalletService {
   }
 
   // ======================================================
-// TRANSFER (WITH FEES)
-// ======================================================
-
-async transfer(
-  senderId: string,
-  recipientEmail: string,
-  amount: number,
-) {
-  await this.checkKyc(senderId);
-
-  const cleanAmount = Number(amount);
-
-  if (isNaN(cleanAmount) || cleanAmount <= 0) {
-    throw new BadRequestException(
-      'Montan invalid',
-    );
-  }
-
-  // ======================================================
-  // SENDER WALLET
+  // TRANSFER (SEKIRIZE AVÈK PIN & WITH FEES)
   // ======================================================
 
-  const senderWallet =
-    await this.prisma.wallet.findUnique({
-      where: {
-        userId: senderId,
-      },
+  async transfer(
+    senderId: string,
+    recipientEmail: string,
+    amount: number,
+    pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a tou
+  ) {
+    await this.checkKyc(senderId);
+
+    // 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
+    const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
+    if (!sender) {
+      throw new NotFoundException('Itilizatè sa a pa egziste.');
+    }
+    if (!sender.transactionPin || sender.transactionPin !== pin) {
+      throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
+    }
+
+    const cleanAmount = Number(amount);
+    if (isNaN(cleanAmount) || cleanAmount <= 0) {
+      throw new BadRequestException('Montan invalid');
+    }
+
+    const senderWallet = await this.prisma.wallet.findUnique({
+      where: { userId: senderId },
     });
 
-  if (!senderWallet) {
-    throw new NotFoundException(
-      'Wallet sender pa jwenn',
-    );
-  }
+    if (!senderWallet) {
+      throw new NotFoundException('Wallet sender pa jwenn');
+    }
 
-  // ======================================================
-  // RECIPIENT
-  // ======================================================
-
-  const recipient =
-    await this.prisma.user.findUnique({
+    const recipient = await this.prisma.user.findUnique({
       where: {
-        email: recipientEmail
-          .toLowerCase()
-          .trim(),
+        email: recipientEmail.toLowerCase().trim(),
       },
-
       include: {
         wallet: true,
       },
     });
 
-  if (!recipient || !recipient.wallet) {
-    throw new NotFoundException(
-      'Destinatè pa jwenn',
-    );
-  }
+    if (!recipient || !recipient.wallet) {
+      throw new NotFoundException('Destinatè pa jwenn');
+    }
 
-  if (recipient.id === senderId) {
-    throw new BadRequestException(
-      'Ou pa ka voye kòb bay tèt ou',
-    );
-  }
+    if (recipient.id === senderId) {
+      throw new BadRequestException('Ou pa ka voye kòb bay tèt ou');
+    }
 
-  // ======================================================
-  // FEES
-  // ======================================================
+    const fee = 0;
+    const totalDebit = this.round(cleanAmount + fee);
 
-  // 👑 NOUVO KÒD LA (0% FRÈ - GRATIS NÈT)
-  const fee = 0;
+    if (Number(senderWallet.balance) < totalDebit) {
+      throw new BadRequestException('Balans ensifizan');
+    }
 
-  const totalDebit = this.round(
-    cleanAmount + fee, // fee a se 0, donk totalDebit === cleanAmount
-  );
-
-  if (
-    Number(senderWallet.balance) <
-    totalDebit
-  ) {
-    throw new BadRequestException(
-      'Balans ensifizan',
-    );
-  }
-
-  // ======================================================
-  // MASTER WALLET CHECK
-  // ======================================================
-
-  let masterWallet =
-    await this.prisma.wallet.findUnique({
-      where: {
-        userId: MASTER_ID,
-      },
+    let masterWallet = await this.prisma.wallet.findUnique({
+      where: { userId: MASTER_ID },
     });
 
-  // Auto create master wallet si li pa egziste
-  if (!masterWallet) {
-    masterWallet =
-      await this.prisma.wallet.create({
+    if (!masterWallet) {
+      masterWallet = await this.prisma.wallet.create({
         data: {
           userId: MASTER_ID,
           balance: 0,
         },
       });
-  }
+    }
 
-  // ======================================================
-  // TRANSACTION
-  // ======================================================
-
-  return this.prisma.$transaction(
-    async (tx) => {
-      // DEBIT SENDER
+    return this.prisma.$transaction(async (tx) => {
       await tx.wallet.update({
-        where: {
-          userId: senderId,
-        },
-
+        where: { userId: senderId },
         data: {
-          balance: {
-            decrement: totalDebit,
-          },
+          balance: { decrement: totalDebit },
         },
       });
 
-      // CREDIT RECIPIENT
       await tx.wallet.update({
-        where: {
-          userId: recipient.id,
-        },
-
+        where: { userId: recipient.id },
         data: {
-          balance: {
-            increment: cleanAmount,
-          },
+          balance: { increment: cleanAmount },
         },
       });
 
-      // CREDIT MASTER FEES
       await tx.wallet.update({
-        where: {
-          userId: MASTER_ID,
-        },
-
+        where: { userId: MASTER_ID },
         data: {
-          balance: {
-            increment: fee,
-          },
+          balance: { increment: fee },
         },
       });
 
-      const reference =
-        'TRX-' + Date.now();
+      const reference = 'TRX-' + Date.now();
 
-      const transaction =
-        await tx.transaction.create({
-          data: {
-            reference,
-
-            senderWalletId:
-              senderWallet.id,
-
-            receiverWalletId:
-  recipient.wallet!.id,
-
-            amount: cleanAmount,
-
-            fee,
-
-            netAmount: cleanAmount,
-
-            type: 'TRANSFER',
-
-            status: 'COMPLETED',
-
-            method: 'OZAMAPAY',
-
-            title: `Transfer bay ${recipient.email}`,
-          },
-        });
+      const transaction = await tx.transaction.create({
+        data: {
+          reference,
+          senderWalletId: senderWallet.id,
+          receiverWalletId: recipient.wallet!.id,
+          amount: cleanAmount,
+          fee,
+          netAmount: cleanAmount,
+          type: 'TRANSFER',
+          status: 'COMPLETED',
+          method: 'OZAMAPAY',
+          title: `Ou voye ${cleanAmount} HTG bay ${recipient.name || recipient.email}`,
+          description: `${sender.name || sender.email} voye ${cleanAmount} HTG pou ou`,
+        },
+      });
 
       return {
         message: 'Transfer reyisi',
         transaction,
       };
-    },
-  );
-}
+    });
+  }
 
   // ======================================================
   // MANUAL TOPUP
@@ -403,32 +339,28 @@ async transfer(
     userId: string,
     amount: number,
     method: string,
-    proofImage: string,
+    agentId?: string,
+    proofImage?: string,
   ) {
-    await this.checkKyc(userId);
+    const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet) throw new NotFoundException('Wallet pa jwenn');
 
-    const reference =
-      'TOPUP-' + Date.now();
+    const fee = this.round(amount * FEES.TOPUP);
+    const netAmount = this.round(amount - fee);
+    const reference = 'TOPUP-' + Date.now();
 
     return this.prisma.transaction.create({
       data: {
         reference,
-
+        receiverWalletId: wallet.id,
         amount,
-
-        fee: 0,
-
-        netAmount: amount,
-
+        fee,
+        netAmount,
         type: 'TOPUP',
-
         status: 'PENDING',
-
         method,
-
-        proofImage,
-
-        title: `Topup via ${method}`,
+        title: `Depot via ${method} — ${amount} HTG`,
+        ...(proofImage ? { proofImage } : {}),
       },
     });
   }
@@ -437,102 +369,54 @@ async transfer(
   // APPROVE TOPUP
   // ======================================================
 
-  async approveTopup(
-    transactionId: string,
-    userId: string,
-  ) {
-    const transaction =
-      await this.prisma.transaction.findUnique({
-        where: {
-          id: transactionId,
-        },
-      });
+  async approveTopup(transactionId: string, userId: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
 
     if (!transaction) {
-      throw new NotFoundException(
-        'Transaction pa jwenn',
-      );
+      throw new NotFoundException('Transaction pa jwenn');
     }
 
-    const wallet =
-      await this.prisma.wallet.findUnique({
-        where: {
-          userId,
-        },
-      });
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+    });
 
     if (!wallet) {
-      throw new NotFoundException(
-        'Wallet pa jwenn',
-      );
+      throw new NotFoundException('Wallet pa jwenn');
     }
 
-    const fee = this.round(
-      Number(transaction.amount) *
-        FEES.TOPUP,
-    );
+    const fee = this.round(Number(transaction.amount) * FEES.TOPUP);
+    const netAmount = this.round(Number(transaction.amount) - fee);
 
-    const netAmount = this.round(
-      Number(transaction.amount) - fee,
-    );
+    return this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { userId },
+        data: { balance: { increment: netAmount } },
+      });
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        await tx.wallet.update({
-          where: {
-            userId,
-          },
+      await tx.wallet.update({
+        where: { userId: MASTER_ID },
+        data: { balance: { increment: fee } },
+      });
 
-          data: {
-            balance: {
-              increment: netAmount,
-            },
-          },
-        });
+      const updated = await tx.transaction.update({
+        where: { id: transaction.id },
+        data: { status: 'COMPLETED' },
+      });
 
-        await tx.wallet.update({
-          where: {
-            userId: MASTER_ID,
-          },
-
-          data: {
-            balance: {
-              increment: fee,
-            },
-          },
-        });
-
-        const updated =
-          await tx.transaction.update({
-            where: {
-              id: transaction.id,
-            },
-
-            data: {
-              status: 'COMPLETED',
-            },
-          });
-
-        return updated;
-      },
-    );
+      return updated;
+    });
   }
 
   // ======================================================
   // REJECT TOPUP
   // ======================================================
 
-  async rejectTopup(
-    transactionId: string,
-  ) {
+  async rejectTopup(transactionId: string) {
     return this.prisma.transaction.update({
-      where: {
-        id: transactionId,
-      },
-
-      data: {
-        status: 'REJECTED',
-      },
+      where: { id: transactionId },
+      data: { status: 'REJECTED' },
     });
   }
 
@@ -548,60 +432,43 @@ async transfer(
   ) {
     await this.checkKyc(userId);
 
-    const wallet =
-      await this.prisma.wallet.findUnique({
-        where: {
-          userId,
-        },
-      });
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+    });
 
     if (!wallet) {
-      throw new NotFoundException(
-        'Wallet pa jwenn',
-      );
+      throw new NotFoundException('Wallet pa jwenn');
     }
 
-    const fee = this.round(
-      amount * FEES.WITHDRAW,
-    );
+    const fee = this.round(amount * FEES.WITHDRAW);
+    const totalDebit = amount + fee;
 
-    const totalDebit =
-      amount + fee;
-
-    if (
-      Number(wallet.balance) <
-      totalDebit
-    ) {
-      throw new BadRequestException(
-        'Balans ensifizan',
-      );
+    if (Number(wallet.balance) < totalDebit) {
+      throw new BadRequestException('Balans ensifizan');
     }
 
-    const reference =
-      'WD-' + Date.now();
+    const reference = 'WD-' + Date.now();
 
-    return this.prisma.transaction.create({
-      data: {
-        reference,
+    return this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { userId },
+        data: { balance: { decrement: totalDebit } },
+      });
 
-        senderWalletId: wallet.id,
-
-        amount,
-
-        fee,
-
-        netAmount: amount,
-
-        type: 'WITHDRAWAL',
-
-        status: 'PENDING',
-
-        method,
-
-        description: accountInfo,
-
-        title: `Retrait via ${method}`,
-      },
+      return tx.transaction.create({
+        data: {
+          reference,
+          senderWalletId: wallet.id,
+          amount,
+          fee,
+          netAmount: this.round(amount - fee),
+          type: 'WITHDRAWAL',
+          status: 'PENDING',
+          method,
+          description: accountInfo,
+          title: `Retrè via ${method} — ${amount} HTG`,
+        },
+      });
     });
   }
 
@@ -618,15 +485,10 @@ async transfer(
     return this.prisma.serviceRequest.create({
       data: {
         userId,
-
         serviceType,
-
         amount,
-
         fee: 0,
-
         details,
-
         status: 'PENDING',
       },
     });
@@ -636,65 +498,37 @@ async transfer(
   // ADMIN TOPUP
   // ======================================================
 
-  async adminTopup(
-    userId: string,
-    amount: number,
-  ) {
-    return this.prisma.$transaction(
-      async (tx) => {
-        const wallet =
-          await tx.wallet.findUnique({
-            where: {
-              userId,
-            },
-          });
+  async adminTopup(userId: string, amount: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallet.findUnique({
+        where: { userId },
+      });
 
-        if (!wallet) {
-          throw new NotFoundException(
-            'Wallet pa jwenn',
-          );
-        }
+      if (!wallet) {
+        throw new NotFoundException('Wallet pa jwenn');
+      }
 
-        const updated =
-          await tx.wallet.update({
-            where: {
-              userId,
-            },
+      const updated = await tx.wallet.update({
+        where: { userId },
+        data: { balance: { increment: amount } },
+      });
 
-            data: {
-              balance: {
-                increment: amount,
-              },
-            },
-          });
+      await tx.transaction.create({
+        data: {
+          reference: 'ADMIN-' + Date.now(),
+          receiverWalletId: wallet.id,
+          amount,
+          fee: 0,
+          netAmount: amount,
+          type: 'TOPUP',
+          status: 'COMPLETED',
+          method: 'ADMIN',
+          title: 'Admin Topup',
+        },
+      });
 
-        await tx.transaction.create({
-          data: {
-            reference:
-              'ADMIN-' + Date.now(),
-
-            receiverWalletId:
-              wallet.id,
-
-            amount,
-
-            fee: 0,
-
-            netAmount: amount,
-
-            type: 'TOPUP',
-
-            status: 'COMPLETED',
-
-            method: 'ADMIN',
-
-            title: 'Admin Topup',
-          },
-        });
-
-        return updated;
-      },
-    );
+      return updated;
+    });
   }
 
   // ======================================================
@@ -702,34 +536,20 @@ async transfer(
   // ======================================================
 
   async getStats() {
-    const users =
-      await this.prisma.user.count();
-
-    const transactions =
-      await this.prisma.transaction.count();
-
-    const pending =
-      await this.prisma.transaction.count({
-        where: {
-          status: 'PENDING',
-        },
-      });
-
-    const volume =
-      await this.prisma.transaction.aggregate({
-        _sum: {
-          amount: true,
-        },
-      });
+    const users = await this.prisma.user.count();
+    const transactions = await this.prisma.transaction.count();
+    const pending = await this.prisma.transaction.count({
+      where: { status: 'PENDING' },
+    });
+    const volume = await this.prisma.transaction.aggregate({
+      _sum: { amount: true },
+    });
 
     return {
       users,
       transactions,
       pending,
-
-      volume:
-        volume._sum.amount || 0,
+      volume: volume._sum.amount || 0,
     };
   }
-  
 }
