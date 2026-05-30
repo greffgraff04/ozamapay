@@ -1557,6 +1557,8 @@ try {
           </div>
         )}
 
+      </div>
+
       {/* BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50">
         {[
