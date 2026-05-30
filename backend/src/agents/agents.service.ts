@@ -12,6 +12,8 @@ import {
   AgentWithdrawDto,
 } from './dto/agent-transactions.dto';
 
+const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
+
 @Injectable()
 export class AgentsService {
   constructor(
@@ -457,6 +459,15 @@ export class AgentsService {
           },
         });
 
+        // CREDIT OZAMA MASTER
+        const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
+        if (masterWallet) {
+          await tx.wallet.update({
+            where: { id: masterWallet.id },
+            data: { balance: { increment: ozamaRevenue } },
+          });
+        }
+
         return {
           success: true,
           amount,
@@ -680,6 +691,15 @@ export class AgentsService {
               agentCommission,
           },
         });
+
+        // CREDIT OZAMA MASTER
+        const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
+        if (masterWallet) {
+          await tx.wallet.update({
+            where: { id: masterWallet.id },
+            data: { balance: { increment: ozamaRevenue } },
+          });
+        }
 
         return {
           success: true,

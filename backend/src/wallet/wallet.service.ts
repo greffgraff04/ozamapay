@@ -17,6 +17,9 @@ const FEES = {
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
+const INTERNATIONAL_METHODS = ['ZELLE', 'CASHAPP', 'WISE', 'MERU', 'BANK', 'USDT'];
+const isInternational = (method: string) => INTERNATIONAL_METHODS.includes(method.toUpperCase());
+
 @Injectable()
 export class WalletService {
   constructor(private prisma: PrismaService) {}
@@ -47,6 +50,11 @@ export class WalletService {
 
   private round(value: number) {
     return Math.round(value * 100) / 100;
+  }
+
+  private async getUsdHtgRate(): Promise<number> {
+    const entry = await this.prisma.rate.findUnique({ where: { key: 'USD_HTG' } });
+    return Number(entry?.value || 140);
   }
 
   // ======================================================
@@ -348,21 +356,27 @@ export class WalletService {
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) throw new NotFoundException('Wallet pa jwenn');
 
-    const fee = this.round(amount * FEES.TOPUP);
-    const netAmount = this.round(amount - fee);
+    const amountHTG = isInternational(method)
+      ? this.round(amount * await this.getUsdHtgRate())
+      : amount;
+
+    const fee = this.round(amountHTG * FEES.TOPUP);
+    // Fee is on top — user receives the full HTG equivalent
     const reference = 'TOPUP-' + Date.now();
 
     return this.prisma.transaction.create({
       data: {
         reference,
         receiverWalletId: wallet.id,
-        amount,
+        amount: amountHTG,
         fee,
-        netAmount,
+        netAmount: amountHTG,
         type: 'TOPUP',
         status: 'PENDING',
         method,
-        title: `Depot via ${method} — ${amount} HTG`,
+        title: isInternational(method)
+          ? `Depot via ${method} — $${amount} USD (${amountHTG} HTG)`
+          : `Depot via ${method} — ${amountHTG} HTG`,
         ...(proofImage ? { proofImage } : {}),
       },
     });
@@ -435,16 +449,15 @@ export class WalletService {
   ) {
     await this.checkKyc(userId);
 
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { userId },
-    });
+    const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet) throw new NotFoundException('Wallet pa jwenn');
 
-    if (!wallet) {
-      throw new NotFoundException('Wallet pa jwenn');
-    }
+    const amountHTG = isInternational(method)
+      ? this.round(amount * await this.getUsdHtgRate())
+      : amount;
 
-    const fee = this.round(amount * FEES.WITHDRAW);
-    const totalDebit = amount + fee;
+    const fee = this.round(amountHTG * FEES.WITHDRAW);
+    const totalDebit = this.round(amountHTG + fee);
 
     if (Number(wallet.balance) < totalDebit) {
       throw new BadRequestException('Balans ensifizan');
@@ -462,14 +475,16 @@ export class WalletService {
         data: {
           reference,
           senderWalletId: wallet.id,
-          amount,
+          amount: amountHTG,
           fee,
-          netAmount: this.round(amount - fee),
+          netAmount: amountHTG,
           type: 'WITHDRAWAL',
           status: 'PENDING',
           method,
           description: accountInfo,
-          title: `Retrè via ${method} — ${amount} HTG`,
+          title: isInternational(method)
+            ? `Retrè via ${method} — $${amount} USD (${amountHTG} HTG)`
+            : `Retrè via ${method} — ${amountHTG} HTG`,
         },
       });
     });

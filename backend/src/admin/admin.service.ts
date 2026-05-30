@@ -476,27 +476,55 @@ export class AdminService {
       }
 
       if (transaction.type === 'TOPUP' && transaction.receiverWalletId) {
+        // Credit full amount — topup fee is on top, not deducted from user
         await tx.wallet.update({
           where: { id: transaction.receiverWalletId },
           data: { balance: { increment: transaction.netAmount } },
         });
+
         if (Number(transaction.fee) > 0) {
+          const txUserId = transaction.receiverWallet?.userId;
+          const txUser = txUserId ? await tx.user.findUnique({ where: { id: txUserId } }) : null;
+          const refAgentId = txUser?.referredByAgentId ?? null;
           const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
-          if (masterWallet) {
-            await tx.wallet.update({
-              where: { id: masterWallet.id },
-              data: { balance: { increment: transaction.fee } },
-            });
+
+          if (refAgentId) {
+            const agent = await tx.agent.findUnique({ where: { id: refAgentId }, include: { wallet: true } });
+            if (agent?.wallet) {
+              const agentFee = Math.round(Number(transaction.amount) * 0.02 * 100) / 100;
+              const ozamaFee = Math.round((Number(transaction.fee) - agentFee) * 100) / 100;
+              await tx.agentWallet.update({ where: { agentId: agent.id }, data: { balance: { increment: agentFee } } });
+              await tx.agent.update({ where: { id: agent.id }, data: { totalCommission: { increment: agentFee } } });
+              await tx.commission.create({ data: { agentId: agent.id, amount: agentFee, type: 'TOPUP', transactionId: txId } });
+              if (masterWallet) await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: ozamaFee } } });
+            } else if (masterWallet) {
+              await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: transaction.fee } } });
+            }
+          } else if (masterWallet) {
+            await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: transaction.fee } } });
           }
         }
       } else if (transaction.type === 'WITHDRAWAL' && transaction.senderWalletId) {
         if (Number(transaction.fee) > 0) {
+          const txUserId = transaction.senderWallet?.userId;
+          const txUser = txUserId ? await tx.user.findUnique({ where: { id: txUserId } }) : null;
+          const refAgentId = txUser?.referredByAgentId ?? null;
           const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
-          if (masterWallet) {
-            await tx.wallet.update({
-              where: { id: masterWallet.id },
-              data: { balance: { increment: transaction.fee } },
-            });
+
+          if (refAgentId) {
+            const agent = await tx.agent.findUnique({ where: { id: refAgentId }, include: { wallet: true } });
+            if (agent?.wallet) {
+              const agentFee = Math.round(Number(transaction.amount) * 0.0075 * 100) / 100;
+              const ozamaFee = Math.round((Number(transaction.fee) - agentFee) * 100) / 100;
+              await tx.agentWallet.update({ where: { agentId: agent.id }, data: { balance: { increment: agentFee } } });
+              await tx.agent.update({ where: { id: agent.id }, data: { totalCommission: { increment: agentFee } } });
+              await tx.commission.create({ data: { agentId: agent.id, amount: agentFee, type: 'WITHDRAWAL', transactionId: txId } });
+              if (masterWallet) await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: ozamaFee } } });
+            } else if (masterWallet) {
+              await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: transaction.fee } } });
+            }
+          } else if (masterWallet) {
+            await tx.wallet.update({ where: { id: masterWallet.id }, data: { balance: { increment: transaction.fee } } });
           }
         }
       }

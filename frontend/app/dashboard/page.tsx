@@ -107,6 +107,11 @@ export default function Dashboard() {
     { id: 'natcash', label: 'NatCash', img: 'natcash.png', info: "55187047", name: "Ralph Olivier Greffin" },
     { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" }
   ];
+  const INTL_METHODS = ['zelle', 'cashapp', 'wise', 'meru', 'bank', 'usdt'];
+  const topupIsIntl = INTL_METHODS.includes(selectedMethod.toLowerCase());
+  const withdrawIsIntl = INTL_METHODS.includes(withdrawMethod.toLowerCase());
+  const topupHTG = topupIsIntl ? Math.round(Number(topUpAmount) * exchangeRate) : Number(topUpAmount);
+  const withdrawHTG = withdrawIsIntl ? Math.round(Number(withdrawAmount) * exchangeRate) : Number(withdrawAmount);
  
   const showToast = (message: string, type: 'error' | 'success' | 'warning' = 'error') => {
     setToast({ message, type });
@@ -803,12 +808,24 @@ try {
             <div className="space-y-6">
               <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
-                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">Montan an HTG</label>
+                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
                 {topUpAmount && (
-                  <div className="mt-4 pt-4 border-t border-black/5 flex justify-between items-center animate-in fade-in">
-                    <span className="text-[10px] font-black uppercase italic text-gray-400">Frais (6.0%): {calculateFees(topUpAmount, 0.06).fee} HTG</span>
-                    <span className="text-xs font-black italic text-[#FF7A00]">Total: {calculateFees(topUpAmount, 0.06).total} HTG</span>
+                  <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
+                    {topupIsIntl && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black uppercase italic text-gray-400">Ekivalan HTG</span>
+                        <span className="text-[10px] font-black italic text-[#0F121E]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase italic text-gray-400">Frais Ozama (6.0%)</span>
+                      <span className="text-[10px] font-black uppercase italic text-gray-400">{calculateFees(String(topupHTG), 0.06).fee} HTG</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
+                      <span className="text-xs font-black italic text-[#FF7A00]">{topupHTG.toLocaleString()} HTG</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -874,12 +891,24 @@ try {
             <div className="space-y-6">
               <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
-                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">Kòb pou retire (HTG)</label>
+                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">{withdrawIsIntl ? 'Montan an USD' : 'Kòb pou retire (HTG)'}</label>
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none text-white" placeholder="0" type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
                 {withdrawAmount && (
-                  <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center animate-in fade-in">
-                    <span className="text-[10px] font-black uppercase italic text-white/40">Frais Ozama (2.0%): -{calculateFees(withdrawAmount).fee} HTG</span>
-                    <span className="text-xs font-black italic text-green-400">Wap Resevwa: {calculateFees(withdrawAmount).totalWithdraw} HTG</span>
+                  <div className="mt-4 pt-4 border-t border-white/5 animate-in fade-in space-y-2">
+                    {withdrawIsIntl && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black uppercase italic text-white/40">Ekivalan HTG</span>
+                        <span className="text-[10px] font-black italic text-white">${withdrawAmount} USD = {withdrawHTG.toLocaleString()} HTG</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black uppercase italic text-white/40">Frais Ozama (2.0%)</span>
+                      <span className="text-[10px] font-black uppercase italic text-white/40">-{calculateFees(String(withdrawHTG)).fee} HTG</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black italic text-green-400">Total Debite</span>
+                      <span className="text-xs font-black italic text-green-400">{(withdrawHTG + Number(calculateFees(String(withdrawHTG)).fee)).toLocaleString()} HTG</span>
+                    </div>
                   </div>
                 )}
               </div>
