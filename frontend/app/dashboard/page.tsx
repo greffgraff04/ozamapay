@@ -807,8 +807,8 @@ try {
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
                 {topUpAmount && (
                   <div className="mt-4 pt-4 border-t border-black/5 flex justify-between items-center animate-in fade-in">
-                    <span className="text-[10px] font-black uppercase italic text-gray-400">Frais (6.0%): {calculateFees(topUpAmount).fee} HTG</span>
-                    <span className="text-xs font-black italic text-[#FF7A00]">Total: {calculateFees(topUpAmount).total} HTG</span>
+                    <span className="text-[10px] font-black uppercase italic text-gray-400">Frais (6.0%): {calculateFees(topUpAmount, 0.06).fee} HTG</span>
+                    <span className="text-xs font-black italic text-[#FF7A00]">Total: {calculateFees(topUpAmount, 0.06).total} HTG</span>
                   </div>
                 )}
               </div>
