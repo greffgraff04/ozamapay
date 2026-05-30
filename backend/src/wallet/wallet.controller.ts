@@ -9,15 +9,18 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ImageKitService } from '../imagekit/imagekit.service';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
 export class WalletController {
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly imagekitService: ImageKitService,
+  ) {}
 
   // ======================================================
   // RALE WALLET ITILIZATÈ A
@@ -32,12 +35,9 @@ export class WalletController {
   // ======================================================
   @Get('stats')
   async getWalletStats(@Req() req: any) {
-    // Nou ka rele yon metòd nan walletService si w genyen l, 
-    // oswa nou retounen yon estrikti stats pwòp pou fòse frontend lan louvri san pwoblèm:
     const wallet = await this.walletService.getWallet(req.user.id);
     const transactions = await this.walletService.getTransactions(req.user.id);
 
-    // Kalkile antre ak soti rapid pou bay bèl vizyèl la
     const totalIncoming = transactions
       .filter((t: any) => t.status === 'COMPLETED' && t.receiverWalletId === wallet?.id)
       .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
@@ -101,12 +101,7 @@ export class WalletController {
   // ======================================================
   @Post('topup')
   @UseInterceptors(FileInterceptor('receipt', {
-    storage: diskStorage({
-      destination: './uploads/topup',
-      filename: (_, file, cb) => {
-        cb(null, `topup-${Date.now()}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
   }))
   async createManualTopup(
@@ -114,8 +109,9 @@ export class WalletController {
     @Body() body: { amount: string; method: string; agentId?: string },
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:10000';
-    const proofImage = file ? `${backendUrl}/uploads/topup/${file.filename}` : undefined;
+    const proofImage = file
+      ? await this.imagekitService.uploadFile(file, 'topup')
+      : undefined;
     return this.walletService.createManualTopup(
       req.user.id,
       Number(body.amount),
@@ -146,12 +142,7 @@ export class WalletController {
   // ======================================================
   @Post('finance-request')
   @UseInterceptors(FileInterceptor('proofImage', {
-    storage: diskStorage({
-      destination: './uploads/finance',
-      filename: (_, file, cb) => {
-        cb(null, `finance-${Date.now()}${extname(file.originalname)}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
   }))
   async createFinanceRequest(
@@ -159,8 +150,9 @@ export class WalletController {
     @Body() body: { serviceType: any; amount: string; details: string },
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:10000';
-    const proofImage = file ? `${backendUrl}/uploads/finance/${file.filename}` : undefined;
+    const proofImage = file
+      ? await this.imagekitService.uploadFile(file, 'finance')
+      : undefined;
     return this.walletService.createFinanceRequest(
       req.user.id,
       body.serviceType,

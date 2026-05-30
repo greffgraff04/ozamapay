@@ -10,11 +10,14 @@ import { AuthModule } from '../auth/auth.module';
 
 import { CommissionsModule } from '../commissions/commissions.module';
 
+import { ImageKitModule } from '../imagekit/imagekit.module';
+
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     CommissionsModule,
+    ImageKitModule,
   ],
 
   controllers: [KycController],

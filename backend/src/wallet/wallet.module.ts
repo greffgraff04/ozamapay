@@ -5,6 +5,7 @@ import { WalletService } from './wallet.service';
 
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
+import { ImageKitModule } from '../imagekit/imagekit.module';
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,7 @@ import { AuthModule } from '../auth/auth.module';
   imports: [
     PrismaModule,
     AuthModule,
+    ImageKitModule,
 
     /*
     |--------------------------------------------------------------------------
