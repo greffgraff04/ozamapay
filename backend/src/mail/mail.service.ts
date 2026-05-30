@@ -1,15 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  private resend = new Resend(process.env.RESEND_API_KEY);
 
   private readonly frontendUrl =
     process.env.FRONTEND_URL || 'https://ozamapay.com';
@@ -87,8 +81,8 @@ export class MailService {
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      await this.transporter.sendMail({
-        from: `"OZAMAPAY" <${process.env.EMAIL_USER}>`,
+      await this.resend.emails.send({
+        from: 'OZAMAPAY <noreply@ozamapay.com>',
         to,
         subject,
         html,
