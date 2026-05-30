@@ -15,7 +15,8 @@ const PAYMENT_INFO = {
   meru: { acc: "oliou04@gmail.com", name: "Ralph Olivier Greffin" },
   zelle: { acc: "786 868 6782", name: "Ralph Olivier Greffin" },
   cashapp: { acc: "$Pascoue93", name: "Ralph Olivier Greffin" },
-  usdt: { acc: "https://ozamapay.com/pay/usdt-link", name: "TRC20 Network" }
+  usdt: { acc: "https://ozamapay.com/pay/usdt-link", name: "TRC20 Network" },
+  natcash: { label: 'MonCash / NatCash', value: 'À konfigire - Kontakte sipò nou', note: 'HTG Transfer' }
 };
  
 const formatTimeAgo = (dateString: string) => {
@@ -65,7 +66,9 @@ export default function Dashboard() {
   });
   const [selectedFinanceService, setSelectedFinanceService] = useState<any>(null);
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [financeReceipt, setFinanceReceipt] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const financeFileInputRef = useRef<HTMLInputElement>(null);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number>(135);
 
@@ -183,7 +186,7 @@ try {
       showToast('Tanpri antre yon montan valid', 'error');
       return;
     }
-    if (financeType === 'BUY' && !receipt) {
+    if (financeType === 'BUY' && !financeReceipt) {
       showToast('Ou dwe upload prèv peman ou anvan soumèt', 'error');
       return;
     }
@@ -204,7 +207,7 @@ try {
       formData.append('serviceType', selectedFinanceService.id.toUpperCase());
       formData.append('amount', financeDetails.amount);
       formData.append('details', details);
-      if (receipt) formData.append('proofImage', receipt);
+      if (financeReceipt) formData.append('proofImage', financeReceipt);
 
       const res = await fetch(`${backendUrl}/wallet/finance-request`, {
         method: 'POST',
@@ -216,7 +219,7 @@ try {
       if (res.ok) {
         showToast('Demann ou an voye avèk siksè! Admin ap revize li.', 'success');
         setSelectedFinanceService(null);
-        setReceipt(null);
+        setFinanceReceipt(null);
         setFinanceDetails({ email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' });
         setFinanceType('BUY');
       } else {
@@ -958,7 +961,7 @@ try {
         {/* --- SERVICE DETAIL --- */}
         {activeTab === 'finance' && selectedFinanceService && (
           <div className="animate-in zoom-in duration-500 pb-10">
-            <button onClick={() => { setSelectedFinanceService(null); setReceipt(null); }} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+            <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
               <ChevronRight size={14} className="rotate-180" /> Back to Services
             </button>
             
@@ -995,13 +998,13 @@ try {
             <div className="space-y-5">
               {selectedFinanceService.id === 'gaming' && (
                 <div className="space-y-4">
-                  <select className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]">
-                    <option>CHWAZI JWÈT LA</option>
-                    <option>FREE FIRE (Diamonds)</option>
-                    <option>PUBG MOBILE (UC)</option>
-                    <option>CALL OF COD (CP)</option>
+                  <select value={financeDetails.gamePack} onChange={(e) => setFinanceDetails({...financeDetails, gamePack: e.target.value})} className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]">
+                    <option value="">CHWAZI JWÈT LA</option>
+                    <option value="FREE FIRE (Diamonds)">FREE FIRE (Diamonds)</option>
+                    <option value="PUBG MOBILE (UC)">PUBG MOBILE (UC)</option>
+                    <option value="CALL OF DUTY (CP)">CALL OF DUTY (CP)</option>
                   </select>
-                  <input className="w-full p-6 bg-gray-50 rounded-2xl font-bold uppercase text-xs border border-black/5 outline-none" placeholder="METE PLAYER ID OU LA..." />
+                  <input value={financeDetails.gameId} onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})} className="w-full p-6 bg-gray-50 rounded-2xl font-bold uppercase text-xs border border-black/5 outline-none" placeholder="METE PLAYER ID OU LA..." />
                 </div>
               )}
  
@@ -1021,9 +1024,9 @@ try {
               {financeType === 'BUY' && (
                 <div className="p-8 bg-orange-50/30 border border-orange-100 rounded-3xl">
                     <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">Etap Final: Upload Prèv Peman</p>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-white flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
+                    <button onClick={() => financeFileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-white flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
                         <Upload size={24} className="text-[#FF7A00]" />
-                        <span className="text-[9px] font-black uppercase italic text-gray-500">{receipt ? receipt.name : 'Chwazi Screenshot la'}</span>
+                        <span className="text-[9px] font-black uppercase italic text-gray-500">{financeReceipt ? financeReceipt.name : 'Chwazi Screenshot la'}</span>
                     </button>
                 </div>
               )}
@@ -1571,6 +1574,7 @@ try {
       </nav>
       
       <input type="file" ref={fileInputRef} hidden onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
+      <input type="file" ref={financeFileInputRef} hidden onChange={(e) => setFinanceReceipt(e.target.files?.[0] || null)} />
     </main>
   );
 }

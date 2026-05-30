@@ -486,6 +486,7 @@ export class WalletService {
     details: string,
     proofImage?: string,
   ) {
+    await this.checkKyc(userId);
     // HTG services get 2% fee, USD/USDT services get 6% fee
     const isHtgService = serviceType === 'NATCASH';
     const feeRate = isHtgService ? FEES.WITHDRAW : FEES.TOPUP;
