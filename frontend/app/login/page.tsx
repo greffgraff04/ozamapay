@@ -1,48 +1,53 @@
 'use client';
-import { useState } from 'react';
 
-export default function LoginPage() {
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('reset') === 'success') {
+      setSuccessMsg('Modpas ou chanje avèk siksè. Konekte kounye a.');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
-    // Nou pran localhost:3001 kòm sekirite si .env lan pa moute
-    const backendUrl =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  'http://localhost:10000';
-  
+
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
+
     try {
-      // 🔥 KORÈK: Nou kase adrès 192.168... la ki t ap bay timeout a!
       const res = await fetch(`${backendUrl}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
-        
-        if (email.toLowerCase() === "oli@ozama.com") {
-          window.location.href = "/admin/users"; 
+
+        if (email.toLowerCase() === 'oli@ozama.com') {
+          window.location.href = '/admin/users';
         } else {
-          window.location.href = "/dashboard"; 
+          window.location.href = '/dashboard';
         }
       } else {
-        setError(data.message || "Email oswa modpas pa bon");
+        setError(data.message || 'Email oswa modpas pa bon');
       }
-    } catch (err) {
-      setError("Sèvè a pa reponn. Verifye si Backend lan lanse.");
+    } catch {
+      setError('Sèvè a pa reponn. Verifye si Backend lan lanse.');
     } finally {
       setLoading(false);
     }
@@ -53,26 +58,49 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-100">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-black italic tracking-tighter text-black uppercase">OZAMA PAY</h1>
-          <div className="h-1 w-12 bg-[#FF7A00] mx-auto mt-2 rounded-full"></div>
+          <div className="h-1 w-12 bg-[#FF7A00] mx-auto mt-2 rounded-full" />
         </div>
+
         <form onSubmit={handleLogin} className="space-y-4">
+          {successMsg && (
+            <div className="bg-green-50 text-green-700 text-[10px] p-4 rounded-2xl text-center font-black uppercase italic border border-green-100">
+              {successMsg}
+            </div>
+          )}
           {error && (
             <div className="bg-red-50 text-red-500 text-[10px] p-4 rounded-2xl text-center font-black uppercase italic border border-red-100">
               {error}
             </div>
           )}
-          <input 
-            type="email" placeholder="EMAIL" value={email} required
+          <input
+            type="email"
+            placeholder="EMAIL"
+            value={email}
+            required
             className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input 
-            type="password" placeholder="PASSWORD" value={password} required
-            className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button 
-            type="submit" disabled={loading}
+          <div>
+            <input
+              type="password"
+              placeholder="PASSWORD"
+              value={password}
+              required
+              className="w-full p-5 rounded-2xl border border-gray-100 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-bold text-sm"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="text-right mt-2">
+              <a
+                href="/forgot-password"
+                className="text-[10px] text-[#FF7A00] font-bold hover:underline underline-offset-2"
+              >
+                Ou bliye modpas ou?
+              </a>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
             className="w-full bg-[#0F121E] text-white p-6 rounded-2xl font-black uppercase text-xs tracking-[0.2em] mt-6 active:scale-95 transition-all shadow-lg"
           >
             {loading ? 'VERIFYE...' : 'SE CONNECTER'}
@@ -81,11 +109,25 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center">
           <p className="text-[#8E929B] text-[10px] font-bold uppercase italic">
-            Ou pa gen kont? 
-            <a href="/register" className="text-[#FF7A00] ml-2 underline decoration-2 underline-offset-4">Kreye yon kont</a>
+            Ou pa gen kont?
+            <a href="/register" className="text-[#FF7A00] ml-2 underline decoration-2 underline-offset-4">
+              Kreye yon kont
+            </a>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-[#F9FAFB]">
+        <div className="w-8 h-8 border-[3px] border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

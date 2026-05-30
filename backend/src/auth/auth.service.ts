@@ -347,6 +347,68 @@ export class AuthService {
   // JWT TOKEN
   // =========================
 
+  // =========================
+  // FORGOT PASSWORD
+  // =========================
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    // Always return same message to prevent email enumeration
+    if (!user) return { message: 'Si email sa a egziste, nou voye yon lyen reset' };
+
+    const token = randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3_600_000); // 1 hour
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { resetPasswordToken: token, resetPasswordExpires: expires },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://ozamapay.com';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    await this.mailService.sendPasswordReset(user.email, user.name || 'Kliyan', resetUrl);
+
+    return { message: 'Si email sa a egziste, nou voye yon lyen reset' };
+  }
+
+  // =========================
+  // RESET PASSWORD
+  // =========================
+
+  async resetPassword(token: string, newPassword: string) {
+    if (!token || !newPassword) {
+      throw new BadRequestException('Token ak nouvo modpas obligatwa');
+    }
+    if (newPassword.length < 6) {
+      throw new BadRequestException('Modpas la dwe gen minimum 6 karaktè');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: { resetPasswordToken: token },
+    });
+
+    if (!user) throw new BadRequestException('Token la pa valid');
+    if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      throw new BadRequestException('Token la ekspire. Mande yon nouvo lyen reset.');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashed,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    return { message: 'Modpas ou chanje avèk siksè. Ou ka konekte kounye a.' };
+  }
+
   private signToken(
     userId: string,
 

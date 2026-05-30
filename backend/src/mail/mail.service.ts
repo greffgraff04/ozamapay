@@ -192,4 +192,22 @@ export class MailService {
     );
     await this.send(email, `✅ Retrè ${Number(amount).toLocaleString('fr-HT')} HTG konfime`, html);
   }
+
+  async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
+    const html = this.wrap(
+      'Reset Modpas — OZAMAPAY',
+      this.badge('🔐 RESET MODPAS', '#D4630A') +
+      `<div style="height:16px;"></div>` +
+      this.h(`${name}, ou mande yon reset modpas`) +
+      this.p('Nou resevwa yon demann pou chanje modpas kont OZAMAPAY ou. Klike bouton anba a pou kontinye.') +
+      this.btn('Reset Modpas Mwen', resetUrl) +
+      `<div style="height:20px;"></div>` +
+      `<div style="padding:14px 18px;background:#fff8f0;border-left:4px solid #D4630A;border-radius:6px;font-size:13px;color:#92400e;">
+        ⏱ Lyen sa a valid pou <strong>1 èdtan sèlman</strong>.
+      </div>` +
+      `<div style="height:12px;"></div>` +
+      this.p('<span style="color:#999;font-size:12px;">Si ou pa mande reset sa a, inyore mesaj sa a. Kont ou an sekirite.</span>'),
+    );
+    await this.send(email, 'Reset Modpas OZAMAPAY', html);
+  }
 }
