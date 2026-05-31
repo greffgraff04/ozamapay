@@ -345,96 +345,151 @@ export class AdminService {
   }
 
   async processFinanceRequest(id: string, status: 'COMPLETED' | 'REJECTED', adminNote?: string) {
-    const req = await this.prisma.serviceRequest.findUnique({ where: { id } });
-    if (!req) throw new NotFoundException('Demann finans sa a pa jwenn');
-    if (req.status !== 'PENDING') throw new BadRequestException('Demann sa a trete deja');
+    const INTERNATIONAL_METHODS = ['ZELLE', 'CASHAPP', 'WISE', 'MERU', 'USDT', 'BANK'];
 
-    return this.prisma.$transaction(async (tx) => {
+    // Fetch before the transaction so user data is available for email after commit
+    const reqBefore = await this.prisma.serviceRequest.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+    if (!reqBefore) throw new NotFoundException('Demann finans sa a pa jwenn');
+
+    let parsed: { mode?: string } = {};
+    try { parsed = JSON.parse(reqBefore.details || '{}'); } catch {}
+    const mode = parsed.mode; // 'BUY' or 'SELL'
+    const serviceType = String(reqBefore.serviceType);
+    const isIntl = INTERNATIONAL_METHODS.includes(serviceType.toUpperCase());
+
+    const { updatedReq, emailNetAmount } = await this.prisma.$transaction(async (tx) => {
+      // Re-read inside tx so the status check is race-safe under Serializable isolation
+      const req = await tx.serviceRequest.findUnique({ where: { id } });
+      if (!req) throw new NotFoundException('Demann finans sa a pa jwenn');
+      if (req.status !== 'PENDING') throw new BadRequestException('Demann sa a trete deja');
+
       const updated = await tx.serviceRequest.update({
         where: { id },
         data: { status, adminNote: adminNote ?? null },
       });
 
-      let parsed: { mode?: string } = {};
-      try { parsed = JSON.parse(req.details || '{}'); } catch {}
-      const mode = parsed.mode; // 'BUY' or 'SELL'
-
       const wallet = await tx.wallet.findUnique({ where: { userId: req.userId } });
+      if (!wallet) throw new NotFoundException('Wallet itilizatè a pa jwenn');
+
+      let emailNetAmount = 0;
 
       if (status === 'COMPLETED') {
-        if (mode === 'BUY' && wallet) {
-          // User paid USD externally → credit equivalent HTG minus fee
+        if (mode === 'BUY') {
           const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
-          const rate = Number(rateEntry?.value || 140);
-          const amount = Number(req.amount);
-          const fee = Number(req.fee);
-          const creditHTG = (amount - fee) * rate;
+          const usdHtgRate = Number(rateEntry?.value || 140);
+          const amountHTG = isIntl
+            ? Math.round(Number(req.amount) * usdHtgRate * 100) / 100
+            : Number(req.amount);
+          const fee = Math.round(amountHTG * 0.06 * 100) / 100;
+          const netAmount = Math.round((amountHTG - fee) * 100) / 100;
+          emailNetAmount = netAmount;
 
           await tx.wallet.update({
             where: { userId: req.userId },
-            data: { balance: { increment: creditHTG } },
+            data: { balance: { increment: netAmount } },
+          });
+
+          await tx.wallet.update({
+            where: { userId: MASTER_ID },
+            data: { balance: { increment: fee } },
           });
 
           await tx.transaction.create({
             data: {
               reference: `FIN-BUY-${Date.now()}`,
-              amount: creditHTG,
-              netAmount: creditHTG,
+              amount: amountHTG,
+              netAmount,
               fee,
               type: 'TOPUP',
               status: 'COMPLETED',
-              title: `Finance ${req.serviceType} - BUY`,
-              description: `Kredi HTG apre apwobasyon demann ${req.serviceType}`,
+              title: `Finance ${serviceType} - BUY`,
+              description: `Kredi HTG apre apwobasyon demann ${serviceType}`,
               receiverWalletId: wallet.id,
             },
           });
-        } else if (mode === 'SELL' && wallet) {
-          // User wants to receive USD → debit the HTG amount from their wallet
-          const amount = Number(req.amount);
-          const fee = Number(req.fee);
+
+          await tx.notification.create({
+            data: {
+              userId: req.userId,
+              title: 'Finance Konfime ✅',
+              message: `Depot ${serviceType} ou konfime — ${netAmount} HTG ajoute nan kont ou`,
+              type: 'SUCCESS',
+            },
+          });
+        } else if (mode === 'SELL') {
+          const amountHTG = Number(req.amount);
+          emailNetAmount = amountHTG;
 
           await tx.wallet.update({
             where: { userId: req.userId },
-            data: { balance: { decrement: amount } },
+            data: { balance: { decrement: amountHTG } },
           });
 
           await tx.transaction.create({
             data: {
               reference: `FIN-SELL-${Date.now()}`,
-              amount,
-              netAmount: amount - fee,
-              fee,
+              amount: amountHTG,
+              netAmount: amountHTG,
+              fee: Number(req.fee),
               type: 'WITHDRAWAL',
               status: 'COMPLETED',
-              title: `Finance ${req.serviceType} - SELL`,
-              description: `Debi HTG apre apwobasyon demann ${req.serviceType}`,
+              title: `Finance ${serviceType} - SELL`,
+              description: `Debi HTG apre apwobasyon demann ${serviceType}`,
               senderWalletId: wallet.id,
             },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: req.userId,
+              title: 'Finance Konfime ✅',
+              message: `Retrè ${serviceType} ou konfime`,
+              type: 'SUCCESS',
+            },
+          });
+        }
+      } else {
+        // REJECTED — refund HTG if SELL mode (deducted on submission)
+        if (mode === 'SELL') {
+          const amountHTG = Number(req.amount);
+          await tx.wallet.update({
+            where: { userId: req.userId },
+            data: { balance: { increment: amountHTG } },
           });
         }
 
         await tx.notification.create({
           data: {
             userId: req.userId,
-            title: 'Finance Request Konfime',
-            message: `Demann ${req.serviceType} ou an apwouve pa admin`,
-            type: 'SUCCESS',
-          },
-        });
-      } else {
-        // REJECTED — nothing was debited on submission, so no refund needed
-        await tx.notification.create({
-          data: {
-            userId: req.userId,
-            title: 'Finance Request Rejte',
-            message: `Demann ${req.serviceType} ou an rejte pa admin`,
+            title: 'Finance Rejte ❌',
+            message: `Demann ${serviceType} ou an rejte pa admin`,
             type: 'ERROR',
           },
         });
       }
 
-      return updated;
-    });
+      return { updatedReq: updated, emailNetAmount };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    // Send email outside transaction so a send failure never rolls back DB changes
+    if (reqBefore.user) {
+      const { email, name } = reqBefore.user;
+      const displayName = name || 'Kliyan';
+      try {
+        if (status === 'COMPLETED' && mode === 'BUY') {
+          await this.mailService.sendTopupConfirmed(email, displayName, emailNetAmount, serviceType);
+        } else if (status === 'COMPLETED' && mode === 'SELL') {
+          await this.mailService.sendWithdrawalConfirmed(email, displayName, Number(reqBefore.amount), serviceType);
+        } else if (status === 'REJECTED') {
+          await this.mailService.sendKycRejected(email, displayName, adminNote ?? '');
+        }
+      } catch {}
+    }
+
+    return updatedReq;
   }
 
   async processManualTransaction(txId: string, status: 'COMPLETED' | 'REJECTED', adminId: string) {
