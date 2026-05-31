@@ -10,7 +10,7 @@ export class MailService {
 
   // ── shared HTML wrapper ──────────────────────────────────────────────────
 
-  private wrap(title: string, body: string): string {
+  private wrap(title: string, body: string, headerColor = '#1A1A2E'): string {
     return `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
@@ -21,7 +21,7 @@ export class MailService {
 
         <!-- Header -->
         <tr>
-          <td style="background:#1A1A2E;padding:32px 40px;text-align:center;">
+          <td style="background:${headerColor};padding:32px 40px;text-align:center;">
             <img src="https://ozamapay.com/logo.png" alt="OZAMAPAY" style="height:50px;object-fit:contain;display:block;margin:0 auto;" />
           </td>
         </tr>
@@ -191,6 +191,27 @@ export class MailService {
       this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
     );
     await this.send(email, `✅ Retrè ${Number(amount).toLocaleString('fr-HT')} HTG konfime`, html);
+  }
+
+  async sendSystemAlert(error: string, uptime: number): Promise<void> {
+    const html = this.wrap(
+      '🚨 OZAMAPAY — Alèt Sistèm',
+      this.badge('🚨 ALÈT SISTÈM', '#B71C1C') +
+      `<div style="height:16px;"></div>` +
+      this.h('Pwoblèm teknik detekte') +
+      this.p('Sistèm OZAMAPAY detekte yon pwoblèm teknik. Pran aksyon imedyatman.') +
+      this.table(
+        this.infoRow('Erè', `<span style="color:#B71C1C;font-family:monospace;">${error}</span>`) +
+        this.infoRow('Uptime', `${uptime}s`) +
+        this.infoRow('Lè', new Date().toISOString()),
+      ) +
+      `<div style="margin-top:24px;padding:16px 20px;background:#fff5f5;border-left:4px solid #B71C1C;border-radius:6px;font-size:14px;color:#B71C1C;">
+        Verifye Render dashboard imedyatman.
+      </div>` +
+      this.btn('Ouvri Render Dashboard', 'https://dashboard.render.com'),
+      '#B71C1C',
+    );
+    await this.send('contact@ozamapay.com', '🚨 OZAMAPAY — Alèt Sistèm', html);
   }
 
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {

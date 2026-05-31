@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { AppController } from './app.controller'; // ← AJOUTE SA
+import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -9,14 +10,16 @@ import { WalletModule } from './wallet/wallet.module';
 import { KycModule } from './kyc/kyc.module';
 import { AdminModule } from './admin/admin.module';
 import { RatesModule } from './rates/rates.module';
-import { PaymentsModule } from './payments/payments.module'; 
+import { PaymentsModule } from './payments/payments.module';
 import { StrowalletModule } from './strowallet/strowallet.module';
 import { AgentsModule } from './agents/agents.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { MailModule } from './mail/mail.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 60000, limit: 10 },
       { name: 'long', ttl: 3600000, limit: 100 },
@@ -33,6 +36,7 @@ import { MailModule } from './mail/mail.module';
     StrowalletModule,
     AgentsModule,
     CommissionsModule,
+    HealthModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [
