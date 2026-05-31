@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
@@ -561,7 +562,7 @@ export class AdminService {
       }
 
       return result;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     // Send confirmation email outside transaction so failure never rolls back DB changes
     if (status === 'COMPLETED' && txBefore) {

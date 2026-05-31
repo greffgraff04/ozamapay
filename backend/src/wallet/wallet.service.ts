@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -163,11 +164,6 @@ export class WalletService {
       throw new NotFoundException('Wallet sender pa jwenn');
     }
 
-    // 4. Verifye si li gen ase kòb
-    if (Number(senderWallet.balance) < transferAmount) {
-      throw new BadRequestException('Balans ensifizan');
-    }
-
     // 5. Jwenn moun k ap resevwa a pa imèl li
     const recipient = await this.prisma.user.findUnique({
       where: { email: recipientEmail.toLowerCase().trim() },
@@ -184,6 +180,24 @@ export class WalletService {
 
     // 6. Kouri tranzaksyon an nan Prisma ($transaction)
     return this.prisma.$transaction(async (tx) => {
+      const currentWallet = await tx.wallet.findUnique({ where: { userId: senderId } });
+      if (!currentWallet || Number(currentWallet.balance) < transferAmount) {
+        throw new BadRequestException('Balans ensifizan');
+      }
+
+      const recentDuplicate = await tx.transaction.findFirst({
+        where: {
+          senderWalletId: senderWallet.id,
+          receiverWalletId: recipient.wallet!.id,
+          amount: transferAmount,
+          status: 'COMPLETED',
+          createdAt: { gte: new Date(Date.now() - 30000) },
+        },
+      });
+      if (recentDuplicate) {
+        throw new BadRequestException('Tranzaksyon sa deja soumèt. Tann 30 segonn.');
+      }
+
       await tx.wallet.update({
         where: { userId: senderId },
         data: {
@@ -220,7 +234,7 @@ export class WalletService {
         message: 'Transfer P2P reyisi',
         transaction,
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   // ======================================================
@@ -278,10 +292,6 @@ export class WalletService {
     const fee = 0;
     const totalDebit = this.round(cleanAmount + fee);
 
-    if (Number(senderWallet.balance) < totalDebit) {
-      throw new BadRequestException('Balans ensifizan');
-    }
-
     let masterWallet = await this.prisma.wallet.findUnique({
       where: { userId: MASTER_ID },
     });
@@ -296,6 +306,24 @@ export class WalletService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      const currentWallet = await tx.wallet.findUnique({ where: { userId: senderId } });
+      if (!currentWallet || Number(currentWallet.balance) < totalDebit) {
+        throw new BadRequestException('Balans ensifizan');
+      }
+
+      const recentDuplicate = await tx.transaction.findFirst({
+        where: {
+          senderWalletId: senderWallet.id,
+          receiverWalletId: recipient.wallet!.id,
+          amount: cleanAmount,
+          status: 'COMPLETED',
+          createdAt: { gte: new Date(Date.now() - 30000) },
+        },
+      });
+      if (recentDuplicate) {
+        throw new BadRequestException('Tranzaksyon sa deja soumèt. Tann 30 segonn.');
+      }
+
       await tx.wallet.update({
         where: { userId: senderId },
         data: {
@@ -339,7 +367,7 @@ export class WalletService {
         message: 'Transfer reyisi',
         transaction,
       };
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   // ======================================================
@@ -407,6 +435,11 @@ export class WalletService {
     const netAmount = this.round(Number(transaction.amount) - fee);
 
     return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id: transaction.id } });
+      if (!existing || existing.status !== 'PENDING') {
+        throw new BadRequestException('Tranzaksyon sa a trete deja');
+      }
+
       await tx.wallet.update({
         where: { userId },
         data: { balance: { increment: netAmount } },
@@ -423,7 +456,7 @@ export class WalletService {
       });
 
       return updated;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   // ======================================================
@@ -459,13 +492,14 @@ export class WalletService {
     const fee = this.round(amountHTG * FEES.WITHDRAW);
     const totalDebit = this.round(amountHTG + fee);
 
-    if (Number(wallet.balance) < totalDebit) {
-      throw new BadRequestException('Balans ensifizan');
-    }
-
     const reference = 'WD-' + Date.now();
 
     return this.prisma.$transaction(async (tx) => {
+      const currentWallet = await tx.wallet.findUnique({ where: { userId } });
+      if (!currentWallet || Number(currentWallet.balance) < totalDebit) {
+        throw new BadRequestException('Balans ensifizan');
+      }
+
       await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: totalDebit } },
@@ -487,7 +521,7 @@ export class WalletService {
             : `Retrè via ${method} — ${amountHTG} HTG`,
         },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   // ======================================================
