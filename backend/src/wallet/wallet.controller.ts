@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { Throttle } from '@nestjs/throttler';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
@@ -68,6 +69,7 @@ export class WalletController {
   // P2P TRANSFER (SEKIRIZE AK PIN)
   // ======================================================
   @Post('transfer-p2p')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
   async transferP2P(
     @Req() req: any,
     @Body() body: { recipientEmail: string; amount: number; pin: string },
@@ -84,6 +86,7 @@ export class WalletController {
   // TRANSFER KLASIK (SEKIRIZE AK PIN)
   // ======================================================
   @Post('transfer')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
   async transfer(
     @Req() req: any,
     @Body() body: { recipientEmail: string; amount: number; pin: string },

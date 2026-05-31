@@ -19,7 +19,7 @@ import { JwtStrategy } from './jwt.strategy';
         process.env.JWT_SECRET ||
         'ozamapay_secret_super_long_2026',
       signOptions: {
-        expiresIn: '30d',
+        expiresIn: '7d',
       },
     }),
   ],

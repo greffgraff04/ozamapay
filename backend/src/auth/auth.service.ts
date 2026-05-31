@@ -3,7 +3,8 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
- NotFoundException,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
@@ -23,6 +24,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+  private loginAttempts = new Map<string, { count: number; lockedUntil: number | null }>();
+
   constructor(
     private prisma: PrismaService,
 
@@ -192,12 +195,17 @@ export class AuthService {
   // =========================
 
   async login(dto: LoginDto) {
+    const email = dto.email.toLowerCase();
+    const now = Date.now();
+    const attempts = this.loginAttempts.get(email) ?? { count: 0, lockedUntil: null };
+
+    if (attempts.lockedUntil && now < attempts.lockedUntil) {
+      throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
+    }
+
     const user =
       await this.prisma.user.findUnique({
-        where: {
-          email:
-            dto.email.toLowerCase(),
-        },
+        where: { email },
 
         include: {
           wallet: true,
@@ -220,10 +228,18 @@ export class AuthService {
       );
 
     if (!passwordMatch) {
+      const newCount = attempts.count + 1;
+      if (newCount >= 5) {
+        this.loginAttempts.set(email, { count: newCount, lockedUntil: now + 15 * 60 * 1000 });
+        throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
+      }
+      this.loginAttempts.set(email, { count: newCount, lockedUntil: null });
       throw new UnauthorizedException(
         'Email oswa modpas enkòrèk',
       );
     }
+
+    this.loginAttempts.delete(email);
 
     const token = this.signToken(
       user.id,

@@ -17,10 +17,10 @@ import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 60000, limit: 10 },
+      { name: 'long', ttl: 3600000, limit: 100 },
+    ]),
     PrismaModule,
     UsersModule,
     AuthModule,

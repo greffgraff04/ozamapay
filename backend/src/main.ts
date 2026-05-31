@@ -12,8 +12,8 @@ async function bootstrap() {
 
   // Konfigirasyon limit pou JSON ak URL-encoded atravè vèsyon Express ki anndan NestJS la
   const server = app.getHttpAdapter().getInstance();
-  server.use(require('express').json({ limit: '50mb' }));
-  server.use(require('express').urlencoded({ limit: '50mb', extended: true }));
+  server.use(require('express').json({ limit: '5mb' }));
+  server.use(require('express').urlencoded({ limit: '5mb', extended: true }));
 
   // 3. Rann dosye uploads la piblik pou dashboard admin lan ka afiche foto KYC yo
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
@@ -41,7 +41,7 @@ async function bootstrap() {
   // Nou fòse koute sou '0.0.0.0' pou Render ka louvri pò a sou entènèt la
   await app.listen(port, '0.0.0.0');
 
-  console.log(`OZAMA Sèvè pare sou port ${port} ak limit 50MB epi dosye static debloke! ✅`);
+  console.log(`OZAMA Sèvè pare sou port ${port} ak limit 5MB epi dosye static debloke! ✅`);
 }
 
 bootstrap();
