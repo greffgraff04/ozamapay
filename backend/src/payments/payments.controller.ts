@@ -3,14 +3,20 @@ import {
   Post,
   Body,
   Req,
+  Headers,
+  UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { PaymentsService } from './payments.service';
+import { MonCashConnectService } from './moncashconnect.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
+    private readonly monCashConnectService: MonCashConnectService,
   ) {}
 
   @Post('moncash/topup')
@@ -52,5 +58,31 @@ export class PaymentsController {
       status:
         'no_transaction_id',
     };
+  }
+
+  // ======================================================
+  // MONCASHCONNECT — Automatic topup
+  // ======================================================
+
+  @Post('moncashconnect/initiate')
+  @UseGuards(JwtAuthGuard)
+  async initiateMoncashConnect(
+    @Req() req: any,
+    @Body('amount') amount: number,
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.monCashConnectService.createPaymentRequest(userId, Number(amount));
+  }
+
+  @Post('moncashconnect/webhook')
+  async moncashConnectWebhook(
+    @Body() body: any,
+    @Headers('x-signature') signature?: string,
+  ) {
+    if (signature && !this.monCashConnectService.verifyWebhook(JSON.stringify(body), signature)) {
+      throw new BadRequestException('Signature webhook envalid');
+    }
+    await this.monCashConnectService.processWebhookPayment(body);
+    return { received: true };
   }
 }

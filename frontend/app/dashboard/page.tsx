@@ -55,6 +55,10 @@ export default function Dashboard() {
   const [selectedMethod, setSelectedMethod] = useState('moncash');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
+  const [mccPaymentUrl, setMccPaymentUrl] = useState<string | null>(null);
+  const [mccPolling, setMccPolling] = useState(false);
+  const [mccInitialBalance, setMccInitialBalance] = useState(0);
+  const mccPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawAccountInfo, setWithdrawAccountInfo] = useState('');
@@ -307,51 +311,48 @@ try {
       'ozama_agent_id',
     );
 
-  if (selectedMethod === 'moncash') {
+  if (selectedMethod === 'moncash' && topUpType === 'AUTOMATIC') {
     try {
-      const res = await fetch(
-        `${backendUrl}/payments/moncash/topup`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify({
-            amount:
-              Number(topUpAmount),
-
-            // 🔥 envoyé backend
-            agentId,
-          }),
-        },
-      );
-
-      const data =
-        await res.json();
-
-      if (data.redirectUrl) {
-        window.location.href =
-          data.redirectUrl;
-      } else {
-        setToast({
-          message:
-            "Erè nan jenerasyon link MonCash la",
-
-          type: 'error',
-        });
-      }
-    } catch (e) {
-      setToast({
-        message:
-          "Erè koneksyon ak sèvè MonCash",
-
-        type: 'error',
+      const res = await fetch(`${backendUrl}/payments/moncashconnect/initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ amount: topupHTG }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Erè');
+
+      const initialBal = Number(user?.wallet?.balance ?? 0);
+      setMccInitialBalance(initialBal);
+      setMccPaymentUrl(data.paymentUrl);
+      setMccPolling(true);
+
+      if (mccPollRef.current) clearInterval(mccPollRef.current);
+      const deadline = Date.now() + 3 * 60 * 1000;
+      mccPollRef.current = setInterval(async () => {
+        if (Date.now() > deadline) {
+          clearInterval(mccPollRef.current!);
+          setMccPolling(false);
+          return;
+        }
+        try {
+          const t = localStorage.getItem('token');
+          const r = await fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${t}` } });
+          if (r.ok) {
+            const fresh = await r.json();
+            const newBal = Number(fresh?.wallet?.balance ?? 0);
+            if (newBal > initialBal) {
+              clearInterval(mccPollRef.current!);
+              setMccPolling(false);
+              setMccPaymentUrl(null);
+              setUser(fresh);
+              setTopUpAmount('');
+              setToast({ message: `Depot konfime! +${(newBal - initialBal).toLocaleString()} HTG ✅`, type: 'success' });
+            }
+          }
+        } catch {}
+      }, 10000);
+    } catch {
+      setToast({ message: 'Erè koneksyon ak sèvè MonCash', type: 'error' });
     }
   } else {
     try {
@@ -941,14 +942,42 @@ try {
                 </div>
               )}
  
-              <button 
-                onClick={handlePaymentLogic}
-                className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${
-                  topUpAmount && selectedMethod ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
-                }`}
-              >
-                Confirm TopUp
-              </button>
+              {mccPaymentUrl ? (
+                <div className="space-y-3 animate-in fade-in duration-300">
+                  <a
+                    href={mccPaymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  >
+                    Peye via MonCash →
+                  </a>
+                  {mccPolling && (
+                    <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse py-2">
+                      Ap verifye peman ou… 🔄
+                    </p>
+                  )}
+                  <button
+                    onClick={() => {
+                      setMccPaymentUrl(null);
+                      setMccPolling(false);
+                      if (mccPollRef.current) clearInterval(mccPollRef.current);
+                    }}
+                    className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-gray-400 hover:text-red-400 transition-all"
+                  >
+                    Anile
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handlePaymentLogic}
+                  className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${
+                    topUpAmount && selectedMethod ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
+                  }`}
+                >
+                  Confirm TopUp
+                </button>
+              )}
             </div>
           </div>
         )}
