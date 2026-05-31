@@ -67,4 +67,39 @@ export class AuthController {
   ) {
     return this.authService.resetPassword(token, newPassword);
   }
+
+  // =========================
+  // 2FA SETUP (admin only, requires login)
+  // =========================
+  @Post('2fa/setup')
+  @UseGuards(JwtAuthGuard)
+  setup2FA(@Req() req: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.authService.setup2FA(userId);
+  }
+
+  // =========================
+  // 2FA ENABLE (confirm with TOTP code)
+  // =========================
+  @Post('2fa/enable')
+  @UseGuards(JwtAuthGuard)
+  enable2FA(
+    @Req() req: any,
+    @Body('token') token: string,
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.authService.enable2FA(userId, token);
+  }
+
+  // =========================
+  // 2FA COMPLETE (exchange tempToken + TOTP for full JWT)
+  // =========================
+  @Post('2fa/complete')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  complete2FA(
+    @Body('tempToken') tempToken: string,
+    @Body('totpCode') totpCode: string,
+  ) {
+    return this.authService.complete2FA(tempToken, totpCode);
+  }
 }

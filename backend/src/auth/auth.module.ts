@@ -4,9 +4,10 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { TwoFactorService } from './two-factor.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
-import { MailModule } from '../mail/mail.module'; // Nou ajoute enpòtasyon MailModule la
+import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -26,10 +27,12 @@ import { JwtStrategy } from './jwt.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
+    TwoFactorService,
     JwtStrategy,
   ],
   exports: [
     AuthService,
+    TwoFactorService,
     JwtStrategy,
     JwtModule,
   ],

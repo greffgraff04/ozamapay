@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 
 import { MailService } from '../mail/mail.service';
+import { TwoFactorService } from './two-factor.service';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -21,6 +22,8 @@ import {
 } from './dto/auth.dto';
 
 import * as bcrypt from 'bcrypt';
+
+const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
 @Injectable()
 export class AuthService {
@@ -32,6 +35,8 @@ export class AuthService {
     private jwtService: JwtService,
 
     private mailService: MailService,
+
+    private twoFactorService: TwoFactorService,
   ) {}
 
   // =========================
@@ -241,6 +246,14 @@ export class AuthService {
 
     this.loginAttempts.delete(email);
 
+    if (ADMIN_ROLES.includes(user.role) && user.twoFactorEnabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: user.id, email: user.email, role: user.role, is2FATemp: true },
+        { expiresIn: '15m' },
+      );
+      return { requires2FA: true, tempToken };
+    }
+
     const token = this.signToken(
       user.id,
 
@@ -423,6 +436,98 @@ export class AuthService {
     });
 
     return { message: 'Modpas ou chanje avèk siksè. Ou ka konekte kounye a.' };
+  }
+
+  // =========================
+  // 2FA SETUP
+  // =========================
+
+  async setup2FA(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Itilizatè sa a pa egziste.');
+    if (!ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException('2FA disponib sèlman pou admin');
+    }
+
+    const { secret, otpAuthUrl } = this.twoFactorService.generateSecret(user.email);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorSecret: secret },
+    });
+
+    const qrCodeUrl = await this.twoFactorService.generateQrCode(otpAuthUrl);
+    return { secret, qrCodeUrl };
+  }
+
+  // =========================
+  // 2FA ENABLE
+  // =========================
+
+  async enable2FA(userId: string, token: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Itilizatè sa a pa egziste.');
+    if (!user.twoFactorSecret) {
+      throw new BadRequestException('Ou dwe kòmanse setup 2FA anvan');
+    }
+
+    if (!this.twoFactorService.verifyToken(user.twoFactorSecret, token)) {
+      throw new BadRequestException('Kòd TOTP enkòrèk');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorEnabled: true },
+    });
+
+    return { message: '2FA aktive avèk siksè' };
+  }
+
+  // =========================
+  // 2FA COMPLETE LOGIN
+  // =========================
+
+  async complete2FA(tempToken: string, totpCode: string) {
+    let payload: { sub: string; email: string; role: string; is2FATemp?: boolean };
+    try {
+      payload = this.jwtService.verify(tempToken);
+    } catch {
+      throw new UnauthorizedException('Token ekspire oswa envalid');
+    }
+
+    if (!payload.is2FATemp) {
+      throw new UnauthorizedException('Token envalid');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { wallet: true, kyc: true },
+    });
+
+    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new UnauthorizedException('Kont 2FA pa aktive');
+    }
+
+    if (!this.twoFactorService.verifyToken(user.twoFactorSecret, totpCode)) {
+      throw new UnauthorizedException('Kòd TOTP enkòrèk');
+    }
+
+    const token = this.signToken(user.id, user.email, user.role);
+
+    return {
+      message: 'Koneksyon reyisi',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        referredByAgentId: user.referredByAgentId,
+        transactionPin: user.transactionPin ? true : false,
+        wallet: { balance: user.wallet?.balance || 0 },
+        kyc: user.kyc ? { status: user.kyc.status } : null,
+      },
+    };
   }
 
   private signToken(

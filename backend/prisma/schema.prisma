@@ -39,6 +39,9 @@ model User {
   resetPasswordExpires DateTime?
   emailVerifiedAt DateTime?
 
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+
   @@index([email])
   @@index([role])
 }
