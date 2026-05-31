@@ -1,20 +1,15 @@
 {
-  "name": "Ozamapay",
-  "short_name": "Ozama",
-  "start_url": "/",
+  "name": "OZAMAPAY",
+  "short_name": "OZAMAPAY",
+  "description": "Premye Wallet Dijital Ayisyen an",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0F121E",
-  "theme_color": "#f97316",
+  "background_color": "#0A0B0F",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait",
   "icons": [
-    {
-      "src": "/faveiconozamapay.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/faveiconozamapay.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "/faveiconozamapay.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/faveiconozamapay.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/faveiconozamapay.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

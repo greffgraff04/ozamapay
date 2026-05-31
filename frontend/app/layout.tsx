@@ -10,16 +10,17 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata = {
   title: "OZAMAPAY - Fintech Haiti",
   description: "Financial operating system for Haiti and the diaspora. Fast, secure, and borderless payments.",
-  icons: {
-    icon: "/faveiconozamapay.png",
-    apple: "/faveiconozamapay.png",
-    shortcut: "/faveiconozamapay.png",
-  },
-  manifest: "/manifest.json",
+  manifest: '/manifest.json',
+  themeColor: '#FF6B00',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black',
+    statusBarStyle: 'black-translucent',
     title: 'OZAMAPAY',
+  },
+  icons: {
+    icon: '/faveiconozamapay.png',
+    apple: '/faveiconozamapay.png',
+    shortcut: '/faveiconozamapay.png',
   },
   openGraph: {
     title: "OZAMAPAY",
@@ -37,7 +38,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0f1419" />
+        <link rel="apple-touch-icon" href="/faveiconozamapay.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="OZAMAPAY" />
+        <meta name="theme-color" content="#FF6B00" />
       </head>
       <body className="antialiased font-space-grotesk bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
         {children}
