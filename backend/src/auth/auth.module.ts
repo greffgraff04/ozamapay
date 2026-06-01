@@ -14,7 +14,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 @Module({
   imports: [
     PrismaModule,
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'google' }),
     MailModule, // Nou mete l nan imports yo pou NestJS ka rezoud MailService
     JwtModule.register({
       secret:
