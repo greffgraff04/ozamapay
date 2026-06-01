@@ -1,14 +1,17 @@
 import { Controller, Get } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler'; // <-- Enpòte sa si w gen throttler
+import { SkipThrottle } from '@nestjs/throttler';
 
+@SkipThrottle()
 @Controller()
 export class AppController {
 
+  @Get()
+  getHello(): string {
+    return 'OZAMAPAY API';
+  }
+
   @Get('health')
-  @SkipThrottle() // <-- Sa ap anpeche Render pran erè 429 la!
-  health() {
-    return {
-      status: 'ok',
-    };
+  getHealth() {
+    return { status: 'ok', timestamp: new Date() };
   }
 }
