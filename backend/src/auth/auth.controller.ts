@@ -12,6 +12,7 @@ import {
 
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -114,8 +115,17 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req: any, @Res() res: any) {
-    const token = this.authService.signToken(req.user.id, req.user.email, req.user.role);
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    try {
+      console.log('Google callback - user:', req.user?.email);
+      if (!req.user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
+      }
+      const token = this.authService.signToken(req.user.id, req.user.email, req.user.role);
+      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
+    }
   }
 }
