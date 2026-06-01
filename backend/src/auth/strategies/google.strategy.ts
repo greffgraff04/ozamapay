@@ -15,24 +15,39 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any) {
-    const email = profile.emails[0].value;
-    const googleId = profile.id;
-    const name = `${profile.name.givenName} ${profile.name.familyName}`.trim();
+    try {
+      console.log('Google validate - profile:', JSON.stringify({ id: profile.id, email: profile.emails?.[0]?.value, name: profile.displayName }));
 
-    let user = await this.prisma.user.findUnique({ where: { email } });
+      const email = profile.emails[0].value;
+      const googleId = profile.id;
 
-    if (!user) {
-      user = await this.prisma.$transaction(async (tx) => {
-        const newUser = await tx.user.create({
-          data: { email, name, password: '', googleId },
+      let user = await this.prisma.user.findUnique({ where: { email } });
+      console.log('Google validate - existing user:', user ? 'found' : 'not found');
+
+      if (!user) {
+        console.log('Google validate - creating new user');
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            name: profile.displayName || email,
+            password: '',
+            googleId,
+            wallet: { create: { balance: 0 } },
+          },
         });
-        await tx.wallet.create({ data: { userId: newUser.id, balance: 0 } });
-        return newUser;
-      });
-    } else if (!user.googleId) {
-      user = await this.prisma.user.update({ where: { email }, data: { googleId } });
-    }
+      } else if (!user.googleId) {
+        console.log('Google validate - linking googleId to existing user');
+        user = await this.prisma.user.update({
+          where: { email },
+          data: { googleId },
+        });
+      }
 
-    return user;
+      console.log('Google validate - success, returning user:', user.email);
+      return user;
+    } catch (error) {
+      console.error('Google validate ERROR:', error.message, error.stack);
+      throw error;
+    }
   }
 }
