@@ -5,8 +5,13 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/auth/callback';
-  
+  // /auth/callback must always pass through — it processes the incoming OAuth token
+  if (pathname === '/auth/callback') {
+    return NextResponse.next();
+  }
+
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+
   const isProtected =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/admin') ||
@@ -16,7 +21,6 @@ export function middleware(request: NextRequest) {
   // 1. Pa gen token epi l ap eseye antre nan paj sekirize -> Voye l sou /login
   if (!token && isProtected) {
     const loginUrl = new URL('/login', request.url);
-    // Sa evite pou Next.js pa kenbe ansyen kach chimen an
     return NextResponse.redirect(loginUrl);
   }
 
