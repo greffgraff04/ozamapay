@@ -42,6 +42,8 @@ model User {
   twoFactorSecret  String?
   twoFactorEnabled Boolean @default(false)
 
+  googleId String? @unique
+
   @@index([email])
   @@index([role])
 }

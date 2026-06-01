@@ -530,7 +530,7 @@ export class AuthService {
     };
   }
 
-  private signToken(
+  signToken(
     userId: string,
 
     email: string,

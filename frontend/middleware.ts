@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/auth/callback';
   
   const isProtected =
     pathname.startsWith('/dashboard') ||
@@ -34,6 +34,7 @@ export const config = {
   matcher: [
     '/login',
     '/register',
+    '/auth/callback',
     '/dashboard/:path*',
     '/admin/:path*',
     '/kyc/:path*',

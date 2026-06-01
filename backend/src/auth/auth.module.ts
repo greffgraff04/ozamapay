@@ -9,6 +9,7 @@ import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { JwtStrategy } from './jwt.strategy';
     AuthService,
     TwoFactorService,
     JwtStrategy,
+    GoogleStrategy,
   ],
   exports: [
     AuthService,

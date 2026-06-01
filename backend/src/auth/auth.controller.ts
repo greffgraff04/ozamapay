@@ -7,9 +7,11 @@ import {
   Post,
   UseGuards,
   Req,
+  Res,
 } from '@nestjs/common';
 
 import { Throttle } from '@nestjs/throttler';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -101,5 +103,19 @@ export class AuthController {
     @Body('totpCode') totpCode: string,
   ) {
     return this.authService.complete2FA(tempToken, totpCode);
+  }
+
+  // =========================
+  // GOOGLE OAUTH
+  // =========================
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: any, @Res() res: any) {
+    const token = this.authService.signToken(req.user.id, req.user.email, req.user.role);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   }
 }
