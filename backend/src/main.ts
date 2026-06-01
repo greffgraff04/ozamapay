@@ -15,6 +15,15 @@ async function bootstrap() {
   server.use(require('express').json({ limit: '5mb' }));
   server.use(require('express').urlencoded({ limit: '5mb', extended: true }));
 
+  // Intercept health check paths before NestJS/ThrottlerGuard to prevent 429s
+  server.use((req: any, res: any, next: any) => {
+    if (req.path === '/' || req.path === '/health' || req.path === '/health/detailed') {
+      res.status(200).json({ status: 'ok' });
+      return;
+    }
+    next();
+  });
+
   // 3. Rann dosye uploads la piblik pou dashboard admin lan ka afiche foto KYC yo
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',

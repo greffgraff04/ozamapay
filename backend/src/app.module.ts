@@ -21,8 +21,8 @@ import { HealthModule } from './health/health.module';
   imports: [
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 60000, limit: 10 },
-      { name: 'long', ttl: 3600000, limit: 100 },
+      { name: 'short', ttl: 60000, limit: 100 },
+      { name: 'long', ttl: 3600000, limit: 1000 },
     ]),
     PrismaModule,
     UsersModule,
