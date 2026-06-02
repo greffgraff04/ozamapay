@@ -45,6 +45,15 @@ export class UserController {
     return this.userService.agentSelfTopup(userId, body.amount);
   }
 
+  @Patch('profile')
+  async updateProfile(
+    @Req() req: any,
+    @Body() body: { name?: string; phone?: string },
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.userService.updateProfile(userId, body);
+  }
+
   @Patch('profile-photo')
   @UseInterceptors(FileInterceptor('photo', { storage: memoryStorage() }))
   async updateProfilePhoto(

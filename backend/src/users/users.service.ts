@@ -320,6 +320,18 @@ export class UserService {
     };
   }
 
+  async updateProfile(userId: string, data: { name?: string; phone?: string }) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.phone && { phone: data.phone }),
+      },
+      select: { id: true, name: true, phone: true, email: true },
+    });
+    return { success: true, ...updated };
+  }
+
   async updateProfilePhoto(userId: string, photoUrl: string) {
     await this.prisma.user.update({
       where: { id: userId },

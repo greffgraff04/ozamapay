@@ -6,8 +6,9 @@ import {
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
-  Shield, BadgeCheck, Briefcase, TrendingUp, Star
+  Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
  
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
@@ -113,6 +114,15 @@ export default function Dashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Profile editing
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editProfileLoading, setEditProfileLoading] = useState(false);
+
+  // QR modal
+  const [showQrModal, setShowQrModal] = useState(false);
  
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -167,6 +177,31 @@ export default function Dashboard() {
     });
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     setUnreadCount(0);
+  };
+
+  const handleEditProfile = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setEditProfileLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/user/profile`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName.trim(), phone: editPhone.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser((prev: any) => ({ ...prev, name: editName.trim(), phone: editPhone.trim() }));
+        setIsEditingProfile(false);
+        showToast('Pwofil mete ajou ✓', 'success');
+      } else {
+        showToast(data.message || 'Erè pandan mete ajou a', 'error');
+      }
+    } catch {
+      showToast('Erè rezo', 'error');
+    } finally {
+      setEditProfileLoading(false);
+    }
   };
 
   const handleProfilePhotoUpload = async (file: File) => {
@@ -879,21 +914,83 @@ try {
               </div>
  
               {/* QUICK ACTIONS */}
-              <div className="grid grid-cols-4 gap-3 mt-4">
+              <div className="grid grid-cols-5 gap-2 mt-4">
                 {[
-                  { id: 'SEND', icon: <Send size={22} />, tab: 'send' },
-                  { id: 'TOPUP', icon: <PlusCircle size={22} />, tab: 'topup' },
-                  { id: 'RETRAIT', icon: <Banknote size={22} />, tab: 'withdraw' },
-                  { id: 'CARDS', icon: <CreditCard size={22} />, tab: 'cards' }
+                  { id: 'SEND', icon: <Send size={20} />, tab: 'send' },
+                  { id: 'TOPUP', icon: <PlusCircle size={20} />, tab: 'topup' },
+                  { id: 'RETRAIT', icon: <Banknote size={20} />, tab: 'withdraw' },
+                  { id: 'CARDS', icon: <CreditCard size={20} />, tab: 'cards' },
                 ].map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-3 active:scale-95 transition-all">
-                    <div className="w-full aspect-square rounded-[1.8rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
+                    <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                    <span className="text-[7px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
+                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
+                  <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    <QrCode size={20} />
+                  </div>
+                  <span className="text-[7px] font-black uppercase tracking-widest opacity-70">QR</span>
+                </button>
               </div>
+
+              {/* QR MODAL */}
+              {showQrModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowQrModal(false)}>
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+                  <div className="relative bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <h3 className="font-black text-lg text-[#0F121E] uppercase tracking-tight">Kòd QR Peman Ou</h3>
+                        <p className="text-[10px] text-gray-400 mt-0.5 font-bold">Lòt moun skane sa pou voye kòb ba ou</p>
+                      </div>
+                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="flex flex-col items-center gap-5">
+                      <div className="p-4 bg-[#FDF8F3] rounded-3xl border border-orange-100">
+                        <QRCodeSVG
+                          id="qr-svg"
+                          value={`ozamapay://pay?to=${user?.email || ''}&name=${encodeURIComponent(user?.name || displayName)}`}
+                          size={200}
+                          fgColor="#FF6B00"
+                          bgColor="#FDF8F3"
+                          level="M"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-black text-[#0F121E]">{displayName}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{user?.email}</p>
+                      </div>
+                      <div className="flex gap-3 w-full">
+                        <button
+                          onClick={() => { navigator.share?.({ title: 'OzamaPay QR', text: `Voye kòb ba ${displayName} sou OzamaPay`, url: `ozamapay://pay?to=${user?.email}` }).catch(() => {}); }}
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition"
+                        >
+                          <Share2 size={14} /> Pataje
+                        </button>
+                        <button
+                          onClick={() => {
+                            const svg = document.querySelector('#qr-svg') as SVGElement | null;
+                            if (!svg) return;
+                            const data = new XMLSerializer().serializeToString(svg);
+                            const a = document.createElement('a');
+                            a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data);
+                            a.download = 'ozamapay-qr.svg';
+                            a.click();
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-100 text-[#0F121E] text-xs font-black uppercase tracking-wider hover:bg-gray-200 transition"
+                        >
+                          <Download size={14} /> Download
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               </div>
             </div>
  
@@ -902,7 +999,7 @@ try {
               <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
                 <Activity size={18} className="text-[#FF7A00]" /> Recent Activity
               </h3>
-              <button onClick={() => setActiveTab('history')} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
+              <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
             </div>
  
             <div className="space-y-3">
@@ -1766,20 +1863,64 @@ try {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
-                        <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          {user?.kyc?.status === 'APPROVED' ? (
-                            <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
-                          ) : user?.kyc?.status === 'PENDING' ? (
-                            <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
-                          ) : (
-                            <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
-                          )}
-                          {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                            <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
-                          )}
-                        </div>
+                        {isEditingProfile ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={e => setEditName(e.target.value)}
+                              placeholder="Non"
+                              className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
+                            />
+                            <input
+                              type="tel"
+                              value={editPhone}
+                              onChange={e => setEditPhone(e.target.value)}
+                              placeholder="Telefòn"
+                              className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
+                            />
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                onClick={handleEditProfile}
+                                disabled={editProfileLoading}
+                                className="flex-1 py-1.5 rounded-xl bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50"
+                              >
+                                {editProfileLoading ? '...' : 'Sove'}
+                              </button>
+                              <button
+                                onClick={() => setIsEditingProfile(false)}
+                                className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider hover:bg-white/20 transition"
+                              >
+                                Anile
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
+                              <button
+                                onClick={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setIsEditingProfile(true); }}
+                                className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 hover:text-[#FF6B00] transition"
+                              >
+                                <Pencil size={11} />
+                              </button>
+                            </div>
+                            <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                              {user?.kyc?.status === 'APPROVED' ? (
+                                <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
+                              ) : user?.kyc?.status === 'PENDING' ? (
+                                <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
+                              )}
+                              {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
+                                <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
