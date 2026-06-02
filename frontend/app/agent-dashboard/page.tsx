@@ -132,6 +132,10 @@ export default function AgentDashboard() {
     })
       .then((res) => res.json())
       .then((data) => {
+        console.log('auth/me response:', JSON.stringify(data));
+        console.log('role:', data.role);
+        console.log('agent status:', data.agent?.status);
+        console.log('condition result:', data.role === 'AGENT' || data.role === 'SUPER_ADMIN' || data.agent?.status === 'ACTIVE' || data.agent?.status === 'APPROVED');
         if (
           data.role === 'AGENT' ||
           data.role === 'SUPER_ADMIN' ||
