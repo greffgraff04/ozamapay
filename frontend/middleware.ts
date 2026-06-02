@@ -47,5 +47,6 @@ export const config = {
     '/agent-dashboard/:path*',
     '/pay',
     '/support',
+    '/verify-agent',
   ],
 };

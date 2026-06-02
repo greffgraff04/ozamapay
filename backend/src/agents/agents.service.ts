@@ -713,4 +713,11 @@ export class AgentsService {
       },
     );
   }
+
+  async verifyAgent(agentCode: string) {
+    return this.prisma.agent.findFirst({
+      where: { agentCode, status: 'ACTIVE' },
+      include: { user: { select: { name: true } } },
+    });
+  }
 }

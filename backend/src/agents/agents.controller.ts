@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -19,6 +20,24 @@ export class AgentsController {
   constructor(
     private readonly agentsService: AgentsService,
   ) {}
+
+  // =========================
+  // PUBLIC: VERIFY AGENT (no auth)
+  // =========================
+  @Get('verify/:agentCode')
+  async verifyAgent(@Param('agentCode') agentCode: string) {
+    const agent = await this.agentsService.verifyAgent(agentCode.toUpperCase());
+    if (!agent) {
+      return { verified: false };
+    }
+    return {
+      verified: true,
+      name: agent.user.name,
+      agentCode: agent.agentCode,
+      level: agent.level,
+      status: agent.status,
+    };
+  }
 
   // =========================
   // MY LIQUIDITY REQUESTS

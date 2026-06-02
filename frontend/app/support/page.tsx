@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, Mail, Globe, MessageCircle, ChevronDown, HelpCircle } from "lucide-react";
+import { ArrowLeft, Mail, Globe, MessageCircle, ChevronDown, HelpCircle, ShieldCheck, ChevronRight } from "lucide-react";
 
 // ── FAQ data ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +66,21 @@ export default function SupportPage() {
             Ekip sipò nou an disponib pou ede ou 7 jou sou 7.
           </p>
         </div>
+
+        {/* VERIFY AGENT */}
+        <button
+          onClick={() => { window.location.href = "/verify-agent"; }}
+          className="w-full bg-[#111318] border border-white/[0.06] rounded-3xl p-5 flex items-center gap-4 hover:border-green-500/30 transition text-left"
+        >
+          <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-green-500/20">
+            <ShieldCheck size={22} className="text-green-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-white text-sm">Verifye yon Ajan</p>
+            <p className="text-[11px] text-white/40 mt-0.5">Konfirme si yon ajan ofisyèl</p>
+          </div>
+          <ChevronRight size={16} className="text-white/20 shrink-0" />
+        </button>
 
         {/* CONTACT CARDS */}
         <section>
