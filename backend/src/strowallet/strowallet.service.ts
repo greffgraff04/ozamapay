@@ -19,14 +19,17 @@ export class StrowalletService {
   }
 
   async createAndFundCard(userId: string, amountUsd: number) {
-    const cleanAmountUsd = amountUsd ? Number(amountUsd) : 10;
+    const cleanAmountUsd = Number(amountUsd) || 3;
+    if (cleanAmountUsd < 3) throw new BadRequestException('Montan minim se $3 USD');
 
     // 1️⃣ Jwenn pousantaj kat la nan DB
     const rateSettings = await this.prisma.rate.findUnique({ where: { key: 'CARD_RATE' } });
     if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
 
-    const rateValue = rateSettings.value;
-    const amountHtg = cleanAmountUsd * Number(rateValue);
+    const rateValue = Number(rateSettings.value);
+    // User pays only for the initial deposit; OZAMAPAY absorbs the $2.50 creation fee
+    const depositHtg = Math.round(cleanAmountUsd * rateValue * 100) / 100;
+    const creationFeeHtg = Math.round(2.50 * rateValue * 100) / 100;
 
     return await this.prisma.$transaction(async (tx) => {
       // 2️⃣ Jwenn itilizatè a ak tout relasyon reyèl li yo
@@ -36,27 +39,15 @@ export class StrowalletService {
       });
 
       if (!user) throw new BadRequestException("Utilisateur introuvable.");
-      
-      // 🌟 KOREKSYON SEKIRITE KYC: Nou tcheke si estati a se APPROVED oubyen VERIFIED pou l pa janm bloke w
-      // 🌟 KOREKSYON SEKIRITE KYC: Nou tcheke si estati a se APPROVED nan tab Kyc la
-const isKycApproved = user.kyc && user.kyc.status === 'APPROVED';
 
-if (!isKycApproved) {
-  throw new BadRequestException("Le KYC de l'utilisateur doit être approuvé.");
-}
-      
-      // Si w gen yon jaden kycStatus dirèkteman sou User a tou, nou ka tcheke l pou sekirite
-      const isUserVerified = (user as any).kycStatus === 'APPROVED' || (user as any).kycStatus === 'VERIFIED';
-
-      if (!isKycApproved && !isUserVerified) {
-        throw new BadRequestException("Le KYC de l'utilisateur doit être approuvé ou vérifié.");
+      if (!user.kyc || user.kyc.status !== 'APPROVED') {
+        throw new BadRequestException("KYC ou dwe apwouve avan ou kreye yon kat.");
       }
 
-      if (!user.wallet) throw new BadRequestException("Le portefeuille (wallet) de l'utilisateur n'existe pas.");
-      
-      // 🌟 KOREKSYON: Konvèti Decimal la an number pou konparizon an ka fèt
+      if (!user.wallet) throw new BadRequestException("Wallet ou pa egziste.");
+
       const currentBalance = Number(user.wallet.balance);
-      if (currentBalance < amountHtg) throw new BadRequestException("Solde insuffisant pour créer la carte.");
+      if (currentBalance < depositHtg) throw new BadRequestException("Balans HTG ensifizan pou depo inisyal la.");
 
       // 🌟 KOREKSYON: Asire nou ke fullNameStr se yon string tout bon (pa null)
       const firstName = user.kyc?.firstName || 'Client';
@@ -127,24 +118,50 @@ if (!isKycApproved) {
         const stroData = cardResponse.data;
 
         if (stroData && stroData.success === true) {
-          
+
+          // Debit user wallet for the initial deposit only
           await tx.wallet.update({
             where: { id: user.wallet.id },
-            data: { balance: { decrement: amountHtg } }
+            data: { balance: { decrement: depositHtg } },
           });
 
           await tx.transaction.create({
             data: {
               reference: `OZM-CARD-${uuidv4().substring(0, 8).toUpperCase()}`,
               senderWalletId: user.wallet.id,
-              amount: amountHtg,
-              netAmount: amountHtg,
+              amount: depositHtg,
+              netAmount: depositHtg,
+              fee: 0,
               type: 'PAYMENT',
               status: 'COMPLETED',
-              title: 'Création Carte Virtuelle',
-              description: `Achat carte Visa Virtuelle - $${cleanAmountUsd} USD`,
+              title: 'Depo Inisyal Kat VISA',
+              description: `Depo $${cleanAmountUsd} USD sou kat vityèl OZAMAPAY`,
             },
           });
+
+          // OZAMAPAY absorbs the $2.50 Strowallet creation fee from master wallet
+          const masterWallet = await tx.wallet.findFirst({
+            where: { userId: process.env.OZAMAPAY_MASTER_ID },
+          });
+          if (masterWallet) {
+            await tx.wallet.update({
+              where: { id: masterWallet.id },
+              data: { balance: { decrement: creationFeeHtg } },
+            });
+            await tx.transaction.create({
+              data: {
+                reference: `OZM-CARDFEE-${uuidv4().substring(0, 8).toUpperCase()}`,
+                senderWalletId: masterWallet.id,
+                amount: creationFeeHtg,
+                netAmount: creationFeeHtg,
+                fee: 0,
+                type: 'PAYMENT',
+                status: 'COMPLETED',
+                title: 'Frè Kreye Kat VISA',
+                description: `OZAMAPAY absòbe frè kreye kat pou ${user.email}`,
+              },
+            });
+          }
 
           return await tx.virtualCard.create({
             data: {
@@ -186,20 +203,26 @@ if (!isKycApproved) {
   }
 
   async fundVirtualCard(userId: string, amountUsd: number) {
+    const cleanAmountUsd = Number(amountUsd) || 0;
+    if (cleanAmountUsd < 3) throw new BadRequestException('Montan minim rechajman se $3 USD');
+
     const rateSettings = await this.prisma.rate.findUnique({ where: { key: 'CARD_RATE' } });
     if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
 
-    const cleanAmountUsd = amountUsd ? Number(amountUsd) : 0;
-    const amountHtg =
-  cleanAmountUsd * Number(rateSettings.value);
+    const rateValue = Number(rateSettings.value);
+    // Strowallet recharge fee: $1.90 flat + 1.9% of amount
+    const feeUsd = Math.round((1.90 + cleanAmountUsd * 0.019) * 100) / 100;
+    const totalUsd = cleanAmountUsd + feeUsd;
+    const totalHtg = Math.round(totalUsd * rateValue * 100) / 100;
 
     return await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, include: { wallet: true, virtualCard: true } });
       if (!user || !user.virtualCard || !user.wallet) throw new BadRequestException("Kat la oswa wallet pa egziste.");
 
       const currentBalance = Number(user.wallet.balance);
-      if (currentBalance < amountHtg) throw new BadRequestException("Solde HTG insuffisant.");
+      if (currentBalance < totalHtg) throw new BadRequestException(`Balans ensifizan. Ou bezwen ${totalHtg.toFixed(0)} HTG.`);
 
+      // Send only the requested amount to Strowallet (fee is our cost coverage)
       const stroRes = await axios.post(
         `${this.baseUrl}/fund-card/`,
         {
@@ -215,7 +238,21 @@ if (!isKycApproved) {
         throw new BadRequestException('Rechajman kat echwe: ' + (stroData?.message || 'Erè enkoni'));
       }
 
-      await tx.wallet.update({ where: { userId }, data: { balance: { decrement: amountHtg } } });
+      await tx.wallet.update({ where: { userId }, data: { balance: { decrement: totalHtg } } });
+
+      await tx.transaction.create({
+        data: {
+          reference: `OZM-FUND-${uuidv4().substring(0, 8).toUpperCase()}`,
+          senderWalletId: user.wallet.id,
+          amount: totalHtg,
+          netAmount: totalHtg,
+          fee: Math.round(feeUsd * rateValue * 100) / 100,
+          type: 'PAYMENT',
+          status: 'COMPLETED',
+          title: 'Rechajman Kat VISA',
+          description: `Rechaje $${cleanAmountUsd} USD + frè $${feeUsd} USD`,
+        },
+      });
 
       return await tx.virtualCard.update({
         where: { userId },

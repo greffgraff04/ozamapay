@@ -67,6 +67,8 @@ export default function Dashboard() {
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
   const [toastFading, setToastFading] = useState(false);
   const [showSecurityCard, setShowSecurityCard] = useState(false);
+  const [cardCreateAmount, setCardCreateAmount] = useState('3');
+  const [rechargeAmount, setRechargeAmount] = useState('3');
   const [showRates, setShowRates] = useState(false);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
@@ -1187,44 +1189,64 @@ try {
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-10">Ozama<br/>Virtual Card</h2>
             
             {!virtualCard ? (
-              <div className="p-10 border-2 border-dashed border-black/10 rounded-[2.5rem] text-center bg-gray-50/50 mb-10 animate-in fade-in duration-500">
-                <p className="text-[11px] font-black italic uppercase tracking-widest text-black/40 mb-6">Ou pa gen yon kat vityèl aktif pou kounye a.</p>
-                <button 
-                  onClick={async () => {
-                    try {
-                      const token = localStorage.getItem('token');
-                      const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                      
-                      const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
-                        method: 'POST',
-                        headers: { 
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ amount: 1, currency: 'USD' })
-                      });
-
-                      const contentType = res.headers.get("content-type");
-                      if (res.ok && contentType && contentType.includes("application/json")) {
-                        const data = await res.json();
-                        setVirtualCard(data);
-                        fetchData();
-                      } else {
-                        const errorText = contentType && contentType.includes("application/json") 
-                          ? (await res.json()).message 
-                          : await res.text();
-                          
-                        alert(errorText || "Erreur pandan kreyasyon kat la.");
+              <div className="space-y-6 mb-10 animate-in fade-in duration-500">
+                <div className="p-8 border-2 border-dashed border-[#FF6B00]/20 rounded-[2.5rem] bg-orange-50/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[11px] font-black italic uppercase tracking-widest text-black/70">Kreye Kat VISA</h3>
+                    <span className="bg-green-500 text-white text-[9px] font-black uppercase italic px-3 py-1 rounded-full tracking-widest">GRATIS</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-[#FF6B00] mb-6 leading-relaxed">
+                    Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
+                  </p>
+                  <div className="space-y-2 mb-6">
+                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Depo Inisyal (min. $3 USD)</label>
+                    <div className="flex items-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl">
+                      <span className="text-[10px] font-black text-gray-400">$</span>
+                      <input
+                        type="number"
+                        min="3"
+                        step="1"
+                        value={cardCreateAmount}
+                        onChange={(e) => setCardCreateAmount(e.target.value)}
+                        className="flex-1 outline-none font-black text-gray-900 text-sm bg-transparent"
+                        placeholder="3"
+                      />
+                      <span className="text-[9px] font-black text-gray-400 uppercase">USD</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const amt = Number(cardCreateAmount);
+                      if (!amt || amt < 3) { alert('Montan minim se $3 USD'); return; }
+                      try {
+                        const token = localStorage.getItem('token');
+                        const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                        const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ amountUsd: amt }),
+                        });
+                        const contentType = res.headers.get('content-type');
+                        if (res.ok && contentType?.includes('application/json')) {
+                          const data = await res.json();
+                          setVirtualCard(data);
+                          fetchData();
+                        } else {
+                          const errorText = contentType?.includes('application/json')
+                            ? (await res.json()).message
+                            : await res.text();
+                          alert(errorText || 'Erreur pandan kreyasyon kat la.');
+                        }
+                      } catch (err) {
+                        console.error('Erreur kreyasyon kat:', err);
+                        alert('Sèvè a pa ka jwenn requete a, tcheke koneksyon w.');
                       }
-                    } catch (err) {
-                      console.error("Erreur kreyasyon kat:", err);
-                      alert("Sèvè a pa ka jwenn requete a, tcheke koneksyon w.");
-                    }
-                  }}
-                  className="px-8 py-5 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
-                >
-                  Kòmande yon Kat Virtuelle
-                </button>
+                    }}
+                    className="w-full py-5 bg-green-500 hover:bg-green-600 text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
+                  >
+                    KREYE KAT GRATIS 🎉
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -1304,6 +1326,77 @@ try {
                               </div>
                           </div>
                       </div>
+                  </div>
+
+                  {/* RECHARGE SECTION */}
+                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5">
+                    <h4 className="font-black italic uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2">
+                      <CreditCard size={14} /> Rechaje Kat
+                    </h4>
+                    <div className="space-y-2 mb-4">
+                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Montan (min. $3 USD)</label>
+                      <div className="flex items-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl">
+                        <span className="text-[10px] font-black text-gray-400">$</span>
+                        <input
+                          type="number"
+                          min="3"
+                          step="1"
+                          value={rechargeAmount}
+                          onChange={(e) => setRechargeAmount(e.target.value)}
+                          className="flex-1 outline-none font-black text-gray-900 text-sm bg-transparent"
+                          placeholder="3"
+                        />
+                        <span className="text-[9px] font-black text-gray-400 uppercase">USD</span>
+                      </div>
+                    </div>
+                    {Number(rechargeAmount) >= 3 && (
+                      <div className="bg-white rounded-2xl p-4 mb-4 space-y-2 border border-gray-100">
+                        <div className="flex justify-between">
+                          <span className="text-[9px] font-black uppercase text-gray-400">Frè rechajman</span>
+                          <span className="text-[10px] font-black text-orange-500">
+                            ${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-100 pt-2">
+                          <span className="text-[9px] font-black uppercase text-gray-400">Total debite</span>
+                          <span className="text-[10px] font-black text-black">
+                            ${(Number(rechargeAmount) + 1.90 + Number(rechargeAmount) * 0.019).toFixed(2)} USD
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      onClick={async () => {
+                        const amt = Number(rechargeAmount);
+                        if (!amt || amt < 3) { alert('Montan minim rechajman se $3 USD'); return; }
+                        try {
+                          const token = localStorage.getItem('token');
+                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                          const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amountUsd: amt }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setVirtualCard((prev: any) => ({ ...prev, balance: (Number(prev?.balance || 0) + amt) }));
+                            fetchData();
+                            alert('Kat rechaje avèk siksè! 🎉');
+                          } else {
+                            alert(data.message || 'Rechajman echwe');
+                          }
+                        } catch (err) {
+                          console.error('Rechajman erè:', err);
+                          alert('Erè koneksyon');
+                        }
+                      }}
+                      className="w-full py-5 bg-[#0F121E] text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
+                    >
+                      RECHAJE KAT
+                    </button>
+                    <p className="text-[8px] text-gray-400 font-bold text-center mt-3 uppercase italic">
+                      Frè rechajman obligatwa pou sèvis kat entènasyonal
+                    </p>
                   </div>
                 </div>
               </>
