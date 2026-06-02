@@ -72,6 +72,7 @@ export default function AgentDashboard() {
   const [liquidityRequests, setLiquidityRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [user, setUser] = useState<any>(null);
   const [activeAction, setActiveAction] = useState<"NONE" | "TOPUP" | "WITHDRAW" | "LIQUIDITY">("NONE");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -121,7 +122,30 @@ export default function AgentDashboard() {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    // Always verify role from the API — never trust the cached JWT role
+    fetch(`${backendUrl}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (
+          data.role === 'AGENT' ||
+          data.role === 'SUPER_ADMIN' ||
+          data.agent?.status === 'ACTIVE' ||
+          data.agent?.status === 'APPROVED'
+        ) {
+          setUser(data);
+          fetchAll();
+        } else {
+          window.location.href = '/dashboard';
+        }
+      })
+      .catch(() => { window.location.href = '/login'; });
+  }, []);
 
   // ── actions ──────────────────────────────────────────────────────────────
 
