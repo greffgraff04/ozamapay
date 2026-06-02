@@ -164,4 +164,14 @@ export class WalletController {
       proofImage,
     );
   }
+
+  @Get('notifications')
+  async getNotifications(@Req() req: any) {
+    return this.walletService.getNotifications(req.user.id);
+  }
+
+  @Post('notifications/read-all')
+  async markAllRead(@Req() req: any) {
+    return this.walletService.markNotificationsRead(req.user.id);
+  }
 }
