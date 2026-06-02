@@ -163,6 +163,49 @@ export class AdminService {
           },
         });
 
+        // Distribute KYC fee: 405 HTG to referring agent, rest to master
+        if (kyc.agentId) {
+          const agentCommission = 405;
+          const masterAmount = Math.round((feeInHTG - agentCommission) * 100) / 100;
+
+          const agentRecord = await tx.agent.findUnique({
+            where: { id: kyc.agentId },
+            include: { wallet: true },
+          });
+
+          if (agentRecord?.wallet) {
+            await tx.agentWallet.update({
+              where: { agentId: kyc.agentId },
+              data: { balance: { increment: agentCommission } },
+            });
+            await tx.agent.update({
+              where: { id: kyc.agentId },
+              data: {
+                totalCommission: { increment: agentCommission },
+                totalKyc: { increment: 1 },
+              },
+            });
+            await tx.commission.create({
+              data: { agentId: kyc.agentId, amount: agentCommission, type: 'KYC', transactionId: kycTx.id },
+            });
+            await tx.wallet.update({
+              where: { userId: MASTER_ID },
+              data: { balance: { increment: masterAmount } },
+            });
+          } else {
+            // Agent record missing wallet — credit full fee to master
+            await tx.wallet.update({
+              where: { userId: MASTER_ID },
+              data: { balance: { increment: feeInHTG } },
+            });
+          }
+        } else {
+          await tx.wallet.update({
+            where: { userId: MASTER_ID },
+            data: { balance: { increment: feeInHTG } },
+          });
+        }
+
         const agentExists = await tx.agent.findUnique({
           where: { userId: kyc.userId },
         });
