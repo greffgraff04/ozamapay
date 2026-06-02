@@ -84,6 +84,7 @@ export default function AgentDashboard() {
   const [liquidityMethod, setLiquidityMethod] = useState<"MONCASH" | "ZELLE" | "CASH" | "BANK">("MONCASH");
   const [liquidityAccountInfo, setLiquidityAccountInfo] = useState("");
 
+  const [usdRate, setUsdRate] = useState<number>(135);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -102,10 +103,11 @@ export default function AgentDashboard() {
     if (!token) { window.location.href = "/login"; return; }
 
     try {
-      const [agentRes, commRes, liqRes] = await Promise.all([
+      const [agentRes, commRes, liqRes, ratesRes] = await Promise.all([
         fetch(`${backendUrl}/agents/me`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${backendUrl}/agents/commissions`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${backendUrl}/agents/liquidity-requests`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${backendUrl}/rates`),
       ]);
 
       if (!agentRes.ok) { window.location.href = "/dashboard"; return; }
@@ -115,6 +117,13 @@ export default function AgentDashboard() {
 
       if (commRes.ok) { const j = await commRes.json(); setCommissions(Array.isArray(j) ? j : []); }
       if (liqRes.ok) { const j = await liqRes.json(); setLiquidityRequests(Array.isArray(j) ? j : []); }
+      if (ratesRes.ok) {
+        const ratesJson = await ratesRes.json();
+        const rate = Array.isArray(ratesJson)
+          ? ratesJson.find((r: any) => r.key === 'USD_HTG')?.value
+          : undefined;
+        if (rate) setUsdRate(Number(rate));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -135,12 +144,10 @@ export default function AgentDashboard() {
         console.log('auth/me response:', JSON.stringify(data));
         console.log('role:', data.role);
         console.log('agent status:', data.agent?.status);
-        console.log('condition result:', data.role === 'AGENT' || data.role === 'SUPER_ADMIN' || data.agent?.status === 'ACTIVE' || data.agent?.status === 'APPROVED');
+        console.log('condition result:', data.role === 'AGENT' || data.role === 'SUPER_ADMIN');
         if (
           data.role === 'AGENT' ||
-          data.role === 'SUPER_ADMIN' ||
-          data.agent?.status === 'ACTIVE' ||
-          data.agent?.status === 'APPROVED'
+          data.role === 'SUPER_ADMIN'
         ) {
           setUser(data);
           fetchAll();
