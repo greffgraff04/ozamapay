@@ -534,12 +534,10 @@ export class AdminService {
       const { email, name } = reqBefore.user;
       const displayName = name || 'Kliyan';
       try {
-        if (status === 'COMPLETED' && mode === 'BUY') {
-          await this.mailService.sendTopupConfirmed(email, displayName, emailNetAmount, serviceType);
-        } else if (status === 'COMPLETED' && mode === 'SELL') {
-          await this.mailService.sendWithdrawalConfirmed(email, displayName, Number(reqBefore.amount), serviceType);
+        if (status === 'COMPLETED') {
+          await this.mailService.sendFinanceConfirmed(email, displayName, serviceType, emailNetAmount, mode ?? '');
         } else if (status === 'REJECTED') {
-          await this.mailService.sendKycRejected(email, displayName, adminNote ?? '');
+          await this.mailService.sendKycRejected(email, displayName, adminNote ?? `Demann ${serviceType} ou rejte pa admin.`);
         }
       } catch {}
     }

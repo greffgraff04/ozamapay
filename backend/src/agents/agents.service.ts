@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
 
 import {
@@ -18,6 +19,7 @@ const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 export class AgentsService {
   constructor(
     private prisma: PrismaService,
+    private mailService: MailService,
   ) {}
 
   // ========================================
@@ -263,7 +265,15 @@ export class AgentsService {
     agentUserId: string,
     dto: AgentTopupDto,
   ) {
-    return this.prisma.$transaction(
+    const agentUser = await this.prisma.user.findUnique({
+      where: { id: agentUserId },
+      select: { email: true, name: true },
+    });
+    let _clientEmail = '';
+    let _clientName = '';
+    let _amount = 0;
+
+    const result = await this.prisma.$transaction(
       async (tx) => {
         // VERIFY AGENT
         const agent =
@@ -313,6 +323,9 @@ export class AgentsService {
             'Kliyan an pa jwenn',
           );
         }
+
+        _clientEmail = clientUser.email;
+        _clientName = clientUser.name || 'Kliyan';
 
         // FIND CLIENT WALLET
         const userWallet =
@@ -468,6 +481,7 @@ export class AgentsService {
           });
         }
 
+        _amount = amount;
         return {
           success: true,
           amount,
@@ -478,6 +492,20 @@ export class AgentsService {
         };
       },
     );
+
+    try {
+      if (agentUser) {
+        await this.mailService.sendAgentTopupConfirmed(
+          _clientEmail,
+          _clientName,
+          agentUser.name || 'Ajans',
+          _amount,
+          agentUser.email,
+        );
+      }
+    } catch {}
+
+    return result;
   }
 
   // ========================================
@@ -514,6 +542,11 @@ export class AgentsService {
         'Agent pa apwouve',
       );
     }
+
+    const agentUser = await this.prisma.user.findUnique({
+      where: { id: agentUserId },
+      select: { email: true, name: true },
+    });
 
     // VERIFY EMAIL
     if (!dto.email) {
@@ -594,7 +627,7 @@ export class AgentsService {
     }
 
     // TRANSACTION
-    return this.prisma.$transaction(
+    const withdrawResult = await this.prisma.$transaction(
       async (tx) => {
         // DEBIT USER
         await tx.wallet.update({
@@ -712,6 +745,20 @@ export class AgentsService {
         };
       },
     );
+
+    try {
+      if (agentUser) {
+        await this.mailService.sendAgentWithdrawConfirmed(
+          clientUser.email,
+          clientUser.name || 'Kliyan',
+          agentUser.name || 'Ajans',
+          amount,
+          agentUser.email,
+        );
+      }
+    } catch {}
+
+    return withdrawResult;
   }
 
   async verifyAgent(agentCode: string) {

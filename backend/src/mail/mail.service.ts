@@ -214,6 +214,128 @@ export class MailService {
     await this.send('contact@ozamapay.com', '🚨 OZAMAPAY — Alèt Sistèm', html);
   }
 
+  async sendFinanceConfirmed(
+    email: string,
+    name: string,
+    serviceType: string,
+    amount: number,
+    mode: string,
+  ): Promise<void> {
+    const isBuy = mode === 'BUY';
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const html = this.wrap(
+      'Finance Request Konfime — OZAMAPAY',
+      this.badge(isBuy ? '✅ BUY KONFIME' : '✅ SELL KONFIME', '#D4630A') +
+      `<div style="height:16px;"></div>` +
+      this.h(`${name}, demann ${serviceType} ou konfime!`) +
+      (isBuy
+        ? this.p(`Demann <strong>${serviceType}</strong> ou an konfime pa admin. <strong>${amountFmt} HTG</strong> ajoute nan kont ou.`)
+        : this.p(`Demann <strong>${serviceType}</strong> ou an trete. Admin ap voye lajan nan kont ou.`)
+      ) +
+      this.table(
+        this.infoRow('Sèvis', serviceType) +
+        this.infoRow('Mod', mode) +
+        this.infoRow('Montan', `${amountFmt} HTG`) +
+        this.infoRow('Dat', new Date().toLocaleDateString('fr-HT')),
+      ) +
+      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
+      '#D4630A',
+    );
+    await this.send(email, 'Finance Request Konfime — OZAMAPAY', html);
+  }
+
+  async sendAgentTopupConfirmed(
+    clientEmail: string,
+    clientName: string,
+    agentName: string,
+    amount: number,
+    agentEmail: string,
+  ): Promise<void> {
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const commission = Number(amount * 0.02).toLocaleString('fr-HT');
+    const now = new Date().toLocaleDateString('fr-HT');
+
+    const htmlClient = this.wrap(
+      'Depot Konfime — OZAMAPAY',
+      this.badge('✅ DEPOT KONFIME', '#16a34a') +
+      `<div style="height:16px;"></div>` +
+      this.h(`${clientName}, depot ou konfime!`) +
+      this.p(`Ajans <strong>${agentName}</strong> kredite <strong>${amountFmt} HTG</strong> nan kont ou avèk siksè.`) +
+      this.table(
+        this.infoRow('Montan', `<span style="color:#16a34a;">+${amountFmt} HTG</span>`) +
+        this.infoRow('Ajans', agentName) +
+        this.infoRow('Dat', now),
+      ) +
+      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
+      '#16a34a',
+    );
+
+    const htmlAgent = this.wrap(
+      'Topup Kliyan Konfime — OZAMAPAY',
+      this.badge('✅ TOPUP KONFIME', '#D4630A') +
+      `<div style="height:16px;"></div>` +
+      this.h(`Topup avèk siksè, ${agentName}!`) +
+      this.p(`Ou fè yon topup <strong>${amountFmt} HTG</strong> pou kliyan <strong>${clientEmail}</strong> avèk siksè.`) +
+      this.table(
+        this.infoRow('Kliyan', clientEmail) +
+        this.infoRow('Montan', `${amountFmt} HTG`) +
+        this.infoRow('Komisyon (2%)', `<span style="color:#16a34a;">+${commission} HTG</span>`) +
+        this.infoRow('Dat', now),
+      ) +
+      this.btn('Wè Aktivite Mwen', `${this.frontendUrl}/agent-dashboard`),
+      '#D4630A',
+    );
+
+    await this.send(clientEmail, 'Depot Konfime — OZAMAPAY', htmlClient);
+    await this.send(agentEmail, 'Topup Kliyan Konfime — OZAMAPAY', htmlAgent);
+  }
+
+  async sendAgentWithdrawConfirmed(
+    clientEmail: string,
+    clientName: string,
+    agentName: string,
+    amount: number,
+    agentEmail: string,
+  ): Promise<void> {
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const commission = Number(amount * 0.0075).toLocaleString('fr-HT');
+    const now = new Date().toLocaleDateString('fr-HT');
+
+    const htmlClient = this.wrap(
+      'Retrè Konfime — OZAMAPAY',
+      this.badge('✅ RETRÈ KONFIME', '#B71C1C') +
+      `<div style="height:16px;"></div>` +
+      this.h(`${clientName}, retrè ou konfime!`) +
+      this.p(`Ajans <strong>${agentName}</strong> retire <strong>${amountFmt} HTG</strong> nan kont ou avèk siksè.`) +
+      this.table(
+        this.infoRow('Montan', `<span style="color:#B71C1C;">-${amountFmt} HTG</span>`) +
+        this.infoRow('Ajans', agentName) +
+        this.infoRow('Dat', now),
+      ) +
+      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
+      '#B71C1C',
+    );
+
+    const htmlAgent = this.wrap(
+      'Retrè Kliyan Konfime — OZAMAPAY',
+      this.badge('✅ RETRÈ KONFIME', '#D4630A') +
+      `<div style="height:16px;"></div>` +
+      this.h(`Retrè avèk siksè, ${agentName}!`) +
+      this.p(`Ou fè yon retrè <strong>${amountFmt} HTG</strong> pou kliyan <strong>${clientEmail}</strong> avèk siksè.`) +
+      this.table(
+        this.infoRow('Kliyan', clientEmail) +
+        this.infoRow('Montan', `${amountFmt} HTG`) +
+        this.infoRow('Komisyon (0.75%)', `<span style="color:#16a34a;">+${commission} HTG</span>`) +
+        this.infoRow('Dat', now),
+      ) +
+      this.btn('Wè Aktivite Mwen', `${this.frontendUrl}/agent-dashboard`),
+      '#D4630A',
+    );
+
+    await this.send(clientEmail, 'Retrè Konfime — OZAMAPAY', htmlClient);
+    await this.send(agentEmail, 'Retrè Kliyan Konfime — OZAMAPAY', htmlAgent);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Reset Modpas — OZAMAPAY',
