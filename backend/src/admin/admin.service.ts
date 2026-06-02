@@ -100,13 +100,17 @@ export class AdminService {
     const kycBefore = await this.prisma.kyc.findUnique({ where: { id: kycId } });
 
     const updatedKyc = await this.prisma.$transaction(async (tx) => {
-      // 1. Tcheke si KYC a egziste
+      // 1. Tcheke si KYC a egziste epi toujou PENDING
       const kyc = await tx.kyc.findUnique({
         where: { id: kycId },
       });
 
       if (!kyc) {
         throw new NotFoundException('Dokiman KYC sa a pa egziste nan sistèm nan');
+      }
+
+      if (kyc.status !== 'PENDING') {
+        throw new BadRequestException('KYC sa a deja trete');
       }
 
       // 2. Mete estati KYC a ajou (APPROVED oswa REJECTED)

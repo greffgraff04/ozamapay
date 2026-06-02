@@ -7,6 +7,7 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 
 import { PaymentsService } from './payments.service';
 import { MonCashConnectService } from './moncashconnect.service';
@@ -20,6 +21,7 @@ export class PaymentsController {
   ) {}
 
   @Post('moncash/topup')
+  @UseGuards(JwtAuthGuard)
   async createTopup(
     @Body('amount') amount: number,
     @Body('agentId') agentId: string,
@@ -38,6 +40,7 @@ export class PaymentsController {
   }
 
   @Post('moncash/webhook')
+  @SkipThrottle()
   async handleMonCashWebhook(
     @Body() data: any,
   ) {
@@ -75,6 +78,7 @@ export class PaymentsController {
   }
 
   @Post('moncashconnect/webhook')
+  @SkipThrottle()
   async moncashConnectWebhook(
     @Body() body: any,
     @Headers('x-signature') signature?: string,

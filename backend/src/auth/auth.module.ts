@@ -17,9 +17,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     PassportModule.register({ defaultStrategy: 'google' }),
     MailModule, // Nou mete l nan imports yo pou NestJS ka rezoud MailService
     JwtModule.register({
-      secret:
-        process.env.JWT_SECRET ||
-        'ozamapay_secret_super_long_2026',
+      secret: process.env.JWT_SECRET,
       signOptions: {
         expiresIn: '7d',
       },
