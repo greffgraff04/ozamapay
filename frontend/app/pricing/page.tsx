@@ -136,7 +136,7 @@ function SiteNav() {
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-[#0A0B0F] text-white font-space-grotesk">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white font-space-grotesk">
       <SiteNav />
 
       {/* ── HERO BANNER ── */}
