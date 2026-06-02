@@ -8,41 +8,38 @@ export class MailService {
   private readonly frontendUrl =
     process.env.FRONTEND_URL || 'https://ozamapay.com';
 
-  // ── shared HTML wrapper ──────────────────────────────────────────────────
+  // ── private helpers ──────────────────────────────────────────────────────
 
-  private wrap(title: string, body: string, headerColor = '#1A1A2E'): string {
+  private wrap(
+    title: string,
+    headerTitle: string,
+    body: string,
+    headerColor = '#FF6B00',
+  ): string {
     return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="ht">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
-        <!-- Header -->
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
         <tr>
-          <td style="background:${headerColor};padding:32px 40px;text-align:center;">
-            <img src="https://ozamapay.com/logo.png" alt="OZAMAPAY" style="height:50px;object-fit:contain;display:block;margin:0 auto;" />
+          <td style="background:${headerColor};padding:28px 40px;">
+            <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.65);text-transform:uppercase;">OZAMAPAY</p>
+            <p style="margin:8px 0 0;font-size:26px;font-weight:600;color:#ffffff;line-height:1.2;">${headerTitle}</p>
           </td>
         </tr>
-
-        <!-- Body -->
         <tr>
-          <td style="padding:36px 40px 28px;">
+          <td style="padding:36px 40px 32px;">
             ${body}
           </td>
         </tr>
-
-        <!-- Footer -->
         <tr>
-          <td style="background:#f9f9fb;padding:20px 40px;border-top:1px solid #eee;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#999;line-height:1.6;">
-              OZAMAPAY — Jacmel, Ayiti<br>
-              <a href="mailto:contact@ozamapay.com" style="color:#D4630A;text-decoration:none;">contact@ozamapay.com</a>
-            </p>
+          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#fafafa;">
+            <p style="margin:0 0 6px;font-size:11px;color:#999999;line-height:1.6;">Pa janm pataje PIN ou ak pèsòn — menm ekip OZAMAPAY pa ka mande l.</p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;">OZAMAPAY — Jakmel, Ayiti &nbsp;·&nbsp; <a href="mailto:contact@ozamapay.com" style="color:#FF6B00;text-decoration:none;">contact@ozamapay.com</a></p>
           </td>
         </tr>
-
       </table>
     </td></tr>
   </table>
@@ -50,31 +47,54 @@ export class MailService {
 </html>`;
   }
 
-  private btn(label: string, url: string): string {
-    return `<a href="${url}" style="display:inline-block;margin-top:24px;padding:14px 32px;background:#D4630A;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:0.5px;">${label}</a>`;
+  private amountBox(amount: string, label: string): string {
+    return `<div style="background:#f5f5f5;border-radius:6px;padding:24px;text-align:center;margin:20px 0;">
+      <p style="margin:0;font-size:36px;font-weight:700;color:#1a1a1a;letter-spacing:-0.5px;">${amount}</p>
+      <p style="margin:8px 0 0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1px;">${label}</p>
+    </div>`;
   }
 
-  private h(text: string): string {
-    return `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;color:#1A1A2E;">${text}</h2>`;
+  private badge(type: 'KREDITE' | 'KONFIME' | 'REJTE' | 'IJAN'): string {
+    const s: Record<string, { bg: string; color: string; text: string }> = {
+      KREDITE: { bg: '#e8f5e9', color: '#2e7d32', text: 'KREDITE ✓' },
+      KONFIME: { bg: '#e8f5e9', color: '#2e7d32', text: 'KONFIME ✓' },
+      REJTE:   { bg: '#ffebee', color: '#c62828', text: 'REJTE ✗' },
+      IJAN:    { bg: '#fff3e0', color: '#e65100', text: 'AKSYON NESESÈ' },
+    };
+    const { bg, color, text } = s[type];
+    return `<span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;background:${bg};color:${color};letter-spacing:0.5px;">${text}</span>`;
+  }
+
+  private accentLine(text: string): string {
+    return `<div style="border-left:3px solid #FF6B00;background:#fff8f0;padding:14px 16px;border-radius:0 4px 4px 0;margin:20px 0;">
+      <p style="margin:0;font-size:13px;color:#7c4700;line-height:1.6;">${text}</p>
+    </div>`;
+  }
+
+  private btn(label: string, url: string): string {
+    return `<a href="${url}" style="display:block;margin-top:24px;padding:14px;background:#FF6B00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">${label}</a>`;
   }
 
   private p(text: string): string {
-    return `<p style="margin:0 0 12px;font-size:15px;color:#444;line-height:1.7;">${text}</p>`;
+    return `<p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">${text}</p>`;
   }
 
-  private badge(text: string, color = '#D4630A'): string {
-    return `<span style="display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;background:${color}20;color:${color};letter-spacing:0.5px;">${text}</span>`;
+  private list(items: string[]): string {
+    const lis = items
+      .map(i => `<li style="margin-bottom:6px;">${i}</li>`)
+      .join('');
+    return `<ul style="margin:10px 0 16px;padding-left:20px;font-size:14px;color:#444444;line-height:1.8;">${lis}</ul>`;
   }
 
   private infoRow(label: string, value: string): string {
     return `<tr>
-      <td style="padding:10px 16px;font-size:13px;color:#777;border-bottom:1px solid #f0f0f0;">${label}</td>
-      <td style="padding:10px 16px;font-size:13px;font-weight:700;color:#1A1A2E;border-bottom:1px solid #f0f0f0;text-align:right;">${value}</td>
+      <td style="padding:11px 16px;font-size:13px;color:#888888;border-bottom:0.5px solid #eeeeee;">${label}</td>
+      <td style="padding:11px 16px;font-size:13px;font-weight:600;color:#1a1a1a;border-bottom:0.5px solid #eeeeee;text-align:right;">${value}</td>
     </tr>`;
   }
 
   private table(rows: string): string {
-    return `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee;border-radius:10px;overflow:hidden;margin-top:20px;">${rows}</table>`;
+    return `<table width="100%" cellpadding="0" cellspacing="0" style="border:0.5px solid #eeeeee;border-radius:6px;overflow:hidden;margin:20px 0;">${rows}</table>`;
   }
 
   // ── private send helper ──────────────────────────────────────────────────
@@ -97,121 +117,148 @@ export class MailService {
   async sendVerificationEmail(email: string, token: string): Promise<void> {
     const url = `${this.frontendUrl}/verify-email?token=${token}`;
     const html = this.wrap(
-      'Verifye Email Ou — OZAMAPAY',
-      this.h('Verifye adrès email ou') +
-      this.p('Bonjou! Klike bouton anba a pou aktive kont OZAMAPAY ou.') +
-      this.p('Lyen sa a ap ekspire nan 24 èdtan.') +
-      this.btn('Verifye Email', url),
+      'Konfime adrès email ou — OZAMAPAY',
+      'Konfime Email Ou',
+      this.p('Bonjou,') +
+      this.p('Mèsi pou enskripsyon ou nan OZAMAPAY. Pou aktive kont ou, klike sou bouton anba a.') +
+      this.p('Lyen sa valid pou 24 èdtan sèlman. Si se pa ou ki kreye kont sa, ou ka ignoreye mesaj sa.') +
+      this.btn('Konfime Email Ou →', url),
+      '#1565C0',
     );
-    await this.send(email, 'Verifye kont OZAMAPAY ou', html);
+    await this.send(email, 'Konfime adrès email ou — OZAMAPAY', html);
   }
 
   async sendWelcome(email: string, name: string): Promise<void> {
     const html = this.wrap(
-      'Byenveni sou OZAMAPAY',
-      this.h(`Byenveni, ${name}! 🎉`) +
-      this.p('Kont OZAMAPAY ou kreye avèk siksè. Ou ka kounye a:') +
-      `<ul style="margin:12px 0 20px;padding-left:20px;color:#444;font-size:15px;line-height:2;">
-        <li>Fè depo ak retrè lajan</li>
-        <li>Soumèt KYC ou pou deblouke tout fonksyonalite</li>
-        <li>Kreye kat Visa Vityèl</li>
-        <li>Voye lajan bay nenpòt moun</li>
-      </ul>` +
-      this.btn('Ale sou Dashboard', `${this.frontendUrl}/dashboard`),
+      `${name}, byenvini nan OZAMAPAY`,
+      `Byenvini, ${name}`,
+      this.p(`Bonjou ${name},`) +
+      this.p('Ou fè yon bon chwa jodi a.') +
+      this.p('Pandan moun ap peye 10 a 15% nan Western Union pou voye lajan, ou sot chwazi yon altènativ ki koute 2% sèlman. Sa se yon desizyon entèlijan.') +
+      this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit. Frè verifikasyon se $25 USD, yon sèl fwa pou tout lavi kont ou.') +
+      this.p('Apre verifikasyon:') +
+      this.list([
+        'Ou ka resevwa lajan depi nenpòt kote',
+        'Ou ka kreye kat VISA ou — san frè adisyonèl',
+        'Ou ka voye kòb bay fanmi ou imedyatman',
+      ]) +
+      this.p('Pa kite opòtinite sa pase.') +
+      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.') +
+      this.btn('Kòmanse Verifikasyon Ou →', `${this.frontendUrl}/dashboard`),
     );
-    await this.send(email, 'Byenveni sou OZAMAPAY 🎉', html);
+    await this.send(email, `${name}, byenvini nan OZAMAPAY`, html);
   }
 
   async sendKycApproved(email: string, name: string): Promise<void> {
     const html = this.wrap(
-      'KYC Apwouve — OZAMAPAY',
-      this.badge('✅ KYC APWOUVE', '#16a34a') +
+      `${name} — Aksè konplè. Kat VISA ou disponib.`,
+      'Verifikasyon Apwouve',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`Felisitasyon, ${name}!`) +
-      this.p('KYC ou <strong>apwouve</strong>. Kont ou kounye a gen aksè konplè.') +
-      this.p('Ou ka kounye a:') +
-      `<ul style="margin:12px 0 20px;padding-left:20px;color:#444;font-size:15px;line-height:2;">
-        <li>Kreye kat Visa Vityèl ou</li>
-        <li>Fè tranzaksyon san limit</li>
-        <li>Aksede tout sèvis OZAMAPAY yo</li>
-      </ul>` +
-      this.btn('Kreye Kat Vityèl Mwen', `${this.frontendUrl}/dashboard`),
+      this.amountBox('$25 USD', 'Frè KYC peye') +
+      this.p(`Bonjou ${name},`) +
+      this.p('Verifikasyon idantite ou apwouve.') +
+      this.p('Kont ou kounye a gen aksè konplè. Sa vle di ou ka:') +
+      this.list([
+        'Achte sou Amazon, Netflix, ak tout sit entènasyonal',
+        'Resevwa Zelle, CashApp, Wise — dirèkteman nan kont ou',
+        'Voye ak resevwa kòb san limit',
+      ]) +
+      this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +
+      this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.') +
+      this.btn('Kreye Kat VISA Gratis Ou →', `${this.frontendUrl}/dashboard`),
     );
-    await this.send(email, '✅ KYC ou apwouve — OZAMAPAY', html);
+    await this.send(email, `${name} — Aksè konplè. Kat VISA ou disponib.`, html);
   }
 
   async sendKycRejected(email: string, name: string, reason: string): Promise<void> {
     const html = this.wrap(
-      'KYC Rejte — OZAMAPAY',
-      this.badge('❌ KYC REJTE', '#dc2626') +
+      `${name} — Yon kòreksyon rapid epi ou pare`,
+      'Verifikasyon — Kòreksyon Nesesè',
+      this.badge('IJAN') +
       `<div style="height:16px;"></div>` +
-      this.h(`${name}, nou pa t kapab verifye dokiman ou`) +
-      this.p('Malerezman, nou pa kapab apwouve KYC ou pou rezon sa a:') +
-      `<div style="margin:16px 0;padding:16px 20px;background:#fff5f5;border-left:4px solid #dc2626;border-radius:6px;font-size:14px;color:#b91c1c;">${reason || 'Dokiman yo pa klè oswa pa valid.'}</div>` +
-      this.p('Tanpri resoumèt dokiman ou yo an asire yo:') +
-      `<ul style="margin:12px 0 20px;padding-left:20px;color:#444;font-size:15px;line-height:2;">
-        <li>Klè epi li fasil pou li</li>
-        <li>Ap kouvri tout 4 kwen yo</li>
-        <li>Pa plis ke 3 mwa depi emisyon</li>
-      </ul>` +
-      this.btn('Resoumèt KYC', `${this.frontendUrl}/dashboard`),
+      this.p(`Bonjou ${name},`) +
+      this.p('Nou pa t ka konfime verifikasyon ou pou rezon sa:') +
+      `<div style="border-left:3px solid #e65100;background:#fff3e0;padding:14px 16px;border-radius:0 4px 4px 0;margin:16px 0;">
+        <p style="margin:0;font-size:13px;color:#7c4700;line-height:1.6;">${reason || 'Dokiman yo pa klè oswa pa valid.'}</p>
+      </div>` +
+      this.p('Pa dekouraje. Sa rive souvan epi li fasil pou korije. 90% moun ki resoumèt dezyèm fwa yo reisit.') +
+      this.p('Sa ou dwe fè:') +
+      this.list([
+        'Korije sa ki mansyone anwo a',
+        'Resoumèt foto ki klè ak konplè',
+        'Tann mwens pase 24 èdtan pou repons',
+      ]) +
+      this.p('Resoumèt la gratis. Done ou yo sekirize epi konfidansyèl.') +
+      this.btn('Korije epi Resoumèt →', `${this.frontendUrl}/dashboard`),
+      '#e65100',
     );
-    await this.send(email, '❌ KYC ou rejte — OZAMAPAY', html);
+    await this.send(email, `${name} — Yon kòreksyon rapid epi ou pare`, html);
   }
 
   async sendTopupConfirmed(email: string, name: string, amount: number, method: string): Promise<void> {
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(
-      'Depot Konfime — OZAMAPAY',
-      this.badge('✅ DEPOT KONFIME', '#16a34a') +
+      `${amountFmt} HTG ajoute nan kont ou`,
+      'Depot Konfime',
+      this.badge('KREDITE') +
       `<div style="height:16px;"></div>` +
-      this.h(`Depot ou konfime, ${name}!`) +
-      this.p('Tranzaksyon ou an trete avèk siksè pa ekip OZAMAPAY.') +
+      this.amountBox(`${amountFmt} HTG`, 'Montan kredite') +
       this.table(
-        this.infoRow('Montan', `<span style="color:#16a34a;">+${Number(amount).toLocaleString('fr-HT')} HTG</span>`) +
         this.infoRow('Metòd', method || 'N/A') +
-        this.infoRow('Estati', `<span style="color:#16a34a;">✅ Konfime</span>`),
+        this.infoRow('Frè sèvis', '6%') +
+        this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
+      this.accentLine('Lajan ou disponib kounye a. Ou ka kreye kat VISA ou oswa voye kòb bay fanmi ou imedyatman.') +
+      this.btn('Ale nan Kont Ou →', `${this.frontendUrl}/dashboard`) +
+      `<div style="height:16px;"></div>` +
+      `<p style="margin:0;font-size:12px;color:#aaaaaa;text-align:center;">Chak depot se yon etap vè endepandans finansye.</p>`,
     );
-    await this.send(email, `✅ Depot ${Number(amount).toLocaleString('fr-HT')} HTG konfime`, html);
+    await this.send(email, `${amountFmt} HTG ajoute nan kont ou`, html);
   }
 
   async sendWithdrawalConfirmed(email: string, name: string, amount: number, method: string): Promise<void> {
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(
-      'Retrè Konfime — OZAMAPAY',
-      this.badge('✅ RETRÈ KONFIME', '#D4630A') +
+      `Retrè ou konfime — ${amountFmt} HTG`,
+      'Retrè Konfime',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`Retrè ou konfime, ${name}!`) +
-      this.p('Demand retrè ou an trete avèk siksè. Lajan an ap voye nan kont ou.') +
+      this.amountBox(`${amountFmt} HTG`, 'Montan retire') +
       this.table(
-        this.infoRow('Montan', `<span style="color:#D4630A;">-${Number(amount).toLocaleString('fr-HT')} HTG</span>`) +
         this.infoRow('Metòd', method || 'N/A') +
-        this.infoRow('Estati', `<span style="color:#16a34a;">✅ Konfime</span>`),
+        this.infoRow('Frè sèvis', '2%') +
+        this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
+      this.p(`Bonjou ${name},`) +
+      this.p('Tranzaksyon ou trete avèk siksè. Lajan an ap rive selon metòd ou chwazi a. Si ou pa resevwa l nan 24 èdtan, kontakte sipò nou imedyatman.') +
+      this.p('Kont ou sekirize. Tout tranzaksyon ou yo pwoteje.') +
+      this.accentLine('Yon kesyon? Ekip nou la 7 jou sou 7 sou WhatsApp.') +
+      this.btn('Wè Istorik Ou →', `${this.frontendUrl}/dashboard`),
+      '#1565C0',
     );
-    await this.send(email, `✅ Retrè ${Number(amount).toLocaleString('fr-HT')} HTG konfime`, html);
+    await this.send(email, `Retrè ou konfime — ${amountFmt} HTG`, html);
   }
 
   async sendSystemAlert(error: string, uptime: number): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(
-      '🚨 OZAMAPAY — Alèt Sistèm',
-      this.badge('🚨 ALÈT SISTÈM', '#B71C1C') +
+      'URGENCE — Sistèm OZAMAPAY bezwen atansyon',
+      'Alèt Sistèm',
+      this.badge('IJAN') +
       `<div style="height:16px;"></div>` +
-      this.h('Pwoblèm teknik detekte') +
-      this.p('Sistèm OZAMAPAY detekte yon pwoblèm teknik. Pran aksyon imedyatman.') +
+      this.p('Sistèm OZAMAPAY detekte yon pwoblèm teknik. Verifye Render dashboard imedyatman epi pran aksyon nesesè yo.') +
       this.table(
-        this.infoRow('Erè', `<span style="color:#B71C1C;font-family:monospace;">${error}</span>`) +
+        this.infoRow('Erè', `<span style="font-family:monospace;font-size:12px;color:#B71C1C;">${error}</span>`) +
         this.infoRow('Uptime', `${uptime}s`) +
-        this.infoRow('Lè', new Date().toISOString()),
+        this.infoRow('Dat', now),
       ) +
-      `<div style="margin-top:24px;padding:16px 20px;background:#fff5f5;border-left:4px solid #B71C1C;border-radius:6px;font-size:14px;color:#B71C1C;">
-        Verifye Render dashboard imedyatman.
-      </div>` +
-      this.btn('Ouvri Render Dashboard', 'https://dashboard.render.com'),
+      this.btn('Ouvri Render Dashboard →', 'https://dashboard.render.com'),
       '#B71C1C',
     );
-    await this.send('contact@ozamapay.com', '🚨 OZAMAPAY — Alèt Sistèm', html);
+    await this.send('contact@ozamapay.com', 'URGENCE — Sistèm OZAMAPAY bezwen atansyon', html);
   }
 
   async sendFinanceConfirmed(
@@ -223,25 +270,27 @@ export class MailService {
   ): Promise<void> {
     const isBuy = mode === 'BUY';
     const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(
-      'Finance Request Konfime — OZAMAPAY',
-      this.badge(isBuy ? '✅ BUY KONFIME' : '✅ SELL KONFIME', '#D4630A') +
+      `Demann ${serviceType} ou konfime — OZAMAPAY`,
+      'Finance Konfime',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`${name}, demann ${serviceType} ou konfime!`) +
-      (isBuy
-        ? this.p(`Demann <strong>${serviceType}</strong> ou an konfime pa admin. <strong>${amountFmt} HTG</strong> ajoute nan kont ou.`)
-        : this.p(`Demann <strong>${serviceType}</strong> ou an trete. Admin ap voye lajan nan kont ou.`)
-      ) +
+      this.amountBox(`${amountFmt} HTG`, isBuy ? 'Montan kredite' : 'Montan trete') +
       this.table(
         this.infoRow('Sèvis', serviceType) +
-        this.infoRow('Mod', mode) +
-        this.infoRow('Montan', `${amountFmt} HTG`) +
-        this.infoRow('Dat', new Date().toLocaleDateString('fr-HT')),
+        this.infoRow('Operasyon', isBuy ? 'Achte (Depot)' : 'Vann (Retrè)') +
+        this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
-      '#D4630A',
+      this.p(`Bonjou ${name},`) +
+      (isBuy
+        ? this.p(`Demann ${serviceType} ou an konfime. Montan an ajoute nan kont ou.`)
+        : this.p(`Demann ${serviceType} ou an trete avèk siksè. Peman an ap fèt selon metòd ou chwazi a.`)
+      ) +
+      this.p('Tout echanj yo verifye epi sekirize pa ekip OZAMAPAY.') +
+      this.btn('Wè Kont Ou →', `${this.frontendUrl}/dashboard`),
     );
-    await this.send(email, 'Finance Request Konfime — OZAMAPAY', html);
+    await this.send(email, `Demann ${serviceType} ou konfime — OZAMAPAY`, html);
   }
 
   async sendAgentTopupConfirmed(
@@ -252,42 +301,42 @@ export class MailService {
     agentEmail: string,
   ): Promise<void> {
     const amountFmt = Number(amount).toLocaleString('fr-HT');
-    const commission = Number(amount * 0.02).toLocaleString('fr-HT');
+    const commissionFmt = Number(amount * 0.02).toLocaleString('fr-HT');
     const now = new Date().toLocaleDateString('fr-HT');
 
     const htmlClient = this.wrap(
-      'Depot Konfime — OZAMAPAY',
-      this.badge('✅ DEPOT KONFIME', '#16a34a') +
+      `Depot konfime pa ajans ou — ${amountFmt} HTG`,
+      'Depot Ajans Konfime',
+      this.badge('KREDITE') +
       `<div style="height:16px;"></div>` +
-      this.h(`${clientName}, depot ou konfime!`) +
-      this.p(`Ajans <strong>${agentName}</strong> kredite <strong>${amountFmt} HTG</strong> nan kont ou avèk siksè.`) +
+      this.amountBox(`${amountFmt} HTG`, 'Montan kredite') +
       this.table(
-        this.infoRow('Montan', `<span style="color:#16a34a;">+${amountFmt} HTG</span>`) +
         this.infoRow('Ajans', agentName) +
         this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
-      '#16a34a',
+      this.p(`Bonjou ${clientName},`) +
+      this.p(`Ajans ${agentName} fè yon depot nan kont ou avèk siksè. Lajan an disponib kounye a. Ou ka itilize l imedyatman.`) +
+      this.btn('Wè Kont Ou →', `${this.frontendUrl}/dashboard`),
     );
 
     const htmlAgent = this.wrap(
-      'Topup Kliyan Konfime — OZAMAPAY',
-      this.badge('✅ TOPUP KONFIME', '#D4630A') +
+      `Topup kliyan konfime — ${amountFmt} HTG`,
+      'Topup Kliyan Konfime',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`Topup avèk siksè, ${agentName}!`) +
-      this.p(`Ou fè yon topup <strong>${amountFmt} HTG</strong> pou kliyan <strong>${clientEmail}</strong> avèk siksè.`) +
       this.table(
         this.infoRow('Kliyan', clientEmail) +
         this.infoRow('Montan', `${amountFmt} HTG`) +
-        this.infoRow('Komisyon (2%)', `<span style="color:#16a34a;">+${commission} HTG</span>`) +
+        this.infoRow('Komisyon (2%)', `${commissionFmt} HTG`) +
         this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Aktivite Mwen', `${this.frontendUrl}/agent-dashboard`),
-      '#D4630A',
+      this.p(`Bonjou ${agentName},`) +
+      this.p(`Topup ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`) +
+      this.btn('Wè Kont Ajans Ou →', `${this.frontendUrl}/agent-dashboard`),
     );
 
-    await this.send(clientEmail, 'Depot Konfime — OZAMAPAY', htmlClient);
-    await this.send(agentEmail, 'Topup Kliyan Konfime — OZAMAPAY', htmlAgent);
+    await this.send(clientEmail, `Depot konfime pa ajans ou — ${amountFmt} HTG`, htmlClient);
+    await this.send(agentEmail, `Topup kliyan konfime — ${amountFmt} HTG`, htmlAgent);
   }
 
   async sendAgentWithdrawConfirmed(
@@ -298,59 +347,58 @@ export class MailService {
     agentEmail: string,
   ): Promise<void> {
     const amountFmt = Number(amount).toLocaleString('fr-HT');
-    const commission = Number(amount * 0.0075).toLocaleString('fr-HT');
+    const commissionFmt = Number(amount * 0.0075).toLocaleString('fr-HT');
     const now = new Date().toLocaleDateString('fr-HT');
 
     const htmlClient = this.wrap(
-      'Retrè Konfime — OZAMAPAY',
-      this.badge('✅ RETRÈ KONFIME', '#B71C1C') +
+      `Retrè konfime pa ajans ou — ${amountFmt} HTG`,
+      'Retrè Ajans Konfime',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`${clientName}, retrè ou konfime!`) +
-      this.p(`Ajans <strong>${agentName}</strong> retire <strong>${amountFmt} HTG</strong> nan kont ou avèk siksè.`) +
+      this.amountBox(`${amountFmt} HTG`, 'Montan retire') +
       this.table(
-        this.infoRow('Montan', `<span style="color:#B71C1C;">-${amountFmt} HTG</span>`) +
         this.infoRow('Ajans', agentName) +
         this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Balans Mwen', `${this.frontendUrl}/dashboard`),
-      '#B71C1C',
+      this.p(`Bonjou ${clientName},`) +
+      this.p(`Ajans ${agentName} trete retrè ou avèk siksè. Lajan an ap rive selon metòd ou chwazi a.`) +
+      this.btn('Wè Istorik Ou →', `${this.frontendUrl}/dashboard`),
+      '#1565C0',
     );
 
     const htmlAgent = this.wrap(
-      'Retrè Kliyan Konfime — OZAMAPAY',
-      this.badge('✅ RETRÈ KONFIME', '#D4630A') +
+      `Retrè kliyan konfime — ${amountFmt} HTG`,
+      'Retrè Kliyan Konfime',
+      this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.h(`Retrè avèk siksè, ${agentName}!`) +
-      this.p(`Ou fè yon retrè <strong>${amountFmt} HTG</strong> pou kliyan <strong>${clientEmail}</strong> avèk siksè.`) +
       this.table(
         this.infoRow('Kliyan', clientEmail) +
         this.infoRow('Montan', `${amountFmt} HTG`) +
-        this.infoRow('Komisyon (0.75%)', `<span style="color:#16a34a;">+${commission} HTG</span>`) +
+        this.infoRow('Komisyon (0.75%)', `${commissionFmt} HTG`) +
         this.infoRow('Dat', now),
       ) +
-      this.btn('Wè Aktivite Mwen', `${this.frontendUrl}/agent-dashboard`),
-      '#D4630A',
+      this.p(`Bonjou ${agentName},`) +
+      this.p(`Retrè ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`) +
+      this.btn('Wè Kont Ajans Ou →', `${this.frontendUrl}/agent-dashboard`),
+      '#1565C0',
     );
 
-    await this.send(clientEmail, 'Retrè Konfime — OZAMAPAY', htmlClient);
-    await this.send(agentEmail, 'Retrè Kliyan Konfime — OZAMAPAY', htmlAgent);
+    await this.send(clientEmail, `Retrè konfime pa ajans ou — ${amountFmt} HTG`, htmlClient);
+    await this.send(agentEmail, `Retrè kliyan konfime — ${amountFmt} HTG`, htmlAgent);
   }
 
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
-      'Reset Modpas — OZAMAPAY',
-      this.badge('🔐 RESET MODPAS', '#D4630A') +
-      `<div style="height:16px;"></div>` +
-      this.h(`${name}, ou mande yon reset modpas`) +
-      this.p('Nou resevwa yon demann pou chanje modpas kont OZAMAPAY ou. Klike bouton anba a pou kontinye.') +
-      this.btn('Reset Modpas Mwen', resetUrl) +
-      `<div style="height:20px;"></div>` +
-      `<div style="padding:14px 18px;background:#fff8f0;border-left:4px solid #D4630A;border-radius:6px;font-size:13px;color:#92400e;">
-        ⏱ Lyen sa a valid pou <strong>1 èdtan sèlman</strong>.
-      </div>` +
-      `<div style="height:12px;"></div>` +
-      this.p('<span style="color:#999;font-size:12px;">Si ou pa mande reset sa a, inyore mesaj sa a. Kont ou an sekirite.</span>'),
+      'Demann reset modpas — OZAMAPAY',
+      'Sekirite Kont Ou',
+      this.p(`Bonjou ${name},`) +
+      this.p('Nou resevwa yon demann pou chanje modpas kont ou.') +
+      this.p('Klike sou bouton anba a pou kreye yon nouvo modpas. Lyen sa valid pou 1 èdtan sèlman.') +
+      this.p('Si se pa ou ki fè demann sa, kontakte nou imedyatman sou WhatsApp oswa pa email. Kont ou toujou sekirize — pa gen chanjman fèt toujou.') +
+      this.accentLine('Pou sekirite ou, pa janm pataje lyen sa ak pèsòn.') +
+      this.btn('Chanje Modpas Ou →', resetUrl),
+      '#1565C0',
     );
-    await this.send(email, 'Reset Modpas OZAMAPAY', html);
+    await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
   }
 }
