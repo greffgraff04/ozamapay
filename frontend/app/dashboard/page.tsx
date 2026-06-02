@@ -189,10 +189,12 @@ try {
 
       // Fetch live exchange rate for finance tab
       try {
-        const rateRes = await fetch(`${API_BASE}/rates/USD_HTG`);
+        const rateRes = await fetch(`${API_BASE}/rates`);
         if (rateRes.ok) {
-          const rateData = await rateRes.json();
-          if (rateData?.value) setExchangeRate(Number(rateData.value));
+          const ratesData = await rateRes.json();
+          const rate = Array.isArray(ratesData) ? ratesData.find((r: any) => r.key === 'USD_HTG')?.value : ratesData.value;
+          const usdHtgRate = rate || 135;
+          setExchangeRate(Number(usdHtgRate));
         }
       } catch {
         // keep default 135
