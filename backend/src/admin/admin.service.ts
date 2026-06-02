@@ -164,6 +164,8 @@ export class AdminService {
         });
 
         // Distribute KYC fee: 405 HTG to referring agent, rest to master
+        const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
+
         if (kyc.agentId) {
           const agentCommission = 405;
           const masterAmount = Math.round((feeInHTG - agentCommission) * 100) / 100;
@@ -188,22 +190,28 @@ export class AdminService {
             await tx.commission.create({
               data: { agentId: kyc.agentId, amount: agentCommission, type: 'KYC', transactionId: kycTx.id },
             });
-            await tx.wallet.update({
-              where: { userId: MASTER_ID },
-              data: { balance: { increment: masterAmount } },
-            });
+            if (masterWallet) {
+              await tx.wallet.update({
+                where: { id: masterWallet.id },
+                data: { balance: { increment: masterAmount } },
+              });
+            }
           } else {
             // Agent record missing wallet — credit full fee to master
+            if (masterWallet) {
+              await tx.wallet.update({
+                where: { id: masterWallet.id },
+                data: { balance: { increment: feeInHTG } },
+              });
+            }
+          }
+        } else {
+          if (masterWallet) {
             await tx.wallet.update({
-              where: { userId: MASTER_ID },
+              where: { id: masterWallet.id },
               data: { balance: { increment: feeInHTG } },
             });
           }
-        } else {
-          await tx.wallet.update({
-            where: { userId: MASTER_ID },
-            data: { balance: { increment: feeInHTG } },
-          });
         }
 
         const agentExists = await tx.agent.findUnique({
