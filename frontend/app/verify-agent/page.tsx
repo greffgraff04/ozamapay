@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, ShieldCheck, XCircle, Search, Shield } from "lucide-react";
+import { AlertCircle, ArrowLeft, ShieldCheck, XCircle, Search, Shield } from "lucide-react";
 
 const LEVEL_STYLE: Record<string, { color: string; bg: string; border: string }> = {
   BRONZE: { color: "text-amber-600", bg: "bg-amber-50",  border: "border-amber-200" },
@@ -12,7 +12,7 @@ const LEVEL_STYLE: Record<string, { color: string; bg: string; border: string }>
 
 type Result =
   | { verified: true; name: string; agentCode: string; level: string; status: string }
-  | { verified: false }
+  | { verified: false; error?: "server_sleeping" | "network_error" }
   | null;
 
 export default function VerifyAgentPage() {
@@ -22,18 +22,29 @@ export default function VerifyAgentPage() {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerify = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
     setLoading(true);
     setResult(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
     try {
-      const res = await fetch(`${backendUrl}/agents/verify/${encodeURIComponent(trimmed)}`);
+      const res = await fetch(
+        `${backendUrl}/agents/verify/${encodeURIComponent(trimmed)}`,
+        { signal: controller.signal },
+      );
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        setResult({ verified: false, error: "server_sleeping" });
+        return;
+      }
       const data = await res.json();
       setResult(data);
     } catch {
-      setResult({ verified: false });
+      clearTimeout(timeoutId);
+      setResult({ verified: false, error: "network_error" });
     } finally {
       setLoading(false);
     }
@@ -72,7 +83,7 @@ export default function VerifyAgentPage() {
         </div>
 
         {/* SEARCH FORM */}
-        <form onSubmit={handleVerify} className="space-y-3">
+        <form onSubmit={(e) => handleVerify(e)} className="space-y-3">
           <div className="relative">
             <input
               type="text"
@@ -139,6 +150,31 @@ export default function VerifyAgentPage() {
               <p className="text-xs text-green-700 text-center leading-relaxed font-medium bg-green-100 rounded-2xl p-4 border border-green-200">
                 Ajan sa verifye epi ofisyèl nan sistèm OZAMAPAY. Ou ka fè konfyans li pou fè tranzaksyon.
               </p>
+            </div>
+          ) : !result.verified && (result.error === "network_error" || result.error === "server_sleeping") ? (
+            // ── SERVER SLEEPING / NETWORK ERROR ──────────────────────────────
+            <div className="bg-orange-50 border-2 border-orange-200 rounded-3xl p-6 space-y-4 animate-in zoom-in duration-300">
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                  <AlertCircle size={36} className="text-orange-500" />
+                </div>
+                <p className="text-xl font-black text-orange-600">Sistèm ap reveye...</p>
+                <p className="text-sm text-orange-500">
+                  Tann 30 segonn epi eseye ankò
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleVerify()}
+                disabled={loading}
+                className="w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 transition font-black text-sm uppercase tracking-widest text-white flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <><AlertCircle size={15} /> Eseye Ankò</>
+                )}
+              </button>
             </div>
           ) : (
             // ── NOT FOUND ─────────────────────────────────────────────────────
