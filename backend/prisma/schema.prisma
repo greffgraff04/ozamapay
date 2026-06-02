@@ -44,6 +44,8 @@ model User {
 
   googleId String? @unique
 
+  photoUrl String?
+
   @@index([email])
   @@index([role])
 }

@@ -106,6 +106,9 @@ export default function Dashboard() {
   
   const idCardInputRef = useRef<HTMLInputElement>(null);
   const userPhotoInputRef = useRef<HTMLInputElement>(null);
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
  
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -139,6 +142,32 @@ export default function Dashboard() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     showToast("Kopye ak siksè!", "success");
+  };
+
+  const handleProfilePhotoUpload = async (file: File) => {
+    const token = localStorage.getItem('token');
+    if (!token || !file) return;
+    setProfilePhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const res = await fetch(`${backendUrl}/user/profile-photo`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.photoUrl) {
+        setProfilePhoto(data.photoUrl);
+        showToast('Foto pwofil mete ajou ✓', 'success');
+      } else {
+        showToast(data.message || 'Erè pandan upload foto a', 'error');
+      }
+    } catch {
+      showToast('Erè rezo pandan upload foto a', 'error');
+    } finally {
+      setProfilePhotoUploading(false);
+    }
   };
  
   const calculateFees = (amt: string, rate: number = 0.02) => {
@@ -181,6 +210,7 @@ try {
           const freshUserData = await meRes.json();
           console.log('user role from API:', freshUserData.role, 'agent:', freshUserData.agent);
           setUser(freshUserData);
+          if (freshUserData.photoUrl) setProfilePhoto(freshUserData.photoUrl);
           localStorage.setItem('user', JSON.stringify(freshUserData));
         }
       } catch (err) {
@@ -1511,30 +1541,70 @@ try {
             ) : (
               /* PROFILE VIEW */
               <>
-                {/* HERO CARD */}
-                <div className="bg-[#0F121E] rounded-3xl p-6 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg flex-shrink-0">
-                      <span className="text-white text-2xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
-                      <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
-                      <div className="flex gap-2 mt-2 flex-wrap">
-                        {user?.kyc?.status === 'APPROVED' ? (
-                          <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
-                        ) : user?.kyc?.status === 'PENDING' ? (
-                          <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
+                {/* HERO CARD — fixed under header */}
+                <div
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}
+                  className="px-4 pt-4 pb-3"
+                >
+                  <div className="bg-[#0F121E] rounded-3xl p-6">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar with camera overlay */}
+                      <div className="relative flex-shrink-0">
+                        {profilePhoto ? (
+                          <img
+                            src={profilePhoto}
+                            alt="Profile"
+                            className="w-20 h-20 rounded-full object-cover shadow-lg"
+                          />
                         ) : (
-                          <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg">
+                            <span className="text-white text-2xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
+                          </div>
                         )}
-                        {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                          <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
-                        )}
+                        <button
+                          onClick={() => profilePhotoInputRef.current?.click()}
+                          disabled={profilePhotoUploading}
+                          className="absolute bottom-0 right-0 w-7 h-7 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-md border-2 border-[#0F121E] hover:bg-[#e85f00] transition disabled:opacity-60"
+                        >
+                          {profilePhotoUploading
+                            ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            : <Camera size={12} className="text-white" />
+                          }
+                        </button>
+                        <input
+                          ref={profilePhotoInputRef}
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleProfilePhotoUpload(f);
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
+                        <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {user?.kyc?.status === 'APPROVED' ? (
+                            <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
+                          ) : user?.kyc?.status === 'PENDING' ? (
+                            <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
+                          ) : (
+                            <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
+                          )}
+                          {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
+                            <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Spacer so scrollable content clears the fixed hero */}
+                <div style={{ paddingTop: '168px' }} />
 
                 {/* STATS ROW */}
                 <div className="grid grid-cols-3 gap-3 mb-4">

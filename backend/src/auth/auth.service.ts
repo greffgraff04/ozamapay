@@ -362,6 +362,8 @@ export class AuthService {
           }
         : null,
 
+      photoUrl: user.photoUrl || null,
+
       agent: user.agent
         ? {
             status: user.agent.status,

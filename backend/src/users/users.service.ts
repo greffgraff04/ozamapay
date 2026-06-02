@@ -319,4 +319,12 @@ export class UserService {
       status: newStatus,
     };
   }
+
+  async updateProfilePhoto(userId: string, photoUrl: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { photoUrl },
+    });
+    return { success: true, photoUrl };
+  }
 }
