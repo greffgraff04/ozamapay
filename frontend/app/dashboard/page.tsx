@@ -802,10 +802,70 @@ try {
                     <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
                   </div>
                 </div>
-                <button className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative">
-                  <Bell size={20} className="text-[#0F121E]" />
-                  <span className="absolute top-3 right-3 w-2 h-2 bg-[#FF7A00] rounded-full"></span>
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(v => !v)}
+                    className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative"
+                  >
+                    <Bell size={20} className="text-[#0F121E]" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Notification panel */}
+                  {showNotifications && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                      <div className="absolute right-0 top-14 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-[#F0F0F0] overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-[#0F121E] uppercase tracking-wider">Notifikasyon</span>
+                            {unreadCount > 0 && (
+                              <span className="text-[9px] font-black bg-[#FF6B00] text-white px-2 py-0.5 rounded-full">{unreadCount}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                              <button onClick={handleMarkAllRead} className="text-[9px] font-black text-[#FF6B00] uppercase tracking-wider hover:underline">
+                                Li tout
+                              </button>
+                            )}
+                            <button onClick={() => setShowNotifications(false)} className="w-7 h-7 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition">
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <div className="py-12 flex flex-col items-center gap-3">
+                              <Bell size={28} className="text-gray-200" />
+                              <p className="text-xs text-gray-400 font-bold">Pa gen notifikasyon toujou</p>
+                            </div>
+                          ) : (
+                            notifications.map((n: any) => (
+                              <div key={n.id} className={`flex items-start gap-3 px-5 py-4 border-b border-[#F8F9FA] last:border-0 ${n.isRead ? 'bg-[#F8F9FA]' : 'bg-white'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${n.type === 'SUCCESS' ? 'bg-emerald-100' : n.type === 'ERROR' ? 'bg-red-100' : n.type === 'WARNING' ? 'bg-yellow-100' : 'bg-[#FF6B00]/10'}`}>
+                                  <span className={`text-[10px] font-black ${n.type === 'SUCCESS' ? 'text-emerald-600' : n.type === 'ERROR' ? 'text-red-500' : n.type === 'WARNING' ? 'text-yellow-600' : 'text-[#FF6B00]'}`}>
+                                    {n.type === 'SUCCESS' ? '✓' : n.type === 'ERROR' ? '✕' : n.type === 'WARNING' ? '!' : 'i'}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-black text-[#0F121E] leading-snug">{n.title}</p>
+                                  <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{n.message}</p>
+                                  <p className="text-[10px] text-gray-300 mt-1 font-bold">{timeAgo(n.createdAt)}</p>
+                                </div>
+                                {!n.isRead && <div className="w-2 h-2 bg-[#FF6B00] rounded-full shrink-0 mt-1.5" />}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </header>
               <div className="px-4 pb-4">
               <div className="relative w-full overflow-hidden rounded-2xl shadow-lg"
