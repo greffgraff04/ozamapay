@@ -48,5 +48,6 @@ export const config = {
     '/pay',
     '/support',
     '/verify-agent',
+    '/pricing',
   ],
 };
