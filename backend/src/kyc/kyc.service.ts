@@ -70,47 +70,7 @@ export class KycService {
           );
         }
 
-        // =========================
-        // RATE
-        // =========================
-        const rateEntry =
-          await tx.rate.findUnique({
-            where: {
-              key: 'USD_HTG',
-            },
-          });
-
-        const currentRate =
-          Number(rateEntry?.value || 140);
-
-        const KYC_FEE_USD = 25;
-
-        const feeInHTG =
-          KYC_FEE_USD *
-          currentRate;
-
-        // =========================
-        // USER WALLET
-        // =========================
-        const wallet =
-          await tx.wallet.findUnique({
-            where: { userId },
-          });
-
-        if (!wallet) {
-          throw new BadRequestException(
-            'Bous pa jwenn',
-          );
-        }
-
-        if (
-          Number(wallet.balance) <
-          feeInHTG
-        ) {
-          throw new BadRequestException(
-            `Ou bezwen ${feeInHTG} HTG ($25) pou KYC.`,
-          );
-        }
+        // NOTE: $25 fee is validated and debited only on admin APPROVE, not at submit time.
 
         // =========================
         // CREATE KYC

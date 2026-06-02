@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 
 
 const FEES = {
@@ -212,7 +213,7 @@ export class WalletService {
         },
       });
 
-      const reference = 'P2P-' + Date.now();
+      const reference = `P2P-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
       const transaction = await tx.transaction.create({
         data: {
@@ -345,7 +346,7 @@ export class WalletService {
         },
       });
 
-      const reference = 'TRX-' + Date.now();
+      const reference = `TRX-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
       const transaction = await tx.transaction.create({
         data: {
@@ -390,7 +391,7 @@ export class WalletService {
 
     const fee = this.round(amountHTG * FEES.TOPUP);
     // Fee is on top — user receives the full HTG equivalent
-    const reference = 'TOPUP-' + Date.now();
+    const reference = `TOPUP-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
     return this.prisma.transaction.create({
       data: {
@@ -492,7 +493,7 @@ export class WalletService {
     const fee = this.round(amountHTG * FEES.WITHDRAW);
     const totalDebit = this.round(amountHTG + fee);
 
-    const reference = 'WD-' + Date.now();
+    const reference = `WD-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
     return this.prisma.$transaction(async (tx) => {
       const currentWallet = await tx.wallet.findUnique({ where: { userId } });
@@ -575,7 +576,7 @@ export class WalletService {
 
       await tx.transaction.create({
         data: {
-          reference: 'ADMIN-' + Date.now(),
+          reference: `ADMIN-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
           receiverWalletId: wallet.id,
           amount,
           fee: 0,
