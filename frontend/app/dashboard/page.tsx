@@ -273,6 +273,12 @@ try {
   }, []);
  
   useEffect(() => {
+    if (activeTab === 'profile') {
+      fetchData();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (activeTab !== 'home') return;
     const observer = new IntersectionObserver(
       (entries) => entries.forEach(e => {
@@ -1520,7 +1526,7 @@ try {
                         ) : (
                           <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
                         )}
-                        {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') && (
+                        {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
                           <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
                         )}
                       </div>
@@ -1547,7 +1553,7 @@ try {
                   <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
                     <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Wòl</p>
                     <div className="flex justify-center">
-                      {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') ? (
+                      {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                         <Briefcase size={22} className="text-[#FF6B00]" />
                       ) : (
                         <User size={22} className="text-gray-400" />
@@ -1591,7 +1597,7 @@ try {
                     </div>
                   </button>
 
-                  {(user?.role === 'AGENT' || user?.agent?.status === 'ACTIVE') ? (
+                  {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                     <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
                       <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                       <div className="flex-1 text-left">
