@@ -954,7 +954,7 @@ try {
                       <div className="p-4 bg-[#FDF8F3] rounded-3xl border border-orange-100">
                         <QRCodeSVG
                           id="qr-svg"
-                          value={`ozamapay://pay?to=${user?.email || ''}&name=${encodeURIComponent(user?.name || displayName)}`}
+                          value={`https://ozamapay.com/pay?to=${user?.email || ''}&name=${encodeURIComponent(user?.name || displayName)}`}
                           size={200}
                           fgColor="#FF6B00"
                           bgColor="#FDF8F3"
@@ -967,7 +967,7 @@ try {
                       </div>
                       <div className="flex gap-3 w-full">
                         <button
-                          onClick={() => { navigator.share?.({ title: 'OzamaPay QR', text: `Voye kòb ba ${displayName} sou OzamaPay`, url: `ozamapay://pay?to=${user?.email}` }).catch(() => {}); }}
+                          onClick={() => { navigator.share?.({ title: 'OzamaPay QR', text: `Voye kòb ba ${displayName} sou OzamaPay`, url: `https://ozamapay.com/pay?to=${user?.email}&name=${encodeURIComponent(user?.name || displayName)}` }).catch(() => {}); }}
                           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition"
                         >
                           <Share2 size={14} /> Pataje

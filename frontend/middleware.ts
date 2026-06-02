@@ -17,6 +17,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/admin') ||
     pathname.startsWith('/kyc') ||
     pathname.startsWith('/agent-dashboard');
+    // /pay is intentionally NOT protected here — it does its own client-side auth
+    // redirect so the QR link works before login
 
   // 1. Pa gen token epi l ap eseye antre nan paj sekirize -> Voye l sou /login
   if (!token && isProtected) {
@@ -43,5 +45,6 @@ export const config = {
     '/admin/:path*',
     '/kyc/:path*',
     '/agent-dashboard/:path*',
+    '/pay',
   ],
 };
