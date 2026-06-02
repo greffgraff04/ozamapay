@@ -6,7 +6,8 @@ import {
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
-  Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2
+  Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
+  HelpCircle, CreditCard as CardIcon
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
@@ -123,6 +124,10 @@ export default function Dashboard() {
 
   // QR modal
   const [showQrModal, setShowQrModal] = useState(false);
+
+  // Onboarding tour
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
  
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -272,6 +277,14 @@ try {
           setUser(freshUserData);
           if (freshUserData.photoUrl) setProfilePhoto(freshUserData.photoUrl);
           localStorage.setItem('user', JSON.stringify(freshUserData));
+          // Show onboarding for brand-new users only
+          if (
+            !localStorage.getItem('ozama_onboarded') &&
+            Number(freshUserData.wallet?.balance || 0) === 0 &&
+            !freshUserData.kyc
+          ) {
+            setShowOnboarding(true);
+          }
         }
       } catch (err) {
         console.error("auth/me FAILED", err);
@@ -708,6 +721,90 @@ try {
         </div>
       )}
  
+      {/* ── ONBOARDING MODAL ── */}
+      {showOnboarding && (() => {
+        const steps = [
+          {
+            emoji: '🇭🇹',
+            title: 'Byenvini nan OZAMAPAY!',
+            text: 'Premye platfòm peman dijital ayisyen. Kòmanse an 4 etap senp.',
+            btn: 'Kòmanse →',
+          },
+          {
+            icon: <PlusCircle size={48} className="text-[#FF6B00]" />,
+            title: 'Etap 1: Chaje Bous Ou',
+            text: 'Klike TOPUP pou ajoute lajan nan kont ou via MonCash, Zelle ak plis.',
+            btn: 'Kontinye →',
+          },
+          {
+            icon: <Shield size={48} className="text-[#FF6B00]" />,
+            title: 'Etap 2: Verifye Idantite Ou',
+            text: 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Frè: $25 USD.',
+            btn: 'Kontinye →',
+          },
+          {
+            icon: <CreditCard size={48} className="text-[#FF6B00]" />,
+            title: 'Etap 3: Kreye Kat VISA Ou',
+            text: 'Apre KYC, kreye kat VISA GRATIS. Achte sou Amazon, Netflix ak plis!',
+            btn: 'Kòmanse Kounye a! 🚀',
+          },
+        ];
+        const step = steps[onboardingStep];
+        const isLast = onboardingStep === steps.length - 1;
+        const finish = () => {
+          localStorage.setItem('ozama_onboarded', 'true');
+          setShowOnboarding(false);
+          setOnboardingStep(0);
+        };
+        return (
+          <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center p-4" style={{ background: 'rgba(0,0,0,0.88)' }}>
+            <div className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+              {/* Skip */}
+              <div className="flex justify-end px-5 pt-4">
+                <button onClick={finish} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition">
+                  Pase
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="px-7 pt-2 pb-6 text-center">
+                <div className="flex items-center justify-center mb-5 h-20">
+                  {'emoji' in step ? (
+                    <span className="text-6xl">{(step as any).emoji}</span>
+                  ) : (
+                    <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center">
+                      {(step as any).icon}
+                    </div>
+                  )}
+                </div>
+                <h2 className="text-xl font-black text-[#0F121E] leading-tight mb-3">{step.title}</h2>
+                <p className="text-sm text-gray-500 leading-relaxed mb-8">{step.text}</p>
+
+                {/* Progress dots */}
+                <div className="flex justify-center gap-2 mb-6">
+                  {steps.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-6 bg-[#FF6B00]' : 'w-2 bg-gray-200'}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (isLast) finish();
+                    else setOnboardingStep(s => s + 1);
+                  }}
+                  className="w-full py-4 rounded-2xl bg-[#FF6B00] text-white font-black text-sm uppercase tracking-widest hover:bg-[#e85f00] transition active:scale-[0.98]"
+                >
+                  {step.btn}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* HEADER - non-home tabs only; home tab has it inside the fixed hero */}
       {activeTab !== 'home' && (
         <header className="px-4 pt-4 pb-4 flex justify-between items-center">
@@ -2069,6 +2166,21 @@ try {
                     </div>
                   )}
                 </div>
+
+                {/* SUPPORT */}
+                <button
+                  onClick={() => { window.location.href = '/support'; }}
+                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 mb-3 active:bg-gray-50 transition-colors"
+                >
+                  <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0">
+                    <HelpCircle size={20} className="text-blue-500" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-bold text-sm text-[#0F121E]">Sipò & Èd</p>
+                    <p className="text-xs text-gray-400">Kontakte nou</p>
+                  </div>
+                  <ChevronRight size={18} className="text-gray-300" />
+                </button>
 
                 {/* LOGOUT */}
                 <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 active:bg-red-100 transition-all">

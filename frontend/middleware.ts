@@ -46,5 +46,6 @@ export const config = {
     '/kyc/:path*',
     '/agent-dashboard/:path*',
     '/pay',
+    '/support',
   ],
 };
