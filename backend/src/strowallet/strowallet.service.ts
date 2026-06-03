@@ -44,6 +44,7 @@ export class StrowalletService {
     if (data?.success === false || data?.status === false) {
       throw new BadRequestException(data?.message || 'Strowallet error');
     }
+    console.log('Strowallet full response:', JSON.stringify(data, null, 2));
     return data;
   }
 
