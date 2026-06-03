@@ -46,6 +46,8 @@ model User {
 
   photoUrl String?
 
+  strowalletCustomerId String?
+
   subscriptionTier   String    @default("FREE")
   subscriptionExpiry DateTime?
 
@@ -92,6 +94,9 @@ model Transaction {
   @@index([reference])
   @@index([status])
   @@index([type])
+  @@index([senderWalletId])
+  @@index([receiverWalletId])
+  @@index([createdAt])
 }
 
 model LedgerEntry {

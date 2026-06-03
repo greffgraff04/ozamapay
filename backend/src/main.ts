@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
@@ -28,6 +29,8 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.use(helmet());
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import ImageKit from 'imagekit';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class ImageKitService {
       return result.url;
     } catch (error) {
       console.error('ImageKit upload FAILED:', error.message);
-      return '';
+      throw new InternalServerErrorException('Upload foto echwe. Eseye ankò.');
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException, HttpException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException, HttpException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,7 +41,7 @@ export class StrowalletService {
       if (!user) throw new BadRequestException("Utilisateur introuvable.");
 
       if (!user.kyc || user.kyc.status !== 'APPROVED') {
-        throw new BadRequestException("KYC ou dwe apwouve avan ou kreye yon kat.");
+        throw new ForbiddenException('KYC dwe apwouve anvan ou ka kreye kat');
       }
 
       if (!user.wallet) throw new BadRequestException("Wallet ou pa egziste.");
@@ -56,48 +56,56 @@ export class StrowalletService {
       const userEmail = user.email;
 
       // ==========================================
-      // 1️⃣ KREYASYON KLIYAN SOU STROWALLET (REYÈL)
+      // 1️⃣ KLIYAN STROWALLET — reuse si déjà kreye
       // ==========================================
-      const customerUrl = `${this.baseUrl}/create-user/`;
-      const customerPayload = {
-        public_key: this.publicKey,
-        secret_key: this.secretKey,
-        firstName: firstName,
-        lastName: lastName,
-        customerEmail: userEmail,
-        phoneNumber: user.phone || '50933333333',
-        dateOfBirth: user.kyc?.dateOfBirth || '2000-01-01',
-        line1: user.kyc?.line1 || 'Port-au-Prince',
-        houseNumber: "10",
-        city: 'Port-au-Prince',
-        state: 'Ouest',
-        zipCode: '6110',
-        country: 'HT',
-        idType: "PASSPORT", 
-        idNumber: user.kyc?.idNumber || ("PASSPORT-" + Math.floor(100000 + Math.random() * 900000)), 
-        idImage: user.kyc?.idImage || 'https://ozamapay.com/assets/mock-id.jpg',
-        userPhoto: user.kyc?.userPhoto || 'https://ozamapay.com/assets/mock-photo.jpg'
-      };
+      let customerId = user.strowalletCustomerId || '';
 
-      let customerId = '';
-      let customerResponse: any;
+      if (!customerId) {
+        const customerUrl = `${this.baseUrl}/create-user/`;
+        const customerPayload = {
+          public_key: this.publicKey,
+          secret_key: this.secretKey,
+          firstName: firstName,
+          lastName: lastName,
+          customerEmail: userEmail,
+          phoneNumber: user.phone || '50933333333',
+          dateOfBirth: user.kyc?.dateOfBirth || '2000-01-01',
+          line1: user.kyc?.line1 || 'Port-au-Prince',
+          houseNumber: "10",
+          city: 'Port-au-Prince',
+          state: 'Ouest',
+          zipCode: '6110',
+          country: 'HT',
+          idType: "PASSPORT",
+          idNumber: user.kyc?.idNumber || ("PASSPORT-" + Math.floor(100000 + Math.random() * 900000)),
+          idImage: user.kyc?.idImage || 'https://ozamapay.com/assets/mock-id.jpg',
+          userPhoto: user.kyc?.userPhoto || 'https://ozamapay.com/assets/mock-photo.jpg'
+        };
 
-      try {
-        customerResponse = await axios.post(customerUrl, customerPayload, { headers: this.getStroHeaders() });
-      } catch (apiError: any) {
-        const msg = apiError.response?.data?.message || apiError.message || "Erè koneksyon ak StroWallet";
-        throw new HttpException(`StroWallet User Error: ${msg}`, apiError.response?.status || 400);
+        let customerResponse: any;
+        try {
+          customerResponse = await axios.post(customerUrl, customerPayload, { headers: this.getStroHeaders() });
+        } catch (apiError: any) {
+          const msg = apiError.response?.data?.message || apiError.message || "Erè koneksyon ak StroWallet";
+          throw new HttpException(`StroWallet User Error: ${msg}`, apiError.response?.status || 400);
+        }
+
+        if (customerResponse?.data?.success === true) {
+          const resData = customerResponse.data;
+          customerId = resData.response?.customerId || resData.customer_id || resData.customerId;
+        } else {
+          const errorMsg = customerResponse?.data?.message || "StroWallet refize kreyasyon kliyan an.";
+          throw new BadRequestException(errorMsg);
+        }
+
+        if (!customerId) throw new BadRequestException("Impossible de récupérer le customer_id depuis StroWallet.");
+
+        // Persist so future card operations reuse this customer
+        await tx.user.update({
+          where: { id: userId },
+          data: { strowalletCustomerId: customerId },
+        });
       }
-
-      if (customerResponse && customerResponse.data && customerResponse.data.success === true) {
-        const resData = customerResponse.data;
-        customerId = resData.response?.customerId || resData.customer_id || resData.customerId;
-      } else {
-        const errorMsg = customerResponse?.data?.message || "StroWallet refize kreyasyon kliyan an.";
-        throw new BadRequestException(errorMsg);
-      }
-
-      if (!customerId) throw new BadRequestException("Impossible de récupérer le customer_id depuis StroWallet.");
 
       // ==========================================
       // 2️⃣ KREYASYON KAT SOU STROWALLET (REYÈL)
