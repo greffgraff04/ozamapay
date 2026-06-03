@@ -24,12 +24,11 @@ export class StrowalletService {
   // ─── HELPER ────────────────────────────────────────────────────────────────
 
   private async getExchangeRate(): Promise<number> {
-    const rate = await this.prisma.exchangeRate.findFirst({
-      where: { fromCurrency: 'USD' },
-      orderBy: { updatedAt: 'desc' },
+    const rate = await this.prisma.rate.findUnique({
+      where: { key: 'CARD_RATE' },
     });
     if (!rate) throw new BadRequestException('Taux de change USD introuvable');
-    return Number(rate.rate);
+    return Number(rate.value);
   }
 
   private async nfcPost(endpoint: string, params: Record<string, string>) {
@@ -131,10 +130,11 @@ export class StrowalletService {
       }),
       this.prisma.transaction.create({
         data: {
-          walletId: user.wallet.id,
+          senderWalletId: user.wallet.id,
           type: 'CARD',
           amount: totalHtg,
-          currency: 'HTG',
+          netAmount: totalHtg,
+          fee: 0,
           status: 'COMPLETED',
           description: `Kreye kat vityèl NFC — $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD}`,
           reference: `CARD-CREATE-${cardId}`,
@@ -205,10 +205,11 @@ export class StrowalletService {
 
       await tx.transaction.create({
         data: {
-          walletId: wallet.id,
+          senderWalletId: wallet.id,
           type: 'CARD',
           amount: totalHtg,
-          currency: 'HTG',
+          netAmount: totalHtg,
+          fee: Math.round(feeUsd * exchangeRate * 100) / 100,
           status: 'COMPLETED',
           description: `Recharge kat NFC $${amountUsd} + frè $${feeUsd.toFixed(2)}`,
           reference: `CARD-FUND-${card.cardId}-${Date.now()}`,
