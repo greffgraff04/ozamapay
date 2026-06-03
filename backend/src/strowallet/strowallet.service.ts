@@ -55,8 +55,8 @@ export class StrowalletService {
       if (currentBalance < depositHtg) throw new BadRequestException("Balans HTG ensifizan pou depo inisyal la.");
 
       // 🌟 KOREKSYON: Asire nou ke fullNameStr se yon string tout bon (pa null)
-      const firstName = user.kyc?.firstName || 'Client';
-      const lastName = user.kyc?.lastName || 'Ozama';
+      const firstName = (user.kyc?.firstName || 'Client').trim().split(' ')[0];
+      const lastName = (user.kyc?.lastName || 'Ozama').trim().split(' ')[0];
       const fullNameStr = `${firstName} ${lastName}`;
       const userEmail = user.email;
 
