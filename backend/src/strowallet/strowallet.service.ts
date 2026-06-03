@@ -118,7 +118,7 @@ export class StrowalletService {
       phone: user.phone || '50936401900',
     });
 
-    const cardId = cardResponse?.data?.card_id || cardResponse?.card_id;
+    const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
     if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
 
     // Debi wallet + kreye kat nan DB (transaksyon atomik)
