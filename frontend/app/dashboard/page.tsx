@@ -128,6 +128,8 @@ export default function Dashboard() {
   // Onboarding tour
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [subscription, setSubscription] = useState<{ tier: string; expiry: string | null; isActive: boolean } | null>(null);
+  const [subLoading, setSubLoading] = useState(false);
  
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -314,6 +316,14 @@ try {
       } catch {
         // silently ignore
       }
+
+      // Fetch subscription status
+      try {
+        const subRes = await fetch(`${API_BASE}/subscription/status`, { headers });
+        if (subRes.ok) setSubscription(await subRes.json());
+      } catch {
+        // silently ignore
+      }
     } catch (e) {
       console.error("SYNC ERROR:", e);
     } finally {
@@ -369,6 +379,47 @@ try {
       showToast('Sèvè a pa reponn. Verifye koneksyon ou.', 'error');
     } finally {
       setFinanceLoading(false);
+    }
+  };
+
+  const handleUpgradeSubscription = async () => {
+    setSubLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${backendUrl}/subscription/upgrade`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.message || 'Erè abonnman', 'error');
+      } else {
+        setSubscription({ tier: 'VERIFIED', expiry: data.expiry, isActive: true });
+        showToast('Felisitasyon! Ou kounye a se yon manm Verified.', 'success');
+      }
+    } catch {
+      showToast('Erè koneksyon', 'error');
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setSubLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${backendUrl}/subscription/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setSubscription(s => s ? { ...s, tier: 'FREE', isActive: false, expiry: null } : null);
+        showToast('Abonnman anile avèk siksè.', 'success');
+      }
+    } catch {
+      showToast('Erè koneksyon', 'error');
+    } finally {
+      setSubLoading(false);
     }
   };
 
@@ -816,6 +867,9 @@ try {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+                {subscription?.isActive && (
+                  <img src="/verified.png" alt="Verified" width={16} height={16} className="flex-shrink-0" />
+                )}
                 <ShieldCheck size={16} className="text-[#FF7A00]" />
               </div>
               <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
@@ -2165,6 +2219,52 @@ try {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* SUBSCRIPTION CARD */}
+                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-4">
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <img src="/verified.png" alt="Verified" width={18} height={18} className="flex-shrink-0" />
+                        <p className="font-black text-sm text-[#0F121E] uppercase tracking-wide">Manm Verified</p>
+                      </div>
+                      {subscription?.isActive ? (
+                        <span className="text-[8px] font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">Aktif</span>
+                      ) : (
+                        <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">FREE</span>
+                      )}
+                    </div>
+                    <ul className="space-y-1.5 mb-4">
+                      {['Frè redwi sou tranzaksyon', 'Sipò prioritè 24/7', 'Limit tranzaksyon wo'].map(b => (
+                        <li key={b} className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                          <span className="text-[#FF6B00] font-black">·</span> {b}
+                        </li>
+                      ))}
+                    </ul>
+                    {subscription?.isActive ? (
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-gray-400">
+                          Ekspire: {subscription.expiry ? new Date(subscription.expiry).toLocaleDateString('fr-HT') : '—'}
+                        </p>
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={subLoading}
+                          className="w-full py-3 rounded-2xl border border-gray-200 text-[11px] font-black uppercase text-gray-500 hover:bg-gray-50 transition disabled:opacity-50"
+                        >
+                          {subLoading ? '...' : 'Anile Abonnman'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleUpgradeSubscription}
+                        disabled={subLoading}
+                        className="w-full bg-[#FF6B00] text-white py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#e66000] transition disabled:opacity-50"
+                      >
+                        {subLoading ? '...' : 'Vin Manm Verified — 500 HTG/mwa'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* SUPPORT */}

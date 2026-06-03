@@ -16,6 +16,8 @@ import { AgentsModule } from './agents/agents.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { MailModule } from './mail/mail.module';
 import { HealthModule } from './health/health.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { MerchantModule } from './merchant/merchant.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { HealthModule } from './health/health.module';
     AgentsModule,
     CommissionsModule,
     HealthModule,
+    SubscriptionModule,
+    MerchantModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

@@ -49,5 +49,6 @@ export const config = {
     '/support',
     '/verify-agent',
     '/pricing',
+    '/merchant',
   ],
 };

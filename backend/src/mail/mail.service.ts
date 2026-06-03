@@ -387,6 +387,54 @@ export class MailService {
     await this.send(agentEmail, `Retrè kliyan konfime — ${amountFmt} HTG`, htmlAgent);
   }
 
+  async sendMerchantApplication(
+    merchantEmail: string,
+    businessName: string,
+    phone: string,
+    address: string,
+    plan: string,
+  ): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+
+    const htmlMerchant = this.wrap(
+      `Demann komèsan ${businessName} resevwa — OZAMAPAY`,
+      'Demann Komèsan Resevwa',
+      this.badge('KONFIME') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${businessName},`) +
+      this.p('Nou resevwa demann ou pou vin partenè OZAMAPAY. Ekip nou an ap kontakte ou nan 24 a 48 èdtan pou konfime detay ak ba ou aksè nan sistèm lan.') +
+      this.table(
+        this.infoRow('Biznis', businessName) +
+        this.infoRow('Plan', plan) +
+        this.infoRow('Telefòn', phone) +
+        this.infoRow('Dat', now),
+      ) +
+      this.accentLine('Pandan ke ou ap tann, ou ka kontakte nou sou WhatsApp pou nenpòt kesyon.') +
+      this.btn('Vizite ozamapay.com →', 'https://ozamapay.com'),
+    );
+
+    const htmlAdmin = this.wrap(
+      `Nouvel demann komèsan: ${businessName}`,
+      'Demann Komèsan Nouvo',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p('Yon nouvo komèsan soumèt yon demann pou vin partenè OZAMAPAY.') +
+      this.table(
+        this.infoRow('Biznis', businessName) +
+        this.infoRow('Email', merchantEmail) +
+        this.infoRow('Telefòn', phone) +
+        this.infoRow('Adrès', address) +
+        this.infoRow('Plan', plan) +
+        this.infoRow('Dat', now),
+      ) +
+      this.btn('Wè aplikasyon yo →', 'https://ozamapay.com/admin'),
+      '#1565C0',
+    );
+
+    await this.send(merchantEmail, `Demann komèsan ou resevwa — OZAMAPAY`, htmlMerchant);
+    await this.send('contact@ozamapay.com', `Nouvel demann komèsan: ${businessName}`, htmlAdmin);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Demann reset modpas — OZAMAPAY',

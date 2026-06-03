@@ -8,7 +8,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   const footerSections = [
     { title: 'Company', links: [{ label: 'About Us', href: '/about' }, { label: 'Careers', href: '/careers' }, { label: 'Press', href: '/press' }, { label: 'Contact', href: '/support' }] },
-    { title: 'Product', links: [{ label: 'Wallet', href: '#' }, { label: 'Virtual Cards', href: '#cards' }, { label: 'Transfers', href: '#features' }, { label: 'Business Payments', href: '#business' }] },
+    { title: 'Product', links: [{ label: 'Wallet', href: '#' }, { label: 'Virtual Cards', href: '#cards' }, { label: 'Transfers', href: '#features' }, { label: 'Business Payments', href: '#business' }, { label: 'Komèsan', href: '/merchant' }] },
     { title: 'Resources', links: [{ label: 'Help Center', href: '/support' }, { label: 'API Docs', href: '/developers' }, { label: 'Developers', href: '/developers' }, { label: 'Status', href: 'https://status.ozamapay.com' }] },
     { title: 'Legal', links: [{ label: 'Terms of Service', href: '/terms' }, { label: 'Privacy Policy', href: '/privacy' }, { label: 'AML Policy', href: '/aml-policy' }, { label: 'KYC Policy', href: '/kyc-policy' }, { label: 'Cookie Policy', href: '/cookie-policy' }, { label: 'Compliance', href: '/compliance' }] },
   ];
