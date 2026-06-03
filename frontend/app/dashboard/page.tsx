@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete l nan yon lòt katab
-import { 
+import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
-  HelpCircle, CreditCard as CardIcon
+  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
@@ -1664,157 +1664,219 @@ try {
                 </div>
               </div>
             ) : (
-              <>
-                <div className={`relative w-full aspect-[1.586/1] bg-cover bg-center bg-no-repeat transition-all duration-700 rounded-none shadow-none overflow-hidden mb-10 ${isCardFrozen ? 'grayscale opacity-60 scale-95' : 'hover:scale-[1.02]'}`} style={{ backgroundImage: "url('/card.png')" }}>
-                  <div className="absolute inset-0 p-10 flex flex-col justify-between text-white font-mono">
-                    <div className="flex justify-end">
-                      <button 
-                        onClick={async () => {
-                          if (!showCardDetails) {
+              <div className="min-h-screen bg-black text-white flex flex-col pb-28">
+
+                {/* Header */}
+                <div className="px-6 pt-8 pb-4">
+                  <h1 className="text-3xl font-black italic tracking-tight leading-tight">
+                    OZAMA<br/>VIRTUAL CARD
+                  </h1>
+                </div>
+
+                {/* Card Visual */}
+                <div className="px-6 mb-6">
+                  <div className="relative w-full rounded-3xl overflow-hidden" style={{ aspectRatio: '1.586' }}>
+                    <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 p-5 flex flex-col justify-between">
+
+                      {/* Top */}
+                      <div className="flex justify-between items-start">
+                        <span className="text-white font-bold text-base tracking-widest opacity-80">VISA</span>
+                        <button
+                          onClick={async () => {
+                            if (showCardDetails) {
+                              setShowCardDetails(false);
+                              return;
+                            }
                             try {
                               const token = localStorage.getItem('token');
                               const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                              
                               const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
                                 method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}` }
+                                headers: {
+                                  'Authorization': `Bearer ${token}`,
+                                  'Content-Type': 'application/json'
+                                }
                               });
                               const data = await res.json();
                               if (res.ok) {
-                                setVirtualCard((prev: any) => ({ ...prev, card_number: data.card_number, cvv: data.cvv }));
+                                setVirtualCard((prev: any) => ({
+                                  ...prev,
+                                  cardNumber: data.cardNumber,
+                                  cvv: data.cvv,
+                                  expiryDate: data.expiryDate,
+                                  cardName: data.cardName,
+                                  balance: data.balance,
+                                }));
                                 setShowCardDetails(true);
-                                setTimeout(() => setShowCardDetails(false), 10000);
+                                setTimeout(() => setShowCardDetails(false), 15000);
                               }
                             } catch (err) {
-                              console.error("Erreur demaske kat:", err);
+                              console.error('Secret details error:', err);
                             }
-                          } else {
-                            setShowCardDetails(false);
+                          }}
+                          className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-semibold border border-white/30"
+                        >
+                          {showCardDetails
+                            ? <><EyeOff size={12} /> KACHE</>
+                            : <><Eye size={12} /> WÈ INFO</>
                           }
-                        }}
-                        className="p-2 bg-black/20 hover:bg-black/40 rounded-full transition-all text-white active:scale-90"
-                      >
-                        {showCardDetails ? '🙈' : '👁️'}
-                      </button>
-                    </div>
-
-                    <div className="text-xl md:text-2xl font-black tracking-[0.25em] text-center my-auto drop-shadow-md">
-                      {showCardDetails && virtualCard.card_number
-                        ? virtualCard.card_number.replace(/(\d{4})/g, '$1 ').trim()
-                        : `••••  ••••  ••••  ${virtualCard.last4 || virtualCard.cardId?.slice(-4) || '0000'}`}
-                    </div>
-
-                    <div className="flex justify-between items-end font-sans italic uppercase font-black tracking-[0.2em] text-[10px]">
-                      <div>
-                        <div className="opacity-50 mb-1 font-sans">CARD HOLDER</div>
-                        <div className="font-sans">{displayName}</div>
+                        </button>
                       </div>
-                      <div className="text-right">
-                        <div className="opacity-50 mb-1 font-sans">EXPIRES / CVV</div>
-                        <div className="font-mono tracking-normal text-sm">
-                          {virtualCard.expiry_month || 'MM'}/{virtualCard.expiry_year?.slice(-2) || 'AA'} 
-                          {showCardDetails ? ` | CVV: ${virtualCard.cvv || '***'}` : ' | CVV: ***'}
+
+                      {/* Card Number */}
+                      <div className="text-center">
+                        <p className="text-white font-mono text-lg tracking-[0.25em] font-bold drop-shadow">
+                          {showCardDetails && virtualCard?.cardNumber
+                            ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
+                            : '•••• •••• •••• ' + (virtualCard?.last4 || virtualCard?.cardId?.slice(-4) || '????')}
+                        </p>
+                      </div>
+
+                      {/* Bottom */}
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Card Holder</p>
+                          <p className="text-white font-bold text-sm leading-tight">
+                            {virtualCard?.cardName || virtualCard?.card_name || 'OZAMA USER'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Expires / CVV</p>
+                          <p className="text-white font-bold text-sm">
+                            {showCardDetails
+                              ? `${virtualCard?.expiryDate || 'MM/AA'} | ${virtualCard?.cvv || '•••'}`
+                              : 'MM/AA | •••'}
+                          </p>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <button onClick={() => setIsCardFrozen(!isCardFrozen)} className="w-full py-8 bg-[#0F121E] text-white rounded-[2.5rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-lg">
-                      {isCardFrozen ? 'UNFREEZE CARD' : 'FREEZE CARD'}
-                  </button>
-                  
-                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5">
-                      <h4 className="font-black italic uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2"><Settings size={14} /> Card Security</h4>
-                      <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-black uppercase italic opacity-40">Contactless</span>
-                              <div className={`w-10 h-5 rounded-full flex items-center px-1 cursor-pointer transition-all ${virtualCard.is_nfc_enabled !== false ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start'}`}>
-                                <div className="w-3 h-3 bg-white rounded-full"></div>
-                              </div>
-                          </div>
-                          <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-black uppercase italic opacity-40">Online Payments</span>
-                              <div className="w-10 h-5 bg-green-500 rounded-full flex items-center px-1 justify-end">
-                                <div className="w-3 h-3 bg-white rounded-full"></div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-
-                  {/* RECHARGE SECTION */}
-                  <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5">
-                    <h4 className="font-black italic uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2">
-                      <CreditCard size={14} /> Rechaje Kat
-                    </h4>
-                    <div className="space-y-2 mb-4">
-                      <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Montan (min. $3 USD)</label>
-                      <div className="flex items-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl">
-                        <span className="text-[10px] font-black text-gray-400">$</span>
-                        <input
-                          type="number"
-                          min="3"
-                          step="1"
-                          value={rechargeAmount}
-                          onChange={(e) => setRechargeAmount(e.target.value)}
-                          className="flex-1 outline-none font-black text-gray-900 text-sm bg-transparent"
-                          placeholder="3"
-                        />
-                        <span className="text-[9px] font-black text-gray-400 uppercase">USD</span>
-                      </div>
+                {/* Balance */}
+                <div className="px-6 mb-4">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+                    <div>
+                      <p className="text-white/50 text-xs uppercase tracking-wider mb-1">Balans Kat</p>
+                      <p className="text-white text-2xl font-black">
+                        ${Number(virtualCard?.balance || 0).toFixed(2)}
+                        <span className="text-sm font-normal text-white/50 ml-1">USD</span>
+                      </p>
                     </div>
-                    {Number(rechargeAmount) >= 3 && (
-                      <div className="bg-white rounded-2xl p-4 mb-4 space-y-2 border border-gray-100">
-                        <div className="flex justify-between">
-                          <span className="text-[9px] font-black uppercase text-gray-400">Frè rechajman</span>
-                          <span className="text-[10px] font-black text-orange-500">
-                            ${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between border-t border-gray-100 pt-2">
-                          <span className="text-[9px] font-black uppercase text-gray-400">Total debite</span>
-                          <span className="text-[10px] font-black text-black">
-                            ${(Number(rechargeAmount) + 1.90 + Number(rechargeAmount) * 0.019).toFixed(2)} USD
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={async () => {
-                        const amt = Number(rechargeAmount);
-                        if (!amt || amt < 3) { alert('Montan minim rechajman se $3 USD'); return; }
-                        try {
-                          const token = localStorage.getItem('token');
-                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                          const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ amountUsd: amt }),
-                          });
-                          const data = await res.json();
-                          if (res.ok) {
-                            setVirtualCard((prev: any) => ({ ...prev, balance: (Number(prev?.balance || 0) + amt) }));
-                            fetchData();
-                            alert('Kat rechaje avèk siksè! 🎉');
-                          } else {
-                            alert(data.message || 'Rechajman echwe');
-                          }
-                        } catch (err) {
-                          console.error('Rechajman erè:', err);
-                          alert('Erè koneksyon');
+                    <div className="w-10 h-10 rounded-full bg-[#b8e832] flex items-center justify-center">
+                      <Wallet2 size={20} className="text-black" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="px-6 mb-4 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={async () => {
+                      const amt = prompt('Montan recharge (USD):');
+                      if (!amt || isNaN(Number(amt)) || Number(amt) < 1) return;
+                      try {
+                        const token = localStorage.getItem('token');
+                        const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                        const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ amount_usd: Number(amt) })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          alert('Recharge siksè!');
+                          fetchData();
+                        } else {
+                          alert(data.message || 'Erè recharge');
                         }
-                      }}
-                      className="w-full py-5 bg-[#0F121E] text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
-                    >
-                      RECHAJE KAT
-                    </button>
-                    <p className="text-[8px] text-gray-400 font-bold text-center mt-3 uppercase italic">
-                      Frè rechajman obligatwa pou sèvis kat entènasyonal
+                      } catch (err) {
+                        alert('Erè koneksyon');
+                      }
+                    }}
+                    className="flex items-center justify-center gap-2 bg-[#b8e832] text-black font-black py-4 rounded-2xl text-sm tracking-wider"
+                  >
+                    <Zap size={16} /> RECHARGE
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const token = localStorage.getItem('token');
+                        const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                        const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                        const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          }
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setVirtualCard((prev: any) => ({
+                            ...prev,
+                            status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
+                          }));
+                        } else {
+                          alert(data.message || 'Erè');
+                        }
+                      } catch (err) {
+                        alert('Erè koneksyon');
+                      }
+                    }}
+                    className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm tracking-wider border ${
+                      virtualCard?.status === 'FROZEN'
+                        ? 'bg-[#b8e832] text-black border-[#b8e832]'
+                        : 'bg-transparent text-white border-white/30'
+                    }`}
+                  >
+                    {virtualCard?.status === 'FROZEN'
+                      ? <><Unlock size={16} /> DEBLOKE</>
+                      : <><Lock size={16} /> BLOKE</>
+                    }
+                  </button>
+                </div>
+
+                {/* Card Security */}
+                <div className="px-6 mb-4">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                    <p className="text-white/50 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Settings size={12} /> Card Security
                     </p>
+                    <div className="flex justify-between items-center mb-4">
+                      <p className="text-white text-sm font-semibold">Contactless</p>
+                      <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                        <div className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-white text-sm font-semibold">Online Payments</p>
+                      <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                        <div className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </>
+
+                {/* NFC Badge */}
+                <div className="px-6">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                    <Smartphone size={24} className="text-[#b8e832]" />
+                    <div>
+                      <p className="text-white font-bold text-sm">Google Pay & Apple Pay</p>
+                      <p className="text-white/50 text-xs">Kat ou a sipòte NFC contactless</p>
+                    </div>
+                    <span className="ml-auto text-[#b8e832] text-xs font-bold">AKTIF</span>
+                  </div>
+                </div>
+
+              </div>
             )}
           </div>
         )}
