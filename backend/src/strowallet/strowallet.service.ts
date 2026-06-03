@@ -95,6 +95,8 @@ export class StrowalletService {
           throw new HttpException(`StroWallet User Error: ${msg}`, apiError.response?.status || 400);
         }
 
+        console.log('Strowallet create-user response:', JSON.stringify(customerResponse.data));
+
         if (customerResponse?.data?.success === true) {
           const resData = customerResponse.data;
           customerId = resData.response?.customerId || resData.customer_id || resData.customerId;

@@ -116,7 +116,10 @@ export class AdminService {
       // 2. Mete estati KYC a ajou (APPROVED oswa REJECTED)
       const updated = await tx.kyc.update({
         where: { id: kycId },
-        data: { status },
+        data: {
+          status,
+          ...(status === 'APPROVED' && { reviewedAt: new Date() }),
+        },
       });
 
       // 3. Si yo apwouve l, n ap debite frè KYC a epi aktive Ajan an
