@@ -312,11 +312,13 @@ model VirtualCard {
   id        String     @id @default(uuid())
   userId    String     @unique
   cardId    String     @unique
-  cardName  String
-  last4     String
-  expiry    String
+  cardName  String?
+  last4     String?
+  expiry    String?
   brand     String     @default("VISA")
   balance   Decimal    @default(0.00) @db.Decimal(18, 2)
+  currency  String     @default("USD")
+  provider  String     @default("STROWALLET_NFC")
   status    CardStatus @default(ACTIVE)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt

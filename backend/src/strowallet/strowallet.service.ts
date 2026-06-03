@@ -1,291 +1,275 @@
-import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException, HttpException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class StrowalletService {
-  private readonly baseUrl = 'https://strowallet.com/api/bitvcard';
-  private readonly publicKey = process.env.STROWALLET_PUBLIC_KEY!;
-  private readonly secretKey = process.env.STROWALLET_SECRET_KEY!;
+  private readonly BASE_URL = 'https://strowallet.com/api/bitvcard';
+  private readonly PUBLIC_KEY: string;
+  private readonly MODE = 'live';
 
-  constructor(private prisma: PrismaService) {}
+  // Fee constants
+  private readonly CARD_CREATION_FEE_USD = 2.50;
+  private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
+  private readonly CARD_RECHARGE_FEE_PCT = 0.019;
 
-  private getStroHeaders() {
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {
+    this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY');
+  }
+
+  // ─── HELPER ────────────────────────────────────────────────────────────────
+
+  private async getExchangeRate(): Promise<number> {
+    const rate = await this.prisma.exchangeRate.findFirst({
+      where: { currency: 'USD' },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!rate) throw new BadRequestException('Taux de change USD introuvable');
+    return Number(rate.rate);
+  }
+
+  private async nfcPost(endpoint: string, params: Record<string, string>) {
+    const url = `${this.BASE_URL}/${endpoint}/`;
+    const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
+    const { data } = await axios.post(url, null, { params: payload });
+    if (data?.success === false || data?.status === false) {
+      throw new BadRequestException(data?.message || 'Strowallet error');
+    }
+    return data;
+  }
+
+  private async nfcGet(endpoint: string, params: Record<string, string>) {
+    const url = `${this.BASE_URL}/${endpoint}/`;
+    const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
+    const { data } = await axios.get(url, { params: payload });
+    if (data?.success === false || data?.status === false) {
+      throw new BadRequestException(data?.message || 'Strowallet error');
+    }
+    return data;
+  }
+
+  // ─── 1. CREATE NFC CARD (otomatik, pa bezwen compliance review) ─────────────
+
+  async createAndFundCard(userId: string, amountUsd: number) {
+    // Verifye pa gen kat deja
+    const existing = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (existing) throw new BadRequestException('Ou genyen yon kat vityèl deja');
+
+    // Jwenn done itilizatè
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true, kyc: true },
+    });
+    if (!user?.wallet) throw new NotFoundException('Wallet introuvable');
+    if (!user.kyc || user.kyc.status !== 'APPROVED') {
+      throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
+    }
+
+    // Kalkile total an HTG
+    const exchangeRate = await this.getExchangeRate();
+    const totalUsd = amountUsd + this.CARD_CREATION_FEE_USD;
+    const totalHtg = Math.ceil(totalUsd * exchangeRate);
+
+    if (Number(user.wallet.balance) < totalHtg) {
+      throw new BadRequestException(
+        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (depò $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD})`
+      );
+    }
+
+    // Parse non itilizatè
+    const nameParts = (user.name || 'OZAMA USER').trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || 'USER';
+
+    // Fòmate dat nesans KYC (mm/dd/yyyy)
+    const dob = user.kyc.dateOfBirth
+      ? new Date(user.kyc.dateOfBirth).toLocaleDateString('en-US', {
+          month: '2-digit', day: '2-digit', year: 'numeric',
+        })
+      : '01/01/1990';
+
+    // Kreye kat NFC otomatikman (1 sèl etap)
+    const cardResponse = await this.nfcPost('create-nfc-card', {
+      name: user.name || 'OZAMA USER',
+      first_name: firstName,
+      last_name: lastName,
+      dob,
+      id_type: 'national_id',
+      id_number: user.kyc.idNumber || '00000000',
+      email: user.email,
+      line1: user.kyc.address || 'Jacmel',
+      city: user.kyc.city || 'Jacmel',
+      state: user.kyc.state || 'Sud-Est',
+      postal_code: '00000',
+      country: 'HTI',
+      amount_usd: String(amountUsd),
+      phone: user.phone || '50936401900',
+    });
+
+    const cardId = cardResponse?.data?.card_id || cardResponse?.card_id;
+    if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
+
+    // Debi wallet + kreye kat nan DB (transaksyon atomik)
+    const [, virtualCard] = await this.prisma.$transaction([
+      this.prisma.wallet.update({
+        where: { userId },
+        data: { balance: { decrement: totalHtg } },
+      }),
+      this.prisma.virtualCard.create({
+        data: {
+          userId,
+          cardId,
+          balance: amountUsd,
+          currency: 'USD',
+          provider: 'STROWALLET_NFC',
+          status: 'ACTIVE',
+        },
+      }),
+      this.prisma.transaction.create({
+        data: {
+          walletId: user.wallet.id,
+          type: 'CARD_CREATION',
+          amount: totalHtg,
+          currency: 'HTG',
+          status: 'COMPLETED',
+          description: `Kreye kat vityèl NFC — $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD}`,
+          reference: `CARD-CREATE-${cardId}`,
+        },
+      }),
+    ]);
+
     return {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      message: 'Kat vityèl NFC kreye avèk siksè! Google Pay & Apple Pay aktive.',
+      card: virtualCard,
     };
   }
 
-  async createAndFundCard(userId: string, amountUsd: number) {
-    console.log('createAndFundCard called for userId:', userId);
-
-    const cleanAmountUsd = Number(amountUsd) || 3;
-    if (cleanAmountUsd < 3) throw new BadRequestException('Montan minim se $3 USD');
-
-    // 1️⃣ Jwenn pousantaj kat la nan DB
-    const rateSettings = await this.prisma.rate.findUnique({ where: { key: 'CARD_RATE' } });
-    if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
-
-    const rateValue = Number(rateSettings.value);
-    // User pays only for the initial deposit; OZAMAPAY absorbs the $2.50 creation fee
-    const depositHtg = Math.round(cleanAmountUsd * rateValue * 100) / 100;
-    const creationFeeHtg = Math.round(2.50 * rateValue * 100) / 100;
-
-    return await this.prisma.$transaction(async (tx) => {
-      // 2️⃣ Jwenn itilizatè a ak tout relasyon reyèl li yo
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        include: { wallet: true, kyc: true, virtualCard: true },
-      });
-
-      if (!user) throw new BadRequestException("Utilisateur introuvable.");
-
-      console.log('user.kyc:', JSON.stringify(user?.kyc));
-      console.log('user.strowalletCustomerId:', user?.strowalletCustomerId);
-
-      if (!user.kyc || user.kyc.status !== 'APPROVED') {
-        throw new ForbiddenException('KYC dwe apwouve anvan ou ka kreye kat');
-      }
-
-      if (!user.wallet) throw new BadRequestException("Wallet ou pa egziste.");
-
-      const currentBalance = Number(user.wallet.balance);
-      if (currentBalance < depositHtg) throw new BadRequestException("Balans HTG ensifizan pou depo inisyal la.");
-
-      // 🌟 KOREKSYON: Asire nou ke fullNameStr se yon string tout bon (pa null)
-      const firstName = (user.kyc?.firstName || 'Client').trim().split(' ')[0];
-      const lastName = (user.kyc?.lastName || 'Ozama').trim().split(' ')[0];
-      const fullNameStr = `${firstName} ${lastName}`;
-      const userEmail = user.email;
-
-      // ==========================================
-      // 1️⃣ KLIYAN STROWALLET — reuse si déjà kreye
-      // ==========================================
-      let customerId = user.strowalletCustomerId || '';
-
-      if (!customerId) {
-        const customerUrl = `${this.baseUrl}/create-user/`;
-        const customerPayload = {
-          public_key: this.publicKey,
-          secret_key: this.secretKey,
-          firstName: firstName,
-          lastName: lastName,
-          customerEmail: userEmail,
-          phoneNumber: user.phone || '50933333333',
-          dateOfBirth: user.kyc?.dateOfBirth || '2000-01-01',
-          line1: user.kyc?.line1 || 'Port-au-Prince',
-          houseNumber: "10",
-          city: 'Port-au-Prince',
-          state: 'Ouest',
-          zipCode: '6110',
-          country: 'HT',
-          idType: "PASSPORT",
-          idNumber: user.kyc?.idNumber || ("PASSPORT-" + Math.floor(100000 + Math.random() * 900000)),
-          idImage: user.kyc?.idImage || 'https://ozamapay.com/assets/mock-id.jpg',
-          userPhoto: user.kyc?.userPhoto || 'https://ozamapay.com/assets/mock-photo.jpg'
-        };
-
-        let customerResponse: any;
-        try {
-          customerResponse = await axios.post(customerUrl, customerPayload, { headers: this.getStroHeaders() });
-        } catch (apiError: any) {
-          const msg = apiError.response?.data?.message || apiError.message || "Erè koneksyon ak StroWallet";
-          throw new HttpException(`StroWallet User Error: ${msg}`, apiError.response?.status || 400);
-        }
-
-        console.log('Strowallet create-user response:', JSON.stringify(customerResponse.data));
-
-        if (customerResponse?.data?.success === true) {
-          const resData = customerResponse.data;
-          customerId = resData.response?.customerId || resData.customer_id || resData.customerId;
-        } else {
-          const errorMsg = customerResponse?.data?.message || "StroWallet refize kreyasyon kliyan an.";
-          throw new BadRequestException(errorMsg);
-        }
-
-        if (!customerId) throw new BadRequestException("Impossible de récupérer le customer_id depuis StroWallet.");
-
-        // Persist so future card operations reuse this customer
-        await tx.user.update({
-          where: { id: userId },
-          data: { strowalletCustomerId: customerId },
-        });
-      }
-
-      // ==========================================
-      // 2️⃣ KREYASYON KAT SOU STROWALLET (REYÈL)
-      // ==========================================
-      const cardUrl = `${this.baseUrl}/create-card/`;
-      const cardPayload = {
-        public_key: this.publicKey,
-        secret_key: this.secretKey,
-        customer_id: customerId, 
-        customerEmail: userEmail, 
-        amount: cleanAmountUsd.toString(), 
-        card_name: fullNameStr,
-        card_type: "virtual"
-      };
-
-      try {
-        const cardResponse = await axios.post(cardUrl, cardPayload, { headers: this.getStroHeaders() });
-        const stroData = cardResponse.data;
-
-        if (stroData && stroData.success === true) {
-
-          // Debit user wallet for the initial deposit only
-          await tx.wallet.update({
-            where: { id: user.wallet.id },
-            data: { balance: { decrement: depositHtg } },
-          });
-
-          await tx.transaction.create({
-            data: {
-              reference: `OZM-CARD-${uuidv4().substring(0, 8).toUpperCase()}`,
-              senderWalletId: user.wallet.id,
-              amount: depositHtg,
-              netAmount: depositHtg,
-              fee: 0,
-              type: 'PAYMENT',
-              status: 'COMPLETED',
-              title: 'Depo Inisyal Kat VISA',
-              description: `Depo $${cleanAmountUsd} USD sou kat vityèl OZAMAPAY`,
-            },
-          });
-
-          // OZAMAPAY absorbs the $2.50 Strowallet creation fee from master wallet
-          const masterWallet = await tx.wallet.findFirst({
-            where: { userId: process.env.OZAMAPAY_MASTER_ID },
-          });
-          if (masterWallet) {
-            await tx.wallet.update({
-              where: { id: masterWallet.id },
-              data: { balance: { decrement: creationFeeHtg } },
-            });
-            await tx.transaction.create({
-              data: {
-                reference: `OZM-CARDFEE-${uuidv4().substring(0, 8).toUpperCase()}`,
-                senderWalletId: masterWallet.id,
-                amount: creationFeeHtg,
-                netAmount: creationFeeHtg,
-                fee: 0,
-                type: 'PAYMENT',
-                status: 'COMPLETED',
-                title: 'Frè Kreye Kat VISA',
-                description: `OZAMAPAY absòbe frè kreye kat pou ${user.email}`,
-              },
-            });
-          }
-
-          return await tx.virtualCard.create({
-            data: {
-              userId: user.id,
-              cardId: stroData.card_id || stroData.response?.card_id,
-              cardName: fullNameStr, 
-              last4: stroData.card_number ? stroData.card_number.slice(-4) : '4242',
-              expiry: stroData.expiry || '12/29',
-              brand: 'VISA',
-              balance: cleanAmountUsd,
-              status: 'ACTIVE',
-            },
-          });
-        } else {
-          const errorMsg = stroData?.message || "StroWallet refize kreyasyon kat la.";
-          throw new BadRequestException(errorMsg);
-        }
-      } catch (apiError: any) {
-        const msg = apiError.response?.data?.message || apiError.message;
-        throw new HttpException(`StroWallet Card Error: ${msg}`, apiError.response?.status || 400);
-      }
-    });
-  }
+  // ─── 2. SECRET DETAILS (nimewo konplè, CVV, dat ekspirasyon) ────────────────
 
   async getCardSecretDetails(userId: string) {
     const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
-    if (!card) throw new BadRequestException("Kat la pa egziste.");
+    if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
-    const url = `${this.baseUrl}/fetch-card-detail/`;
-    const payload = { public_key: this.publicKey, secret_key: this.secretKey, card_id: card.cardId };
+    const data = await this.nfcGet('fetch-nfccard-detail', { card_id: card.cardId });
 
-    try {
-      const response = await axios.post(url, payload, { headers: this.getStroHeaders() });
-      if (response.data && response.data.success === true) return response.data;
-      throw new BadRequestException("Impossible de récupérer les détails de la carte depuis l'API.");
-    } catch (error: any) {
-      throw new BadRequestException(error.message || "Erè koneksyon ak StroWallet");
-    }
+    return {
+      cardNumber: data?.data?.card_number || data?.card_number,
+      cvv: data?.data?.cvv || data?.cvv,
+      expiryDate: data?.data?.expiry_date || data?.expiry_date,
+      cardName: data?.data?.name_on_card || data?.name_on_card,
+      balance: data?.data?.balance || data?.balance,
+    };
   }
 
+  // ─── 3. FUND CARD (recharje) ─────────────────────────────────────────────────
+
   async fundVirtualCard(userId: string, amountUsd: number) {
-    const cleanAmountUsd = Number(amountUsd) || 0;
-    if (cleanAmountUsd < 3) throw new BadRequestException('Montan minim rechajman se $3 USD');
+    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
+    if (card.status !== 'ACTIVE') throw new BadRequestException('Kat ou a pa aktif');
 
-    const rateSettings = await this.prisma.rate.findUnique({ where: { key: 'CARD_RATE' } });
-    if (!rateSettings) throw new InternalServerErrorException("Taux CARD_RATE pa konfigire.");
+    const exchangeRate = await this.getExchangeRate();
+    const feeUsd = this.CARD_RECHARGE_FEE_FLAT_USD + amountUsd * this.CARD_RECHARGE_FEE_PCT;
+    const totalUsd = amountUsd + feeUsd;
+    const totalHtg = Math.ceil(totalUsd * exchangeRate);
 
-    const rateValue = Number(rateSettings.value);
-    // Strowallet recharge fee: $1.90 flat + 1.9% of amount
-    const feeUsd = Math.round((1.90 + cleanAmountUsd * 0.019) * 100) / 100;
-    const totalUsd = cleanAmountUsd + feeUsd;
-    const totalHtg = Math.round(totalUsd * rateValue * 100) / 100;
+    const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    if (!wallet || Number(wallet.balance) < totalHtg) {
+      throw new BadRequestException(
+        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (recharge $${amountUsd} + frè $${feeUsd.toFixed(2)})`
+      );
+    }
 
-    return await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId }, include: { wallet: true, virtualCard: true } });
-      if (!user || !user.virtualCard || !user.wallet) throw new BadRequestException("Kat la oswa wallet pa egziste.");
+    // Debi HTG wallet + recharje kat (transaksyon atomik — si Strowallet echwe, debi pa pase)
+    await this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { userId },
+        data: { balance: { decrement: totalHtg } },
+      });
 
-      const currentBalance = Number(user.wallet.balance);
-      if (currentBalance < totalHtg) throw new BadRequestException(`Balans ensifizan. Ou bezwen ${totalHtg.toFixed(0)} HTG.`);
+      // Apèl Strowallet NFC fund
+      await this.nfcPost('fund-withdraw-nfccard', {
+        card_id: card.cardId,
+        amount: String(amountUsd),
+        type: 'fund',
+      });
 
-      // Step 1: Debit wallet and record transaction first.
-      // Because we are inside $transaction, any error thrown below (including a
-      // failed Strowallet call) will automatically roll back this debit.
-      await tx.wallet.update({ where: { userId }, data: { balance: { decrement: totalHtg } } });
+      await tx.virtualCard.update({
+        where: { userId },
+        data: { balance: { increment: amountUsd } },
+      });
 
       await tx.transaction.create({
         data: {
-          reference: `OZM-FUND-${uuidv4().substring(0, 8).toUpperCase()}`,
-          senderWalletId: user.wallet.id,
+          walletId: wallet.id,
+          type: 'CARD_FUNDING',
           amount: totalHtg,
-          netAmount: totalHtg,
-          fee: Math.round(feeUsd * rateValue * 100) / 100,
-          type: 'PAYMENT',
+          currency: 'HTG',
           status: 'COMPLETED',
-          title: 'Rechajman Kat VISA',
-          description: `Rechaje $${cleanAmountUsd} USD + frè $${feeUsd} USD`,
+          description: `Recharge kat NFC $${amountUsd} + frè $${feeUsd.toFixed(2)}`,
+          reference: `CARD-FUND-${card.cardId}-${Date.now()}`,
         },
-      });
-
-      // Step 2: Call Strowallet only after the DB debit succeeds.
-      // If this throws, $transaction rolls back the debit above — no manual refund needed.
-      const stroRes = await axios.post(
-        `${this.baseUrl}/fund-card/`,
-        {
-          public_key: this.publicKey,
-          secret_key: this.secretKey,
-          card_id: user.virtualCard.cardId,
-          amount: cleanAmountUsd.toString(),
-        },
-        { headers: this.getStroHeaders() },
-      );
-      const stroData = stroRes.data;
-      if (!stroData || stroData.success !== true) {
-        throw new BadRequestException('Rechajman kat echwe: ' + (stroData?.message || 'Erè enkoni'));
-      }
-
-      // Step 3: Strowallet confirmed — update local card balance.
-      return await tx.virtualCard.update({
-        where: { userId },
-        data: { balance: { increment: cleanAmountUsd } },
       });
     });
+
+    return { message: `Kat recharje avèk siksè — $${amountUsd} ajoute` };
   }
+
+  // ─── 4. CARD HISTORY ─────────────────────────────────────────────────────────
 
   async getCardHistory(userId: string) {
-    return [];
+    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!card) return [];
+
+    const data = await this.nfcGet('fetch-nfccard-history', { card_id: card.cardId });
+    return data?.data || data?.history || [];
   }
 
+  // ─── 5. LOCAL DATA ────────────────────────────────────────────────────────────
+
   async getMyCardLocalData(userId: string) {
-    return await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!card) return null;
+    return card;
+  }
+
+  // ─── 6. FREEZE / UNFREEZE ────────────────────────────────────────────────────
+
+  async freezeCard(userId: string) {
+    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
+
+    await this.nfcPost('freezeactivate-nfc', {
+      card_id: card.cardId,
+      action: 'freeze',
+    });
+
+    await this.prisma.virtualCard.update({
+      where: { userId },
+      data: { status: 'FROZEN' },
+    });
+
+    return { message: 'Kat bloké avèk siksè' };
+  }
+
+  async unfreezeCard(userId: string) {
+    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
+
+    await this.nfcPost('freezeactivate-nfc', {
+      card_id: card.cardId,
+      action: 'activate',
+    });
+
+    await this.prisma.virtualCard.update({
+      where: { userId },
+      data: { status: 'ACTIVE' },
+    });
+
+    return { message: 'Kat reatktive avèk siksè' };
   }
 }

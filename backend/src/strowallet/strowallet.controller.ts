@@ -1,46 +1,44 @@
-import { Controller, Post, Get, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { StrowalletService } from './strowallet.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // <-- Asire w chemen sa a kòrèk paraprò } fòldè w la
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('v1/cards')
-@UseGuards(JwtAuthGuard) // <-- Nou dekòmante l pou sekirite a ka aktif!
+@UseGuards(JwtAuthGuard)
 export class StrowalletController {
   constructor(private readonly strowalletService: StrowalletService) {}
 
-  /**
-   * GET /v1/cards/my-card
-   */
   @Get('my-card')
-  async getMyCard(@Req() req: any) {
-    // Kounye a req.user.id ap prezan paske Guard la ap travay
-    return await this.strowalletService.getMyCardLocalData(req.user.id);
+  getMyCardLocalData(@Request() req) {
+    return this.strowalletService.getMyCardLocalData(req.user.id);
   }
 
-  /**
-   * POST /v1/cards/create
-   */
   @Post('create')
-  @HttpCode(HttpStatus.CREATED)
-  async createCard(@Req() req: any, @Body('amountUsd') amountUsd: number) {
-    return await this.strowalletService.createAndFundCard(req.user.id, amountUsd);
+  createAndFundCard(@Request() req, @Body() body: { amount_usd: number }) {
+    return this.strowalletService.createAndFundCard(req.user.id, body.amount_usd);
   }
 
-  /**
-   * POST /v1/cards/recharge
-   */
   @Post('recharge')
-  @HttpCode(HttpStatus.OK)
-  async rechargeCard(@Req() req: any, @Body('amountUsd') amountUsd: number) {
-    return await this.strowalletService.fundVirtualCard(req.user.id, amountUsd);
+  fundVirtualCard(@Request() req, @Body() body: { amount_usd: number }) {
+    return this.strowalletService.fundVirtualCard(req.user.id, body.amount_usd);
   }
 
   @Post('secret-details')
-  async getSecretDetails(@Req() req: any) {
-    return await this.strowalletService.getCardSecretDetails(req.user.id);
+  getCardSecretDetails(@Request() req) {
+    return this.strowalletService.getCardSecretDetails(req.user.id);
   }
 
-  @Post('history')
-  async getHistory(@Req() req: any) {
-    return await this.strowalletService.getCardHistory(req.user.id);
+  @Get('history')
+  getCardHistory(@Request() req) {
+    return this.strowalletService.getCardHistory(req.user.id);
+  }
+
+  @Post('freeze')
+  freezeCard(@Request() req) {
+    return this.strowalletService.freezeCard(req.user.id);
+  }
+
+  @Post('unfreeze')
+  unfreezeCard(@Request() req) {
+    return this.strowalletService.unfreezeCard(req.user.id);
   }
 }
