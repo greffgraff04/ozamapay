@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { StrowalletService } from './strowallet.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('v1/cards')
 @UseGuards(JwtAuthGuard)

@@ -18,14 +18,14 @@ export class StrowalletService {
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
-    this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY');
+    this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
   }
 
   // ─── HELPER ────────────────────────────────────────────────────────────────
 
   private async getExchangeRate(): Promise<number> {
     const rate = await this.prisma.exchangeRate.findFirst({
-      where: { currency: 'USD' },
+      where: { fromCurrency: 'USD' },
       orderBy: { updatedAt: 'desc' },
     });
     if (!rate) throw new BadRequestException('Taux de change USD introuvable');
@@ -101,7 +101,7 @@ export class StrowalletService {
       id_type: 'national_id',
       id_number: user.kyc.idNumber || '00000000',
       email: user.email,
-      line1: user.kyc.address || 'Jacmel',
+      line1: user.kyc.line1 || 'Jacmel',
       city: user.kyc.city || 'Jacmel',
       state: user.kyc.state || 'Sud-Est',
       postal_code: '00000',
@@ -132,7 +132,7 @@ export class StrowalletService {
       this.prisma.transaction.create({
         data: {
           walletId: user.wallet.id,
-          type: 'CARD_CREATION',
+          type: 'CARD',
           amount: totalHtg,
           currency: 'HTG',
           status: 'COMPLETED',
@@ -206,7 +206,7 @@ export class StrowalletService {
       await tx.transaction.create({
         data: {
           walletId: wallet.id,
-          type: 'CARD_FUNDING',
+          type: 'CARD',
           amount: totalHtg,
           currency: 'HTG',
           status: 'COMPLETED',
