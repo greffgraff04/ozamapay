@@ -19,6 +19,8 @@ export class StrowalletService {
   }
 
   async createAndFundCard(userId: string, amountUsd: number) {
+    console.log('createAndFundCard called for userId:', userId);
+
     const cleanAmountUsd = Number(amountUsd) || 3;
     if (cleanAmountUsd < 3) throw new BadRequestException('Montan minim se $3 USD');
 
@@ -39,6 +41,9 @@ export class StrowalletService {
       });
 
       if (!user) throw new BadRequestException("Utilisateur introuvable.");
+
+      console.log('user.kyc:', JSON.stringify(user?.kyc));
+      console.log('user.strowalletCustomerId:', user?.strowalletCustomerId);
 
       if (!user.kyc || user.kyc.status !== 'APPROVED') {
         throw new ForbiddenException('KYC dwe apwouve anvan ou ka kreye kat');
