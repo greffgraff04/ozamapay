@@ -230,22 +230,9 @@ export class StrowalletService {
       const currentBalance = Number(user.wallet.balance);
       if (currentBalance < totalHtg) throw new BadRequestException(`Balans ensifizan. Ou bezwen ${totalHtg.toFixed(0)} HTG.`);
 
-      // Send only the requested amount to Strowallet (fee is our cost coverage)
-      const stroRes = await axios.post(
-        `${this.baseUrl}/fund-card/`,
-        {
-          public_key: this.publicKey,
-          secret_key: this.secretKey,
-          card_id: user.virtualCard.cardId,
-          amount: cleanAmountUsd.toString(),
-        },
-        { headers: this.getStroHeaders() },
-      );
-      const stroData = stroRes.data;
-      if (!stroData || stroData.success !== true) {
-        throw new BadRequestException('Rechajman kat echwe: ' + (stroData?.message || 'Erè enkoni'));
-      }
-
+      // Step 1: Debit wallet and record transaction first.
+      // Because we are inside $transaction, any error thrown below (including a
+      // failed Strowallet call) will automatically roll back this debit.
       await tx.wallet.update({ where: { userId }, data: { balance: { decrement: totalHtg } } });
 
       await tx.transaction.create({
@@ -262,6 +249,24 @@ export class StrowalletService {
         },
       });
 
+      // Step 2: Call Strowallet only after the DB debit succeeds.
+      // If this throws, $transaction rolls back the debit above — no manual refund needed.
+      const stroRes = await axios.post(
+        `${this.baseUrl}/fund-card/`,
+        {
+          public_key: this.publicKey,
+          secret_key: this.secretKey,
+          card_id: user.virtualCard.cardId,
+          amount: cleanAmountUsd.toString(),
+        },
+        { headers: this.getStroHeaders() },
+      );
+      const stroData = stroRes.data;
+      if (!stroData || stroData.success !== true) {
+        throw new BadRequestException('Rechajman kat echwe: ' + (stroData?.message || 'Erè enkoni'));
+      }
+
+      // Step 3: Strowallet confirmed — update local card balance.
       return await tx.virtualCard.update({
         where: { userId },
         data: { balance: { increment: cleanAmountUsd } },
