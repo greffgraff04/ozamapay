@@ -1616,7 +1616,7 @@ try {
           <div className="animate-in fade-in duration-700">
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-10">Ozama<br/>Virtual Card</h2>
             
-            {!virtualCard ? (
+            {!virtualCard?.cardId ? (
               <div className="space-y-6 mb-10 animate-in fade-in duration-500">
                 <div className="p-8 border-2 border-dashed border-[#FF6B00]/20 rounded-[2.5rem] bg-orange-50/30">
                   <div className="flex items-center justify-between mb-4">
