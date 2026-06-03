@@ -1639,7 +1639,7 @@ try {
                         const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
                           method: 'POST',
                           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ amountUsd: amt }),
+                          body: JSON.stringify({ amount_usd: amt }),
                         });
                         const contentType = res.headers.get('content-type');
                         if (res.ok && contentType?.includes('application/json')) {
