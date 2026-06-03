@@ -34,7 +34,13 @@ export class StrowalletService {
   private async nfcPost(endpoint: string, params: Record<string, string>) {
     const url = `${this.BASE_URL}/${endpoint}/`;
     const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
-    const { data } = await axios.post(url, null, { params: payload });
+    let data: any;
+    try {
+      ({ data } = await axios.post(url, null, { params: payload }));
+    } catch (error: any) {
+      console.error('Strowallet API error:', error?.response?.data || error?.message || error);
+      throw error;
+    }
     if (data?.success === false || data?.status === false) {
       throw new BadRequestException(data?.message || 'Strowallet error');
     }
@@ -54,6 +60,7 @@ export class StrowalletService {
   // ─── 1. CREATE NFC CARD (otomatik, pa bezwen compliance review) ─────────────
 
   async createAndFundCard(userId: string, amountUsd: number) {
+    console.log('createAndFundCard called for userId:', userId, 'amount:', amountUsd);
     // Verifye pa gen kat deja
     const existing = await this.prisma.virtualCard.findUnique({ where: { userId } });
     if (existing) throw new BadRequestException('Ou genyen yon kat vityèl deja');
@@ -92,6 +99,7 @@ export class StrowalletService {
       : '01/01/1990';
 
     // Kreye kat NFC otomatikman (1 sèl etap)
+    console.log('Calling Strowallet NFC API with params:', { name: user.name, firstName, lastName, dob, email: user.email, country: 'HTI' });
     const cardResponse = await this.nfcPost('create-nfc-card', {
       name: user.name || 'OZAMA USER',
       first_name: firstName,
