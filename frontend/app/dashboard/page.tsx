@@ -315,6 +315,19 @@ try {
         // silently ignore
       }
 
+      // Fetch virtual card
+      try {
+        const cardRes = await fetch(`${API_BASE}/v1/cards/my-card`, {
+          headers: { 'Authorization': `Bearer ${localToken}` }
+        });
+        if (cardRes.ok) {
+          const cardData = await cardRes.json();
+          if (cardData) setVirtualCard(cardData);
+        }
+      } catch {
+        // silently ignore
+      }
+
     } catch (e) {
       console.error("SYNC ERROR:", e);
     } finally {
