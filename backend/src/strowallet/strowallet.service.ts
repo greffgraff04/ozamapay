@@ -160,20 +160,19 @@ export class StrowalletService {
   // ─── 2. SECRET DETAILS (nimewo konplè, CVV, dat ekspirasyon) ────────────────
 
   async getCardSecretDetails(userId: string) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
-    if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
+    const virtualCard = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    if (!virtualCard) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
-    const data = await this.nfcGet('fetch-nfccard-detail', { card_id: card.cardId });
-    console.log('Strowallet secret details response:', JSON.stringify(data, null, 2));
+    const data = await this.nfcGet('fetch-nfccard-detail', { card_id: virtualCard.cardId });
 
-    const card = data?.response?.card_detail;
+    const detail = data?.response?.card_detail;
     return {
-      cardNumber: card?.card_number,
-      cvv: card?.cvv,
-      expiryDate: card?.expiry,
-      cardName: card?.card_holder_name,
-      balance: card?.balance,
-      last4: card?.last4,
+      cardNumber: detail?.card_number,
+      cvv: detail?.cvv,
+      expiryDate: detail?.expiry,
+      cardName: detail?.card_holder_name,
+      balance: detail?.balance,
+      last4: detail?.last4,
     };
   }
 
