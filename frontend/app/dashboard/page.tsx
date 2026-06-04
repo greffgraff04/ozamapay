@@ -70,7 +70,9 @@ export default function Dashboard() {
   const [toastFading, setToastFading] = useState(false);
   const [showSecurityCard, setShowSecurityCard] = useState(false);
   const [cardCreateAmount, setCardCreateAmount] = useState('3');
-  const [rechargeAmount, setRechargeAmount] = useState('3');
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargeLoading, setRechargeLoading] = useState(false);
   const [showRates, setShowRates] = useState(false);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
@@ -394,7 +396,7 @@ try {
   };
 
   useEffect(() => {
-    const t = setTimeout(() => setMinLoadDone(true), 5000);
+    const t = setTimeout(() => setMinLoadDone(true), 1000);
     return () => clearTimeout(t);
   }, []);
 
@@ -1704,12 +1706,24 @@ try {
                       {/* MIDDLE — Card Number */}
                       <div>
                         <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
-                        <p className="text-white font-bold text-base tracking-wider drop-shadow">
-                          {showCardDetails && virtualCard?.cardNumber
-                            ? `${virtualCard.cardNumber.slice(0,4)} •••• •••• ${virtualCard.cardNumber.slice(-4)}`
-                            : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
-                          }
-                        </p>
+                        <button
+                          onClick={() => {
+                            const num = showCardDetails && virtualCard?.cardNumber
+                              ? virtualCard.cardNumber
+                              : virtualCard?.cardId;
+                            navigator.clipboard.writeText(num || '');
+                            alert('Nimewo kopye!');
+                          }}
+                          className="flex items-center gap-2 group"
+                        >
+                          <p className="text-white font-bold text-base tracking-wider drop-shadow">
+                            {showCardDetails && virtualCard?.cardNumber
+                              ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
+                              : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
+                            }
+                          </p>
+                          <Copy size={12} className="text-white/50 group-hover:text-white" />
+                        </button>
                       </div>
 
                       {/* BOTTOM — Cardholder + Expiry + VISA pale */}
@@ -1791,10 +1805,8 @@ try {
                         </div>
                         <div className="space-y-0">
                           {[
-                            { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————' },
                             { label: 'CVV', value: virtualCard?.cvv || '———' },
                             { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
-                            { label: 'Nom sou Kat', value: virtualCard?.cardName || '————' },
                           ].map((item, i, arr) => (
                             <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
                               <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
@@ -1807,59 +1819,12 @@ try {
                   </div>
 
                   {/* ACTIONS */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={async () => {
-                        const amt = prompt('Montan recharge (USD):');
-                        if (!amt || isNaN(Number(amt)) || Number(amt) < 1) return;
-                        try {
-                          const token = localStorage.getItem('token');
-                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                          const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ amount_usd: Number(amt) })
-                          });
-                          const data = await res.json();
-                          if (res.ok) { alert('Recharge siksè!'); fetchData(); }
-                          else { alert(data.message || 'Erè recharge'); }
-                        } catch { alert('Erè koneksyon'); }
-                      }}
-                      className="flex items-center justify-center gap-2 bg-orange-500 text-white font-black py-4 rounded-2xl text-sm"
-                    >
-                      <Zap size={16} /> RECHARGE
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem('token');
-                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                          const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                          const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                          });
-                          const data = await res.json();
-                          if (res.ok) {
-                            setVirtualCard((prev: any) => ({
-                              ...prev,
-                              status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
-                            }));
-                          } else { alert(data.message || 'Erè'); }
-                        } catch { alert('Erè koneksyon'); }
-                      }}
-                      className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm border-2 ${
-                        virtualCard?.status === 'FROZEN'
-                          ? 'bg-orange-500 text-white border-orange-500'
-                          : 'bg-white text-[#0F121E] border-gray-200'
-                      }`}
-                    >
-                      {virtualCard?.status === 'FROZEN'
-                        ? <><Unlock size={16} /> DEBLOKE</>
-                        : <><Lock size={16} /> BLOKE</>
-                      }
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowRechargeModal(true)}
+                    className="flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-3 px-6 rounded-2xl text-sm w-auto mx-auto block"
+                  >
+                    <Zap size={14} /> Recharge
+                  </button>
 
                   {/* CARD SECURITY */}
                   <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
@@ -1896,6 +1861,78 @@ try {
 
                 </div>{/* end px-4 */}
                 </div>{/* end scrollable */}
+
+                {/* RECHARGE MODAL */}
+                {showRechargeModal && (
+                  <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white w-full rounded-t-3xl p-6 pb-10 shadow-2xl">
+                      <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-[#0F121E] font-black text-lg">Recharge Kat</h3>
+                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }} className="text-gray-400">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-2">Balans aktyèl: <span className="text-orange-500 font-bold">${Number(virtualCard?.balance || 0).toFixed(2)} USD</span></p>
+                      <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 mt-4">Montan (USD)</p>
+                      <div className="flex items-center border-2 border-gray-100 rounded-2xl px-4 py-3 mb-6 focus-within:border-orange-400 transition-colors">
+                        <span className="text-orange-500 font-bold mr-2 text-lg">$</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={rechargeAmount}
+                          onChange={(e) => setRechargeAmount(e.target.value)}
+                          className="flex-1 outline-none text-[#0F121E] font-bold text-xl"
+                          placeholder="0.00"
+                          autoFocus
+                        />
+                        <span className="text-gray-400 text-sm">USD</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-6">
+                        {['5', '10', '20'].map(amt => (
+                          <button
+                            key={amt}
+                            onClick={() => setRechargeAmount(amt)}
+                            className={`py-2 rounded-xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-gray-100 text-gray-400'}`}
+                          >
+                            ${amt}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        disabled={rechargeLoading || !rechargeAmount || Number(rechargeAmount) < 1}
+                        onClick={async () => {
+                          setRechargeLoading(true);
+                          try {
+                            const token = localStorage.getItem('token');
+                            const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                            const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ amount_usd: Number(rechargeAmount) })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              setShowRechargeModal(false);
+                              setRechargeAmount('');
+                              fetchData();
+                            } else {
+                              alert(data.message || 'Erè recharge');
+                            }
+                          } catch {
+                            alert('Erè koneksyon');
+                          } finally {
+                            setRechargeLoading(false);
+                          }
+                        }}
+                        className="w-full py-4 bg-orange-500 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {rechargeLoading ? 'Ap trete...' : <><Zap size={16} /> Konfime Recharge</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
           </div>
