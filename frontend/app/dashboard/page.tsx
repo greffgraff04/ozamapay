@@ -438,16 +438,16 @@ try {
   }, [transactions, activeTab]);
 
   const handlePaymentLogic = async () => {
-  if (
-    !topUpAmount ||
-    Number(topUpAmount) <= 0
-  ) {
-    setToast({
-      message:
-        "Tanpri antre yon montan valid",
-      type: 'error',
-    });
-
+  if (!topUpAmount || Number(topUpAmount) <= 0) {
+    showToast('Antre yon montan valid', 'error');
+    return;
+  }
+  if (!selectedMethod) {
+    showToast('Chwazi yon mwayen peman', 'error');
+    return;
+  }
+  if (topUpType === 'MANUAL' && !receipt) {
+    showToast('Upload reçu peman ou anvan ou soumèt', 'error');
     return;
   }
 
