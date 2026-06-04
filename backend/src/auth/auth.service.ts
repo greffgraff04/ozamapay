@@ -357,8 +357,11 @@ export class AuthService {
 
       kyc: user.kyc
         ? {
-            status:
-              user.kyc.status,
+            status: user.kyc.status,
+            line1: user.kyc.line1,
+            city: user.kyc.city,
+            zipCode: user.kyc.zipCode,
+            country: user.kyc.country,
           }
         : null,
 
