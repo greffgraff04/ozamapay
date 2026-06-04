@@ -1821,7 +1821,7 @@ try {
                   {/* ACTIONS */}
                   <button
                     onClick={() => setShowRechargeModal(true)}
-                    className="flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-3 px-6 rounded-2xl text-sm w-auto mx-auto block"
+                    className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-4 rounded-2xl text-sm"
                   >
                     <Zap size={14} /> Recharge
                   </button>
