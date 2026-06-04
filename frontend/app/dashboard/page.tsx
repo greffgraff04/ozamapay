@@ -829,7 +829,7 @@ try {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+                <h1 className="text-xl font-black tracking-tighter uppercase italic truncate max-w-[160px]">{displayName}</h1>
                 <ShieldCheck size={16} className="text-[#FF7A00]" />
               </div>
               <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
@@ -942,7 +942,7 @@ try {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h1 className="text-xl font-black tracking-tighter uppercase italic">{displayName}</h1>
+                      <h1 className="text-xl font-black tracking-tighter uppercase italic truncate max-w-[160px]">{displayName}</h1>
                       <ShieldCheck size={16} className="text-[#FF7A00]" />
                     </div>
                     <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
@@ -1723,6 +1723,7 @@ try {
                     </div>
                   </div>
                 </div>
+                <div className="h-4 bg-gradient-to-b from-white to-transparent -mt-4 relative z-10"></div>
 
                 {/* ── BALANCE CARD ── */}
                 <div className="px-4">
@@ -1766,7 +1767,6 @@ try {
                               last4: data.last4,
                             }));
                             setShowCardDetails(true);
-                            setTimeout(() => setShowCardDetails(false), 15000);
                           } else {
                             alert(data.message || 'Erè');
                           }
@@ -1786,24 +1786,24 @@ try {
                           <EyeOff size={16} />
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-gray-50 rounded-2xl p-3">
-                          <p className="text-gray-400 text-xs mb-1">Nimewo Konplè</p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                          <p className="text-gray-400 text-xs uppercase tracking-wider">Nimewo Konplè</p>
                           <p className="text-[#0F121E] font-bold text-sm tracking-wider">
                             {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
                           </p>
                         </div>
-                        <div className="bg-gray-50 rounded-2xl p-3">
-                          <p className="text-gray-400 text-xs mb-1">CVV</p>
-                          <p className="text-[#0F121E] font-bold text-2xl">{virtualCard?.cvv || '———'}</p>
+                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                          <p className="text-gray-400 text-xs uppercase tracking-wider">CVV</p>
+                          <p className="text-[#0F121E] font-bold text-lg">{virtualCard?.cvv || '———'}</p>
                         </div>
-                        <div className="bg-gray-50 rounded-2xl p-3">
-                          <p className="text-gray-400 text-xs mb-1">Ekspire</p>
+                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
+                          <p className="text-gray-400 text-xs uppercase tracking-wider">Ekspire</p>
                           <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
                         </div>
-                        <div className="bg-gray-50 rounded-2xl p-3">
-                          <p className="text-gray-400 text-xs mb-1">Nom sou Kat</p>
-                          <p className="text-[#0F121E] font-bold text-xs leading-tight">{virtualCard?.cardName || '————'}</p>
+                        <div className="flex justify-between items-center py-3">
+                          <p className="text-gray-400 text-xs uppercase tracking-wider">Nom sou Kat</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.cardName || '————'}</p>
                         </div>
                       </div>
                     </div>
