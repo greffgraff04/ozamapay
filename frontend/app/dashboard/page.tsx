@@ -1825,6 +1825,10 @@ try {
                           {[
                             { label: 'CVV', value: virtualCard?.cvv || '———' },
                             { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
+                            { label: 'Adres', value: user?.kyc?.line1 || '—' },
+                            { label: 'Vil', value: user?.kyc?.city || '—' },
+                            { label: 'Peyi', value: 'Haiti' },
+                            { label: 'Zip', value: '00000' },
                           ].map((item, i, arr) => (
                             <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
                               <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
