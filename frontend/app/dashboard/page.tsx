@@ -1682,11 +1682,11 @@ try {
               </div>
             ) : (
               /* ===== CARD DISPLAY ===== */
-              <div className="pt-0 pb-10">
+              <div style={{ paddingTop: '63vw' }}>
 
-                {/* ── CARD VISUAL — full width, sticky ── */}
-                <div className="sticky top-0 z-10">
-                  <div className="relative w-full overflow-hidden mb-5" style={{aspectRatio: '1.586'}}>
+                {/* ── FIXED CARD VISUAL ── */}
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, background: 'white' }}>
+                  <div className="relative w-full overflow-hidden" style={{aspectRatio: '1.586'}}>
                     <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
 
                     <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
@@ -1723,9 +1723,9 @@ try {
                     </div>
                   </div>
                 </div>
-                <div className="h-4 bg-gradient-to-b from-white to-transparent -mt-4 relative z-10"></div>
 
-                {/* ── BALANCE CARD ── */}
+                {/* ── SCROLLABLE CONTENT ── */}
+                <div style={{ height: 'calc(100vh - 63vw)', overflowY: 'auto', position: 'relative' }} className="pb-24">
                 <div className="px-4">
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3 flex justify-between items-center">
                   <div>
@@ -1896,6 +1896,7 @@ try {
                 </div>
 
                 </div>{/* end px-4 */}
+                </div>{/* end scrollable */}
               </div>
             )}
           </div>
