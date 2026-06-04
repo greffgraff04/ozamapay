@@ -73,6 +73,7 @@ export default function Dashboard() {
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRates, setShowRates] = useState(false);
   const [showMoncashGuide, setShowMoncashGuide] = useState(true);
  
@@ -1319,127 +1320,158 @@ try {
 )}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
-          <div className="animate-in slide-in-from-bottom duration-500">
-            <button onClick={() => setActiveTab('home')} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <PlusCircle size={14} /> Back Home
-            </button>
-            <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Add Funds</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Chaje bous ou ak sekirite</p>
- 
-            <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 mb-8 border border-black/5">
-              <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
-              <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
+          <div className="animate-in fade-in duration-500" style={{ paddingTop: '0px' }}>
+
+            {/* HEADER */}
+            <div className="px-4 pt-6 pb-4">
+              <h2 className="text-2xl font-black italic tracking-tight text-[#0F121E]">
+                CHAJE WALLET<br/>OU AK SEKIRITE
+              </h2>
             </div>
- 
-            <div className="space-y-6">
-              <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
-                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
+
+            {/* TOGGLE */}
+            <div className="px-4 mb-4">
+              <div className="bg-gray-100 p-1.5 rounded-2xl flex gap-2 border border-black/5">
+                <button onClick={() => setTopUpType('AUTOMATIC')}
+                  className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase italic tracking-widest transition-all
+                    ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>
+                  ⚡ Automatic
+                </button>
+                <button onClick={() => setTopUpType('MANUAL')}
+                  className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase italic tracking-widest transition-all
+                    ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>
+                  🕐 Manuel (15-25 min)
+                </button>
+              </div>
+            </div>
+
+            {/* AMOUNT CARD */}
+            <div className="px-4 mb-4">
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
+                <p className="text-gray-400 text-xs uppercase tracking-widest mb-2">
+                  {topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}
+                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[#FF7A00] font-black text-3xl">
+                    {topupIsIntl ? '$' : 'G'}
+                  </span>
+                  <input
+                    className="flex-1 bg-transparent font-black text-4xl outline-none text-[#0F121E]"
+                    placeholder="0"
+                    type="number"
+                    value={topUpAmount}
+                    onChange={(e) => setTopUpAmount(e.target.value)}
+                  />
+                </div>
+
+                {/* FEE BREAKDOWN */}
                 {topUpAmount && (() => {
                   const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
                   const feeRate = isMccAuto ? 0.089 : 0.06;
                   const feeAmount = Math.round(topupHTG * feeRate);
                   const amountAfterFee = topupHTG - feeAmount;
                   const feeLabel = isMccAuto
-                    ? 'FRAIS (8.9% — 6% OZAMAPAY + 2.9% MonCash)'
-                    : 'FRAIS OZAMAPAY (6.0%)';
+                    ? 'Frè (6% OZAMAPAY + 2.9% MonCash)'
+                    : 'Frè OZAMAPAY (6%)';
                   return (
-                    <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
+                    <div className="space-y-2 pt-3 border-t border-gray-50">
                       {topupIsIntl && (
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic text-gray-400">Ekivalan HTG</span>
-                          <span className="text-[10px] font-black italic text-[#0F121E]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
+                          <p className="text-gray-400 text-xs">Ekivalan HTG</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{topupHTG.toLocaleString()} HTG</p>
                         </div>
                       )}
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeLabel}</span>
-                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeAmount.toLocaleString()} HTG</span>
+                        <p className="text-gray-400 text-xs uppercase tracking-wider">{feeLabel}</p>
+                        <p className="text-red-400 font-bold text-sm">- {feeAmount.toLocaleString()} HTG</p>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
-                        <span className="text-xs font-black italic text-[#FF7A00]">{amountAfterFee.toLocaleString()} HTG</span>
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                        <p className="text-[#FF7A00] font-black text-sm uppercase tracking-wider">Wap Resevwa</p>
+                        <p className="text-[#FF7A00] font-black text-lg">{amountAfterFee.toLocaleString()} HTG</p>
                       </div>
                     </div>
                   );
                 })()}
               </div>
- 
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Chwazi Mwayen Peman</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {paymentMethods.map((m) => (
-                    <button key={m.id} onClick={() => setSelectedMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
-                      <div className="flex items-center gap-3">
-                        <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
-                        <span className="font-black italic uppercase text-[10px]">{m.label}</span>
+            </div>
+
+            {/* PAYMENT METHODS */}
+            <div className="px-4 mb-4">
+              <p className="text-gray-400 text-xs uppercase tracking-widest mb-3">Chwazi Mwayen Peman</p>
+              <div className="grid grid-cols-2 gap-3">
+                {paymentMethods.map((m) => (
+                  <button key={m.id} onClick={() => setSelectedMethod(m.id)}
+                    className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between
+                      ${selectedMethod === m.id
+                        ? 'border-[#FF7A00] bg-orange-50'
+                        : 'border-gray-100 bg-white'}`}>
+                    <div className="flex items-center gap-3">
+                      <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
+                      <span className="font-black italic uppercase text-[10px] text-[#0F121E]">{m.label}</span>
+                    </div>
+                    {selectedMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* MONCASH MANUEL GUIDE */}
+            {selectedMethod === 'moncash' && topUpType === 'MANUAL' && showMoncashGuide && (
+              <div className="px-4 mb-4">
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 relative">
+                  <button
+                    onClick={() => setShowMoncashGuide(false)}
+                    className="absolute top-3 right-3 text-gray-400">
+                    <X size={16} />
+                  </button>
+                  <p className="text-blue-700 font-bold text-sm mb-3 flex items-center gap-2">
+                    <Info size={16} /> Kijan pou w depoze manyèlman
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      "Ouvri aplikasyon MonCash ou a",
+                      `Voye egzak montan an sou: ${process.env.NEXT_PUBLIC_MONCASH_NUMBER || '50948088715'}`,
+                      "Non: Ralph Olivier Greffin",
+                      "Fè yon screenshot reçu konfirmasyon MonCash la",
+                      "Retounen isit epi upload screenshot la",
+                      "Soumèt — ekip nou ap konfime nan 15-25 minit"
+                    ].map((step, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                          {i + 1}
+                        </div>
+                        <p className="text-blue-800 text-xs">{step}</p>
                       </div>
-                      {selectedMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
-                    </button>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
- 
-              {topUpType === 'MANUAL' && selectedMethod && (
-                <div className="animate-in zoom-in duration-300 bg-[#0F121E] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                  <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-2 tracking-widest">Instruction Peman</p>
-                  <h4 className="text-xl font-black italic uppercase mb-1">Voye kòb la sou:</h4>
-                  <p className="text-[10px] font-bold text-white/40 uppercase mb-6">{paymentMethods.find(x => x.id === selectedMethod)?.name}</p>
-                  
-                  <div className="flex items-center justify-between bg-white/5 p-5 rounded-2xl border border-white/10 mb-6">
-                    <span className="font-black italic text-lg text-white truncate pr-4">
-                        {paymentMethods.find(x => x.id === selectedMethod)?.info}
-                    </span>
-                    <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-3 bg-[#FF7A00] rounded-xl active:scale-90">
-                      <Copy size={16} />
-                    </button>
-                  </div>
-                  
-                  {selectedMethod === 'moncash' && topUpType === 'MANUAL' && showMoncashGuide && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 relative">
-                      <button
-                        onClick={() => setShowMoncashGuide(false)}
-                        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-                      >
-                        <X size={16} />
-                      </button>
-                      <p className="text-blue-700 font-bold text-sm mb-3 flex items-center gap-2">
-                        <Info size={16} /> Kijan pou w depoze manyèlman
-                      </p>
-                      <div className="space-y-2">
-                        {[
-                          "Ouvri aplikasyon MonCash ou a",
-                          `Voye egzak montan an sou: ${process.env.NEXT_PUBLIC_MONCASH_NUMBER || '+(509) 48-08-8715'}`,
-                          "Non: Ralph Olivier Greffin",
-                          "Fè yon screenshot reçu konfirmasyon MonCash la",
-                          "Retounen isit epi upload screenshot la",
-                          "Soumèt demann nan — ekip nou ap konfime nan 15-25 minit"
-                        ].map((step, i) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                              {i + 1}
-                            </div>
-                            <p className="text-blue-800 text-xs">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            )}
 
-                  <button onClick={() => fileInputRef.current?.click()} className="w-full py-6 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center gap-2 hover:bg-white/5 transition-all mb-4">
-                    <Upload size={20} className="text-[#FF7A00]" />
-                    <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'Upload Screenshot Resi'}</span>
+            {/* RECEIPT UPLOAD — MANUAL only */}
+            {topUpType === 'MANUAL' && (
+              <div className="px-4 mb-4">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Upload Reçu</p>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-gray-200 rounded-2xl py-6 flex flex-col items-center gap-2 text-gray-400 hover:border-orange-300 transition-colors">
+                    <Upload size={20} />
+                    <p className="text-xs font-semibold">{receipt ? receipt.name : 'Klike pou upload screenshot'}</p>
                   </button>
                 </div>
-              )}
- 
+              </div>
+            )}
+
+            {/* SUBMIT BUTTON */}
+            <div className="px-4 mb-10">
               {mccPaymentUrl ? (
-                <div className="space-y-3 animate-in fade-in duration-300">
+                <div className="space-y-3">
                   <a
                     href={mccPaymentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl text-sm uppercase tracking-wider flex items-center justify-center gap-2"
                   >
                     Peye via MonCash →
                   </a>
@@ -1462,14 +1494,14 @@ try {
               ) : (
                 <button
                   onClick={handlePaymentLogic}
-                  className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${
-                    topUpAmount && selectedMethod ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
-                  }`}
+                  disabled={!topUpAmount || !selectedMethod || isSubmitting}
+                  className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl text-sm uppercase tracking-wider disabled:opacity-40 flex items-center justify-center gap-2"
                 >
-                  Confirm TopUp
+                  {isSubmitting ? 'Ap trete...' : topUpType === 'AUTOMATIC' ? '⚡ Peye Koulye a' : '📤 Voye Demann nan'}
                 </button>
               )}
             </div>
+
           </div>
         )}
 
