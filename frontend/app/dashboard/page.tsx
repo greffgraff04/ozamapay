@@ -1142,7 +1142,7 @@ try {
                       : `${sender} voye ${amt} HTG ba ou pa Transfer`;
                     if (t.type === 'TOPUP') return `Ou recharje ${amt} HTG pa ${channel || 'Depot'}`;
                     if (t.type === 'WITHDRAWAL') return `Ou retire ${amt} HTG pa ${channel || 'Retrè'}`;
-                    if (t.type === 'CARD') return `Ou recharje kat Visa $${amt} pa Wallet`;
+                    if (t.type === 'CARD') return `Ou recharje kat Visa ${amt} HTG pa Wallet`;
                     if (t.type === 'PAYMENT') return `Peman ${amt} HTG pa ${channel || 'Peman'}`;
                     return t.description || t.type || 'Tranzaksyon';
                   })();
