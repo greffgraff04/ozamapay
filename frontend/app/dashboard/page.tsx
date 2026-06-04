@@ -322,7 +322,14 @@ try {
         });
         if (cardRes.ok) {
           const cardData = await cardRes.json();
-          if (cardData) setVirtualCard(cardData);
+          if (cardData) setVirtualCard((prev: any) => ({
+            ...cardData,
+            cardNumber: prev?.cardNumber,
+            cvv: prev?.cvv,
+            expiryDate: prev?.expiryDate,
+            cardName: prev?.cardName || cardData?.cardName,
+            last4: prev?.last4 || cardData?.last4,
+          }));
         }
       } catch {
         // silently ignore
