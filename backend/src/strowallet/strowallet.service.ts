@@ -166,12 +166,14 @@ export class StrowalletService {
     const data = await this.nfcGet('fetch-nfccard-detail', { card_id: card.cardId });
     console.log('Strowallet secret details response:', JSON.stringify(data, null, 2));
 
+    const card = data?.response?.card_detail;
     return {
-      cardNumber: data?.data?.card_number || data?.card_number,
-      cvv: data?.data?.cvv || data?.cvv,
-      expiryDate: data?.data?.expiry_date || data?.expiry_date,
-      cardName: data?.data?.name_on_card || data?.name_on_card,
-      balance: data?.data?.balance || data?.balance,
+      cardNumber: card?.card_number,
+      cvv: card?.cvv,
+      expiryDate: card?.expiry,
+      cardName: card?.card_holder_name,
+      balance: card?.balance,
+      last4: card?.last4,
     };
   }
 
