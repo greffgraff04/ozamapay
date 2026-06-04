@@ -1743,6 +1743,16 @@ try {
                     </div>
                   </div>
 
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-24px',
+                    left: 0,
+                    right: 0,
+                    height: '24px',
+                    background: 'linear-gradient(to bottom, white, transparent)',
+                    zIndex: 41,
+                    pointerEvents: 'none'
+                  }}></div>
                 </div>
 
                 {/* SCROLLABLE CONTENT */}
