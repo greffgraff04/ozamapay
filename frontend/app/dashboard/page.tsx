@@ -1275,10 +1275,13 @@ try {
           className="w-full p-8 bg-gray-50 rounded-[2rem] font-black italic text-4xl outline-none border border-black/5 focus:bg-white"
           placeholder="0.00"
           type="number"
+          min="0"
           value={amount}
-          onChange={(e) =>
-            setAmount(e.target.value)
-          }
+          onChange={(e) => {
+            const val = e.target.value;
+            if (Number(val) < 0) return;
+            setAmount(val);
+          }}
         />
       </div>
 
@@ -1335,7 +1338,7 @@ try {
               <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
                 <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" min="0" value={topUpAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }} />
                 {topUpAmount && (() => {
                   const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
                   const feeRate = isMccAuto ? 0.089 : 0.06;
@@ -1486,7 +1489,7 @@ try {
               <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
                 <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">{withdrawIsIntl ? 'Montan an USD' : 'Kòb pou retire (HTG)'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-white" placeholder="0" type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-white" placeholder="0" type="number" min="0" value={withdrawAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }} />
                 {withdrawAmount && (
                   <div className="mt-4 pt-4 border-t border-white/5 animate-in fade-in space-y-2">
                     {withdrawIsIntl && (
@@ -1633,7 +1636,7 @@ try {
  
               <div className="bg-gray-50 p-8 rounded-3xl border border-black/5">
                 <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-widest">Montan ({selectedFinanceService.id === 'usdt' ? 'USDT' : 'USD'})</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" value={financeDetails.amount} onChange={(e) => setFinanceDetails({...financeDetails, amount: e.target.value})} />
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" min="0" value={financeDetails.amount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setFinanceDetails({...financeDetails, amount: val}); }} />
                 <div className="mt-4 pt-4 border-t border-black/5 flex justify-between">
                     <span className="text-[10px] font-black italic uppercase text-gray-400">Frais Echanj: 6%</span>
                     <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = {exchangeRate} HTG</span>
@@ -1704,7 +1707,7 @@ try {
                       type="number"
                       min="3"
                       value={cardCreateAmount}
-                      onChange={(e) => setCardCreateAmount(e.target.value)}
+                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
                       className="flex-1 outline-none text-[#0F121E] font-bold text-lg"
                       placeholder="3"
                     />
@@ -2001,7 +2004,7 @@ try {
                           type="number"
                           min="1"
                           value={rechargeAmount}
-                          onChange={(e) => setRechargeAmount(e.target.value)}
+                          onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setRechargeAmount(val); }}
                           className="flex-1 outline-none text-[#0F121E] font-bold text-xl"
                           placeholder="0.00"
                           autoFocus
