@@ -156,28 +156,61 @@ export class KycService {
     return kyc;
   }
 
-  async approveKyc(
-    userId: string,
-  ) {
-    const kyc =
-      await this.prisma.kyc.update({
+  async approveKyc(userId: string) {
+    const KYC_FEE_HTG = 3375;
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Find KYC
+      const kyc = await tx.kyc.findUnique({ where: { userId } });
+      if (!kyc) throw new NotFoundException('KYC introuvable');
+      if (kyc.status === 'APPROVED') throw new BadRequestException('KYC deja apwouve');
+
+      // 2. Find wallet
+      const wallet = await tx.wallet.findUnique({ where: { userId } });
+      if (!wallet) throw new NotFoundException('Wallet introuvable');
+
+      // 3. Check balance
+      if (Number(wallet.balance) < KYC_FEE_HTG) {
+        throw new BadRequestException(`Balans ennsifizan. Kliyan bezwen ${KYC_FEE_HTG} HTG pou KYC`);
+      }
+
+      // 4. Debit wallet
+      await tx.wallet.update({
         where: { userId },
-
-        data: {
-          status: 'APPROVED',
-
-          reviewedAt: new Date(),
-        },
+        data: { balance: { decrement: KYC_FEE_HTG } }
       });
 
-    return {
-      success: true,
+      // 5. Credit master wallet
+      const masterId = process.env.OZAMAPAY_MASTER_ID;
+      if (masterId) {
+        await tx.wallet.update({
+          where: { userId: masterId },
+          data: { balance: { increment: KYC_FEE_HTG } }
+        });
+      }
 
-      message:
-        'KYC apwouve avèk siksè',
+      // 6. Create transaction record
+      await tx.transaction.create({
+        data: {
+          senderWalletId: wallet.id,
+          type: 'PAYMENT',
+          amount: KYC_FEE_HTG,
+          netAmount: KYC_FEE_HTG,
+          fee: 0,
+          status: 'COMPLETED',
+          description: 'Frè verifikasyon KYC — $25 USD',
+          reference: `KYC-FEE-${userId}-${Date.now()}`,
+        }
+      });
 
-      data: kyc,
-    };
+      // 7. Approve KYC
+      await tx.kyc.update({
+        where: { userId },
+        data: { status: 'APPROVED', reviewedAt: new Date() }
+      });
+
+      return { success: true, message: 'KYC apwouve ak siksè. Frè $25 debi.' };
+    });
   }
 
   async rejectKyc(
