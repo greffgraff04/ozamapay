@@ -1614,33 +1614,40 @@ try {
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="animate-in fade-in duration-700">
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-10">Ozama<br/>Virtual Card</h2>
-            
             {!virtualCard?.cardId ? (
-              <div className="space-y-6 mb-10 animate-in fade-in duration-500">
-                <div className="p-8 border-2 border-dashed border-[#FF6B00]/20 rounded-[2.5rem] bg-orange-50/30">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[11px] font-black italic uppercase tracking-widest text-black/70">Kreye Kat VISA</h3>
-                    <span className="bg-green-500 text-white text-[9px] font-black uppercase italic px-3 py-1 rounded-full tracking-widest">GRATIS</span>
+              /* ===== CREATION FORM ===== */
+              <div className="px-4 pt-6">
+                {/* Header */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-black text-[#0F121E] italic">OZAMA<br/>VIRTUAL CARD</h2>
+                </div>
+
+                {/* Card preview placeholder */}
+                <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{aspectRatio: '1.586'}}>
+                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                </div>
+
+                {/* Creation form */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="font-bold text-[#0F121E]">KREYE KAT VISA</p>
+                    <span className="bg-[#b8e832] text-black text-xs font-black px-3 py-1 rounded-full">GRATIS</span>
                   </div>
-                  <p className="text-[10px] font-bold text-[#FF6B00] mb-6 leading-relaxed">
+                  <p className="text-orange-500 text-sm font-medium mb-4">
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
-                  <div className="space-y-2 mb-6">
-                    <label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Depo Inisyal (min. $3 USD)</label>
-                    <div className="flex items-center gap-2 p-4 bg-white border border-gray-200 rounded-2xl">
-                      <span className="text-[10px] font-black text-gray-400">$</span>
-                      <input
-                        type="number"
-                        min="3"
-                        step="1"
-                        value={cardCreateAmount}
-                        onChange={(e) => setCardCreateAmount(e.target.value)}
-                        className="flex-1 outline-none font-black text-gray-900 text-sm bg-transparent"
-                        placeholder="3"
-                      />
-                      <span className="text-[9px] font-black text-gray-400 uppercase">USD</span>
-                    </div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Depo Inisyal (Min. $3 USD)</p>
+                  <div className="flex items-center border border-gray-200 rounded-2xl px-4 py-3 mb-4">
+                    <span className="text-gray-400 mr-2">$</span>
+                    <input
+                      type="number"
+                      min="3"
+                      value={cardCreateAmount}
+                      onChange={(e) => setCardCreateAmount(e.target.value)}
+                      className="flex-1 outline-none text-[#0F121E] font-bold text-lg"
+                      placeholder="3"
+                    />
+                    <span className="text-gray-400 text-sm">USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -1657,135 +1664,173 @@ try {
                         const contentType = res.headers.get('content-type');
                         if (res.ok && contentType?.includes('application/json')) {
                           const data = await res.json();
-                          setVirtualCard(data);
+                          setVirtualCard(data.card || data);
                           fetchData();
                         } else {
-                          const errorText = contentType?.includes('application/json')
-                            ? (await res.json()).message
-                            : await res.text();
-                          alert(errorText || 'Erreur pandan kreyasyon kat la.');
+                          const errorData = contentType?.includes('application/json') ? await res.json() : null;
+                          alert(errorData?.message || 'Erè pandan kreyasyon kat la.');
                         }
                       } catch (err) {
-                        console.error('Erreur kreyasyon kat:', err);
-                        alert('Sèvè a pa ka jwenn requete a, tcheke koneksyon w.');
+                        alert('Sèvè a pa ka jwenn requete a.');
                       }
                     }}
-                    className="w-full py-5 bg-green-500 hover:bg-green-600 text-white rounded-[2rem] font-black italic uppercase tracking-[0.2em] text-[10px] active:scale-95 transition-all shadow-md"
+                    className="w-full py-4 bg-[#b8e832] text-black font-black rounded-2xl tracking-wider flex items-center justify-center gap-2"
                   >
-                    KREYE KAT GRATIS 🎉
+                    <Zap size={16} /> KREYE KAT GRATIS
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="min-h-screen bg-black text-white flex flex-col pb-28">
+              /* ===== CARD DISPLAY ===== */
+              <div className="px-4 pt-6 pb-10">
 
                 {/* Header */}
-                <div className="px-6 pt-8 pb-4">
-                  <h1 className="text-3xl font-black italic tracking-tight leading-tight">
-                    OZAMA<br/>VIRTUAL CARD
-                  </h1>
+                <div className="mb-5">
+                  <h2 className="text-2xl font-black text-[#0F121E] italic">OZAMA<br/>VIRTUAL CARD</h2>
                 </div>
 
-                {/* Card Visual */}
-                <div className="px-6 mb-6">
-                  <div className="relative w-full rounded-3xl overflow-hidden" style={{ aspectRatio: '1.586' }}>
-                    <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 p-5 flex flex-col justify-between">
+                {/* ── CARD VISUAL ── */}
+                <div className="relative w-full rounded-3xl overflow-hidden mb-5" style={{aspectRatio: '1.586'}}>
+                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
 
-                      {/* Top */}
-                      <div className="flex justify-between items-start">
-                        <span className="text-white font-bold text-base tracking-widest opacity-80">VISA</span>
-                        <button
-                          onClick={async () => {
-                            if (showCardDetails) {
-                              setShowCardDetails(false);
-                              return;
-                            }
-                            try {
-                              const token = localStorage.getItem('token');
-                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                              const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
-                                method: 'POST',
-                                headers: {
-                                  'Authorization': `Bearer ${token}`,
-                                  'Content-Type': 'application/json'
-                                }
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                setVirtualCard((prev: any) => ({
-                                  ...prev,
-                                  cardNumber: data.cardNumber,
-                                  cvv: data.cvv,
-                                  expiryDate: data.expiryDate,
-                                  cardName: data.cardName,
-                                  balance: data.balance,
-                                }));
-                                setShowCardDetails(true);
-                                setTimeout(() => setShowCardDetails(false), 15000);
-                              }
-                            } catch (err) {
-                              console.error('Secret details error:', err);
-                            }
-                          }}
-                          className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-semibold border border-white/30"
-                        >
-                          {showCardDetails
-                            ? <><EyeOff size={12} /> KACHE</>
-                            : <><Eye size={12} /> WÈ INFO</>
-                          }
-                        </button>
+                  {/* Overlay content positioned like a real card */}
+                  <div className="absolute inset-0 p-5 flex flex-col justify-between">
+
+                    {/* TOP ROW — NFC + Chip + Logo */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {/* NFC waves */}
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M4 12C4 7.58 7.58 4 12 4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                          <path d="M7 12C7 9.24 9.24 7 12 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                          <path d="M10 12C10 10.9 10.9 10 12 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        {/* Chip */}
+                        <div className="w-8 h-6 bg-yellow-400 rounded-md"></div>
                       </div>
-
-                      {/* Card Number */}
-                      <div className="text-center">
-                        <p className="text-white font-mono text-lg tracking-[0.25em] font-bold drop-shadow">
-                          {showCardDetails && virtualCard?.cardNumber
-                            ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
-                            : '•••• •••• •••• ' + (virtualCard?.last4 || virtualCard?.cardId?.slice(-4) || '????')}
-                        </p>
-                      </div>
-
-                      {/* Bottom */}
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Card Holder</p>
-                          <p className="text-white font-bold text-sm leading-tight">
-                            {virtualCard?.cardName || virtualCard?.card_name || 'OZAMA USER'}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white/60 text-xs uppercase tracking-wider mb-1">Expires / CVV</p>
-                          <p className="text-white font-bold text-sm">
-                            {showCardDetails
-                              ? `${virtualCard?.expiryDate || 'MM/AA'} | ${virtualCard?.cvv || '•••'}`
-                              : 'MM/AA | •••'}
-                          </p>
-                        </div>
-                      </div>
-
+                      {/* VISA logo */}
+                      <span className="text-white font-black text-xl tracking-widest">VISA</span>
                     </div>
-                  </div>
-                </div>
 
-                {/* Balance */}
-                <div className="px-6 mb-4">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+                    {/* MIDDLE — Card Number */}
                     <div>
-                      <p className="text-white/50 text-xs uppercase tracking-wider mb-1">Balans Kat</p>
-                      <p className="text-white text-2xl font-black">
-                        ${Number(virtualCard?.balance || 0).toFixed(2)}
-                        <span className="text-sm font-normal text-white/50 ml-1">USD</span>
+                      <p className="text-white/70 text-xs mb-1">Card Number</p>
+                      <p className="text-white font-bold text-xl tracking-wider drop-shadow">
+                        {showCardDetails && virtualCard?.cardNumber
+                          ? `${virtualCard.cardNumber.slice(0,4)} •••• •••• ${virtualCard.cardNumber.slice(-4)}`
+                          : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
+                        }
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-[#b8e832] flex items-center justify-center">
-                      <Wallet2 size={20} className="text-black" />
+
+                    {/* BOTTOM — Cardholder + Expiry */}
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-white/70 text-xs mb-0.5">Cardholder</p>
+                        <p className="text-white font-bold text-sm leading-tight">
+                          {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
+                        </p>
+                        <p className="text-white/70 text-xs mt-1">Expires</p>
+                        <p className="text-white font-bold text-sm">
+                          {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
+                        </p>
+                      </div>
+                      {/* Ozamapay logo mark */}
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-white font-black text-xs">OZ</span>
+                      </div>
                     </div>
+
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="px-6 mb-4 grid grid-cols-2 gap-3">
+                {/* ── BALANCE CARD ── */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3 flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Balans Kat</p>
+                    <p className="text-[#0F121E] text-2xl font-black">
+                      ${Number(virtualCard?.balance || 0).toFixed(2)}
+                      <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Wallet2 size={20} className="text-orange-500" />
+                  </div>
+                </div>
+
+                {/* ── WÈ INFO SECTION ── */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3">
+                  {!showCardDetails ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                          const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${token}`,
+                              'Content-Type': 'application/json'
+                            }
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setVirtualCard((prev: any) => ({
+                              ...prev,
+                              cardNumber: data.cardNumber,
+                              cvv: data.cvv,
+                              expiryDate: data.expiryDate,
+                              cardName: data.cardName,
+                              balance: data.balance,
+                              last4: data.last4,
+                            }));
+                            setShowCardDetails(true);
+                            setTimeout(() => setShowCardDetails(false), 15000);
+                          } else {
+                            alert(data.message || 'Erè');
+                          }
+                        } catch (err) {
+                          alert('Erè koneksyon');
+                        }
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#0F121E] text-white font-bold text-sm"
+                    >
+                      <Eye size={16} /> WÈ INFO KAT LA
+                    </button>
+                  ) : (
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <p className="font-bold text-[#0F121E] text-sm">Detay Kat</p>
+                        <button onClick={() => setShowCardDetails(false)} className="text-gray-400">
+                          <EyeOff size={16} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-gray-400 text-xs mb-1">Nimewo Konplè</p>
+                          <p className="text-[#0F121E] font-bold text-sm tracking-wider">
+                            {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-gray-400 text-xs mb-1">CVV</p>
+                          <p className="text-[#0F121E] font-bold text-2xl">{virtualCard?.cvv || '———'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-gray-400 text-xs mb-1">Ekspire</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-2xl p-3">
+                          <p className="text-gray-400 text-xs mb-1">Nom sou Kat</p>
+                          <p className="text-[#0F121E] font-bold text-xs leading-tight">{virtualCard?.cardName || '————'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── ACTION BUTTONS ── */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   <button
                     onClick={async () => {
                       const amt = prompt('Montan recharge (USD):');
@@ -1795,24 +1840,15 @@ try {
                         const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
                         const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
                           method: 'POST',
-                          headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                          },
+                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                           body: JSON.stringify({ amount_usd: Number(amt) })
                         });
                         const data = await res.json();
-                        if (res.ok) {
-                          alert('Recharge siksè!');
-                          fetchData();
-                        } else {
-                          alert(data.message || 'Erè recharge');
-                        }
-                      } catch (err) {
-                        alert('Erè koneksyon');
-                      }
+                        if (res.ok) { alert('Recharge siksè!'); fetchData(); }
+                        else { alert(data.message || 'Erè recharge'); }
+                      } catch { alert('Erè koneksyon'); }
                     }}
-                    className="flex items-center justify-center gap-2 bg-[#b8e832] text-black font-black py-4 rounded-2xl text-sm tracking-wider"
+                    className="flex items-center justify-center gap-2 bg-[#b8e832] text-black font-black py-4 rounded-2xl text-sm"
                   >
                     <Zap size={16} /> RECHARGE
                   </button>
@@ -1825,10 +1861,7 @@ try {
                         const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
                         const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
                           method: 'POST',
-                          headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                          }
+                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                         });
                         const data = await res.json();
                         if (res.ok) {
@@ -1836,17 +1869,13 @@ try {
                             ...prev,
                             status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
                           }));
-                        } else {
-                          alert(data.message || 'Erè');
-                        }
-                      } catch (err) {
-                        alert('Erè koneksyon');
-                      }
+                        } else { alert(data.message || 'Erè'); }
+                      } catch { alert('Erè koneksyon'); }
                     }}
-                    className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm tracking-wider border ${
+                    className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm border ${
                       virtualCard?.status === 'FROZEN'
-                        ? 'bg-[#b8e832] text-black border-[#b8e832]'
-                        : 'bg-transparent text-white border-white/30'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white text-[#0F121E] border-gray-200'
                     }`}
                   >
                     {virtualCard?.status === 'FROZEN'
@@ -1856,37 +1885,33 @@ try {
                   </button>
                 </div>
 
-                {/* Card Security */}
-                <div className="px-6 mb-4">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                    <p className="text-white/50 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <Settings size={12} /> Card Security
-                    </p>
-                    <div className="flex justify-between items-center mb-4">
-                      <p className="text-white text-sm font-semibold">Contactless</p>
-                      <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
-                        <div className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full"></div>
-                      </div>
+                {/* ── CARD SECURITY ── */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3">
+                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Settings size={12} /> Card Security
+                  </p>
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-[#0F121E] text-sm font-semibold">Contactless</p>
+                    <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-white text-sm font-semibold">Online Payments</p>
-                      <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
-                        <div className="absolute right-1 top-1 w-4 h-4 bg-black rounded-full"></div>
-                      </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[#0F121E] text-sm font-semibold">Online Payments</p>
+                    <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
                     </div>
                   </div>
                 </div>
 
-                {/* NFC Badge */}
-                <div className="px-6">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-                    <Smartphone size={24} className="text-[#b8e832]" />
-                    <div>
-                      <p className="text-white font-bold text-sm">Google Pay & Apple Pay</p>
-                      <p className="text-white/50 text-xs">Kat ou a sipòte NFC contactless</p>
-                    </div>
-                    <span className="ml-auto text-[#b8e832] text-xs font-bold">AKTIF</span>
+                {/* ── NFC BADGE ── */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                  <Smartphone size={22} className="text-orange-500" />
+                  <div>
+                    <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
+                    <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
                   </div>
+                  <span className="ml-auto text-[#b8e832] text-xs font-black">AKTIF</span>
                 </div>
 
               </div>
