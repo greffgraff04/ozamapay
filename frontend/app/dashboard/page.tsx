@@ -1875,7 +1875,7 @@ try {
                       </div>
                       <p className="text-gray-400 text-sm mb-2">Balans aktyèl: <span className="text-orange-500 font-bold">${Number(virtualCard?.balance || 0).toFixed(2)} USD</span></p>
                       <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 mt-4">Montan (USD)</p>
-                      <div className="flex items-center border-2 border-gray-100 rounded-2xl px-4 py-3 mb-6 focus-within:border-orange-400 transition-colors">
+                      <div className="flex items-center border-2 border-gray-100 rounded-2xl px-4 py-3 mb-3 focus-within:border-orange-400 transition-colors">
                         <span className="text-orange-500 font-bold mr-2 text-lg">$</span>
                         <input
                           type="number"
@@ -1888,6 +1888,24 @@ try {
                         />
                         <span className="text-gray-400 text-sm">USD</span>
                       </div>
+                      {rechargeAmount && Number(rechargeAmount) > 0 && (
+                        <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4">
+                          <div className="flex justify-between items-center mb-1">
+                            <p className="text-gray-400 text-xs">Montan recharge</p>
+                            <p className="text-[#0F121E] font-bold text-sm">${Number(rechargeAmount).toFixed(2)} USD</p>
+                          </div>
+                          <div className="flex justify-between items-center mb-1">
+                            <p className="text-gray-400 text-xs">Frè (${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)})</p>
+                            <p className="text-orange-500 font-bold text-sm">+ ${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)} USD</p>
+                          </div>
+                          <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center">
+                            <p className="text-gray-600 text-xs font-semibold">Total HTG</p>
+                            <p className="text-[#0F121E] font-black text-base">
+                              {Math.ceil((Number(rechargeAmount) + 1.90 + Number(rechargeAmount) * 0.019) * exchangeRate).toLocaleString()} HTG
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-3 gap-2 mb-6">
                         {['5', '10', '20'].map(amt => (
                           <button
