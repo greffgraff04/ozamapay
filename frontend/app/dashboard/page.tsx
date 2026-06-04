@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [rechargeLoading, setRechargeLoading] = useState(false);
   const [showRates, setShowRates] = useState(false);
+  const [showMoncashGuide, setShowMoncashGuide] = useState(true);
  
   const [financeType, setFinanceType] = useState<'BUY' | 'SELL'>('BUY');
   const [financeDetails, setFinanceDetails] = useState({
@@ -1385,6 +1386,37 @@ try {
                     </button>
                   </div>
                   
+                  {selectedMethod === 'moncash' && topUpType === 'MANUAL' && showMoncashGuide && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 relative">
+                      <button
+                        onClick={() => setShowMoncashGuide(false)}
+                        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                      >
+                        <X size={16} />
+                      </button>
+                      <p className="text-blue-700 font-bold text-sm mb-3 flex items-center gap-2">
+                        <Info size={16} /> Kijan pou w depoze manyèlman
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          "Ouvri aplikasyon MonCash ou a",
+                          `Voye egzak montan an sou: ${process.env.NEXT_PUBLIC_MONCASH_NUMBER || '+(509) 48-08-8715'}`,
+                          "Non: Ralph Olivier Greffin",
+                          "Fè yon screenshot reçu konfirmasyon MonCash la",
+                          "Retounen isit epi upload screenshot la",
+                          "Soumèt demann nan — ekip nou ap konfime nan 15-25 minit"
+                        ].map((step, i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {i + 1}
+                            </div>
+                            <p className="text-blue-800 text-xs">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <button onClick={() => fileInputRef.current?.click()} className="w-full py-6 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center gap-2 hover:bg-white/5 transition-all mb-4">
                     <Upload size={20} className="text-[#FF7A00]" />
                     <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'Upload Screenshot Resi'}</span>
