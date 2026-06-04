@@ -1682,69 +1682,50 @@ try {
               </div>
             ) : (
               /* ===== CARD DISPLAY ===== */
-              <div className="px-4 pt-6 pb-10">
+              <div className="pt-0 pb-10">
 
-                {/* Header */}
-                <div className="mb-5">
-                  <h2 className="text-2xl font-black text-[#0F121E] italic">OZAMA<br/>VIRTUAL CARD</h2>
-                </div>
+                {/* ── CARD VISUAL — full width, sticky ── */}
+                <div className="sticky top-0 z-10">
+                  <div className="relative w-full overflow-hidden mb-5" style={{aspectRatio: '1.586'}}>
+                    <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
 
-                {/* ── CARD VISUAL ── */}
-                <div className="relative w-full rounded-3xl overflow-hidden mb-5" style={{aspectRatio: '1.586'}}>
-                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
 
-                  {/* Overlay content positioned like a real card */}
-                  <div className="absolute inset-0 p-5 flex flex-col justify-between">
+                      {/* TOP — empty, chip and NFC already on card.png */}
+                      <div></div>
 
-                    {/* TOP ROW — NFC + Chip + Logo */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {/* NFC waves */}
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <path d="M4 12C4 7.58 7.58 4 12 4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                          <path d="M7 12C7 9.24 9.24 7 12 7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                          <path d="M10 12C10 10.9 10.9 10 12 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                        {/* Chip */}
-                        <div className="w-8 h-6 bg-yellow-400 rounded-md"></div>
-                      </div>
-                      {/* VISA logo */}
-                      <span className="text-white font-black text-xl tracking-widest">VISA</span>
-                    </div>
-
-                    {/* MIDDLE — Card Number */}
-                    <div>
-                      <p className="text-white/70 text-xs mb-1">Card Number</p>
-                      <p className="text-white font-bold text-xl tracking-wider drop-shadow">
-                        {showCardDetails && virtualCard?.cardNumber
-                          ? `${virtualCard.cardNumber.slice(0,4)} •••• •••• ${virtualCard.cardNumber.slice(-4)}`
-                          : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
-                        }
-                      </p>
-                    </div>
-
-                    {/* BOTTOM — Cardholder + Expiry */}
-                    <div className="flex justify-between items-end">
+                      {/* MIDDLE — Card Number */}
                       <div>
-                        <p className="text-white/70 text-xs mb-0.5">Cardholder</p>
-                        <p className="text-white font-bold text-sm leading-tight">
-                          {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
-                        </p>
-                        <p className="text-white/70 text-xs mt-1">Expires</p>
-                        <p className="text-white font-bold text-sm">
-                          {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
+                        <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
+                        <p className="text-white font-bold text-base tracking-wider drop-shadow">
+                          {showCardDetails && virtualCard?.cardNumber
+                            ? `${virtualCard.cardNumber.slice(0,4)} •••• •••• ${virtualCard.cardNumber.slice(-4)}`
+                            : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
+                          }
                         </p>
                       </div>
-                      {/* Ozamapay logo mark */}
-                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                        <span className="text-white font-black text-xs">OZ</span>
-                      </div>
-                    </div>
 
+                      {/* BOTTOM — Cardholder + Expiry + VISA pale */}
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-white/60 text-[10px] mb-0.5">Cardholder</p>
+                          <p className="text-white font-bold text-sm leading-tight">
+                            {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
+                          </p>
+                          <p className="text-white/60 text-[10px] mt-1.5 mb-0.5">Expires</p>
+                          <p className="text-white font-bold text-sm">
+                            {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
+                          </p>
+                        </div>
+                        <p className="text-white/30 font-black text-lg tracking-widest">VISA</p>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
 
                 {/* ── BALANCE CARD ── */}
+                <div className="px-4">
                 <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3 flex justify-between items-center">
                   <div>
                     <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Balans Kat</p>
@@ -1914,6 +1895,7 @@ try {
                   <span className="ml-auto text-[#b8e832] text-xs font-black">AKTIF</span>
                 </div>
 
+                </div>{/* end px-4 */}
               </div>
             )}
           </div>
