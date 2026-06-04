@@ -1685,7 +1685,7 @@ try {
               <div style={{ paddingTop: '63vw' }}>
 
                 {/* ── FIXED CARD VISUAL ── */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, background: 'white' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, background: 'white' }} className="pt-6 px-4">
                   <div className="relative w-full overflow-hidden" style={{aspectRatio: '1.586'}}>
                     <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
 
