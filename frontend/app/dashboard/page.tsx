@@ -1767,13 +1767,12 @@ try {
                 <div style={{ height: 'calc(100vh - 56vw - 48px)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
 
                   {/* 5 ACTION BUTTONS */}
-                  <div className="flex justify-between items-center pt-4 pb-6">
+                  <div className="flex justify-between items-center pt-2 pb-4">
                     {[
                       { icon: <Eye size={22} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
                       { icon: <Zap size={22} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
                       { icon: <Copy size={22} className="text-orange-500" />, label: 'KOPYE', action: 'copy' },
                       { icon: <Lock size={22} className="text-orange-500" />, label: 'BLOKE', action: 'freeze' },
-                      { icon: <History size={22} className="text-orange-500" />, label: 'ISTORIK', action: 'history' },
                     ].map((btn) => (
                       <button
                         key={btn.action}
