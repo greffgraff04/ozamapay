@@ -1696,11 +1696,6 @@ try {
                 {/* FIXED CARD */}
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
 
-                  {/* Header */}
-                  <div className="px-4 pt-4 pb-2 flex justify-between items-center">
-                    <h2 className="text-xl font-black italic tracking-tight text-[#0F121E]">OZAMA VIRTUAL CARD</h2>
-                  </div>
-
                   {/* Card image */}
                   <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1.586' }}>
                     <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -1758,17 +1753,98 @@ try {
                 {/* SCROLLABLE CONTENT */}
                 <div style={{ height: 'calc(100vh - 56vw)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
 
-                  {/* Section header */}
-                  <div className="flex justify-between items-end mb-4 mt-3">
-                    <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
-                      <CreditCard size={18} className="text-[#FF7A00]" /> Detay & Aksyon
-                    </h3>
+                  {/* 5 ACTION BUTTONS */}
+                  <div className="flex justify-between items-center pt-4 pb-6">
+                    {[
+                      { icon: <Eye size={22} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
+                      { icon: <Zap size={22} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
+                      { icon: <Copy size={22} className="text-orange-500" />, label: 'KOPYE', action: 'copy' },
+                      { icon: <Lock size={22} className="text-orange-500" />, label: 'BLOKE', action: 'freeze' },
+                      { icon: <History size={22} className="text-orange-500" />, label: 'ISTORIK', action: 'history' },
+                    ].map((btn) => (
+                      <button
+                        key={btn.action}
+                        onClick={async () => {
+                          if (btn.action === 'copy') {
+                            const num = showCardDetails && virtualCard?.cardNumber
+                              ? virtualCard.cardNumber
+                              : virtualCard?.cardId;
+                            navigator.clipboard.writeText(num || '');
+                            alert('Nimewo kopye!');
+                            return;
+                          }
+                          if (btn.action === 'recharge') { setShowRechargeModal(true); return; }
+                          if (btn.action === 'info') {
+                            if (showCardDetails) { setShowCardDetails(false); return; }
+                            try {
+                              const token = localStorage.getItem('token');
+                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                              const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                setVirtualCard((prev: any) => ({
+                                  ...prev,
+                                  cardNumber: data.cardNumber,
+                                  cvv: data.cvv,
+                                  expiryDate: data.expiryDate,
+                                  cardName: data.cardName,
+                                  balance: data.balance,
+                                  last4: data.last4,
+                                }));
+                                setShowCardDetails(true);
+                              } else { alert(data.message || 'Erè'); }
+                            } catch { alert('Erè koneksyon'); }
+                            return;
+                          }
+                          if (btn.action === 'freeze') {
+                            try {
+                              const token = localStorage.getItem('token');
+                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                              const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                              const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                setVirtualCard((prev: any) => ({
+                                  ...prev,
+                                  status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
+                                }));
+                                alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!');
+                              } else { alert(data.message || 'Erè'); }
+                            } catch { alert('Erè koneksyon'); }
+                            return;
+                          }
+                          if (btn.action === 'history') {
+                            alert('ISTORIK ap vini byento!');
+                            return;
+                          }
+                        }}
+                        className="flex flex-col items-center gap-2"
+                      >
+                        <div className={`w-14 h-14 rounded-[1.4rem] flex items-center justify-center border-2 transition-all ${
+                          (btn.action === 'info' && showCardDetails) || (btn.action === 'freeze' && virtualCard?.status === 'FROZEN')
+                            ? 'bg-orange-500 border-orange-500'
+                            : 'bg-orange-50 border-orange-100'
+                        }`}>
+                          {btn.action === 'info' && showCardDetails
+                            ? <EyeOff size={22} className="text-white" />
+                            : btn.action === 'freeze' && virtualCard?.status === 'FROZEN'
+                            ? <Unlock size={22} className="text-white" />
+                            : btn.icon
+                          }
+                        </div>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-[#0F121E]">{btn.label}</p>
+                      </button>
+                    ))}
                   </div>
 
-                  <div className="space-y-3">
-
                   {/* BALANCE */}
-                  <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
+                  <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 mb-3">
                     <div>
                       <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
                       <p className="text-[#0F121E] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-gray-400">USD</span></p>
@@ -1778,99 +1854,34 @@ try {
                     </div>
                   </div>
 
-                  {/* WE INFO */}
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                    {!showCardDetails ? (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('token');
-                            const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                            const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
-                              method: 'POST',
-                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              setVirtualCard((prev: any) => ({
-                                ...prev,
-                                cardNumber: data.cardNumber,
-                                cvv: data.cvv,
-                                expiryDate: data.expiryDate,
-                                cardName: data.cardName,
-                                balance: data.balance,
-                                last4: data.last4,
-                              }));
-                              setShowCardDetails(true);
-                            } else {
-                              alert(data.message || 'Erè');
-                            }
-                          } catch (err) {
-                            alert('Erè koneksyon');
-                          }
-                        }}
-                        className="w-full flex items-center justify-center gap-2 py-4 text-white font-bold text-sm bg-[#0F121E] rounded-2xl"
-                      >
-                        <Eye size={16} /> WÈ INFO KAT LA
-                      </button>
-                    ) : (
-                      <div className="p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
-                          <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
-                            <EyeOff size={18} />
-                          </button>
-                        </div>
-                        <div className="space-y-0">
-                          {[
-                            { label: 'CVV', value: virtualCard?.cvv || '———' },
-                            { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
-                            { label: 'Adres', value: user?.kyc?.line1 || '—' },
-                            { label: 'Vil', value: user?.kyc?.city || '—' },
-                            { label: 'Peyi', value: 'Haiti' },
-                            { label: 'Zip', value: '00000' },
-                          ].map((item, i, arr) => (
-                            <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                              <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
-                              <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
-                            </div>
-                          ))}
-                        </div>
+                  {/* CARD DETAILS — shown only when showCardDetails is true */}
+                  {showCardDetails && (
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 mb-3">
+                      <div className="flex justify-between items-center mb-3">
+                        <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
+                        <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
+                          <EyeOff size={18} />
+                        </button>
                       </div>
-                    )}
-                  </div>
-
-                  {/* ACTIONS */}
-                  <button
-                    onClick={() => setShowRechargeModal(true)}
-                    className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-4 rounded-2xl text-sm"
-                  >
-                    <Zap size={14} /> Recharge
-                  </button>
-
-                  {/* CARD SECURITY */}
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
-                    <p className="text-gray-400 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Settings size={12} /> Card Security
-                    </p>
-                    {[
-                      { label: 'Contactless', icon: <Smartphone size={16} className="text-orange-400" /> },
-                      { label: 'Online Payments', icon: <ShieldCheck size={16} className="text-orange-400" /> },
-                    ].map((item, i) => (
-                      <div key={i} className={`flex justify-between items-center py-3 ${i === 0 ? 'border-b border-gray-50' : ''}`}>
-                        <div className="flex items-center gap-2">
-                          {item.icon}
-                          <p className="text-[#0F121E] text-sm font-semibold">{item.label}</p>
+                      {[
+                        { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————' },
+                        { label: 'CVV', value: virtualCard?.cvv || '———' },
+                        { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
+                        { label: 'Nom sou Kat', value: virtualCard?.cardName || '————' },
+                        { label: 'Adres', value: virtualCard?.line1 || '—' },
+                        { label: 'Peyi', value: 'Haiti' },
+                        { label: 'Zip', value: '00000' },
+                      ].map((item, i, arr) => (
+                        <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                          <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
                         </div>
-                        <div className="w-11 h-6 bg-orange-500 rounded-full relative">
-                          <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* NFC BADGE */}
-                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3 mb-6">
+                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
                       <Smartphone size={18} className="text-white" />
                     </div>
@@ -1881,7 +1892,6 @@ try {
                     <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
                   </div>
 
-                  </div>{/* end space-y-3 */}
                 </div>{/* end scrollable */}
 
                 {/* RECHARGE MODAL */}
