@@ -1336,24 +1336,33 @@ try {
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
                 <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} />
-                {topUpAmount && (
-                  <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
-                    {topupIsIntl && (
+                {topUpAmount && (() => {
+                  const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
+                  const feeRate = isMccAuto ? 0.089 : 0.06;
+                  const feeAmount = Math.round(topupHTG * feeRate);
+                  const amountAfterFee = topupHTG - feeAmount;
+                  const feeLabel = isMccAuto
+                    ? 'FRAIS (8.9% — 6% OZAMAPAY + 2.9% MonCash)'
+                    : 'FRAIS OZAMAPAY (6.0%)';
+                  return (
+                    <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
+                      {topupIsIntl && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase italic text-gray-400">Ekivalan HTG</span>
+                          <span className="text-[10px] font-black italic text-[#0F121E]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase italic text-gray-400">Ekivalan HTG</span>
-                        <span className="text-[10px] font-black italic text-[#0F121E]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
+                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeLabel}</span>
+                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeAmount.toLocaleString()} HTG</span>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase italic text-gray-400">Frais Ozama (6.0%)</span>
-                      <span className="text-[10px] font-black uppercase italic text-gray-400">{calculateFees(String(topupHTG), 0.06).fee} HTG</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
+                        <span className="text-xs font-black italic text-[#FF7A00]">{amountAfterFee.toLocaleString()} HTG</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
-                      <span className="text-xs font-black italic text-[#FF7A00]">{topupHTG.toLocaleString()} HTG</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
  
               <div className="space-y-3">
