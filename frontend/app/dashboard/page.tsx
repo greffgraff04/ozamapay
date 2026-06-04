@@ -1116,8 +1116,8 @@ try {
  
             <div style={{ height: 'calc(100vh - 420px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="flex justify-between items-end mb-5 mt-2">
-              <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
-                <Activity size={18} className="text-[#FF7A00]" /> Recent Activity
+              <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
+                <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
               </h3>
               <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
             </div>
@@ -1132,6 +1132,21 @@ try {
                   const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
+                  const amt = (t.amount || 0).toLocaleString();
+                  const channel = t.method || t.channel || '';
+                  const recipient = t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè';
+                  const sender = t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User';
+                  const txDesc = (() => {
+                    if (t.type === 'TRANSFER') return isDebit
+                      ? `Ou voye ${amt} HTG bay ${recipient} pa Transfer`
+                      : `${sender} voye ${amt} HTG ba ou pa Transfer`;
+                    if (t.type === 'TOPUP') return `Ou recharje ${amt} HTG pa ${channel || 'Depot'}`;
+                    if (t.type === 'WITHDRAWAL') return `Ou retire ${amt} HTG pa ${channel || 'Retrè'}`;
+                    if (t.type === 'CARD') return `Ou recharje kat Visa $${amt} pa Wallet`;
+                    if (t.type === 'PAYMENT') return `Peman ${amt} HTG pa ${channel || 'Peman'}`;
+                    return t.description || t.type || 'Tranzaksyon';
+                  })();
+
                   return (
                     <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
@@ -1139,15 +1154,11 @@ try {
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
                         </div>
                         <div>
-                          <p className="font-black text-[13px] uppercase italic leading-none tracking-tight text-black">
-  {t.type === 'TOPUP' ? (t.method || 'Depot') :
-   t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
-   isDebit
-    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
-    : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
-</p>
+                          <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-black max-w-[180px]">
+                            {txDesc}
+                          </p>
                           <p className="text-[9px] text-[#8E929B] font-bold uppercase mt-1 tracking-tighter">
-                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : (isDebit ? 'Transfè Voye' : 'Lajan Resevwa')} • {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
+                            {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
                           </p>
                         </div>
                       </div>
@@ -1691,12 +1702,13 @@ try {
               </div>
             ) : (
               /* ===== CARD DISPLAY ===== */
-              <div className="animate-in fade-in duration-500" style={{ paddingTop: '56vw' }}>
+              <div className="animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px)' }}>
 
                 {/* FIXED CARD */}
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
 
                   {/* Card image */}
+                  <div className="px-4 pt-12">
                   <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1.586' }}>
                     <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
@@ -1737,6 +1749,7 @@ try {
                       </div>
                     </div>
                   </div>
+                  </div>{/* end px-4 pt-12 wrapper */}
 
                   <div style={{
                     position: 'absolute',
@@ -1751,7 +1764,7 @@ try {
                 </div>
 
                 {/* SCROLLABLE CONTENT */}
-                <div style={{ height: 'calc(100vh - 56vw)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
+                <div style={{ height: 'calc(100vh - 56vw - 48px)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
 
                   {/* 5 ACTION BUTTONS */}
                   <div className="flex justify-between items-center pt-4 pb-6">
@@ -1871,7 +1884,7 @@ try {
                         { label: 'Adres', value: user?.kyc?.line1 || kycData?.line1 || '—', copyable: true },
                         { label: 'Vil', value: user?.kyc?.city || kycData?.city || 'Jacmel' },
                         { label: 'Peyi', value: 'Haiti' },
-                        { label: 'Zip', value: '00000' },
+                        { label: 'Zip', value: user?.kyc?.zipCode || '00000' },
                       ].map((item, i, arr) => (
                         <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
                           <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
