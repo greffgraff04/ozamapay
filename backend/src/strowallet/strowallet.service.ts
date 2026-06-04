@@ -164,6 +164,7 @@ export class StrowalletService {
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
     const data = await this.nfcGet('fetch-nfccard-detail', { card_id: card.cardId });
+    console.log('Strowallet secret details response:', JSON.stringify(data, null, 2));
 
     return {
       cardNumber: data?.data?.card_number || data?.card_number,
