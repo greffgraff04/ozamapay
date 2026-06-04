@@ -1916,28 +1916,55 @@ try {
                           <EyeOff size={18} />
                         </button>
                       </div>
-                      {[
-                        { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————', copyable: true },
-                        { label: 'CVV', value: virtualCard?.cvv || '———' },
-                        { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
-                        { label: 'Nom sou Kat', value: virtualCard?.cardName || '————', copyable: true },
-                        { label: 'Adres', value: user?.kyc?.line1 || kycData?.line1 || '—', copyable: true },
-                        { label: 'Vil', value: user?.kyc?.city || kycData?.city || 'Jacmel' },
-                        { label: 'Peyi', value: 'Haiti' },
-                        { label: 'Zip', value: user?.kyc?.zipCode || '00000' },
-                      ].map((item, i, arr) => (
-                        <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
-                          <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
-                            {(item as any).copyable && (
-                              <button onClick={() => { navigator.clipboard.writeText(item.value); alert(item.label + ' kopye!'); }}>
-                                <Copy size={12} className="text-gray-300 hover:text-orange-500" />
-                              </button>
-                            )}
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+
+                        {/* Nimewo konplè - full width */}
+                        <div style={{gridColumn: '1 / -1', background: 'var(--color-background-secondary, #f5f5f5)'}} className="rounded-xl p-3">
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                              {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
+                            </p>
+                            <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
+                              <Copy size={13} className="text-gray-300" />
+                            </button>
                           </div>
                         </div>
-                      ))}
+
+                        {/* CVV */}
+                        <div className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
+                          <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                        </div>
+
+                        {/* Ekspire */}
+                        <div className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                        </div>
+
+                        {/* Nom sou kat - full width */}
+                        <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                              {virtualCard?.cardName || '————'}
+                            </p>
+                            <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
+                              <Copy size={13} className="text-gray-300" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Adres - full width */}
+                        <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Billing</p>
+                          <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-xs">
+                            {user?.kyc?.line1 || '—'}, {user?.kyc?.city || 'Jacmel'}, Haiti · {user?.kyc?.zipCode || '0000'}
+                          </p>
+                        </div>
+
+                      </div>
                     </div>
                   )}
 
