@@ -1836,7 +1836,7 @@ try {
                         else { alert(data.message || 'Erè recharge'); }
                       } catch { alert('Erè koneksyon'); }
                     }}
-                    className="flex items-center justify-center gap-2 bg-[#b8e832] text-black font-black py-4 rounded-2xl text-sm"
+                    className="flex items-center justify-center gap-2 bg-orange-500 text-white font-black py-4 rounded-2xl text-sm"
                   >
                     <Zap size={16} /> RECHARGE
                   </button>
@@ -1880,13 +1880,13 @@ try {
                   </p>
                   <div className="flex justify-between items-center mb-4">
                     <p className="text-[#0F121E] text-sm font-semibold">Contactless</p>
-                    <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                    <div className="w-12 h-6 bg-orange-500 rounded-full relative">
                       <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
                     <p className="text-[#0F121E] text-sm font-semibold">Online Payments</p>
-                    <div className="w-12 h-6 bg-[#b8e832] rounded-full relative">
+                    <div className="w-12 h-6 bg-orange-500 rounded-full relative">
                       <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
                     </div>
                   </div>
@@ -1899,7 +1899,7 @@ try {
                     <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
                     <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
                   </div>
-                  <span className="ml-auto text-[#b8e832] text-xs font-black">AKTIF</span>
+                  <span className="ml-auto text-orange-500 text-xs font-black">AKTIF</span>
                 </div>
 
                 </div>{/* end px-4 */}
