@@ -1733,174 +1733,166 @@ try {
 
                 {/* ── SCROLLABLE CONTENT ── */}
                 <div style={{ height: 'calc(100vh - 63vw)', overflowY: 'auto', position: 'relative' }} className="pb-24">
-                <div className="px-4">
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3 flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Balans Kat</p>
-                    <p className="text-[#0F121E] text-2xl font-black">
-                      ${Number(virtualCard?.balance || 0).toFixed(2)}
-                      <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Wallet2 size={20} className="text-orange-500" />
-                  </div>
-                </div>
+                <div className="px-4 relative z-20 bg-white pt-4 space-y-3">
 
-                {/* ── WÈ INFO SECTION ── */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3">
-                  {!showCardDetails ? (
+                  {/* BALANCE */}
+                  <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
+                    <div>
+                      <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
+                      <p className="text-[#0F121E] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-gray-400">USD</span></p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
+                      <Wallet2 size={22} className="text-white" />
+                    </div>
+                  </div>
+
+                  {/* WE INFO */}
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                    {!showCardDetails ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('token');
+                            const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                            const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              setVirtualCard((prev: any) => ({
+                                ...prev,
+                                cardNumber: data.cardNumber,
+                                cvv: data.cvv,
+                                expiryDate: data.expiryDate,
+                                cardName: data.cardName,
+                                balance: data.balance,
+                                last4: data.last4,
+                              }));
+                              setShowCardDetails(true);
+                            } else {
+                              alert(data.message || 'Erè');
+                            }
+                          } catch (err) {
+                            alert('Erè koneksyon');
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-4 text-white font-bold text-sm bg-[#0F121E] rounded-2xl"
+                      >
+                        <Eye size={16} /> WÈ INFO KAT LA
+                      </button>
+                    ) : (
+                      <div className="p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
+                          <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
+                            <EyeOff size={18} />
+                          </button>
+                        </div>
+                        <div className="space-y-0">
+                          {[
+                            { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————' },
+                            { label: 'CVV', value: virtualCard?.cvv || '———' },
+                            { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
+                            { label: 'Nom sou Kat', value: virtualCard?.cardName || '————' },
+                          ].map((item, i, arr) => (
+                            <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
+                              <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
+                              <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ACTIONS */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={async () => {
+                        const amt = prompt('Montan recharge (USD):');
+                        if (!amt || isNaN(Number(amt)) || Number(amt) < 1) return;
+                        try {
+                          const token = localStorage.getItem('token');
+                          const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                          const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount_usd: Number(amt) })
+                          });
+                          const data = await res.json();
+                          if (res.ok) { alert('Recharge siksè!'); fetchData(); }
+                          else { alert(data.message || 'Erè recharge'); }
+                        } catch { alert('Erè koneksyon'); }
+                      }}
+                      className="flex items-center justify-center gap-2 bg-orange-500 text-white font-black py-4 rounded-2xl text-sm"
+                    >
+                      <Zap size={16} /> RECHARGE
+                    </button>
                     <button
                       onClick={async () => {
                         try {
                           const token = localStorage.getItem('token');
                           const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                          const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
+                          const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                          const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
                             method: 'POST',
-                            headers: {
-                              'Authorization': `Bearer ${token}`,
-                              'Content-Type': 'application/json'
-                            }
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
                           });
                           const data = await res.json();
                           if (res.ok) {
                             setVirtualCard((prev: any) => ({
                               ...prev,
-                              cardNumber: data.cardNumber,
-                              cvv: data.cvv,
-                              expiryDate: data.expiryDate,
-                              cardName: data.cardName,
-                              balance: data.balance,
-                              last4: data.last4,
+                              status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
                             }));
-                            setShowCardDetails(true);
-                          } else {
-                            alert(data.message || 'Erè');
-                          }
-                        } catch (err) {
-                          alert('Erè koneksyon');
-                        }
+                          } else { alert(data.message || 'Erè'); }
+                        } catch { alert('Erè koneksyon'); }
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#0F121E] text-white font-bold text-sm"
+                      className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm border-2 ${
+                        virtualCard?.status === 'FROZEN'
+                          ? 'bg-orange-500 text-white border-orange-500'
+                          : 'bg-white text-[#0F121E] border-gray-200'
+                      }`}
                     >
-                      <Eye size={16} /> WÈ INFO KAT LA
+                      {virtualCard?.status === 'FROZEN'
+                        ? <><Unlock size={16} /> DEBLOKE</>
+                        : <><Lock size={16} /> BLOKE</>
+                      }
                     </button>
-                  ) : (
+                  </div>
+
+                  {/* CARD SECURITY */}
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                    <p className="text-gray-400 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Settings size={12} /> Card Security
+                    </p>
+                    {[
+                      { label: 'Contactless', icon: <Smartphone size={16} className="text-orange-400" /> },
+                      { label: 'Online Payments', icon: <ShieldCheck size={16} className="text-orange-400" /> },
+                    ].map((item, i) => (
+                      <div key={i} className={`flex justify-between items-center py-3 ${i === 0 ? 'border-b border-gray-50' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          {item.icon}
+                          <p className="text-[#0F121E] text-sm font-semibold">{item.label}</p>
+                        </div>
+                        <div className="w-11 h-6 bg-orange-500 rounded-full relative">
+                          <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* NFC BADGE */}
+                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+                      <Smartphone size={18} className="text-white" />
+                    </div>
                     <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <p className="font-bold text-[#0F121E] text-sm">Detay Kat</p>
-                        <button onClick={() => setShowCardDetails(false)} className="text-gray-400">
-                          <EyeOff size={16} />
-                        </button>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                          <p className="text-gray-400 text-xs uppercase tracking-wider">Nimewo Konplè</p>
-                          <p className="text-[#0F121E] font-bold text-sm tracking-wider">
-                            {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                          <p className="text-gray-400 text-xs uppercase tracking-wider">CVV</p>
-                          <p className="text-[#0F121E] font-bold text-lg">{virtualCard?.cvv || '———'}</p>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                          <p className="text-gray-400 text-xs uppercase tracking-wider">Ekspire</p>
-                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
-                        </div>
-                        <div className="flex justify-between items-center py-3">
-                          <p className="text-gray-400 text-xs uppercase tracking-wider">Nom sou Kat</p>
-                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.cardName || '————'}</p>
-                        </div>
-                      </div>
+                      <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
+                      <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
                     </div>
-                  )}
-                </div>
-
-                {/* ── ACTION BUTTONS ── */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <button
-                    onClick={async () => {
-                      const amt = prompt('Montan recharge (USD):');
-                      if (!amt || isNaN(Number(amt)) || Number(amt) < 1) return;
-                      try {
-                        const token = localStorage.getItem('token');
-                        const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                        const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
-                          method: 'POST',
-                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ amount_usd: Number(amt) })
-                        });
-                        const data = await res.json();
-                        if (res.ok) { alert('Recharge siksè!'); fetchData(); }
-                        else { alert(data.message || 'Erè recharge'); }
-                      } catch { alert('Erè koneksyon'); }
-                    }}
-                    className="flex items-center justify-center gap-2 bg-orange-500 text-white font-black py-4 rounded-2xl text-sm"
-                  >
-                    <Zap size={16} /> RECHARGE
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const token = localStorage.getItem('token');
-                        const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                        const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                        const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
-                          method: 'POST',
-                          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                        });
-                        const data = await res.json();
-                        if (res.ok) {
-                          setVirtualCard((prev: any) => ({
-                            ...prev,
-                            status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
-                          }));
-                        } else { alert(data.message || 'Erè'); }
-                      } catch { alert('Erè koneksyon'); }
-                    }}
-                    className={`flex items-center justify-center gap-2 font-black py-4 rounded-2xl text-sm border ${
-                      virtualCard?.status === 'FROZEN'
-                        ? 'bg-orange-500 text-white border-orange-500'
-                        : 'bg-white text-[#0F121E] border-gray-200'
-                    }`}
-                  >
-                    {virtualCard?.status === 'FROZEN'
-                      ? <><Unlock size={16} /> DEBLOKE</>
-                      : <><Lock size={16} /> BLOKE</>
-                    }
-                  </button>
-                </div>
-
-                {/* ── CARD SECURITY ── */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3">
-                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Settings size={12} /> Card Security
-                  </p>
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-[#0F121E] text-sm font-semibold">Contactless</p>
-                    <div className="w-12 h-6 bg-orange-500 rounded-full relative">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
-                    </div>
+                    <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-[#0F121E] text-sm font-semibold">Online Payments</p>
-                    <div className="w-12 h-6 bg-orange-500 rounded-full relative">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── NFC BADGE ── */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
-                  <Smartphone size={22} className="text-orange-500" />
-                  <div>
-                    <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
-                    <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
-                  </div>
-                  <span className="ml-auto text-orange-500 text-xs font-black">AKTIF</span>
-                </div>
 
                 </div>{/* end px-4 */}
                 </div>{/* end scrollable */}
