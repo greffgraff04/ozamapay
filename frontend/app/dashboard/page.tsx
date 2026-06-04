@@ -1864,17 +1864,25 @@ try {
                         </button>
                       </div>
                       {[
-                        { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————' },
+                        { label: 'Nimewo Konplè', value: virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————', copyable: true },
                         { label: 'CVV', value: virtualCard?.cvv || '———' },
                         { label: 'Ekspire', value: virtualCard?.expiryDate || '——/——' },
-                        { label: 'Nom sou Kat', value: virtualCard?.cardName || '————' },
-                        { label: 'Adres', value: virtualCard?.line1 || '—' },
+                        { label: 'Nom sou Kat', value: virtualCard?.cardName || '————', copyable: true },
+                        { label: 'Adres', value: user?.kyc?.line1 || kycData?.line1 || '—', copyable: true },
+                        { label: 'Vil', value: user?.kyc?.city || kycData?.city || 'Jacmel' },
                         { label: 'Peyi', value: 'Haiti' },
                         { label: 'Zip', value: '00000' },
                       ].map((item, i, arr) => (
                         <div key={i} className={`flex justify-between items-center py-3 ${i < arr.length - 1 ? 'border-b border-gray-50' : ''}`}>
                           <p className="text-gray-400 text-xs uppercase tracking-wider">{item.label}</p>
-                          <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[#0F121E] font-bold text-sm">{item.value}</p>
+                            {(item as any).copyable && (
+                              <button onClick={() => { navigator.clipboard.writeText(item.value); alert(item.label + ' kopye!'); }}>
+                                <Copy size={12} className="text-gray-300 hover:text-orange-500" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
