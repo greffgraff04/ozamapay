@@ -1767,7 +1767,7 @@ try {
                 <div style={{ height: 'calc(100vh - 56vw - 48px)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
 
                   {/* 5 ACTION BUTTONS */}
-                  <div className="flex justify-between items-center pt-1 pb-3">
+                  <div className="flex justify-between items-center mt-4 pb-3">
                     {[
                       { icon: <Eye size={22} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
                       { icon: <Zap size={22} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
