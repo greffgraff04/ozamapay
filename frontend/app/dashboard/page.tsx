@@ -1691,19 +1691,21 @@ try {
               </div>
             ) : (
               /* ===== CARD DISPLAY ===== */
-              <div style={{ paddingTop: '63vw' }}>
+              <div className="animate-in fade-in duration-500" style={{ paddingTop: '56vw' }}>
 
-                {/* ── FIXED CARD VISUAL ── */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10, background: 'white' }} className="pt-6 px-4">
-                  <div className="relative w-full overflow-hidden" style={{aspectRatio: '1.586'}}>
+                {/* FIXED CARD */}
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
+
+                  {/* Header */}
+                  <div className="px-4 pt-4 pb-2 flex justify-between items-center">
+                    <h2 className="text-xl font-black italic tracking-tight text-[#0F121E]">OZAMA VIRTUAL CARD</h2>
+                  </div>
+
+                  {/* Card image */}
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1.586' }}>
                     <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
-
                     <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
-
-                      {/* TOP — empty, chip and NFC already on card.png */}
                       <div></div>
-
-                      {/* MIDDLE — Card Number */}
                       <div>
                         <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
                         <button
@@ -1725,8 +1727,6 @@ try {
                           <Copy size={12} className="text-white/50 group-hover:text-white" />
                         </button>
                       </div>
-
-                      {/* BOTTOM — Cardholder + Expiry + VISA pale */}
                       <div className="flex justify-between items-end">
                         <div>
                           <p className="text-white/60 text-[10px] mb-0.5">Cardholder</p>
@@ -1740,14 +1740,22 @@ try {
                         </div>
                         <p className="text-white/30 font-black text-lg tracking-widest">VISA</p>
                       </div>
-
                     </div>
                   </div>
+
                 </div>
 
-                {/* ── SCROLLABLE CONTENT ── */}
-                <div style={{ height: 'calc(100vh - 63vw)', overflowY: 'auto', position: 'relative' }} className="pb-24">
-                <div className="px-4 relative z-20 bg-white pt-4 space-y-3">
+                {/* SCROLLABLE CONTENT */}
+                <div style={{ height: 'calc(100vh - 56vw)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
+
+                  {/* Section header */}
+                  <div className="flex justify-between items-end mb-4 mt-3">
+                    <h3 className="font-black italic uppercase text-lg tracking-tight flex items-center gap-2">
+                      <CreditCard size={18} className="text-[#FF7A00]" /> Detay & Aksyon
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3">
 
                   {/* BALANCE */}
                   <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
@@ -1859,7 +1867,7 @@ try {
                     <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
                   </div>
 
-                </div>{/* end px-4 */}
+                  </div>{/* end space-y-3 */}
                 </div>{/* end scrollable */}
 
                 {/* RECHARGE MODAL */}
