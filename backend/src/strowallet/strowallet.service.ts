@@ -145,7 +145,7 @@ export class StrowalletService {
       // 4. Anrejistre tranzaksyon
       await tx.transaction.create({
         data: {
-          senderWalletId: user.wallet.id,
+          senderWalletId: user.wallet!.id,
           type: 'CARD',
           amount: totalHtg,
           netAmount: totalHtg,
