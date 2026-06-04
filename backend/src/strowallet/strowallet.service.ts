@@ -99,9 +99,9 @@ export class StrowalletService {
         })
       : '01/01/1990';
 
-    // Kreye kat NFC otomatikman (1 sèl etap)
+    // Debi wallet + kreye kat nan DB atomikman — nfcPost andedan transaction pou rollback si echèk
     console.log('Calling Strowallet NFC API with params:', { name: user.name, firstName, lastName, dob, email: user.email, country: 'HTI' });
-    const cardResponse = await this.nfcPost('create-nfc-card', {
+    const nfcParams = {
       name: user.name || 'OZAMA USER',
       first_name: firstName,
       last_name: lastName,
@@ -116,18 +116,22 @@ export class StrowalletService {
       country: 'HTI',
       amount_usd: String(amountUsd),
       phone: user.phone || '50936401900',
-    });
+    };
 
-    const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
-    if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
-
-    // Debi wallet + kreye kat nan DB (transaksyon atomik)
-    const [, virtualCard] = await this.prisma.$transaction([
-      this.prisma.wallet.update({
+    const virtualCard = await this.prisma.$transaction(async (tx) => {
+      // 1. Debi wallet anvan tout — si nfcPost echwe, rollback otomatik
+      await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: totalHtg } },
-      }),
-      this.prisma.virtualCard.create({
+      });
+
+      // 2. Kreye kat NFC (si sa echwe, DB rollback fèt)
+      const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
+      const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
+      if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
+
+      // 3. Sove kat nan DB
+      const card = await tx.virtualCard.create({
         data: {
           userId,
           cardId,
@@ -136,8 +140,10 @@ export class StrowalletService {
           provider: 'STROWALLET_NFC',
           status: 'ACTIVE',
         },
-      }),
-      this.prisma.transaction.create({
+      });
+
+      // 4. Anrejistre tranzaksyon
+      await tx.transaction.create({
         data: {
           senderWalletId: user.wallet.id,
           type: 'CARD',
@@ -148,8 +154,10 @@ export class StrowalletService {
           description: `Kreye kat vityèl NFC — $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD}`,
           reference: `CARD-CREATE-${cardId}`,
         },
-      }),
-    ]);
+      });
+
+      return card;
+    });
 
     return {
       message: 'Kat vityèl NFC kreye avèk siksè! Google Pay & Apple Pay aktive.',

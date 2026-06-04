@@ -27,8 +27,6 @@ const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
 @Injectable()
 export class AuthService {
-  private loginAttempts = new Map<string, { count: number; lockedUntil: number | null }>();
-
   constructor(
     private prisma: PrismaService,
 
@@ -201,12 +199,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const email = dto.email.toLowerCase();
-    const now = Date.now();
-    const attempts = this.loginAttempts.get(email) ?? { count: 0, lockedUntil: null };
-
-    if (attempts.lockedUntil && now < attempts.lockedUntil) {
-      throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
-    }
+    const now = new Date();
 
     const user =
       await this.prisma.user.findUnique({
@@ -218,6 +211,11 @@ export class AuthService {
           kyc: true,
         },
       });
+
+    // Prevent timing-based user enumeration: check lock even if user not found
+    if (user?.loginLockedUntil && user.loginLockedUntil > now) {
+      throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
+    }
 
     if (!user) {
       throw new UnauthorizedException(
@@ -233,18 +231,25 @@ export class AuthService {
       );
 
     if (!passwordMatch) {
-      const newCount = attempts.count + 1;
-      if (newCount >= 5) {
-        this.loginAttempts.set(email, { count: newCount, lockedUntil: now + 15 * 60 * 1000 });
+      const newCount = user.failedLoginAttempts + 1;
+      const lockUntil = newCount >= 5 ? new Date(now.getTime() + 15 * 60 * 1000) : null;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: newCount, loginLockedUntil: lockUntil },
+      });
+      if (lockUntil) {
         throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
       }
-      this.loginAttempts.set(email, { count: newCount, lockedUntil: null });
       throw new UnauthorizedException(
         'Email oswa modpas enkòrèk',
       );
     }
 
-    this.loginAttempts.delete(email);
+    // Successful login — reset attempt counter
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, loginLockedUntil: null },
+    });
 
     if (ADMIN_ROLES.includes(user.role) && user.twoFactorEnabled) {
       const tempToken = this.jwtService.sign(

@@ -51,6 +51,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
+    if (user.isSuspended) {
+      throw new UnauthorizedException('Kont ou a sispan. Kontakte sipò.');
+    }
+
     return {
       id: user.id,
       email: user.email,

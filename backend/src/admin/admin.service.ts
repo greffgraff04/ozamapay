@@ -568,6 +568,29 @@ export class AdminService {
         : transaction.senderWallet?.userId;
 
       if (status === 'REJECTED') {
+        // Refund pre-debited funds for WITHDRAWAL (amount + fee were taken at request time)
+        if (transaction.type === 'WITHDRAWAL' && transaction.senderWallet?.userId) {
+          const refundAmount = Math.round((Number(transaction.amount) + Number(transaction.fee)) * 100) / 100;
+          await tx.wallet.update({
+            where: { userId: transaction.senderWallet.userId },
+            data: { balance: { increment: refundAmount } },
+          });
+          await tx.transaction.create({
+            data: {
+              reference: `REFUND-${txId.slice(-8).toUpperCase()}`,
+              receiverWalletId: transaction.senderWalletId!,
+              amount: refundAmount,
+              fee: 0,
+              netAmount: refundAmount,
+              type: 'TOPUP',
+              status: 'COMPLETED',
+              method: 'REFUND',
+              title: 'Rembourseman Retrè Rejte',
+              description: `Retrè ${transaction.amount} HTG rejte — ${refundAmount} HTG retounen`,
+            },
+          });
+        }
+
         const rejectedTx = await tx.transaction.update({
           where: { id: txId },
           data: { status: 'REJECTED' },
@@ -578,7 +601,7 @@ export class AdminService {
             data: {
               userId,
               title: 'Demann Rejte ❌',
-              message: `Demann ${transaction.amount} HTG rejte pa admin`,
+              message: `Demann retrè ${transaction.amount} HTG rejte pa admin — balans ou retounen`,
               type: 'ERROR',
             },
           });

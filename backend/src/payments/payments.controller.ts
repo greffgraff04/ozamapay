@@ -6,7 +6,9 @@ import {
   Headers,
   UseGuards,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { SkipThrottle } from '@nestjs/throttler';
 
 import { PaymentsService } from './payments.service';
@@ -43,24 +45,29 @@ export class PaymentsController {
   @SkipThrottle()
   async handleMonCashWebhook(
     @Body() data: any,
+    @Headers('x-moncash-signature') signature?: string,
   ) {
-    const transactionId =
-      data.transactionId;
-
-    if (transactionId) {
-      console.log(
-        `📩 Webhook reçu: ${transactionId}`,
-      );
-
-      return await this.paymentsService.validateMonCashPayment(
-        transactionId,
-      );
+    const secret = process.env.MONCASH_WEBHOOK_SECRET;
+    if (secret) {
+      if (!signature) {
+        throw new UnauthorizedException('Signature webhook manke');
+      }
+      const expected = createHmac('sha256', secret).update(JSON.stringify(data)).digest('hex');
+      let valid = false;
+      try { valid = timingSafeEqual(Buffer.from(expected), Buffer.from(signature)); } catch {}
+      if (!valid) {
+        throw new UnauthorizedException('Signature webhook envalid');
+      }
     }
 
-    return {
-      status:
-        'no_transaction_id',
-    };
+    const transactionId = data.transactionId;
+
+    if (transactionId) {
+      console.log(`📩 Webhook reçu: ${transactionId}`);
+      return await this.paymentsService.validateMonCashPayment(transactionId);
+    }
+
+    return { status: 'no_transaction_id' };
   }
 
   // ======================================================
