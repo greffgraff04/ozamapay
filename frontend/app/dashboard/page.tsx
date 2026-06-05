@@ -1329,10 +1329,16 @@ try {
             <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Add Funds</h2>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Chaje bous ou ak sekirite</p>
  
-            <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 mb-8 border border-black/5">
-              <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
-              <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
-            </div>
+            {selectedMethod !== 'natcash' ? (
+              <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 mb-8 border border-black/5">
+                <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
+                <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
+              </div>
+            ) : (
+              <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center mb-8 border border-black/5">
+                <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
+              </div>
+            )}
  
             <div className="space-y-6">
               <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
@@ -1372,7 +1378,14 @@ try {
                 <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Chwazi Mwayen Peman</label>
                 <div className="grid grid-cols-2 gap-3">
                   {paymentMethods.map((m) => (
-                    <button key={m.id} onClick={() => setSelectedMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
+                    <button key={m.id} onClick={() => {
+                      if (m.id === 'natcash') {
+                        setSelectedMethod('natcash');
+                        setTopUpType('MANUAL');
+                        return;
+                      }
+                      setSelectedMethod(m.id);
+                    }} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
                       <div className="flex items-center gap-3">
                         <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
                         <span className="font-black italic uppercase text-[10px]">{m.label}</span>
