@@ -60,8 +60,8 @@ export class StrowalletWebhookController {
                 netAmount: parsedAmount,
                 type: 'PAYMENT',
                 status: 'COMPLETED',
-                title: merchant || 'Achat par Carte',
-                description: `Paiement par carte chez ${merchant || 'commerçant'} via Visa NFC`,
+                title: 'Peman kat Visa',
+                description: merchant ? `Peman kat Visa — ${merchant}` : 'Peman kat Visa',
               }
             });
 
