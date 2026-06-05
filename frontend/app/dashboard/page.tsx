@@ -32,7 +32,12 @@ const formatTimeAgo = (dateString: string) => {
   if (diffInMinutes < 60) return `${diffInMinutes}m`;
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours}h`;
-  return date.toLocaleDateString();
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays === 1) return "Yè";
+  if (diffInDays < 30) return `${diffInDays}j`;
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) return `${diffInMonths}mwa`;
+  return `${Math.floor(diffInMonths / 12)}an`;
 };
  
 const signOut = async () => {
@@ -1107,19 +1112,16 @@ export default function Dashboard() {
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   const amt = (t.amount || 0).toLocaleString();
-                  const channel = t.method || t.channel || '';
-                  const recipient = t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè';
-                  const sender = t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User';
-                  const txDesc = (() => {
-                    if (t.type === 'TRANSFER') return isDebit
-                      ? `Ou voye ${amt} HTG bay ${recipient} pa Transfer`
-                      : `${sender} voye ${amt} HTG ba ou pa Transfer`;
-                    if (t.type === 'TOPUP') return `Ou recharje ${amt} HTG pa ${channel || 'Depot'}`;
-                    if (t.type === 'WITHDRAWAL') return `Ou retire ${amt} HTG pa ${channel || 'Retrè'}`;
-                    if (t.type === 'CARD') return `Ou recharje kat Visa ${amt} HTG pa Wallet`;
-                    if (t.type === 'PAYMENT') return `Peman ${amt} HTG pa ${channel || 'Peman'}`;
-                    return t.description || t.type || 'Tranzaksyon';
+                  const serviceName = (() => {
+                    if (t.type === 'TOPUP') return 'Topup';
+                    if (t.type === 'TRANSFER') return 'Transfer';
+                    if (t.type === 'WITHDRAWAL') return 'Retrè';
+                    if (t.type === 'CARD') return 'Visa';
+                    if (t.type === 'PAYMENT') return 'Peman';
+                    return t.type || 'Tranzaksyon';
                   })();
+                  const agentFirstName = t.agentName ? t.agentName.split(' ')[0] : null;
+                  const txTitle = `${serviceName} ${amt} HTG${agentFirstName ? ` · kay ${agentFirstName}` : ''}`;
 
                   return (
                     <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
@@ -1129,16 +1131,13 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-black max-w-[180px]">
-                            {txDesc}
+                            {txTitle}
                           </p>
                           <p className="text-[9px] text-[#8E929B] font-bold uppercase mt-1 tracking-tighter">
                             {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
                           </p>
                         </div>
                       </div>
-                      <p className={`font-black italic text-sm ${isDebit ? 'text-red-500' : 'text-[#00C566]'}`}>
-                        {isDebit ? '-' : '+'}{(t.amount || 0).toLocaleString()} <span className="text-[10px]">HTG</span>
-                      </p>
                     </div>
                   );
                 })
