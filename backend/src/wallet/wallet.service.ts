@@ -85,48 +85,43 @@ export class WalletService {
   // ======================================================
 
   async getTransactions(userId: string) {
-    return this.prisma.transaction.findMany({
+    const transactions = await this.prisma.transaction.findMany({
       where: {
         OR: [
-          {
-            senderWallet: {
-              userId,
-            },
-          },
-          {
-            receiverWallet: {
-              userId,
-            },
-          },
+          { senderWallet: { userId } },
+          { receiverWallet: { userId } },
         ],
       },
       include: {
         senderWallet: {
           include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
+            user: { select: { name: true, email: true } },
           },
         },
         receiverWallet: {
           include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
+            user: { select: { name: true, email: true } },
+          },
+        },
+        commissions: {
+          take: 1,
+          include: {
+            agent: {
+              include: {
+                user: { select: { name: true } },
               },
             },
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       take: 5,
     });
+
+    return transactions.map(({ commissions, ...tx }) => ({
+      ...tx,
+      agentFirstName: commissions[0]?.agent?.user?.name?.split(' ')[0] ?? null,
+    }));
   }
 
   // ======================================================
