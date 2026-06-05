@@ -1196,25 +1196,20 @@ export default function Dashboard() {
  
         {/* --- SEND SECTION --- */}
 {activeTab === 'send' && (
-  <div className="animate-in slide-in-from-right duration-500">
-    
-    <button
-      onClick={() => setActiveTab('home')}
-      className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
-    >
-      <ArrowLeftRight
-        size={14}
-        className="rotate-180"
-      />
-      Back Home
-    </button>
-
-    <h2 className="text-4xl font-black italic uppercase mb-10 tracking-tighter">
-      Send
-      <br />
-      Money
-    </h2>
-
+  <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '92px' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+      <button
+        onClick={() => setActiveTab('home')}
+        className="mb-4 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
+      >
+        <ArrowLeftRight size={14} className="rotate-180" />
+        Back Home
+      </button>
+      <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
+        Send<br />Money
+      </h2>
+    </div>
+    <div style={{ height: 'calc(100vh - 180px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
     <div className="space-y-6">
       
       {/* RECIPIENT */}
@@ -1290,28 +1285,30 @@ export default function Dashboard() {
         Confirm Transfer
       </button>
     </div>
+    </div>{/* end scroll */}
   </div>
 )}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
-          <div className="animate-in slide-in-from-bottom duration-500">
-            <button onClick={() => setActiveTab('home')} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <PlusCircle size={14} /> Back Home
-            </button>
-            <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Add Funds</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Chaje bous ou ak sekirite</p>
- 
-            {selectedMethod !== 'natcash' ? (
-              <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 mb-8 border border-black/5">
-                <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
-                <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
-              </div>
-            ) : (
-              <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center mb-8 border border-black/5">
-                <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
-              </div>
-            )}
- 
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: '152px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                <PlusCircle size={14} /> Back Home
+              </button>
+              <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
+              {selectedMethod !== 'natcash' ? (
+                <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
+                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
+                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
+                </div>
+              ) : (
+                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
+                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
+                </div>
+              )}
+            </div>
+            <div style={{ height: 'calc(100vh - 240px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
               <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
@@ -1458,18 +1455,21 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
+            </div>{/* end scroll */}
           </div>
         )}
 
         {/* --- WITHDRAW SECTION --- */}
         {activeTab === 'withdraw' && (
-          <div className="animate-in slide-in-from-bottom duration-500">
-            <button onClick={() => setActiveTab('home')} className="mb-6 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <Banknote size={14} /> Back Home
-            </button>
-            <h2 className="text-4xl font-black italic uppercase mb-2 tracking-tighter leading-none">Withdraw</h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Retire kòb ou rapidman</p>
- 
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: '92px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                <Banknote size={14} /> Back Home
+              </button>
+              <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Withdraw</h2>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retire kòb ou rapidman</p>
+            </div>
+            <div style={{ height: 'calc(100vh - 180px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
               <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
@@ -1532,16 +1532,20 @@ export default function Dashboard() {
                 Confirm Withdrawal
               </button>
             </div>
+            </div>{/* end scroll */}
           </div>
         )}
- 
+
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
-          <div className="animate-in slide-in-from-right duration-500">
-            <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <Landmark size={14} /> Back Home
-            </button>
-            <h2 className="text-4xl font-black italic uppercase mb-8 tracking-tighter leading-none">Ozama<br/>Exchange</h2>
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '102px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                <Landmark size={14} /> Back Home
+              </button>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Ozama<br/>Exchange</h2>
+            </div>
+            <div style={{ height: 'calc(100vh - 190px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="grid gap-4">
               {[
                 { id: 'wise', name: 'Wise', desc: 'USD Transfer', img: 'wise.png' },
@@ -1566,21 +1570,27 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
+            </div>{/* end scroll */}
           </div>
         )}
  
         {/* --- SERVICE DETAIL --- */}
         {activeTab === 'finance' && selectedFinanceService && (
-          <div className="animate-in zoom-in duration-500 pb-10">
-            <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-              <ChevronRight size={14} className="rotate-180" /> Back to Services
-            </button>
-            
-            <div className="flex items-center gap-4 mb-8">
-                <img src={`/${selectedFinanceService.img}`} className="w-12 h-12 object-contain" alt="" />
+          <div className="animate-in zoom-in duration-500" style={{ paddingTop: '132px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+              <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                <ChevronRight size={14} className="rotate-180" /> Back to Services
+              </button>
+              <div className="flex items-center gap-4 mb-3">
+                <img src={`/${selectedFinanceService.img}`} className="w-10 h-10 object-contain" alt="" />
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter">{selectedFinanceService.name}</h2>
+              </div>
+              <div className="bg-gray-100 p-2 rounded-3xl flex gap-2">
+                <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Buy / Deposit</button>
+                <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Sell / Cashout</button>
+              </div>
             </div>
- 
+            <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             {financeType === 'BUY' && (
               <div className="bg-[#0F121E] p-8 text-white mb-8 rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
                 <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest italic">Info Peman Benefisyè</p>
@@ -1600,12 +1610,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            
-            <div className="bg-gray-100 p-2 rounded-3xl flex gap-2 mb-8">
-              <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Buy / Deposit</button>
-              <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Sell / Cashout</button>
-            </div>
- 
+
             <div className="space-y-5">
               {selectedFinanceService.id === 'gaming' && (
                 <div className="space-y-4">
@@ -1657,9 +1662,10 @@ export default function Dashboard() {
                 )}
               </button>
             </div>
+            </div>{/* end scroll */}
           </div>
         )}
- 
+
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="animate-in fade-in duration-700">
