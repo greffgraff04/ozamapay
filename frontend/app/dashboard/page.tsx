@@ -1122,6 +1122,15 @@ export default function Dashboard() {
                   })();
                   const agentFirstName = t.agentName ? t.agentName.split(' ')[0] : null;
                   const txTitle = `${serviceName} ${amt} HTG${agentFirstName ? ` · kay ${agentFirstName}` : ''}`;
+                  const statusBadge = (() => {
+                    switch (t.status) {
+                      case 'COMPLETED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-green-100 text-green-600">Konplète</span>;
+                      case 'PENDING': case 'PROCESSING': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">Atant</span>;
+                      case 'FAILED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-500">Echwe</span>;
+                      case 'REJECTED': case 'CANCELLED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Rejte</span>;
+                      default: return null;
+                    }
+                  })();
 
                   return (
                     <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
@@ -1133,9 +1142,12 @@ export default function Dashboard() {
                           <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-black max-w-[180px]">
                             {txTitle}
                           </p>
-                          <p className="text-[9px] text-[#8E929B] font-bold uppercase mt-1 tracking-tighter">
-                            {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[9px] text-[#8E929B] font-bold uppercase tracking-tighter">
+                              {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
+                            </span>
+                            {statusBadge}
+                          </div>
                         </div>
                       </div>
                     </div>
