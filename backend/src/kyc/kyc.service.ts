@@ -226,8 +226,7 @@ export class KycService {
 
       const referringAgent = user?.referredByAgent;
       if (referringAgent?.wallet) {
-        const commissionRate = Number(referringAgent.commissionRate) || 2;
-        const agentCommission = Math.floor(KYC_FEE_HTG * (commissionRate / 100));
+        const agentCommission = 390;
 
         // Deduct commission from master wallet (comes out of platform's cut)
         if (masterId) {
