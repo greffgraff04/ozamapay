@@ -125,6 +125,7 @@ export class WalletService {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 5,
     });
   }
 

@@ -257,85 +257,58 @@ export default function Dashboard() {
       }
 
       const headers = { Authorization: `Bearer ${localToken}` };
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
+      const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-console.log("API_BASE =", API_BASE);
-console.log("TOKEN =", localToken);
+      const [txRes, meRes, rateRes, notifRes, cardRes] = await Promise.all([
+        fetch(`${API_BASE}/wallet/transactions?limit=5`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/auth/me`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/rates`).catch(() => null),
+        fetch(`${API_BASE}/wallet/notifications`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/v1/cards/my-card`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
+      ]);
 
-let tTxRes;
-try {
-  tTxRes = await fetch(`${API_BASE}/wallet/transactions`, { headers });
-} catch (err) {
-  console.error("wallet/transactions FAILED", err);
-}
+      const [txData, meData, ratesData, notifData, cardData] = await Promise.all([
+        txRes?.ok ? txRes.json().catch(() => null) : null,
+        meRes?.ok ? meRes.json().catch(() => null) : null,
+        rateRes?.ok ? rateRes.json().catch(() => null) : null,
+        notifRes?.ok ? notifRes.json().catch(() => null) : null,
+        cardRes?.ok ? cardRes.json().catch(() => null) : null,
+      ]);
 
-      const txData = tTxRes?.ok ? await tTxRes.json() : null;
       setTransactions(Array.isArray(txData) ? txData : []);
 
-      try {
-        const meRes = await fetch(`${API_BASE}/auth/me`, { headers });
-        if (meRes.ok) {
-          const freshUserData = await meRes.json();
-          console.log('user role from API:', freshUserData.role, 'agent:', freshUserData.agent);
-          setUser(freshUserData);
-          if (freshUserData.photoUrl) setProfilePhoto(freshUserData.photoUrl);
-          localStorage.setItem('user', JSON.stringify(freshUserData));
-          // Show onboarding for brand-new users only
-          if (
-            !localStorage.getItem('ozama_onboarded') &&
-            Number(freshUserData.wallet?.balance || 0) === 0 &&
-            !freshUserData.kyc
-          ) {
-            setShowOnboarding(true);
-          }
+      if (meData) {
+        setUser(meData);
+        if (meData.photoUrl) setProfilePhoto(meData.photoUrl);
+        localStorage.setItem('user', JSON.stringify(meData));
+        if (
+          !localStorage.getItem('ozama_onboarded') &&
+          Number(meData.wallet?.balance || 0) === 0 &&
+          !meData.kyc
+        ) {
+          setShowOnboarding(true);
         }
-      } catch (err) {
-        console.error("auth/me FAILED", err);
       }
 
-      // Fetch live exchange rate for finance tab
-      try {
-        const rateRes = await fetch(`${API_BASE}/rates`);
-        if (rateRes.ok) {
-          const ratesData = await rateRes.json();
-          const rate = Array.isArray(ratesData) ? ratesData.find((r: any) => r.key === 'USD_HTG')?.value : ratesData.value;
-          const usdHtgRate = rate || 135;
-          setExchangeRate(Number(usdHtgRate));
-        }
-      } catch {
-        // keep default 135
+      if (ratesData) {
+        const rate = Array.isArray(ratesData) ? ratesData.find((r: any) => r.key === 'USD_HTG')?.value : ratesData.value;
+        setExchangeRate(Number(rate || 135));
       }
 
-      // Fetch notifications
-      try {
-        const notifRes = await fetch(`${API_BASE}/wallet/notifications`, { headers });
-        if (notifRes.ok) {
-          const notifData = await notifRes.json();
-          setNotifications(Array.isArray(notifData) ? notifData : []);
-          setUnreadCount(Array.isArray(notifData) ? notifData.filter((n: any) => !n.isRead).length : 0);
-        }
-      } catch {
-        // silently ignore
+      if (Array.isArray(notifData)) {
+        setNotifications(notifData);
+        setUnreadCount(notifData.filter((n: any) => !n.isRead).length);
       }
 
-      // Fetch virtual card
-      try {
-        const cardRes = await fetch(`${API_BASE}/v1/cards/my-card`, {
-          headers: { 'Authorization': `Bearer ${localToken}` }
-        });
-        if (cardRes.ok) {
-          const cardData = await cardRes.json();
-          if (cardData) setVirtualCard((prev: any) => ({
-            ...cardData,
-            cardNumber: prev?.cardNumber,
-            cvv: prev?.cvv,
-            expiryDate: prev?.expiryDate,
-            cardName: prev?.cardName || cardData?.cardName,
-            last4: prev?.last4 || cardData?.last4,
-          }));
-        }
-      } catch {
-        // silently ignore
+      if (cardData) {
+        setVirtualCard((prev: any) => ({
+          ...cardData,
+          cardNumber: prev?.cardNumber,
+          cvv: prev?.cvv,
+          expiryDate: prev?.expiryDate,
+          cardName: prev?.cardName || cardData?.cardName,
+          last4: prev?.last4 || cardData?.last4,
+        }));
       }
 
     } catch (e) {
