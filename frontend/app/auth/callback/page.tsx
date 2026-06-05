@@ -7,10 +7,7 @@ function CallbackHandler() {
   const params = useSearchParams();
 
   useEffect(() => {
-    console.log('Full URL:', window.location.href);
-    console.log('All params:', window.location.search);
     const token = params.get('token');
-    console.log('Token from params:', token ? `yes (${token.slice(0, 20)}...)` : 'no');
     if (token) {
       localStorage.setItem('token', token);
       document.cookie = `token=${token}; path=/; max-age=604800`;

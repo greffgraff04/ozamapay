@@ -226,12 +226,11 @@ export class AdminService {
             where: { userId: kyc.userId },
             data: { status: 'ACTIVE' },
           });
+          await tx.user.update({
+            where: { id: kyc.userId },
+            data: { role: 'AGENT' },
+          });
         }
-
-        await tx.user.update({
-          where: { id: kyc.userId },
-          data: { role: 'AGENT' },
-        });
       }
 
       // 4. SEKITÈ SOU ADMIN_ID: Nou anpeche "ADMIN-SYS" bloke baz done a
@@ -510,15 +509,6 @@ export class AdminService {
           });
         }
       } else {
-        // REJECTED — refund HTG if SELL mode (deducted on submission)
-        if (mode === 'SELL') {
-          const amountHTG = Number(req.amount);
-          await tx.wallet.update({
-            where: { userId: req.userId },
-            data: { balance: { increment: amountHTG } },
-          });
-        }
-
         await tx.notification.create({
           data: {
             userId: req.userId,

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -616,19 +617,17 @@ export class AgentsService {
     const totalDebit =
       amount + totalFee;
 
-    // VERIFY USER BALANCE
-    if (
-      Number(userWallet.balance) <
-      totalDebit
-    ) {
-      throw new BadRequestException(
-        'Balans kliyan an ensifizan.',
-      );
-    }
-
     // TRANSACTION
     const withdrawResult = await this.prisma.$transaction(
       async (tx) => {
+        // Re-read balance inside the transaction to prevent race conditions
+        const currentWallet = await tx.wallet.findUnique({
+          where: { userId: clientUser.id },
+        });
+        if (!currentWallet || Number(currentWallet.balance) < totalDebit) {
+          throw new BadRequestException('Balans kliyan an ensifizan.');
+        }
+
         // DEBIT USER
         await tx.wallet.update({
           where: {
@@ -744,6 +743,7 @@ export class AgentsService {
             totalDebit,
         };
       },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
 
     try {

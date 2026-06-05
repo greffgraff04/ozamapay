@@ -44,7 +44,6 @@ export class StrowalletService {
     if (data?.success === false || data?.status === false) {
       throw new BadRequestException(data?.message || 'Strowallet error');
     }
-    console.log('Strowallet full response:', JSON.stringify(data, null, 2));
     return data;
   }
 
@@ -61,7 +60,6 @@ export class StrowalletService {
   // ─── 1. CREATE NFC CARD (otomatik, pa bezwen compliance review) ─────────────
 
   async createAndFundCard(userId: string, amountUsd: number) {
-    console.log('createAndFundCard called for userId:', userId, 'amount:', amountUsd);
     // Verifye pa gen kat deja
     const existing = await this.prisma.virtualCard.findUnique({ where: { userId } });
     if (existing) throw new BadRequestException('Ou genyen yon kat vityèl deja');
@@ -100,7 +98,6 @@ export class StrowalletService {
       : '01/01/1990';
 
     // Debi wallet + kreye kat nan DB atomikman — nfcPost andedan transaction pou rollback si echèk
-    console.log('Calling Strowallet NFC API with params:', { name: user.name, firstName, lastName, dob, email: user.email, country: 'HTI' });
     const nfcParams = {
       name: user.name || 'OZAMA USER',
       first_name: firstName,
