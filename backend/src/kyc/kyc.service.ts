@@ -209,6 +209,59 @@ export class KycService {
         data: { status: 'APPROVED', reviewedAt: new Date() }
       });
 
+      // 8. Referral commission — credit referring agent if user was referred
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          referredByAgentId: true,
+          referredByAgent: {
+            select: {
+              id: true,
+              commissionRate: true,
+              wallet: { select: { agentId: true } },
+            },
+          },
+        },
+      });
+
+      const referringAgent = user?.referredByAgent;
+      if (referringAgent?.wallet) {
+        const commissionRate = Number(referringAgent.commissionRate) || 2;
+        const agentCommission = Math.floor(KYC_FEE_HTG * (commissionRate / 100));
+
+        // Deduct commission from master wallet (comes out of platform's cut)
+        if (masterId) {
+          await tx.wallet.update({
+            where: { userId: masterId },
+            data: { balance: { decrement: agentCommission } },
+          });
+        }
+
+        // Credit agent wallet
+        await tx.agentWallet.update({
+          where: { agentId: referringAgent.id },
+          data: { balance: { increment: agentCommission } },
+        });
+
+        // Update agent stats
+        await tx.agent.update({
+          where: { id: referringAgent.id },
+          data: {
+            totalCommission: { increment: agentCommission },
+            totalKyc: { increment: 1 },
+          },
+        });
+
+        // Log commission
+        await tx.commission.create({
+          data: {
+            agentId: referringAgent.id,
+            type: 'KYC',
+            amount: agentCommission,
+          },
+        });
+      }
+
       return { success: true, message: 'KYC apwouve ak siksè. Frè $25 debi.' };
     });
   }
