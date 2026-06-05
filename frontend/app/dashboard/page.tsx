@@ -2362,20 +2362,48 @@ export default function Dashboard() {
                       </div>
                       <ChevronRight size={18} className="text-gray-300" />
                     </button>
-                  ) : (
-                    <div className="w-full flex items-start gap-4 p-5 border-b border-gray-50 bg-orange-50/50">
-                      <div className="bg-orange-100 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                  ) : user?.agent?.status === 'PENDING' ? (
+                    <div className="w-full flex items-center gap-4 p-5 border-b border-gray-50">
+                      <div className="bg-yellow-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[#0F121E]">Agent Dashboard</p>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">Ou poko yon ajans. Aplike kòm ajans nan seksyon Profil ou a.</p>
-                        <button
-                          onClick={() => setActiveTab('profile')}
-                          className="mt-2 flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-[#FF6B00]"
-                        >
-                          Ale nan Profil <ChevronRight size={11} />
-                        </button>
+                        <p className="font-bold text-sm text-[#0F121E]">Aplikasyon Ajan</p>
+                        <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
                       </div>
                     </div>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        if (user?.kyc?.status !== 'APPROVED') {
+                          showToast('Ou dwe gen KYC apwouve anvan ou ka vin yon Ajan.', 'error');
+                          return;
+                        }
+                        const token = localStorage.getItem('token');
+                        try {
+                          const res = await fetch(`${backendUrl}/agents/apply`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            showToast('Aplikasyon w lan soumèt! Admin ap revize l. 🚀', 'success');
+                            fetchData();
+                          } else {
+                            showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
+                          }
+                        } catch {
+                          showToast('Erè rezo. Verifye koneksyon ou.', 'error');
+                        }
+                      }}
+                      className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors"
+                    >
+                      <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-[#0F121E]">Vin yon Ajan</p>
+                        <p className="text-xs text-gray-400">Aplike kounye a — Requis: KYC Apwouve</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300" />
+                    </button>
                   )}
 
                   <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-gray-50 transition-colors">
