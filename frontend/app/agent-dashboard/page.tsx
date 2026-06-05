@@ -173,10 +173,11 @@ export default function AgentDashboard() {
           setUser(data);
           fetchAll();
         } else {
+          setLoading(false);
           window.location.href = "/dashboard";
         }
       })
-      .catch(() => { window.location.href = "/login"; });
+      .catch(() => { setLoading(false); window.location.href = "/login"; });
   }, []);
 
   // ── actions ──────────────────────────────────────────────────────────────
