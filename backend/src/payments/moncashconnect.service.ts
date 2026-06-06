@@ -22,25 +22,32 @@ export class MonCashConnectService {
   ): Promise<{ paymentUrl: string; referenceId: string }> {
     const referenceId = `ozama_${userId}_${Date.now()}`;
 
-    const res = await fetch(`${BASE_URL}/pay-create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MONCASHCONNECT_SECRET_KEY}`,
-      },
-      body: JSON.stringify({
-        amount: amountHTG,
-        referenceId,
-        returnUrl: 'https://ozamapay.com/dashboard',
-      }),
-    });
+    let data: any;
+    try {
+      const res = await fetch(`${BASE_URL}/pay-create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.MONCASHCONNECT_SECRET_KEY}`,
+        },
+        body: JSON.stringify({
+          amount: amountHTG,
+          referenceId,
+          returnUrl: 'https://ozamapay.com/dashboard',
+        }),
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`MonCashConnect pay-create failed: ${text}`);
+      data = await res.json();
+      console.error('MoncashConnect response:', JSON.stringify(data));
+
+      if (!res.ok) {
+        throw new Error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
+      }
+    } catch (err: any) {
+      console.error('MoncashConnect error:', (err as Error).message);
+      throw err;
     }
 
-    const data = await res.json();
     const paymentUrl: string = data.paymentUrl ?? data.payment_url ?? data.url ?? '';
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
