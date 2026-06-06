@@ -121,8 +121,7 @@ export class MailService {
       'Konfime Email Ou',
       this.p('Bonjou,') +
       this.p('Mèsi pou enskripsyon ou nan OZAMAPAY. Pou aktive kont ou, klike sou bouton anba a.') +
-      this.p('Lyen sa valid pou 24 èdtan sèlman. Si se pa ou ki kreye kont sa, ou ka ignoreye mesaj sa.') +
-      this.btn('Konfime Email Ou →', url),
+      this.p('Lyen sa valid pou 24 èdtan sèlman. Si se pa ou ki kreye kont sa, ou ka ignoreye mesaj sa.'),
       '#1565C0',
     );
     await this.send(email, 'Konfime adrès email ou — OZAMAPAY', html);
@@ -143,8 +142,7 @@ export class MailService {
         'Ou ka voye kòb bay fanmi ou imedyatman',
       ]) +
       this.p('Pa kite opòtinite sa pase.') +
-      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.') +
-      this.btn('Kòmanse Verifikasyon Ou →', `${this.frontendUrl}/dashboard`),
+      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.'),
     );
     await this.send(email, `${name}, byenvini nan OZAMAPAY`, html);
   }
@@ -165,8 +163,7 @@ export class MailService {
         'Voye ak resevwa kòb san limit',
       ]) +
       this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +
-      this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.') +
-      this.btn('Kreye Kat VISA Gratis Ou →', `${this.frontendUrl}/dashboard`),
+      this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.'),
     );
     await this.send(email, `${name} — Aksè konplè. Kat VISA ou disponib.`, html);
   }
@@ -189,8 +186,7 @@ export class MailService {
         'Resoumèt foto ki klè ak konplè',
         'Tann mwens pase 24 èdtan pou repons',
       ]) +
-      this.p('Resoumèt la gratis. Done ou yo sekirize epi konfidansyèl.') +
-      this.btn('Korije epi Resoumèt →', `${this.frontendUrl}/dashboard`),
+      this.p('Resoumèt la gratis. Done ou yo sekirize epi konfidansyèl.'),
       '#e65100',
     );
     await this.send(email, `${name} — Yon kòreksyon rapid epi ou pare`, html);
@@ -211,7 +207,6 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.accentLine('Lajan ou disponib kounye a. Ou ka kreye kat VISA ou oswa voye kòb bay fanmi ou imedyatman.') +
-      this.btn('Ale nan Kont Ou →', `${this.frontendUrl}/dashboard`) +
       `<div style="height:16px;"></div>` +
       `<p style="margin:0;font-size:12px;color:#aaaaaa;text-align:center;">Chak depot se yon etap vè endepandans finansye.</p>`,
     );
@@ -235,8 +230,7 @@ export class MailService {
       this.p(`Bonjou ${name},`) +
       this.p('Tranzaksyon ou trete avèk siksè. Lajan an ap rive selon metòd ou chwazi a. Si ou pa resevwa l nan 24 èdtan, kontakte sipò nou imedyatman.') +
       this.p('Kont ou sekirize. Tout tranzaksyon ou yo pwoteje.') +
-      this.accentLine('Yon kesyon? Ekip nou la 7 jou sou 7 sou WhatsApp.') +
-      this.btn('Wè Istorik Ou →', `${this.frontendUrl}/dashboard`),
+      this.accentLine('Yon kesyon? Ekip nou la 7 jou sou 7 sou WhatsApp.'),
       '#1565C0',
     );
     await this.send(email, `Retrè ou konfime — ${amountFmt} HTG`, html);
@@ -254,8 +248,7 @@ export class MailService {
         this.infoRow('Erè', `<span style="font-family:monospace;font-size:12px;color:#B71C1C;">${error}</span>`) +
         this.infoRow('Uptime', `${uptime}s`) +
         this.infoRow('Dat', now),
-      ) +
-      this.btn('Ouvri Render Dashboard →', 'https://dashboard.render.com'),
+      ),
       '#B71C1C',
     );
     await this.send('contact@ozamapay.com', 'URGENCE — Sistèm OZAMAPAY bezwen atansyon', html);
@@ -287,8 +280,7 @@ export class MailService {
         ? this.p(`Demann ${serviceType} ou an konfime. Montan an ajoute nan kont ou.`)
         : this.p(`Demann ${serviceType} ou an trete avèk siksè. Peman an ap fèt selon metòd ou chwazi a.`)
       ) +
-      this.p('Tout echanj yo verifye epi sekirize pa ekip OZAMAPAY.') +
-      this.btn('Wè Kont Ou →', `${this.frontendUrl}/dashboard`),
+      this.p('Tout echanj yo verifye epi sekirize pa ekip OZAMAPAY.'),
     );
     await this.send(email, `Demann ${serviceType} ou konfime — OZAMAPAY`, html);
   }
@@ -315,8 +307,7 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.p(`Bonjou ${clientName},`) +
-      this.p(`Ajans ${agentName} fè yon depot nan kont ou avèk siksè. Lajan an disponib kounye a. Ou ka itilize l imedyatman.`) +
-      this.btn('Wè Kont Ou →', `${this.frontendUrl}/dashboard`),
+      this.p(`Ajans ${agentName} fè yon depot nan kont ou avèk siksè. Lajan an disponib kounye a. Ou ka itilize l imedyatman.`),
     );
 
     const htmlAgent = this.wrap(
@@ -331,8 +322,7 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.p(`Bonjou ${agentName},`) +
-      this.p(`Topup ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`) +
-      this.btn('Wè Kont Ajans Ou →', `${this.frontendUrl}/agent-dashboard`),
+      this.p(`Topup ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`),
     );
 
     await this.send(clientEmail, `Depot konfime pa ajans ou — ${amountFmt} HTG`, htmlClient);
@@ -361,8 +351,7 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.p(`Bonjou ${clientName},`) +
-      this.p(`Ajans ${agentName} trete retrè ou avèk siksè. Lajan an ap rive selon metòd ou chwazi a.`) +
-      this.btn('Wè Istorik Ou →', `${this.frontendUrl}/dashboard`),
+      this.p(`Ajans ${agentName} trete retrè ou avèk siksè. Lajan an ap rive selon metòd ou chwazi a.`),
       '#1565C0',
     );
 
@@ -378,8 +367,7 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.p(`Bonjou ${agentName},`) +
-      this.p(`Retrè ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`) +
-      this.btn('Wè Kont Ajans Ou →', `${this.frontendUrl}/agent-dashboard`),
+      this.p(`Retrè ou fè pou kliyan ${clientEmail} an trete avèk siksè. Komisyon ou ajoute nan kont ajans ou.`),
       '#1565C0',
     );
 
@@ -409,8 +397,7 @@ export class MailService {
         this.infoRow('Telefòn', phone) +
         this.infoRow('Dat', now),
       ) +
-      this.accentLine('Pandan ke ou ap tann, ou ka kontakte nou sou WhatsApp pou nenpòt kesyon.') +
-      this.btn('Vizite ozamapay.com →', 'https://ozamapay.com'),
+      this.accentLine('Pandan ke ou ap tann, ou ka kontakte nou sou WhatsApp pou nenpòt kesyon.'),
     );
 
     const htmlAdmin = this.wrap(
@@ -426,8 +413,7 @@ export class MailService {
         this.infoRow('Adrès', address) +
         this.infoRow('Plan', plan) +
         this.infoRow('Dat', now),
-      ) +
-      this.btn('Wè aplikasyon yo →', 'https://ozamapay.com/admin'),
+      ),
       '#1565C0',
     );
 
@@ -443,8 +429,7 @@ export class MailService {
       this.p('Nou resevwa yon demann pou chanje modpas kont ou.') +
       this.p('Klike sou bouton anba a pou kreye yon nouvo modpas. Lyen sa valid pou 1 èdtan sèlman.') +
       this.p('Si se pa ou ki fè demann sa, kontakte nou imedyatman sou WhatsApp oswa pa email. Kont ou toujou sekirize — pa gen chanjman fèt toujou.') +
-      this.accentLine('Pou sekirite ou, pa janm pataje lyen sa ak pèsòn.') +
-      this.btn('Chanje Modpas Ou →', resetUrl),
+      this.accentLine('Pou sekirite ou, pa janm pataje lyen sa ak pèsòn.'),
       '#1565C0',
     );
     await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
