@@ -74,14 +74,13 @@ export class StrowalletService {
       throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
     }
 
-    // Kalkile total an HTG
+    // Kalkile total an HTG — frè $2.50 kreyasyon absòbe pa OZAMAPAY, pa itilizatè
     const exchangeRate = await this.getExchangeRate();
-    const totalUsd = amountUsd + this.CARD_CREATION_FEE_USD;
-    const totalHtg = Math.ceil(totalUsd * exchangeRate);
+    const totalHtg = Math.ceil(amountUsd * exchangeRate);
 
     if (Number(user.wallet.balance) < totalHtg) {
       throw new BadRequestException(
-        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (depò $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD})`
+        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (depò $${amountUsd})`
       );
     }
 
@@ -148,7 +147,7 @@ export class StrowalletService {
           netAmount: totalHtg,
           fee: 0,
           status: 'COMPLETED',
-          description: `Kreye kat vityèl NFC — $${amountUsd} + frè $${this.CARD_CREATION_FEE_USD}`,
+          description: `Kreye kat vityèl NFC — $${amountUsd}`,
           reference: `CARD-CREATE-${cardId}`,
         },
       });
