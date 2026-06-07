@@ -83,7 +83,8 @@ export class MonCashConnectService {
 
   async processWebhookPayment(body: any): Promise<void> {
     console.log('MoncashConnect webhook received:', JSON.stringify(body, null, 2));
-    const referenceId: string | undefined = body.referenceId ?? body.reference_id;
+    const referenceId: string | undefined = body.referenceId ?? body.reference_id ?? body.reference;
+    console.log('MoncashConnect webhook event:', body.event, 'reference:', referenceId, 'status:', body.status);
     if (!referenceId) return;
 
     const transaction = await this.prisma.transaction.findFirst({
