@@ -61,7 +61,7 @@ export class MonCashConnectService {
           fee,
           type: 'TOPUP',
           status: 'PENDING',
-          method: 'MONCASHCONNECT',
+          method: 'MonCash',
           title: `Depot MonCash — ${amountHTG} HTG`,
           receiverWalletId: wallet.id,
         },

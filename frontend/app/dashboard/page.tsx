@@ -474,6 +474,7 @@ export default function Dashboard() {
               setUser(fresh);
               setTopUpAmount('');
               setToast({ message: `Depot konfime! +${(newBal - initialBal).toLocaleString()} HTG ✅`, type: 'success' });
+              fetchData();
             }
           }
         } catch {}
@@ -1120,8 +1121,16 @@ export default function Dashboard() {
                     if (t.type === 'PAYMENT') return 'Peman';
                     return t.type || 'Tranzaksyon';
                   })();
+                  const METHOD_DISPLAY: Record<string, string> = {
+                    MONCASHCONNECT: 'MonCash', MONCASH: 'MonCash', MonCash: 'MonCash',
+                    NATCASH: 'NatCash', ZELLE: 'Zelle', CASHAPP: 'CashApp',
+                    PAYPAL: 'PayPal', ADMIN: 'Admin', OZAMAPAY: 'OzamaPay',
+                  };
+                  const methodLabel = t.type === 'TOPUP' && t.method
+                    ? (METHOD_DISPLAY[t.method] || t.method)
+                    : null;
                   const agentFirstName = t.agentName ? t.agentName.split(' ')[0] : null;
-                  const txTitle = `${serviceName} ${amt} HTG${agentFirstName ? ` · kay ${agentFirstName}` : ''}`;
+                  const txTitle = `${serviceName} ${amt} HTG${methodLabel ? ` · ${methodLabel}` : ''}${agentFirstName ? ` · kay ${agentFirstName}` : ''}`;
                   const statusBadge = (() => {
                     switch (t.status) {
                       case 'COMPLETED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-green-100 text-green-600">Konplète</span>;
