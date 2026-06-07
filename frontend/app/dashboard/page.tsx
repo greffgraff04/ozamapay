@@ -1441,14 +1441,12 @@ export default function Dashboard() {
  
               {mccPaymentUrl ? (
                 <div className="space-y-3 animate-in fade-in duration-300">
-                  <a
-                    href={mccPaymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => { window.location.href = mccPaymentUrl; }}
                     className="w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
                   >
                     Peye via MonCash →
-                  </a>
+                  </button>
                   {mccPolling && (
                     <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse py-2">
                       Ap verifye peman ou… 🔄
