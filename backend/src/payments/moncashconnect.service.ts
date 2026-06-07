@@ -76,24 +76,29 @@ export class MonCashConnectService {
       const fee = Math.round(amountHTG * FEE_RATE * 100) / 100;
       const netAmount = Math.round((amountHTG - fee) * 100) / 100;
 
-      await this.prisma.$transaction(async (tx) => {
-        await tx.transaction.create({
-          data: {
-            reference: monCashRef,
-            amount: amountHTG,
-            netAmount,
-            fee,
-            type: 'TOPUP',
-            status: 'COMPLETED',
-            method: 'MonCash',
-            title: `Depot MonCash — ${amountHTG} HTG`,
-            description: paymentUrl,
-            receiverWalletId: wallet.id,
-          },
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.transaction.create({
+            data: {
+              reference: monCashRef,
+              amount: amountHTG,
+              netAmount,
+              fee,
+              type: 'TOPUP',
+              status: 'COMPLETED',
+              method: 'MonCash',
+              title: `Depot MonCash — ${amountHTG} HTG`,
+              description: paymentUrl,
+              receiverWalletId: wallet.id,
+            },
+          });
+          await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
+          await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
         });
-        await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
-        await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
-      });
+      } catch (err: any) {
+        console.error('MoncashConnect createPaymentRequest DB error:', err.message, err.code);
+        throw err;
+      }
 
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (user) {
