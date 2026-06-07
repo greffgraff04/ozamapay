@@ -37,6 +37,7 @@ export class MonCashConnectService {
         }),
       });
 
+      console.error('MoncashConnect response headers:', JSON.stringify(Object.fromEntries(res.headers.entries())));
       data = await res.json();
       console.error('MoncashConnect response:', JSON.stringify(data));
 
