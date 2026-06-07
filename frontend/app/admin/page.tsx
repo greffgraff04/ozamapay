@@ -1058,6 +1058,14 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-1.5">
+                                {tx.type === 'TOPUP' && tx.method === 'MonCash' ? (
+                                  <span
+                                    title="Moncash otomatik - pa bezwen apwouve"
+                                    className="bg-white/[0.03] border border-white/[0.06] text-white/20 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider cursor-not-allowed select-none"
+                                  >
+                                    Apwouve
+                                  </span>
+                                ) : (
                                 <button
                                   onClick={async () => {
                                     const res = await fetch(`${API}/admin/transactions/${tx.id}/process`, {
@@ -1072,6 +1080,7 @@ export default function AdminDashboard() {
                                 >
                                   Apwouve
                                 </button>
+                                )}
                                 <button
                                   onClick={async () => {
                                     const res = await fetch(`${API}/admin/transactions/${tx.id}/process`, {
