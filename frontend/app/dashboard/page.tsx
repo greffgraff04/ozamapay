@@ -1705,11 +1705,6 @@ export default function Dashboard() {
             {!virtualCard?.cardId ? (
               /* ===== CREATION FORM ===== */
               <div className="px-4 pt-6">
-                {/* Header */}
-                <div className="mb-6">
-                  <h2 className="text-2xl font-black text-[#0F121E] italic">OZAMA<br/>VIRTUAL CARD</h2>
-                </div>
-
                 {/* Card preview placeholder */}
                 <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{aspectRatio: '1.586'}}>
                   <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -1725,7 +1720,7 @@ export default function Dashboard() {
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Depo Inisyal (Min. $3 USD)</p>
-                  <div className="flex items-center border border-gray-200 rounded-2xl px-4 py-3 mb-4">
+                  <div className="flex items-center justify-between w-full border border-gray-200 rounded-2xl px-4 py-3 mb-4">
                     <span className="text-gray-400 mr-2">$</span>
                     <input
                       type="number"
@@ -1735,7 +1730,7 @@ export default function Dashboard() {
                       className="flex-1 outline-none text-[#0F121E] font-bold text-lg"
                       placeholder="3"
                     />
-                    <span className="text-gray-400 text-sm">USD</span>
+                    <span className="text-gray-400 text-sm ml-2">USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -1762,7 +1757,7 @@ export default function Dashboard() {
                         alert('Sèvè a pa ka jwenn requete a.');
                       }
                     }}
-                    className="w-full py-4 bg-[#b8e832] text-black font-black rounded-2xl tracking-wider flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl tracking-wider flex items-center justify-center gap-2"
                   >
                     <Zap size={16} /> KREYE KAT GRATIS
                   </button>
