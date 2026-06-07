@@ -27,14 +27,14 @@ export class MonCashConnectService {
         where: {
           receiverWalletId: existingWallet.id,
           type: 'TOPUP',
-          status: 'PENDING',
+          status: { in: ['PENDING', 'COMPLETED'] },
           method: 'MonCash',
           createdAt: { gte: tenMinutesAgo },
         },
         orderBy: { createdAt: 'desc' },
       });
       if (existing?.description) {
-        this.logger.log(`Idempotency hit for userId ${userId} — returning existing pending transaction`);
+        this.logger.log(`Idempotency hit for userId ${userId} — returning existing transaction`);
         return { paymentUrl: existing.description, referenceId: existing.reference };
       }
     }
@@ -74,20 +74,33 @@ export class MonCashConnectService {
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (wallet) {
       const fee = Math.round(amountHTG * FEE_RATE * 100) / 100;
-      await this.prisma.transaction.create({
-        data: {
-          reference: monCashRef,
-          amount: amountHTG,
-          netAmount: Math.round((amountHTG - fee) * 100) / 100,
-          fee,
-          type: 'TOPUP',
-          status: 'PENDING',
-          method: 'MonCash',
-          title: `Depot MonCash — ${amountHTG} HTG`,
-          description: paymentUrl,
-          receiverWalletId: wallet.id,
-        },
+      const netAmount = Math.round((amountHTG - fee) * 100) / 100;
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.create({
+          data: {
+            reference: monCashRef,
+            amount: amountHTG,
+            netAmount,
+            fee,
+            type: 'TOPUP',
+            status: 'COMPLETED',
+            method: 'MonCash',
+            title: `Depot MonCash — ${amountHTG} HTG`,
+            description: paymentUrl,
+            receiverWalletId: wallet.id,
+          },
+        });
+        await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
+        await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
       });
+
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        try {
+          await this.mailService.sendTopupConfirmed(user.email, user.name ?? 'Kliyan', netAmount, 'MonCash');
+        } catch {}
+      }
     }
 
     return { paymentUrl, referenceId: monCashRef };
