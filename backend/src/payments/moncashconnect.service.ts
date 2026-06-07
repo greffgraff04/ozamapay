@@ -86,15 +86,35 @@ export class MonCashConnectService {
     console.log('MoncashConnect webhook received:', JSON.stringify(body, null, 2));
     const referenceId: string | undefined = body.referenceId ?? body.reference_id ?? body.reference;
     console.log('MoncashConnect webhook event:', body.event, 'reference:', referenceId, 'status:', body.status);
+
+    console.log("========== EXTRACTED REFERENCE ==========");
+    console.log({
+      reference: body.reference,
+      referenceId: body.referenceId,
+      reference_id: body.reference_id,
+      extractedReference: referenceId,
+    });
+
     if (!referenceId) return;
+
+    console.log("========== LOOKUP ==========");
+    console.log("Searching transaction with reference:", referenceId);
 
     const transaction = await this.prisma.transaction.findFirst({
       where: { reference: referenceId },
       include: { receiverWallet: true },
     });
 
-    if (!transaction || transaction.status !== 'PENDING') {
-      this.logger.log(`MonCashConnect webhook: ${referenceId} not pending — skip`);
+    console.log("========== TRANSACTION FOUND ==========");
+    console.log(transaction);
+
+    if (!transaction) {
+      console.log("SKIP: transaction not found");
+      return;
+    }
+
+    if (transaction.status !== 'PENDING') {
+      console.log("SKIP: transaction status =", transaction.status);
       return;
     }
 
