@@ -27,7 +27,7 @@ export class MonCashConnectService {
         where: {
           receiverWalletId: existingWallet.id,
           type: 'TOPUP',
-          status: { in: ['PENDING', 'COMPLETED'] },
+          status: 'PENDING',
           method: 'MonCash',
           createdAt: { gte: tenMinutesAgo },
         },
