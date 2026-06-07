@@ -64,7 +64,6 @@ export class PaymentsController {
     const transactionId = data.transactionId;
 
     if (transactionId) {
-      console.log(`📩 Webhook reçu: ${transactionId}`);
       return await this.paymentsService.validateMonCashPayment(transactionId);
     }
 
@@ -90,19 +89,9 @@ export class PaymentsController {
   async moncashConnectWebhook(
     @RawBody() rawBody: Buffer,
     @Body() body: any,
-    @Headers() headers: Record<string, string>,
     @Headers('x-signature') signature?: string,
   ) {
-    console.log("========== RAW WEBHOOK BODY ==========");
-    console.log(JSON.stringify(body, null, 2));
-
-    console.log("========== HEADERS ==========");
-    console.log(JSON.stringify(headers, null, 2));
-
-    console.log("========== RAW BODY ==========");
-    console.log(rawBody?.toString() ?? "NO RAW BODY");
-
-    if (signature && !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
+    if (!signature || !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
       throw new BadRequestException('Signature webhook envalid');
     }
     await this.monCashConnectService.processWebhookPayment(body);

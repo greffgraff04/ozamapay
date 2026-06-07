@@ -56,9 +56,7 @@ export class MonCashConnectService {
         }),
       });
 
-      console.error('MoncashConnect response headers:', JSON.stringify(Object.fromEntries(res.headers.entries())));
       data = await res.json();
-      console.error('MoncashConnect response:', JSON.stringify(data));
 
       if (!res.ok) {
         throw new Error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
@@ -111,40 +109,18 @@ export class MonCashConnectService {
   }
 
   async processWebhookPayment(body: any): Promise<void> {
-    console.log('MoncashConnect webhook received:', JSON.stringify(body, null, 2));
     const referenceId: string | undefined = body.referenceId ?? body.reference_id ?? body.reference;
-    console.log('MoncashConnect webhook event:', body.event, 'reference:', referenceId, 'status:', body.status);
-
-    console.log("========== EXTRACTED REFERENCE ==========");
-    console.log({
-      reference: body.reference,
-      referenceId: body.referenceId,
-      reference_id: body.reference_id,
-      extractedReference: referenceId,
-    });
 
     if (!referenceId) return;
-
-    console.log("========== LOOKUP ==========");
-    console.log("Searching transaction with reference:", referenceId);
 
     const transaction = await this.prisma.transaction.findFirst({
       where: { reference: referenceId },
       include: { receiverWallet: true },
     });
 
-    console.log("========== TRANSACTION FOUND ==========");
-    console.log(transaction);
+    if (!transaction) return;
 
-    if (!transaction) {
-      console.log("SKIP: transaction not found");
-      return;
-    }
-
-    if (transaction.status !== 'PENDING') {
-      console.log("SKIP: transaction status =", transaction.status);
-      return;
-    }
+    if (transaction.status !== 'PENDING') return;
 
     const amountHTG = Number(transaction.amount);
     const fee = Math.round(amountHTG * FEE_RATE * 100) / 100;

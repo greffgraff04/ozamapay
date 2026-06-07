@@ -36,7 +36,6 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'http://localhost:3000',
       'https://ozamapay.vercel.app',
       'https://ozamapay.com',
       'https://www.ozamapay.com',
