@@ -118,7 +118,6 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: any, @Res() res: Response) {
     try {
-      console.log('Google callback - user:', req.user?.email);
       if (!req.user) {
         return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
       }
