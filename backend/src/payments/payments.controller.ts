@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Body,
+  RawBody,
   Req,
   Headers,
   UseGuards,
@@ -87,13 +88,13 @@ export class PaymentsController {
   @Post('moncashconnect/webhook')
   @SkipThrottle()
   async moncashConnectWebhook(
+    @RawBody() rawBody: Buffer,
     @Body() body: any,
     @Headers('x-signature') signature?: string,
   ) {
-    // HMAC temporarily disabled for debugging
-    // if (signature && !this.monCashConnectService.verifyWebhook(JSON.stringify(body), signature)) {
-    //   throw new BadRequestException('Signature webhook envalid');
-    // }
+    if (signature && !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
+      throw new BadRequestException('Signature webhook envalid');
+    }
     await this.monCashConnectService.processWebhookPayment(body);
     return { received: true };
   }

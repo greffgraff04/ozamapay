@@ -8,7 +8,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 async function bootstrap() {
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bodyParser: true,
+    rawBody: true,
   });
 
   // Konfigirasyon limit pou JSON ak URL-encoded atravè vèsyon Express ki anndan NestJS la
