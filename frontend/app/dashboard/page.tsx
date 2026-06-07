@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
   const [showRates, setShowRates] = useState(false);
   const [showMoncashGuide, setShowMoncashGuide] = useState(true);
  
@@ -438,85 +439,90 @@ export default function Dashboard() {
       'ozama_agent_id',
     );
 
-  if (selectedMethod === 'moncash' && topUpType === 'AUTOMATIC') {
-    try {
-      const res = await fetch(`${backendUrl}/payments/moncashconnect/initiate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ amount: topupHTG }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Erè');
-
-      const initialBal = Number(user?.wallet?.balance ?? 0);
-      setMccInitialBalance(initialBal);
-      setMccPaymentUrl(data.paymentUrl);
-      setMccPolling(true);
-
-      if (mccPollRef.current) clearInterval(mccPollRef.current);
-      const deadline = Date.now() + 3 * 60 * 1000;
-      mccPollRef.current = setInterval(async () => {
-        if (Date.now() > deadline) {
-          clearInterval(mccPollRef.current!);
-          setMccPolling(false);
-          return;
-        }
-        try {
-          const t = localStorage.getItem('token');
-          const r = await fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${t}` } });
-          if (r.ok) {
-            const fresh = await r.json();
-            const newBal = Number(fresh?.wallet?.balance ?? 0);
-            if (newBal > initialBal) {
-              clearInterval(mccPollRef.current!);
-              setMccPolling(false);
-              setMccPaymentUrl(null);
-              setUser(fresh);
-              setTopUpAmount('');
-              setToast({ message: `Depot konfime! +${(newBal - initialBal).toLocaleString()} HTG ✅`, type: 'success' });
-              fetchData();
-            }
-          }
-        } catch {}
-      }, 10000);
-    } catch {
-      setToast({ message: 'Erè koneksyon ak sèvè MonCash', type: 'error' });
-    }
-  } else {
-    try {
-      const formData = new FormData();
-      formData.append('method', selectedMethod.toUpperCase());
-      formData.append('amount', topUpAmount);
-      if (agentId) formData.append('agentId', agentId);
-      if (receipt) formData.append('receipt', receipt);
-
-      const res = await fetch(
-        `${backendUrl}/wallet/topup`,
-        {
+  setTopupLoading(true);
+  try {
+    if (selectedMethod === 'moncash' && topUpType === 'AUTOMATIC') {
+      try {
+        const res = await fetch(`${backendUrl}/payments/moncashconnect/initiate`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        },
-      );
-
-      if (res.ok) {
-        setToast({
-          message: `Demann ${selectedMethod} voye! Tann admin konfime l. ✅`,
-          type: 'success',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ amount: topupHTG }),
         });
-        setTopUpAmount('');
-        setReceipt(null);
-        fetchData();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setToast({ message: data.message || 'Erè nan voye demann manuel la', type: 'error' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erè');
+
+        const initialBal = Number(user?.wallet?.balance ?? 0);
+        setMccInitialBalance(initialBal);
+        setMccPaymentUrl(data.paymentUrl);
+        setMccPolling(true);
+
+        if (mccPollRef.current) clearInterval(mccPollRef.current);
+        const deadline = Date.now() + 3 * 60 * 1000;
+        mccPollRef.current = setInterval(async () => {
+          if (Date.now() > deadline) {
+            clearInterval(mccPollRef.current!);
+            setMccPolling(false);
+            return;
+          }
+          try {
+            const t = localStorage.getItem('token');
+            const r = await fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${t}` } });
+            if (r.ok) {
+              const fresh = await r.json();
+              const newBal = Number(fresh?.wallet?.balance ?? 0);
+              if (newBal > initialBal) {
+                clearInterval(mccPollRef.current!);
+                setMccPolling(false);
+                setMccPaymentUrl(null);
+                setUser(fresh);
+                setTopUpAmount('');
+                setToast({ message: `Depot konfime! +${(newBal - initialBal).toLocaleString()} HTG ✅`, type: 'success' });
+                fetchData();
+              }
+            }
+          } catch {}
+        }, 10000);
+      } catch {
+        setToast({ message: 'Erè koneksyon ak sèvè MonCash', type: 'error' });
       }
-    } catch (e) {
-      setToast({
-        message: "Erè nan voye demann manuel la",
-        type: 'error',
-      });
+    } else {
+      try {
+        const formData = new FormData();
+        formData.append('method', selectedMethod.toUpperCase());
+        formData.append('amount', topUpAmount);
+        if (agentId) formData.append('agentId', agentId);
+        if (receipt) formData.append('receipt', receipt);
+
+        const res = await fetch(
+          `${backendUrl}/wallet/topup`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          },
+        );
+
+        if (res.ok) {
+          setToast({
+            message: `Demann ${selectedMethod} voye! Tann admin konfime l. ✅`,
+            type: 'success',
+          });
+          setTopUpAmount('');
+          setReceipt(null);
+          fetchData();
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setToast({ message: data.message || 'Erè nan voye demann manuel la', type: 'error' });
+        }
+      } catch (e) {
+        setToast({
+          message: "Erè nan voye demann manuel la",
+          type: 'error',
+        });
+      }
     }
+  } finally {
+    setTopupLoading(false);
   }
 };
  
@@ -1466,11 +1472,17 @@ export default function Dashboard() {
               ) : (
                 <button
                   onClick={handlePaymentLogic}
-                  className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${
-                    topUpAmount && selectedMethod ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
+                  disabled={topupLoading || !(topUpAmount && selectedMethod)}
+                  className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    topUpAmount && selectedMethod && !topupLoading ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
                   }`}
                 >
-                  Confirm TopUp
+                  {topupLoading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Ap trete...
+                    </>
+                  ) : 'Confirm TopUp'}
                 </button>
               )}
             </div>

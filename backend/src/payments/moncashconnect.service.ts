@@ -20,6 +20,25 @@ export class MonCashConnectService {
     userId: string,
     amountHTG: number,
   ): Promise<{ paymentUrl: string; referenceId: string }> {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const existingWallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    if (existingWallet) {
+      const existing = await this.prisma.transaction.findFirst({
+        where: {
+          receiverWalletId: existingWallet.id,
+          type: 'TOPUP',
+          status: 'PENDING',
+          method: 'MonCash',
+          createdAt: { gte: tenMinutesAgo },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (existing?.description) {
+        this.logger.log(`Idempotency hit for userId ${userId} — returning existing pending transaction`);
+        return { paymentUrl: existing.description, referenceId: existing.reference };
+      }
+    }
+
     const referenceId = `ozama_${userId}_${Date.now()}`;
 
     let data: any;
@@ -65,6 +84,7 @@ export class MonCashConnectService {
           status: 'PENDING',
           method: 'MonCash',
           title: `Depot MonCash — ${amountHTG} HTG`,
+          description: paymentUrl,
           receiverWalletId: wallet.id,
         },
       });
