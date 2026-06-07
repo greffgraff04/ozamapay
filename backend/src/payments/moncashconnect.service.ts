@@ -92,6 +92,7 @@ export class MonCashConnectService {
               receiverWalletId: wallet.id,
             },
           });
+          console.log('Updating wallet for userId:', userId);
           await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
           await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
         });
