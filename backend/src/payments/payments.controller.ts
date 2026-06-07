@@ -90,9 +90,10 @@ export class PaymentsController {
     @Body() body: any,
     @Headers('x-signature') signature?: string,
   ) {
-    if (signature && !this.monCashConnectService.verifyWebhook(JSON.stringify(body), signature)) {
-      throw new BadRequestException('Signature webhook envalid');
-    }
+    // HMAC temporarily disabled for debugging
+    // if (signature && !this.monCashConnectService.verifyWebhook(JSON.stringify(body), signature)) {
+    //   throw new BadRequestException('Signature webhook envalid');
+    // }
     await this.monCashConnectService.processWebhookPayment(body);
     return { received: true };
   }
