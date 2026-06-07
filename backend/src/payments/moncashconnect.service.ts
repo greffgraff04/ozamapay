@@ -49,13 +49,14 @@ export class MonCashConnectService {
     }
 
     const paymentUrl: string = data.paymentUrl ?? data.payment_url ?? data.url ?? '';
+    const monCashRef: string = data.reference ?? data.referenceId ?? data.reference_id ?? referenceId;
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (wallet) {
       const fee = Math.round(amountHTG * FEE_RATE * 100) / 100;
       await this.prisma.transaction.create({
         data: {
-          reference: referenceId,
+          reference: monCashRef,
           amount: amountHTG,
           netAmount: Math.round((amountHTG - fee) * 100) / 100,
           fee,
@@ -68,7 +69,7 @@ export class MonCashConnectService {
       });
     }
 
-    return { paymentUrl, referenceId };
+    return { paymentUrl, referenceId: monCashRef };
   }
 
   verifyWebhook(payload: string, signature: string): boolean {
