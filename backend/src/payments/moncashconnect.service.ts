@@ -77,36 +77,23 @@ export class MonCashConnectService {
       const netAmount = Math.round((amountHTG - fee) * 100) / 100;
 
       try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.transaction.create({
-            data: {
-              reference: monCashRef,
-              amount: amountHTG,
-              netAmount,
-              fee,
-              type: 'TOPUP',
-              status: 'COMPLETED',
-              method: 'MonCash',
-              title: `Depot MonCash — ${amountHTG} HTG`,
-              description: paymentUrl,
-              receiverWalletId: wallet.id,
-            },
-          });
-          console.log('Updating wallet for userId:', userId);
-          await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
-          console.log('Updating master wallet for userId:', MASTER_ID);
-          await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
+        await this.prisma.transaction.create({
+          data: {
+            reference: monCashRef,
+            amount: amountHTG,
+            netAmount,
+            fee,
+            type: 'TOPUP',
+            status: 'PENDING',
+            method: 'MonCash',
+            title: `Depot MonCash — ${amountHTG} HTG`,
+            description: paymentUrl,
+            receiverWalletId: wallet.id,
+          },
         });
       } catch (err: any) {
         console.error('MoncashConnect createPaymentRequest DB error:', err.message, err.code);
         throw err;
-      }
-
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (user) {
-        try {
-          await this.mailService.sendTopupConfirmed(user.email, user.name ?? 'Kliyan', netAmount, 'MonCash');
-        } catch {}
       }
     }
 
