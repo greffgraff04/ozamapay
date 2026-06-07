@@ -451,13 +451,15 @@ export default function Dashboard() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Erè');
 
-        const initialBal = Number(user?.wallet?.balance ?? 0);
+        const freshMeRes = await fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        const freshMe = freshMeRes.ok ? await freshMeRes.json() : null;
+        const initialBal = Number(freshMe?.wallet?.balance ?? user?.wallet?.balance ?? 0);
         setMccInitialBalance(initialBal);
         setMccPaymentUrl(data.paymentUrl);
         setMccPolling(true);
 
         if (mccPollRef.current) clearInterval(mccPollRef.current);
-        const deadline = Date.now() + 3 * 60 * 1000;
+        const deadline = Date.now() + 10 * 60 * 1000;
         mccPollRef.current = setInterval(async () => {
           if (Date.now() > deadline) {
             clearInterval(mccPollRef.current!);
