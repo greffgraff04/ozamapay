@@ -97,6 +97,12 @@ export class AdminController {
     return this.adminService.getPendingRequests();
   }
 
+  @Post('send-kyc-reminder')
+  @HttpCode(HttpStatus.OK)
+  async sendKycReminder() {
+    return this.adminService.sendKycReminder();
+  }
+
   @Patch('transactions/:id/process')
   async processManualTransaction(
     @Param('id') txId: string,

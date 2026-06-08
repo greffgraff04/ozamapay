@@ -538,6 +538,26 @@ export class AdminService {
     return updatedReq;
   }
 
+  async sendKycReminder(): Promise<{ sent: number }> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        isSuspended: false,
+        OR: [
+          { kyc: null },
+          { kyc: { status: { not: 'APPROVED' } } },
+        ],
+      },
+      select: { email: true, name: true },
+    });
+
+    let sent = 0;
+    for (const user of users) {
+      await this.mailService.sendKycReminder(user.email, user.name || 'Kliyan');
+      sent++;
+    }
+    return { sent };
+  }
+
   async processManualTransaction(txId: string, status: 'COMPLETED' | 'REJECTED', adminId: string) {
     // Capture transaction info before DB changes for email use after
     const txBefore = await this.prisma.transaction.findUnique({

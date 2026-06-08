@@ -421,6 +421,94 @@ export class MailService {
     await this.send('contact@ozamapay.com', `Nouvel demann komèsan: ${businessName}`, htmlAdmin);
   }
 
+  async sendKycReminder(email: string, name: string): Promise<void> {
+    const html = `<!DOCTYPE html>
+<html lang="ht">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kat Visa OZAMAPAY ou a ap tann ou</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+        <tr>
+          <td style="background:#0F121E;padding:28px 40px;">
+            <span style="display:inline-block;padding:4px 12px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;margin-bottom:14px;">OZAMAPAY</span>
+            <p style="margin:0;font-size:24px;font-weight:700;color:#ffffff;line-height:1.3;">Premye kat Visa Ayisyen sou Apple Pay ak Google Pay</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 40px 32px;">
+            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
+            <p style="margin:0 0 20px;font-size:14px;color:#444444;line-height:1.7;">Kat VISA Ayisyen premye klas ou a ap tann ou. Pase KYC epi jwenn aksè konplè nan platfòm OZAMAPAY — Apple Pay, Google Pay, Amazon, AliExpress ak plis toujou.</p>
+            <div style="background:#0F121E;border:1.5px solid #FF7A00;border-radius:8px;padding:24px;text-align:center;margin:0 0 24px;">
+              <p style="margin:0;font-size:52px;font-weight:900;color:#FF7A00;line-height:1;letter-spacing:-1px;">400+</p>
+              <p style="margin:8px 0 0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">moun deja pase KYC yo</p>
+              <p style="margin:10px 0 0;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6;">Yo achte sou AliExpress, peye Netflix, resevwa lajan via Apple Pay ak Google Pay — depi Ayiti.</p>
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+              <tr>
+                <td width="50%" style="padding:0 6px 12px 0;">
+                  <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
+                    <p style="margin:0;font-size:22px;">🍎</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Apple Pay</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak iPhone ou</p>
+                  </div>
+                </td>
+                <td width="50%" style="padding:0 0 12px 6px;">
+                  <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
+                    <p style="margin:0;font-size:22px;">🤖</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Google Pay</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak Android ou</p>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td width="50%" style="padding:0 6px 0 0;">
+                  <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
+                    <p style="margin:0;font-size:22px;">🛒</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Achte online</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Amazon, AliExpress ak plis</p>
+                  </div>
+                </td>
+                <td width="50%" style="padding:0 0 0 6px;">
+                  <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
+                    <p style="margin:0;font-size:22px;">🔒</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">100% sekirize</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Pwoteje pa OZAMAPAY</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#0F121E;text-transform:uppercase;letter-spacing:0.5px;">3 etap senp:</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+              <tr><td style="padding:10px 0;border-bottom:0.5px solid #eeeeee;">
+                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">1</span>
+                <span style="font-size:13px;color:#444444;">Upload foto pyès idantite w</span>
+              </td></tr>
+              <tr><td style="padding:10px 0;border-bottom:0.5px solid #eeeeee;">
+                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">2</span>
+                <span style="font-size:13px;color:#444444;">Pran yon Selfie rapid</span>
+              </td></tr>
+              <tr><td style="padding:10px 0;">
+                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">3</span>
+                <span style="font-size:13px;color:#444444;">Peye frè KYC yon sèl fwa — $25 USD</span>
+              </td></tr>
+            </table>
+            <a href="https://ozamapay.com/kyc" style="display:block;margin-top:28px;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen koulye a →</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#fafafa;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY · Jacmel, Ayiti · <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    await this.send(email, 'Kat Visa OZAMAPAY ou a ap tann ou 🔥', html);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Demann reset modpas — OZAMAPAY',
