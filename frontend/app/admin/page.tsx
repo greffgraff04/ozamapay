@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, ShieldCheck, Activity, X, RefreshCw,
   UserX, UserCheck, CheckCircle2, XCircle, ChevronDown, LogOut,
   TrendingUp, DollarSign, Search, Filter, ArrowUpRight, Zap, Clock,
-  Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText
+  Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
   const [financeRequests, setFinanceRequests] = useState<any[]>([]);
   const [financeRejectNote, setFinanceRejectNote] = useState<Record<string, string>>({});
+  const [kycReminderLoading, setKycReminderLoading] = useState(false);
 
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
@@ -281,6 +282,23 @@ export default function AdminDashboard() {
       if (res.ok) { showToast(`✅ ${rateKey} = ${rateValue} HTG`); setRateValue(''); }
       else { showToast('Erè update rate', 'error'); }
     } catch (e) { showToast('Koneksyon echwe', 'error'); }
+  };
+
+  const handleSendKycReminder = async () => {
+    setKycReminderLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/send-kyc-reminder`, { method: 'POST', headers: H() });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`✅ ${data.sent} email rappèl KYC voye avèk siksè`);
+      } else {
+        showToast(data.message || 'Erè envwa rappèl', 'error');
+      }
+    } catch {
+      showToast('Koneksyon echwe', 'error');
+    } finally {
+      setKycReminderLoading(false);
+    }
   };
 
   const handleToggleSuspend = async (userId: string, isSuspended: boolean) => {
@@ -826,9 +844,21 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
-                  <div className="p-6 border-b border-white/[0.03]">
-                    <h3 className="font-black text-xs uppercase tracking-widest text-white/80">{pendingKyc.length} KYC nan datatree a</h3>
-                    <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mt-0.5">Revizyon idantite ak dokiman an tan reyèl</p>
+                  <div className="p-6 border-b border-white/[0.03] flex items-center justify-between">
+                    <div>
+                      <h3 className="font-black text-xs uppercase tracking-widest text-white/80">{pendingKyc.length} KYC nan datatree a</h3>
+                      <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mt-0.5">Revizyon idantite ak dokiman an tan reyèl</p>
+                    </div>
+                    <button
+                      onClick={handleSendKycReminder}
+                      disabled={kycReminderLoading}
+                      className="flex items-center gap-2 bg-[#FF6B00] hover:bg-[#E05E00] disabled:opacity-50 disabled:cursor-not-allowed text-white px-3.5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition active:scale-[0.98]"
+                    >
+                      {kycReminderLoading
+                        ? <><span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Voye...</>
+                        : <><Mail size={12} /> Voye Rappèl KYC</>
+                      }
+                    </button>
                   </div>
                   {pendingKyc.length === 0 ? (
                     <div className="text-center py-20">
