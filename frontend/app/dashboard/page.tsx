@@ -930,7 +930,7 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <div className="animate-in fade-in duration-500" style={{ paddingTop: '420px' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 }}>
               <header className="px-4 pt-4 pb-4 flex justify-between items-center">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
