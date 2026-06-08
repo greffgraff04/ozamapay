@@ -493,7 +493,7 @@ export class MailService {
                 <span style="font-size:13px;color:#444444;">Peye frè KYC yon sèl fwa — $25 USD</span>
               </td></tr>
             </table>
-            <a href="https://ozamapay.com/kyc" style="display:block;margin-top:28px;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen koulye a →</a>
+            <a href="https://ozamapay.com/dashboard" style="display:block;margin-top:28px;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen koulye a →</a>
           </td>
         </tr>
         <tr>
