@@ -2007,7 +2007,7 @@ export default function Dashboard() {
                 {/* RECHARGE MODAL */}
                 {showRechargeModal && (
                   <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white w-full rounded-t-3xl p-6 pb-10 shadow-2xl">
+                    <div className="bg-white w-full rounded-t-3xl p-6 pb-10 shadow-2xl max-h-[90vh] overflow-y-auto">
                       <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
                       <div className="flex justify-between items-center mb-6">
                         <h3 className="text-[#0F121E] font-black text-lg">Recharge Kat</h3>
