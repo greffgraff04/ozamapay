@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, Variants } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
 
@@ -168,9 +169,12 @@ export default function Hero() {
 
               {/* Mockup */}
               <div className="relative w-full">
-                <img
+                <Image
                   src="/mockup.png"
                   alt="Ozamapay App interface"
+                  width={6000}
+                  height={4500}
+                  priority
                   className="w-full h-auto drop-shadow-[0_35px_35px_rgba(0,0,0,0.5)] select-none pointer-events-none"
                 />
               </div>

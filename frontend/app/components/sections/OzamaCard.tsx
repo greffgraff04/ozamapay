@@ -54,10 +54,10 @@ export default function OzamaCard() {
               <Image
                 src="/carte.png"
                 alt="OZAMAPAY Virtual Card"
-                width={500}
-                height={320}
+                width={1012}
+                height={638}
+                loading="lazy"
                 className="w-full h-auto drop-shadow-2xl"
-                priority
               />
             </motion.div>
           </motion.div>
