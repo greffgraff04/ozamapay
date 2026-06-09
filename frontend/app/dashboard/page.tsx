@@ -1645,22 +1645,35 @@ export default function Dashboard() {
             </div>
             <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
             {financeType === 'BUY' && (
-              <div className="bg-[#0F121E] p-8 text-white mb-8 rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
-                <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest italic">Info Peman Benefisyè</p>
-                <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
-                  <p className="text-[10px] font-bold text-white/40 uppercase mb-1">
-                    {selectedFinanceService.id === 'bank' ? 'Capital Bank USD' : selectedFinanceService.name}
-                  </p>
-                  <p className="font-black italic text-xl tracking-tight mb-2">
-                    {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
-                    {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
-                    {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
-                    {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
-                    {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
-                    {selectedFinanceService.id === 'usdt' && PAYMENT_INFO.usdt.acc}
-                  </p>
-                  <p className="text-[10px] font-black uppercase text-[#FF7A00]">{PAYMENT_INFO.zelle.name}</p>
+              <div className="mb-8 space-y-3">
+                <div className="bg-[#0F121E] p-8 text-white rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
+                  <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest italic">Info Peman Benefisyè</p>
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                    <p className="text-[10px] font-bold text-white/40 uppercase mb-1">
+                      {selectedFinanceService.id === 'bank' ? 'Capital Bank USD' : selectedFinanceService.id === 'usdt' ? 'TRC20 — Tron Network' : selectedFinanceService.name}
+                    </p>
+                    <p className={`font-black italic tracking-tight mb-2 break-all ${selectedFinanceService.id === 'usdt' ? 'text-sm' : 'text-xl'}`}>
+                      {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
+                      {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
+                      {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
+                      {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
+                      {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
+                      {selectedFinanceService.id === 'usdt' && PAYMENT_INFO.usdt.acc}
+                    </p>
+                    <p className="text-[10px] font-black uppercase text-[#FF7A00]">
+                      {selectedFinanceService.id === 'usdt' ? 'OZAMAPAY' : PAYMENT_INFO.zelle.name}
+                    </p>
+                  </div>
                 </div>
+
+                {selectedFinanceService.id === 'usdt' && (
+                  <div className="bg-red-600/20 border border-red-500/40 rounded-3xl p-5 flex items-start gap-3">
+                    <span className="text-red-400 text-lg leading-none mt-0.5 flex-shrink-0">⚠️</span>
+                    <p className="text-red-300 font-black text-xs uppercase tracking-wide leading-relaxed">
+                      ATENANSYON: Voye TRC20 SÈLMAN. Si ou itilize ERC20, BEP20, oswa nenpòt lòt rezo — lajan ou ap pèdi pou toutan. OZAMAPAY pap responsab.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
