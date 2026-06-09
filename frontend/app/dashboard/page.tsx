@@ -18,7 +18,7 @@ const PAYMENT_INFO = {
   meru: { acc: "oliou04@gmail.com", name: "Ralph Olivier Greffin" },
   zelle: { acc: "786 868 6782", name: "Ralph Olivier Greffin" },
   cashapp: { acc: "$Pascoue93", name: "Ralph Olivier Greffin" },
-  usdt: { acc: "https://ozamapay.com/pay/usdt-link", name: "TRC20 Network" },
+  usdt: { acc: "TBVM2M4UgjF4aWfseHVDuW1ZTKc7dTTWbi", name: "TRC20 Network" },
   natcash: { label: 'MonCash / NatCash', value: 'À konfigire - Kontakte sipò nou', note: 'HTG Transfer' }
 };
  
@@ -147,7 +147,8 @@ export default function Dashboard() {
     { id: 'cashapp', label: 'CashApp', img: 'cashapp.png', info: "$Pascoue93", name: "Ralph Olivier Greffin" },
     { id: 'moncash', label: 'MonCash', img: 'moncash.png', info: "Nimewo MonCash la", name: "Ralph Olivier Greffin" },
     { id: 'natcash', label: 'NatCash', img: 'natcash.png', info: "55187047", name: "Ralph Olivier Greffin" },
-    { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" }
+    { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" },
+    { id: 'usdt', label: 'USDT', img: 'usdt.png', info: PAYMENT_INFO.usdt.acc, name: "Adrès USDT TRC20" }
   ];
   const INTL_METHODS = ['zelle', 'cashapp', 'wise', 'meru', 'bank', 'usdt'];
   const topupIsIntl = INTL_METHODS.includes(selectedMethod.toLowerCase());
@@ -1326,7 +1327,7 @@ export default function Dashboard() {
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
-              {selectedMethod !== 'natcash' ? (
+              {selectedMethod !== 'natcash' && selectedMethod !== 'usdt' ? (
                 <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
                   <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
                   <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
@@ -1377,8 +1378,8 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   {paymentMethods.map((m) => (
                     <button key={m.id} onClick={() => {
-                      if (m.id === 'natcash') {
-                        setSelectedMethod('natcash');
+                      if (m.id === 'natcash' || m.id === 'usdt') {
+                        setSelectedMethod(m.id);
                         setTopUpType('MANUAL');
                         return;
                       }
@@ -1409,6 +1410,25 @@ export default function Dashboard() {
                     </button>
                   </div>
                   
+                  {selectedMethod === 'usdt' && (
+                    <div className="space-y-3 mb-4">
+                      <div className="bg-red-500/20 border border-red-400/30 rounded-2xl p-4 flex items-start gap-3">
+                        <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+                        <p className="text-red-300 font-black text-xs uppercase tracking-wide leading-relaxed">
+                          TRC20 sèlman — Pa itilize ERC20 oswa BEP20 — ou pral pèdi lajan ou!
+                        </p>
+                      </div>
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <p className="text-[#FF7A00] font-bold text-xs mb-2 flex items-center gap-2">
+                          <Info size={14} /> Enstriksyon
+                        </p>
+                        <p className="text-white/80 text-xs leading-relaxed">
+                          Voye USDT sou rezo TRC20 sèlman. Upload screenshot tranzaksyon an apre.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {selectedMethod === 'moncash' && topUpType === 'MANUAL' && showMoncashGuide && (
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 relative">
                       <button
