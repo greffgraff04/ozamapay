@@ -217,6 +217,15 @@ export class AuthService {
       throw new ForbiddenException('Kont ou bloke pou 15 minit. Eseye ankò pita.');
     }
 
+    if (user?.loginLockedUntil && user.loginLockedUntil <= now) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, loginLockedUntil: null },
+      });
+      user.failedLoginAttempts = 0;
+      user.loginLockedUntil = null;
+    }
+
     if (!user) {
       throw new UnauthorizedException(
         'Email oswa modpas enkòrèk',
