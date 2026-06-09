@@ -1652,14 +1652,22 @@ export default function Dashboard() {
                     <p className="text-[10px] font-bold text-white/40 uppercase mb-1">
                       {selectedFinanceService.id === 'bank' ? 'Capital Bank USD' : selectedFinanceService.id === 'usdt' ? 'TRC20 — Tron Network' : selectedFinanceService.name}
                     </p>
-                    <p className={`font-black italic tracking-tight mb-2 break-all ${selectedFinanceService.id === 'usdt' ? 'text-sm' : 'text-xl'}`}>
-                      {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
-                      {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
-                      {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
-                      {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
-                      {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
-                      {selectedFinanceService.id === 'usdt' && PAYMENT_INFO.usdt.acc}
-                    </p>
+                    {selectedFinanceService.id === 'usdt' ? (
+                      <div className="flex items-start gap-3 mb-2">
+                        <p className="font-black italic text-sm tracking-tight break-all flex-1">{PAYMENT_INFO.usdt.acc}</p>
+                        <button onClick={() => copyToClipboard(PAYMENT_INFO.usdt.acc)} className="flex-shrink-0 p-2 bg-[#FF7A00] rounded-xl active:scale-90 transition-transform">
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="font-black italic text-xl tracking-tight mb-2 break-all">
+                        {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
+                        {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
+                        {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
+                        {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
+                        {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
+                      </p>
+                    )}
                     <p className="text-[10px] font-black uppercase text-[#FF7A00]">
                       {selectedFinanceService.id === 'usdt' ? 'OZAMAPAY' : PAYMENT_INFO.zelle.name}
                     </p>
@@ -1700,12 +1708,18 @@ export default function Dashboard() {
               </div>
               
               {selectedFinanceService.id !== 'gaming' && (
-                <input className="w-full p-8 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5" placeholder={selectedFinanceService.id === 'usdt' ? 'Adrès TRC20 Wallet ou (pou resevwa USDT)' : 'Email oswa Username Sèvis la...'} onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})} />
+                <input
+                  className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 text-sm placeholder:text-xs placeholder:text-gray-400"
+                  placeholder={selectedFinanceService.id === 'usdt' ? 'Adrès TRC20 Wallet ou (pou resevwa USDT)' : 'Email oswa Username Sèvis la...'}
+                  onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
+                />
               )}
-              
-              {financeType === 'BUY' && (
+
+              {(financeType === 'BUY' || financeType === 'SELL') && (
                 <div className="p-8 bg-orange-50/30 border border-orange-100 rounded-3xl">
-                    <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">Etap Final: Upload Prèv Peman</p>
+                    <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">
+                      {financeType === 'BUY' ? 'Etap Final: Upload Prèv Peman' : 'Upload Screenshot Tranzaksyon USDT'}
+                    </p>
                     <button onClick={() => financeFileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-white flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
                         <Upload size={24} className="text-[#FF7A00]" />
                         <span className="text-[9px] font-black uppercase italic text-gray-500">{financeReceipt ? financeReceipt.name : 'Chwazi Screenshot la'}</span>
