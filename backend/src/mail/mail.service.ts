@@ -207,6 +207,7 @@ export class MailService {
         this.infoRow('Dat', now),
       ) +
       this.accentLine('Lajan ou disponib kounye a. Ou ka kreye kat VISA ou oswa voye kòb bay fanmi ou imedyatman.') +
+      this.btn('Ale nan Kont Ou →', `${this.frontendUrl}/dashboard`) +
       `<div style="height:16px;"></div>` +
       `<p style="margin:0;font-size:12px;color:#aaaaaa;text-align:center;">Chak depot se yon etap vè endepandans finansye.</p>`,
     );
@@ -517,7 +518,8 @@ export class MailService {
       this.p('Nou resevwa yon demann pou chanje modpas kont ou.') +
       this.p('Klike sou bouton anba a pou kreye yon nouvo modpas. Lyen sa valid pou 1 èdtan sèlman.') +
       this.p('Si se pa ou ki fè demann sa, kontakte nou imedyatman sou WhatsApp oswa pa email. Kont ou toujou sekirize — pa gen chanjman fèt toujou.') +
-      this.accentLine('Pou sekirite ou, pa janm pataje lyen sa ak pèsòn.'),
+      this.accentLine('Pou sekirite ou, pa janm pataje lyen sa ak pèsòn.') +
+      this.btn('Chanje Modpas Ou →', resetUrl),
       '#1565C0',
     );
     await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
