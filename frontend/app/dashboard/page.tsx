@@ -1700,7 +1700,7 @@ export default function Dashboard() {
               </div>
               
               {selectedFinanceService.id !== 'gaming' && (
-                <input className="w-full p-8 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5" placeholder="Email oswa Username Sèvis la..." onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})} />
+                <input className="w-full p-8 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5" placeholder={selectedFinanceService.id === 'usdt' ? 'Adrès TRC20 Wallet ou (pou resevwa USDT)' : 'Email oswa Username Sèvis la...'} onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})} />
               )}
               
               {financeType === 'BUY' && (
