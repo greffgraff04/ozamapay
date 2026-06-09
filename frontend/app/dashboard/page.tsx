@@ -2085,9 +2085,14 @@ export default function Dashboard() {
                             setRechargeLoading(false);
                           }
                         }}
-                        className="w-full py-4 bg-orange-500 text-white font-black rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-5 bg-[#FF7A00] text-white font-black rounded-2xl uppercase italic tracking-widest text-sm shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        {rechargeLoading ? 'Ap trete...' : <><Zap size={16} /> Konfime Recharge</>}
+                        {rechargeLoading ? (
+                          <>
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Ap trete...
+                          </>
+                        ) : 'RECHARGE KAT →'}
                       </button>
                     </div>
                   </div>
