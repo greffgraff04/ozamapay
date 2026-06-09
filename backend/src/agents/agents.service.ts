@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -434,7 +435,7 @@ export class AgentsService {
         const transaction =
           await tx.transaction.create({
             data: {
-              reference: `AT-${Date.now()}`,
+              reference: `AT-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
 
               type: 'PAYMENT',
 
@@ -682,7 +683,7 @@ export class AgentsService {
         const transaction =
           await tx.transaction.create({
             data: {
-              reference: `AW-${Date.now()}`,
+              reference: `AW-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
 
               type:
                 'WITHDRAWAL',

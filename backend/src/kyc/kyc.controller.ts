@@ -5,7 +5,6 @@ import {
   Body,
   UseGuards,
   Request,
-  Param,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,7 +12,6 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AdminGuard } from '../admin/admin.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
 
 @Controller('kyc')
@@ -74,17 +72,5 @@ export class KycController {
   @Get('status')
   getStatus(@Request() req: any) {
     return this.kycService.getKycStatus(req.user.id);
-  }
-
-  @Post('approve/:userId')
-  @UseGuards(AdminGuard)
-  approve(@Param('userId') userId: string) {
-    return this.kycService.approveKyc(userId);
-  }
-
-  @Post('reject/:userId')
-  @UseGuards(AdminGuard)
-  reject(@Param('userId') userId: string) {
-    return this.kycService.rejectKyc(userId);
   }
 }

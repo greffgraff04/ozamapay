@@ -314,12 +314,25 @@ export class AdminService {
   async adminTopupAgent(agentId: string, amount: number) {
     if (amount <= 0) throw new BadRequestException('Kantite lajan an dwe pi gwo pase 0 HTG');
 
-    const agentWallet = await this.prisma.agentWallet.findUnique({ where: { agentId } });
-    if (!agentWallet) throw new NotFoundException('Ajan sa a pa gen yon bous (agentWallet) aktif');
+    return this.prisma.$transaction(async (tx) => {
+      const agentWallet = await tx.agentWallet.findUnique({ where: { agentId } });
+      if (!agentWallet) throw new NotFoundException('Ajan sa a pa gen yon bous (agentWallet) aktif');
 
-    return this.prisma.agentWallet.update({
-      where: { agentId },
-      data: { balance: { increment: amount } },
+      const updated = await tx.agentWallet.update({
+        where: { agentId },
+        data: { balance: { increment: amount } },
+      });
+
+      // Audit trail for admin agent credits
+      await tx.commission.create({
+        data: {
+          agentId,
+          type: 'TOPUP',
+          amount,
+        },
+      });
+
+      return updated;
     });
   }
 
@@ -478,19 +491,32 @@ export class AdminService {
           });
         } else if (mode === 'SELL') {
           const amountHTG = Number(req.amount);
-          emailNetAmount = amountHTG;
+          const sellFee = Math.round(Number(req.fee) * 100) / 100;
+          const netSell = Math.round((amountHTG - sellFee) * 100) / 100;
+          emailNetAmount = netSell;
+
+          // D1: balance check before decrement inside Serializable tx
+          if (Number(wallet.balance) < amountHTG) {
+            throw new BadRequestException('Balans ensifizan pou demann SELL sa a');
+          }
 
           await tx.wallet.update({
             where: { userId: req.userId },
             data: { balance: { decrement: amountHTG } },
           });
 
+          // C1: credit master with the platform fee
+          await tx.wallet.update({
+            where: { userId: MASTER_ID },
+            data: { balance: { increment: sellFee } },
+          });
+
           await tx.transaction.create({
             data: {
               reference: `FIN-SELL-${Date.now()}`,
               amount: amountHTG,
-              netAmount: amountHTG,
-              fee: Number(req.fee),
+              netAmount: netSell,
+              fee: sellFee,
               type: 'WITHDRAWAL',
               status: 'COMPLETED',
               title: `Finance ${serviceType} - SELL`,

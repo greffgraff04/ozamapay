@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Headers, UnauthorizedException } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('v1/webhooks/strowallet')
@@ -9,8 +10,27 @@ export class StrowalletWebhookController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  async handleStrowalletWebhook(@Body() payload: any) {
-    this.logger.log(`Webhook resevwa soti nan StroWallet: ${JSON.stringify(payload)}`);
+  async handleStrowalletWebhook(
+    @Body() payload: any,
+    @Headers('x-strowallet-signature') signature?: string,
+  ) {
+    const secret = process.env.STROWALLET_WEBHOOK_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('Webhook secret non konfigire');
+    }
+    if (!signature) {
+      throw new UnauthorizedException('Signature webhook manke');
+    }
+    const expected = createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+    let valid = false;
+    try {
+      valid = timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    } catch {}
+    if (!valid) {
+      throw new UnauthorizedException('Signature webhook envalid');
+    }
+
+    this.logger.log(`Webhook resevwa soti nan StroWallet: event=${payload?.event || payload?.event_type}`);
 
     // StroWallet ka voye jaden 'event' oswa 'event_type'
     const eventType = payload?.event || payload?.event_type;

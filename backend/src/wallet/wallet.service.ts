@@ -389,13 +389,15 @@ export class WalletService {
     // Fee is on top — user receives the full HTG equivalent
     const reference = `TOPUP-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
+    const netAmount = this.round(amountHTG - fee);
+
     return this.prisma.transaction.create({
       data: {
         reference,
         receiverWalletId: wallet.id,
         amount: amountHTG,
         fee,
-        netAmount: amountHTG,
+        netAmount,
         type: 'TOPUP',
         status: 'PENDING',
         method,

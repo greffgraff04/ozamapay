@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -129,13 +130,17 @@ export class MonCashConnectService {
     if (!userId) return;
 
     await this.prisma.$transaction(async (tx) => {
+      // Re-read status inside the transaction to prevent concurrent double-credit
+      const current = await tx.transaction.findUnique({ where: { id: transaction.id } });
+      if (!current || current.status !== 'PENDING') return;
+
       await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
       await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
       await tx.transaction.update({
         where: { id: transaction.id },
         data: { status: 'COMPLETED', fee, netAmount },
       });
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user) {

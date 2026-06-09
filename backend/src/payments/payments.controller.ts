@@ -49,16 +49,17 @@ export class PaymentsController {
     @Headers('x-moncash-signature') signature?: string,
   ) {
     const secret = process.env.MONCASH_WEBHOOK_SECRET;
-    if (secret) {
-      if (!signature) {
-        throw new UnauthorizedException('Signature webhook manke');
-      }
-      const expected = createHmac('sha256', secret).update(JSON.stringify(data)).digest('hex');
-      let valid = false;
-      try { valid = timingSafeEqual(Buffer.from(expected), Buffer.from(signature)); } catch {}
-      if (!valid) {
-        throw new UnauthorizedException('Signature webhook envalid');
-      }
+    if (!secret) {
+      throw new UnauthorizedException('Webhook secret non konfigire');
+    }
+    if (!signature) {
+      throw new UnauthorizedException('Signature webhook manke');
+    }
+    const expected = createHmac('sha256', secret).update(JSON.stringify(data)).digest('hex');
+    let valid = false;
+    try { valid = timingSafeEqual(Buffer.from(expected), Buffer.from(signature)); } catch {}
+    if (!valid) {
+      throw new UnauthorizedException('Signature webhook envalid');
     }
 
     const transactionId = data.transactionId;
