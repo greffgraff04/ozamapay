@@ -102,7 +102,7 @@ export class MailService {
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.resend.emails.send({
-        from: 'OZAMAPAY <noreply@ozamapay.com>',
+        from: 'OZAMAPAY <contact@ozamapay.com>',
         to,
         subject,
         html,
