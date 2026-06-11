@@ -425,38 +425,50 @@ export class MailService {
   async sendKycReminder(email: string, name: string): Promise<void> {
     const html = `<!DOCTYPE html>
 <html lang="ht">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kat Visa OZAMAPAY ou a ap tann ou</title></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ayiti nan Mondial 2026</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+
+        <!-- HEADER -->
         <tr>
           <td style="background:#0F121E;padding:28px 40px;">
             <span style="display:inline-block;padding:4px 12px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;margin-bottom:14px;">OZAMAPAY</span>
-            <p style="margin:0;font-size:24px;font-weight:700;color:#ffffff;line-height:1.3;">Premye kat Visa Ayisyen sou Apple Pay ak Google Pay</p>
+            <p style="margin:0;font-size:26px;font-weight:800;color:#ffffff;line-height:1.3;">Ayiti nan Mondial 2026 &#127469;&#127481;&#9917;</p>
+            <p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5;">Jodi a 11 Jen 2026 &mdash; yon jou istorik pou tout Ayisyen</p>
           </td>
         </tr>
+
+        <!-- BODY -->
         <tr>
-          <td style="padding:36px 40px 32px;">
-            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
-            <p style="margin:0 0 20px;font-size:14px;color:#444444;line-height:1.7;">Kat VISA Ayisyen premye klas ou a ap tann ou. Pase KYC epi jwenn aksè konplè nan platfòm OZAMAPAY — Apple Pay, Google Pay, Amazon, AliExpress ak plis toujou.</p>
-            <div style="background:#0F121E;border:1.5px solid #FF7A00;border-radius:8px;padding:24px;text-align:center;margin:0 0 24px;">
-              <p style="margin:0;font-size:52px;font-weight:900;color:#FF7A00;line-height:1;letter-spacing:-1px;">400+</p>
-              <p style="margin:8px 0 0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">moun deja pase KYC yo</p>
-              <p style="margin:10px 0 0;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6;">Yo achte sou AliExpress, peye Netflix, resevwa lajan via Apple Pay ak Google Pay — depi Ayiti.</p>
+          <td style="padding:36px 40px 32px;background:#ffffff;">
+
+            <p style="margin:0 0 18px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
+
+            <!-- FIFA box -->
+            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:24px;text-align:center;margin:0 0 24px;">
+              <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:#FF7A00;text-transform:uppercase;">FIFA World Cup 2026</p>
+              <p style="margin:12px 0 8px;font-size:36px;font-weight:900;color:#ffffff;line-height:1;">&#127469;&#127481; 52 ans &#9917;</p>
+              <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.5px;">Gwoup C &mdash; Brezil &middot; Maw&ograve;k &middot; Ek&ograve;s</p>
             </div>
+
+            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Jodi a, Ayiti sou sèn mondyal la. Pou premye fwa nan 52 ans, drapo nou an flote nan yon Coupe du Monde. Se pa sèlman foutbòl — se yon mesaj bay tout lemond: Ayiti la, Ayiti fò, Ayiti kapab.</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">OZAMAPAY se menm espri sa a nan finans. Pandan w ap selebre jodi a, fè yon pa pou endepandans finansye ou tou. Pase KYC ou epi kòmanse achte enlign, peye ak Apple Pay ak Google Pay — depi Ayiti.</p>
+
+            <!-- 4 feature cards -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
               <tr>
                 <td width="50%" style="padding:0 6px 12px 0;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">🍎</p>
+                    <p style="margin:0;font-size:22px;">&#127822;</p>
                     <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Apple Pay</p>
                     <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak iPhone ou</p>
                   </div>
                 </td>
                 <td width="50%" style="padding:0 0 12px 6px;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">🤖</p>
+                    <p style="margin:0;font-size:22px;">&#129302;</p>
                     <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Google Pay</p>
                     <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak Android ou</p>
                   </div>
@@ -465,49 +477,52 @@ export class MailService {
               <tr>
                 <td width="50%" style="padding:0 6px 0 0;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">🛒</p>
-                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Achte online</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Amazon, AliExpress ak plis</p>
+                    <p style="margin:0;font-size:22px;">&#128722;</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Amazon / AliExpress</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Achte sou tout platfòm</p>
                   </div>
                 </td>
                 <td width="50%" style="padding:0 0 0 6px;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">🔒</p>
-                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">100% sekirize</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Pwoteje pa OZAMAPAY</p>
+                    <p style="margin:0;font-size:22px;">&#127381;</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Gratis kreye</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Kat VISA san frè adisyonèl</p>
                   </div>
                 </td>
               </tr>
             </table>
-            <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#0F121E;text-transform:uppercase;letter-spacing:0.5px;">3 etap senp:</p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
-              <tr><td style="padding:10px 0;border-bottom:0.5px solid #eeeeee;">
-                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">1</span>
-                <span style="font-size:13px;color:#444444;">Upload foto pyès idantite w</span>
-              </td></tr>
-              <tr><td style="padding:10px 0;border-bottom:0.5px solid #eeeeee;">
-                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">2</span>
-                <span style="font-size:13px;color:#444444;">Pran yon Selfie rapid</span>
-              </td></tr>
-              <tr><td style="padding:10px 0;">
-                <span style="display:inline-block;width:24px;height:24px;background:#FF7A00;border-radius:50%;text-align:center;line-height:24px;font-size:11px;font-weight:700;color:#ffffff;margin-right:12px;">3</span>
-                <span style="font-size:13px;color:#444444;">Peye frè KYC yon sèl fwa — $25 USD</span>
-              </td></tr>
-            </table>
-            <a href="https://ozamapay.com/dashboard" style="display:block;margin-top:28px;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen koulye a →</a>
+
+            <!-- Quote -->
+            <div style="border-left:3px solid #FF7A00;padding:14px 18px;margin:0 0 28px;background:#fff8f0;border-radius:0 6px 6px 0;">
+              <p style="margin:0;font-size:13px;font-style:italic;color:#7c4700;line-height:1.7;">&ldquo;Menm jan Ayiti reprezante peyi nou sou s&egrave;n mondyal foutbòl la &mdash; OZAMAPAY reprezante Ayiti sou s&egrave;n finansye ent&egrave;nasyonal la.&rdquo;</p>
+            </div>
+
+            <!-- CTA -->
+            <a href="https://ozamapay.com/dashboard" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen jodi a &mdash; Jou Mondial la &#9917; &rarr;</a>
+
+            <!-- Signature -->
+            <div style="margin-top:32px;padding-top:20px;border-top:0.5px solid #eeeeee;">
+              <p style="margin:0;font-size:13px;font-weight:700;color:#0F121E;">Ralph Olivier Greffin</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#888888;">Fondatè &amp; CEO &mdash; OZAMAPAY</p>
+            </div>
+
           </td>
         </tr>
+
+        <!-- FOOTER -->
         <tr>
-          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#fafafa;">
-            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY · Jacmel, Ayiti · <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
+            <p style="margin:0 0 6px;font-size:11px;color:#999999;text-align:center;line-height:1.6;">Pa janm pataje PIN ou ak pèsòn &mdash; menm ekip OZAMAPAY pa ka mande l.</p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
+
       </table>
     </td></tr>
   </table>
 </body>
 </html>`;
-    await this.send(email, 'Kat Visa OZAMAPAY ou a ap tann ou 🔥', html);
+    await this.send(email, 'Ayiti nan Mondial 2026 🇭🇹⚽ — OZAMAPAY', html);
   }
 
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
