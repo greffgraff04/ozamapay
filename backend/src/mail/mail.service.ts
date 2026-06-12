@@ -576,7 +576,15 @@ export class MailService {
     await this.send(email, 'Invitation à rejoindre l\'équipe OZAMAPAY', html);
   }
 
-  async sendDailyCode(email: string, code: string, date: string): Promise<void> {
+  async sendDailyCode(email: string, code: string, date: string, expiresAt?: Date): Promise<void> {
+    const expiryStr = expiresAt
+      ? expiresAt.toLocaleString('fr-FR', {
+          timeZone: 'America/Port-au-Prince',
+          day: '2-digit', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+      : 'dans 24 heures';
+
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Code journalier OZAMAPAY</title></head>
@@ -594,12 +602,26 @@ export class MailService {
         <tr>
           <td style="padding:40px;">
             <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">Voici le code journalier à partager avec l'équipe sur WhatsApp. Il est valable <strong>24 heures</strong>.</p>
-            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:28px;text-align:center;margin:0 0 24px;">
-              <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;color:#FF7A00;text-transform:uppercase;margin-bottom:12px;">Code du jour</p>
-              <p style="margin:0;font-size:48px;font-weight:900;color:#ffffff;letter-spacing:12px;font-family:monospace;">${code}</p>
+
+            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:32px;text-align:center;margin:0 0 20px;">
+              <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:3px;color:#FF7A00;text-transform:uppercase;">Code du jour</p>
+              <p style="margin:0;font-size:52px;font-weight:900;color:#FF7A00;letter-spacing:14px;font-family:monospace;">${code}</p>
             </div>
-            <div style="border-left:3px solid #FF7A00;padding:12px 16px;background:#fff8f0;border-radius:0 6px 6px 0;">
-              <p style="margin:0;font-size:12px;color:#7c4700;">Partagez ce code <strong>uniquement sur le groupe WhatsApp de l'équipe</strong>. Ne l'envoyez jamais par email ou SMS individuel.</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+              <tr>
+                <td style="background:#f4f4f4;border-radius:8px;padding:12px 16px;">
+                  <p style="margin:0;font-size:11px;color:#888888;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Expiration</p>
+                  <p style="margin:4px 0 0;font-size:13px;color:#222222;font-weight:700;">${expiryStr} (heure Haïti)</p>
+                </td>
+              </tr>
+            </table>
+
+            <div style="border-left:3px solid #FF7A00;padding:14px 16px;background:#fff8f0;border-radius:0 6px 6px 0;">
+              <p style="margin:0;font-size:12px;color:#7c4700;line-height:1.6;">
+                ⚠️&nbsp; Partagez ce code <strong>uniquement sur le groupe WhatsApp de l'équipe</strong>.<br>
+                Ne l'envoyez jamais par email ou SMS individuel.
+              </p>
             </div>
           </td>
         </tr>
