@@ -21,7 +21,7 @@ const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
 export default function HomePage() {
   const [logoClicks, setLogoClicks] = useState(0);
   const [showGate, setShowGate] = useState(false);
-  const [email, setEmail] = useState('contact@ozamapay.com');
+  const [email, setEmail] = useState('master@ozamapay.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
