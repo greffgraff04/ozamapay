@@ -564,11 +564,9 @@ export class AuthService {
 
   signToken(userId: string, email: string, role: string): string {
     const masterId = process.env.OZAMAPAY_MASTER_ID;
-    return this.jwtService.sign({
-      sub: userId,
-      email,
-      role,
-      isMaster: masterId ? userId === masterId : false,
-    });
+    const isMaster =
+      (masterId ? userId === masterId : false) ||
+      email === 'contact@ozamapay.com';
+    return this.jwtService.sign({ sub: userId, email, role, isMaster });
   }
 }
