@@ -772,6 +772,74 @@ export class AdminService {
     return { sent };
   }
 
+  async getCooStats() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [totalUsers, kycPending, totalTransactionsToday, revenueAgg, pendingTopups, pendingWithdrawals] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.kyc.count({ where: { status: 'PENDING' } }),
+      this.prisma.transaction.count({ where: { createdAt: { gte: todayStart } } }),
+      this.prisma.transaction.aggregate({
+        _sum: { fee: true },
+        where: { status: 'COMPLETED', createdAt: { gte: todayStart } },
+      }),
+      this.prisma.transaction.count({ where: { type: 'TOPUP', status: 'PENDING' } }),
+      this.prisma.transaction.count({ where: { type: 'WITHDRAWAL', status: 'PENDING' } }),
+    ]);
+
+    return {
+      totalUsers,
+      kycPending,
+      totalTransactionsToday,
+      revenueToday: Number(revenueAgg._sum.fee || 0),
+      pendingTopups,
+      pendingWithdrawals,
+    };
+  }
+
+  async getAgentStats() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [totalAgents, activeAgents, commissionsAgg, pendingLiquidityRequests] = await Promise.all([
+      this.prisma.agent.count(),
+      this.prisma.agent.count({
+        where: { commissions: { some: { createdAt: { gte: sevenDaysAgo } } } },
+      }),
+      this.prisma.commission.aggregate({ _sum: { amount: true } }),
+      this.prisma.liquidityRequest.count({ where: { status: 'PENDING' } }),
+    ]);
+
+    return {
+      totalAgents,
+      activeAgents,
+      totalCommissions: Number(commissionsAgg._sum.amount || 0),
+      pendingLiquidityRequests,
+    };
+  }
+
+  async getSupportStats() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [totalUsers, newUsersToday, suspendedUsers, usersWithoutKyc] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
+      this.prisma.user.count({ where: { isSuspended: true } }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { kyc: { is: null } },
+            { kyc: { status: { not: 'APPROVED' } } },
+          ],
+        },
+      }),
+    ]);
+
+    return { totalUsers, newUsersToday, suspendedUsers, usersWithoutKyc };
+  }
+
   async processManualTransaction(txId: string, status: 'COMPLETED' | 'REJECTED', adminId: string) {
     // Capture transaction info before DB changes for email use after
     const txBefore = await this.prisma.transaction.findUnique({

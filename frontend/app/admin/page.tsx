@@ -54,6 +54,7 @@ export default function AdminDashboard() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [roleStats, setRoleStats] = useState<any>(null);
 
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
@@ -210,6 +211,25 @@ export default function AdminDashboard() {
       return () => clearInterval(interval);
     }
   }, [mounted, token, fetchData]);
+
+  useEffect(() => {
+    if (!mounted || !token || !userRole || isMaster) return;
+    const endpointMap: Record<string, string> = {
+      SUPER_ADMIN: `${API}/admin/stats/coo`,
+      AGENT: `${API}/admin/stats/agent`,
+      SUPPORT: `${API}/admin/stats/support`,
+    };
+    const url = endpointMap[userRole];
+    if (!url) return;
+    const load = () =>
+      fetch(url, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setRoleStats(data); })
+        .catch(() => {});
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [mounted, token, userRole, isMaster]);
 
   const handleDirectTopup = async () => {
     if (!topupAmount || !selectedUser) return;
@@ -573,33 +593,72 @@ export default function AdminDashboard() {
           {activeTab === 'overview' && (
             <div className="space-y-8">
               {(() => {
-                const allStatCards = [
-                  { label: 'Total Itilizatè', value: totalUsers, suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '+12%', roles: ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'] },
-                  { label: 'Total Ajan (Nodes)', value: agents.length, suffix: '', icon: Briefcase, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]', trend: 'Active', roles: ['ADMIN', 'SUPER_ADMIN', 'AGENT'] },
-                  { label: 'Revenue (Frè)', value: Number(totalFeesGenerated).toLocaleString('fr-FR'), suffix: ' HTG', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]', trend: '+23%', roles: ['ADMIN', 'SUPER_ADMIN'] },
-                  { label: 'KYC Pending', value: pendingKyc.length, suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '', roles: ['ADMIN', 'SUPER_ADMIN'] },
-                ];
-                const visibleCards = isMaster ? allStatCards : allStatCards.filter(c => c.roles.includes(userRole));
-                return (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {visibleCards.map((card, i) => (
+                type StatCard = { label: string; value: string | number; suffix: string; icon: any; color: string; iconColor: string; badge?: string };
+                const renderCards = (cards: StatCard[], cols = 'grid-cols-2 lg:grid-cols-4') => (
+                  <div className={`grid ${cols} gap-4`}>
+                    {cards.map((card, i) => (
                       <div key={i} className={`bg-gradient-to-br ${card.color} border border-white/[0.04] rounded-2xl p-6 relative overflow-hidden`}>
                         <div className="flex items-start justify-between mb-4">
                           <div className={`p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] ${card.iconColor}`}>
                             <card.icon size={16} />
                           </div>
-                          {card.trend && (
+                          {card.badge && (
                             <span className="text-[9px] font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <ArrowUpRight size={10} /> {card.trend}
+                              <ArrowUpRight size={10} /> {card.badge}
                             </span>
                           )}
                         </div>
                         <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-1">{card.label}</p>
-                        <p className="text-xl font-black text-white tracking-tight italic">{card.value}<span className="text-xs text-white/40 font-normal tracking-normal not-italic">{card.suffix}</span></p>
+                        <p className="text-xl font-black text-white tracking-tight italic">
+                          {card.value}<span className="text-xs text-white/40 font-normal tracking-normal not-italic">{card.suffix}</span>
+                        </p>
                       </div>
                     ))}
                   </div>
                 );
+
+                if (isMaster) {
+                  return renderCards([
+                    { label: 'Total Itilizatè', value: totalUsers, suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', badge: '+12%' },
+                    { label: 'Total Ajan (Nodes)', value: agents.length, suffix: '', icon: Briefcase, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]', badge: 'Active' },
+                    { label: 'Revenue (Frè)', value: Number(totalFeesGenerated).toLocaleString('fr-FR'), suffix: ' HTG', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]', badge: '+23%' },
+                    { label: 'KYC Pending', value: pendingKyc.length, suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                  ]);
+                }
+
+                if (userRole === 'SUPER_ADMIN') {
+                  const s = roleStats;
+                  return renderCards([
+                    { label: 'Total Itilizatè', value: s?.totalUsers ?? '—', suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'KYC Pending', value: s?.kycPending ?? '—', suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'Tranzaksyon Jodi a', value: s?.totalTransactionsToday ?? '—', suffix: '', icon: Activity, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'Revni Jodi a', value: s?.revenueToday != null ? Number(s.revenueToday).toLocaleString('fr-FR') : '—', suffix: s?.revenueToday != null ? ' HTG' : '', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]' },
+                    { label: 'Topup an Atant', value: s?.pendingTopups ?? '—', suffix: '', icon: ArrowUpRight, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'Retrè an Atant', value: s?.pendingWithdrawals ?? '—', suffix: '', icon: DollarSign, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                  ], 'grid-cols-2 lg:grid-cols-3');
+                }
+
+                if (userRole === 'AGENT') {
+                  const s = roleStats;
+                  return renderCards([
+                    { label: 'Total Ajans', value: s?.totalAgents ?? '—', suffix: '', icon: Briefcase, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]' },
+                    { label: 'Ajans Aktif', value: s?.activeAgents ?? '—', suffix: '', icon: Zap, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]' },
+                    { label: 'Total Komisyon', value: s?.totalCommissions != null ? Number(s.totalCommissions).toLocaleString('fr-FR') : '—', suffix: s?.totalCommissions != null ? ' HTG' : '', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]' },
+                    { label: 'Demann Likidite', value: s?.pendingLiquidityRequests ?? '—', suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                  ]);
+                }
+
+                if (userRole === 'SUPPORT') {
+                  const s = roleStats;
+                  return renderCards([
+                    { label: 'Total Itilizatè', value: s?.totalUsers ?? '—', suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'Nouvo Jodi a', value: s?.newUsersToday ?? '—', suffix: '', icon: UserPlus, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]' },
+                    { label: 'Suspann', value: s?.suspendedUsers ?? '—', suffix: '', icon: UserX, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                    { label: 'San KYC', value: s?.usersWithoutKyc ?? '—', suffix: '', icon: ShieldAlert, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60' },
+                  ]);
+                }
+
+                return null;
               })()}
 
               {/* Daily code card — CEO only */}
