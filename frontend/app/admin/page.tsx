@@ -66,7 +66,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
-      setToken(localStorage.getItem('token') || '');
+      const raw = localStorage.getItem('token') || '';
+      setToken(raw);
+      // Parse isMaster here — never call setState during render
+      if (raw && raw.includes('.')) {
+        try {
+          const b64 = raw.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
+          if (b64) {
+            const payload = JSON.parse(decodeURIComponent(
+              window.atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
+            ));
+            if (payload.isMaster) setIsMaster(true);
+          }
+        } catch {}
+      }
     }
   }, []);
 
@@ -87,7 +100,6 @@ export default function AdminDashboard() {
         const payload = JSON.parse(jsonPayload);
         adminName = payload.name || payload.email?.split('@')[0] || "Admin";
         adminEmail = payload.email || "admin@ozamapay.com";
-        if (payload.isMaster) setIsMaster(true);
       }
     } catch (e) {
       console.error("Token parsing failed safely:", e);
@@ -1542,7 +1554,7 @@ export default function AdminDashboard() {
                 <div className="p-5 border-b border-white/[0.03]">
                   <h4 className="font-black text-[10px] uppercase tracking-widest text-white/60">Invitations envoyées</h4>
                 </div>
-                {invitations.length === 0 ? (
+                {(invitations ?? []).length === 0 ? (
                   <div className="p-10 text-center">
                     <Users2 size={24} className="text-white/10 mx-auto mb-3" />
                     <p className="text-white/20 text-xs font-mono">Aucune invitation pour le moment</p>
@@ -1557,7 +1569,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {invitations.map((inv: any) => (
+                      {(invitations ?? []).map((inv: any) => (
                         <tr key={inv.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition">
                           <td className="px-5 py-4 text-xs font-bold text-white/70">{inv.email}</td>
                           <td className="px-5 py-4">
