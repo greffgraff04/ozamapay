@@ -572,29 +572,35 @@ export default function AdminDashboard() {
           {/* ==================== TAB: OVERVIEW ==================== */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { label: 'Total Itilizatè', value: totalUsers, suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '+12%' },
-                  { label: 'Total Ajan (Nodes)', value: agents.length, suffix: '', icon: Briefcase, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]', trend: 'Active' },
-                  { label: 'Revenue (Frè)', value: Number(totalFeesGenerated).toLocaleString('fr-FR'), suffix: ' HTG', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]', trend: '+23%' },
-                  { label: 'KYC Pending', value: pendingKyc.length, suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '' },
-                ].map((card, i) => (
-                  <div key={i} className={`bg-gradient-to-br ${card.color} border border-white/[0.04] rounded-2xl p-6 relative overflow-hidden`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] ${card.iconColor}`}>
-                        <card.icon size={16} />
+              {(() => {
+                const allStatCards = [
+                  { label: 'Total Itilizatè', value: totalUsers, suffix: '', icon: Users, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '+12%', roles: ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'] },
+                  { label: 'Total Ajan (Nodes)', value: agents.length, suffix: '', icon: Briefcase, color: 'from-white/[0.02] to-transparent', iconColor: 'text-[#FF6B00]', trend: 'Active', roles: ['ADMIN', 'SUPER_ADMIN', 'AGENT'] },
+                  { label: 'Revenue (Frè)', value: Number(totalFeesGenerated).toLocaleString('fr-FR'), suffix: ' HTG', icon: TrendingUp, color: 'from-[#FF6B00]/5 to-transparent border-[#FF6B00]/10', iconColor: 'text-[#FF6B00]', trend: '+23%', roles: ['ADMIN', 'SUPER_ADMIN'] },
+                  { label: 'KYC Pending', value: pendingKyc.length, suffix: '', icon: Clock, color: 'from-white/[0.02] to-transparent', iconColor: 'text-white/60', trend: '', roles: ['ADMIN', 'SUPER_ADMIN'] },
+                ];
+                const visibleCards = isMaster ? allStatCards : allStatCards.filter(c => c.roles.includes(userRole));
+                return (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {visibleCards.map((card, i) => (
+                      <div key={i} className={`bg-gradient-to-br ${card.color} border border-white/[0.04] rounded-2xl p-6 relative overflow-hidden`}>
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={`p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] ${card.iconColor}`}>
+                            <card.icon size={16} />
+                          </div>
+                          {card.trend && (
+                            <span className="text-[9px] font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <ArrowUpRight size={10} /> {card.trend}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-1">{card.label}</p>
+                        <p className="text-xl font-black text-white tracking-tight italic">{card.value}<span className="text-xs text-white/40 font-normal tracking-normal not-italic">{card.suffix}</span></p>
                       </div>
-                      {card.trend && (
-                        <span className="text-[9px] font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <ArrowUpRight size={10} /> {card.trend}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-1">{card.label}</p>
-                    <p className="text-xl font-black text-white tracking-tight italic">{card.value}<span className="text-xs text-white/40 font-normal tracking-normal not-italic">{card.suffix}</span></p>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               {/* Daily code card — CEO only */}
               {isMaster && (
@@ -656,7 +662,23 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* CHARTS LAYER */}
+              {/* Welcome message for SUPPORT and AGENT — no financial charts needed */}
+              {!isMaster && (userRole === 'SUPPORT' || userRole === 'AGENT') && (
+                <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl p-10 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center mx-auto mb-4">
+                    {userRole === 'SUPPORT' ? <Users size={20} className="text-[#FF6B00]" /> : <Briefcase size={20} className="text-[#FF6B00]" />}
+                  </div>
+                  <p className="text-white/70 text-sm font-black uppercase tracking-widest mb-2">Bienvenue.</p>
+                  <p className="text-white/30 text-xs font-mono">
+                    {userRole === 'SUPPORT'
+                      ? "Consultez l'onglet Itilizatè pour gérer les utilisateurs."
+                      : "Consultez l'onglet Ajan pour gérer votre réseau."}
+                  </p>
+                </div>
+              )}
+
+              {/* CHARTS LAYER — hidden for SUPPORT and AGENT */}
+              {(isMaster || (userRole !== 'SUPPORT' && userRole !== 'AGENT')) && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl p-6">
                   <h3 className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-6">Aktivite Dènye Tranzaksyon yo (HTG)</h3>
@@ -698,6 +720,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )}
 
