@@ -51,6 +51,7 @@ export default function AdminDashboard() {
   const [inviteRole, setInviteRole] = useState('SUPER_ADMIN');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
               window.atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
             ));
             if (payload.isMaster) setIsMaster(true);
+            if (payload.role) setUserRole(payload.role);
           }
         } catch {}
       }
@@ -419,17 +421,25 @@ export default function AdminDashboard() {
 
   const pendingFinanceCount = financeRequests.filter(r => r.status === 'PENDING').length;
 
-  const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'Itilizatè (Users)', icon: Users },
-    { id: 'agents', label: 'Ajan & Packages', icon: Briefcase, badge: agents.length },
-    { id: 'kyc', label: 'KYC Review', icon: ShieldCheck, badge: pendingKyc.length },
-    { id: 'liquidity', label: 'Retrè Likidite', icon: Banknote, badge: pendingLiquidityCount || undefined },
-    { id: 'transactions', label: 'Topup & Retrè Manuel', icon: FileText, badge: pendingTransactions.length || undefined },
-    { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined },
-    { id: 'rates', label: 'Taux & Frè', icon: Activity },
-    ...(isMaster ? [{ id: 'equipe', label: 'Équipe', icon: Users2 }] : []),
+  const isReadOnly = userRole === 'SUPPORT' && !isMaster;
+
+  const allNavItems = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard, roles: ['ADMIN', 'SUPER_ADMIN', 'AGENT', 'SUPPORT'] },
+    { id: 'users', label: 'Itilizatè (Users)', icon: Users, roles: ['ADMIN', 'SUPPORT'] },
+    { id: 'agents', label: 'Ajan & Packages', icon: Briefcase, badge: agents.length, roles: ['ADMIN', 'AGENT'] },
+    { id: 'kyc', label: 'KYC Review', icon: ShieldCheck, badge: pendingKyc.length, roles: ['ADMIN', 'SUPER_ADMIN'] },
+    { id: 'liquidity', label: 'Retrè Likidite', icon: Banknote, badge: pendingLiquidityCount || undefined, roles: ['ADMIN', 'AGENT'] },
+    { id: 'transactions', label: 'Topup & Retrè Manuel', icon: FileText, badge: pendingTransactions.length || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
+    { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
+    { id: 'rates', label: 'Taux & Frè', icon: Activity, roles: ['ADMIN'] },
+    { id: 'equipe', label: 'Équipe', icon: Users2, roles: [] },
   ];
+
+  const navItems = isMaster
+    ? allNavItems.map(({ roles: _r, ...item }) => item)
+    : allNavItems
+        .filter(item => item.id !== 'equipe' && (userRole ? item.roles.includes(userRole) : true))
+        .map(({ roles: _r, ...item }) => item);
 
   if (!mounted || loading) return (
     <div className="min-h-screen bg-[#0A0B0F] flex items-center justify-center">
@@ -728,22 +738,26 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5">
-                              <button onClick={() => { setSelectedUser(u); setIsAgentTopup(false); setShowTopupModal(true); }}
-                                className="bg-[#FF6B00] text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-[#e05e00] transition">
-                                Credit
-                              </button>
-                              
-                              <button onClick={() => handleToggleRole(u?.id, u?.role)} title="Moute li Ajan"
-                                className="bg-white/[0.02] border border-white/[0.05] text-white/60 hover:text-[#FF6B00] hover:border-[#FF6B00]/20 p-1.5 rounded-lg transition">
-                                <UserPlus size={12} />
-                              </button>
+                            {isReadOnly ? (
+                              <span className="text-[8px] font-mono text-white/20 uppercase tracking-widest">Lekti sèlman</span>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <button onClick={() => { setSelectedUser(u); setIsAgentTopup(false); setShowTopupModal(true); }}
+                                  className="bg-[#FF6B00] text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-[#e05e00] transition">
+                                  Credit
+                                </button>
 
-                              <button onClick={() => handleToggleSuspend(u?.id, u?.isSuspended)}
-                                className={`p-1.5 rounded-lg border transition ${u?.isSuspended ? 'bg-white/[0.02] border-white/[0.05] text-[#FF6B00]' : 'bg-red-500/5 border-red-500/10 text-red-400'}`}>
-                                {u?.isSuspended ? <UserCheck size={12} /> : <UserX size={12} />}
-                              </button>
-                            </div>
+                                <button onClick={() => handleToggleRole(u?.id, u?.role)} title="Moute li Ajan"
+                                  className="bg-white/[0.02] border border-white/[0.05] text-white/60 hover:text-[#FF6B00] hover:border-[#FF6B00]/20 p-1.5 rounded-lg transition">
+                                  <UserPlus size={12} />
+                                </button>
+
+                                <button onClick={() => handleToggleSuspend(u?.id, u?.isSuspended)}
+                                  className={`p-1.5 rounded-lg border transition ${u?.isSuspended ? 'bg-white/[0.02] border-white/[0.05] text-[#FF6B00]' : 'bg-red-500/5 border-red-500/10 text-red-400'}`}>
+                                  {u?.isSuspended ? <UserCheck size={12} /> : <UserX size={12} />}
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
