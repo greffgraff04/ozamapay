@@ -43,8 +43,9 @@ function LoginForm() {
         localStorage.setItem('user', JSON.stringify(data.user));
         document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
 
-        if (email.toLowerCase() === 'oli@ozama.com') {
-          window.location.href = '/admin/users';
+        const role = data.user?.role;
+        if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPPORT') {
+          window.location.href = '/admin';
         } else {
           window.location.href = '/dashboard';
         }

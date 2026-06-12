@@ -385,7 +385,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     localStorage.clear();
     document.cookie = 'token=; path=/; max-age=0';
-    window.location.replace('/login');
+    window.location.replace('/');
   };
 
   const filteredUsers = users.filter(u =>
