@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   const [dailyCode, setDailyCode] = useState<any>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('SUPPORT');
+  const [inviteRole, setInviteRole] = useState('SUPER_ADMIN');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
 
@@ -1631,8 +1631,10 @@ export default function AdminDashboard() {
                 <label className="text-[9px] font-bold uppercase text-white/30 tracking-widest mb-1.5 block">Rôle</label>
                 <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:border-[#FF6B00]/30 text-white/80 cursor-pointer transition">
-                  <option value="SUPPORT">Agent Support</option>
-                  <option value="ADMIN">Administrateur</option>
+                  <option value="SUPER_ADMIN">COO — Opérations</option>
+                  <option value="AGENT">Directeur des Agents</option>
+                  <option value="SUPPORT">Support Opérationnel</option>
+                  <option value="ADMIN">Administrateur (CEO)</option>
                 </select>
               </div>
               <button type="submit" disabled={inviteLoading}

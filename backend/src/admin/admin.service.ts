@@ -579,7 +579,7 @@ export class AdminService {
   }
 
   async inviteEmployee(email: string, role: string, invitedByUserId: string) {
-    const VALID_ROLES = ['SUPPORT', 'ADMIN'];
+    const VALID_ROLES = ['SUPER_ADMIN', 'AGENT', 'SUPPORT', 'ADMIN'];
     if (!VALID_ROLES.includes(role)) {
       throw new BadRequestException(`Rôle invalide. Valeurs acceptées: ${VALID_ROLES.join(', ')}`);
     }
