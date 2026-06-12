@@ -99,7 +99,7 @@ export default function HomePage() {
         return;
       }
       const role = data.user?.role || data.role;
-      if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+      if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'AGENT' || role === 'SUPPORT') {
         storeAndRedirect(data);
       } else {
         setError('Aksè refize');
