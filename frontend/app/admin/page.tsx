@@ -5,7 +5,7 @@ import {
   UserX, UserCheck, CheckCircle2, XCircle, ChevronDown, LogOut,
   TrendingUp, DollarSign, Search, Filter, ArrowUpRight, Zap, Clock,
   Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail,
-  Users2, KeyRound, RotateCcw, Send, AlertTriangle
+  Users2, KeyRound, RotateCcw, Send, AlertTriangle, Trophy
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [financeRequests, setFinanceRequests] = useState<any[]>([]);
   const [financeRejectNote, setFinanceRejectNote] = useState<Record<string, string>>({});
   const [kycReminderLoading, setKycReminderLoading] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   // Invitation & daily code state
   const [invitations, setInvitations] = useState<any[]>([]);
@@ -369,6 +370,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSendPromoMondiale = async () => {
+    setPromoLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/send-promo-mondiale`, { method: 'POST', headers: H() });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Imel Mondial voye bay ${data.sent} moun!`);
+      } else {
+        showToast(data.message || 'Erè envwa imel', 'error');
+      }
+    } catch {
+      showToast('Koneksyon echwe', 'error');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const handleToggleSuspend = async (userId: string, isSuspended: boolean) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, isSuspended: !isSuspended } : u));
     try {
@@ -691,6 +709,32 @@ export default function AdminDashboard() {
                   <div className="mt-4 flex items-start gap-2 bg-[#FF6B00]/5 border border-[#FF6B00]/10 rounded-xl p-3">
                     <AlertTriangle size={12} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-mono text-white/40">Partagez ce code uniquement sur le groupe WhatsApp de l'équipe</p>
+                  </div>
+                </div>
+              )}
+
+              {isMaster && (
+                <div className="col-span-2 lg:col-span-4 bg-gradient-to-br from-[#0F121E] to-[#0D0E14] border border-[#FF6B00]/20 rounded-2xl p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-xl">
+                        <Trophy size={16} className="text-[#FF6B00]" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Pwomosyon Mondial 2026</h3>
+                        <p className="text-[9px] font-mono text-white/30 mt-0.5">Voye imel 5 000 HTG bay tout itilizatè aktif yo</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleSendPromoMondiale}
+                      disabled={promoLoading}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#FF6B00] hover:bg-[#E05E00] disabled:opacity-50 disabled:cursor-not-allowed border border-[#FF6B00]/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition active:scale-[0.98]"
+                    >
+                      {promoLoading
+                        ? <><span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Voye...</>
+                        : <><Trophy size={12} /> Voye Imel Mondial</>
+                      }
+                    </button>
                   </div>
                 </div>
               )}

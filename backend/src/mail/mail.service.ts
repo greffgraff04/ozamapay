@@ -638,6 +638,102 @@ export class MailService {
     await this.send(email, `Code journalier OZAMAPAY — ${date}`, html);
   }
 
+  async sendPromoMondialeEmail(email: string, name: string): Promise<void> {
+    const html = `<!DOCTYPE html>
+<html lang="ht">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OZAMAPAY x Mondial 2026</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background:#0F121E;padding:28px 40px;text-align:center;">
+            <span style="display:inline-block;padding:5px 14px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:2px;color:#ffffff;text-transform:uppercase;margin-bottom:18px;">OZAMAPAY x MONDIAL 2026</span>
+            <p style="margin:0;font-size:64px;font-weight:900;color:#FF7A00;line-height:1;letter-spacing:-1px;">5 000 HTG</p>
+            <p style="margin:14px 0 0;font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;max-width:380px;margin-left:auto;margin-right:auto;">depoze sou kont OZAMAPAY ou, se s&ograve;m sa w gen chans resevwa d&egrave;men pandan match Ayiti a</p>
+          </td>
+        </tr>
+
+        <!-- BODY -->
+        <tr>
+          <td style="padding:36px 40px 32px;">
+
+            <p style="margin:0 0 18px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
+
+            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Ayiti retounen sou s&egrave;n mondyal foutbòl la pou premye fwa nan <strong>52 ans</strong>. Se yon moman istorik pou tout Ayisyen toupatou.</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">OZAMAPAY selebre avèk ou — nou tire yon <strong>5 000 HTG</strong> pou yon kliyan ki satisfè kondisyon yo dèmen pandan match la.</p>
+
+            <!-- Match box -->
+            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:24px;text-align:center;margin:0 0 28px;">
+              <p style="margin:0 0 8px;font-size:10px;font-weight:700;letter-spacing:2.5px;color:#FF7A00;text-transform:uppercase;">FIFA WORLD CUP 2026 &mdash; GWOUP C</p>
+              <p style="margin:0 0 8px;font-size:22px;font-weight:900;color:#ffffff;line-height:1.2;">&#127469;&#127481; Ha&iuml;ti vs Br&eacute;sil &#127463;&#127479;</p>
+              <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.5px;">Vandredi 13 Jen 2026 &mdash; 3:00 PM</p>
+            </div>
+
+            <!-- 3 steps -->
+            <p style="margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#888888;">Kijan pou w patisipe</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-bottom:18px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">1</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;padding-bottom:18px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Pase KYC ou ($25)</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Si ou pa fè li toujou, pase l nan dashboard ou imedyatman.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-bottom:18px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">2</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;padding-bottom:18px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Pataje lyen referans ou bay 10 zanmi oswa plis</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Via WhatsApp, Facebook, oswa nenpòt rezo sosyal.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="vertical-align:top;width:36px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">3</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Tann tiraj la apre match la</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Yon gayan ch&egrave;t ap tire pami tout kont ki satisfè kondisyon yo.</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA -->
+            <a href="https://ozamapay.com/dashboard" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">Jwenn lyen referans mwen &rarr;</a>
+
+            <!-- Quote -->
+            <div style="border-left:3px solid #FF7A00;padding:14px 18px;background:#fff8f0;border-radius:0 6px 6px 0;margin:0 0 24px;">
+              <p style="margin:0;font-size:13px;font-style:italic;color:#7c4700;line-height:1.7;">&ldquo;Menm jan Ayiti reprezante nou sou s&egrave;n mondyal foutbòl la &mdash; OZAMAPAY reprezante nou sou s&egrave;n finansye ent&egrave;nasyonal la.&rdquo;</p>
+            </div>
+
+            <!-- Conditions -->
+            <p style="margin:0;font-size:11px;color:#aaaaaa;line-height:1.7;">Tiraj la f&egrave;t apre match la. Kondisyon: KYC apwouve + 10 zanmi enskrip via lyen ou. 1 chans pa kont.</p>
+
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jacmel, Ha&iuml;ti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    await this.send(email, '🏆 OZAMAPAY x Mondial 2026 — 5 000 HTG pou tèt ou dèmen!', html);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Demann reset modpas — OZAMAPAY',

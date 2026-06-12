@@ -752,6 +752,20 @@ export class AdminService {
 
   // ── KYC REMINDER ──────────────────────────────────────────────────────────
 
+  async sendPromoEmail(): Promise<{ sent: number }> {
+    const users = await this.prisma.user.findMany({
+      where: { isSuspended: false },
+      select: { email: true, name: true },
+    });
+
+    let sent = 0;
+    for (const user of users) {
+      await this.mailService.sendPromoMondialeEmail(user.email, user.name || 'Kliyan');
+      sent++;
+    }
+    return { sent };
+  }
+
   async sendKycReminder(): Promise<{ sent: number }> {
     const users = await this.prisma.user.findMany({
       where: {

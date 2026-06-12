@@ -181,4 +181,11 @@ export class AdminController {
   async getActivityLogs() {
     return this.adminService.getActivityLogs();
   }
+
+  @Post('send-promo-mondiale')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  @HttpCode(HttpStatus.OK)
+  async sendPromoMondiale() {
+    return this.adminService.sendPromoEmail();
+  }
 }
