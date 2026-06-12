@@ -8,6 +8,8 @@ import {
   UseGuards,
   Req,
   Res,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 
 import { Throttle } from '@nestjs/throttler';
@@ -37,8 +39,18 @@ export class AuthController {
   // =========================
   @Post('login')
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: any) {
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const userAgent = req.headers['user-agent'] as string | undefined;
+    return this.authService.login(dto, ip, userAgent);
+  }
+
+  @Post('admin/logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async adminLogout(@Req() req: any) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.authService.logoutAdmin(userId);
   }
 
   // =========================

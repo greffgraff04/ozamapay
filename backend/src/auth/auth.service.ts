@@ -197,7 +197,7 @@ export class AuthService {
   // LOGIN
   // =========================
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip?: string, userAgent?: string) {
     const email = dto.email.toLowerCase();
     const now = new Date();
 
@@ -290,6 +290,23 @@ export class AuthService {
 
       user.role,
     );
+
+    // Track admin session
+    const ADMIN_SESSION_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'];
+    if (ADMIN_SESSION_ROLES.includes(user.role)) {
+      await this.prisma.adminSession.updateMany({
+        where: { userId: user.id, isActive: true },
+        data: { isActive: false, logoutAt: new Date() },
+      });
+      await this.prisma.adminSession.create({
+        data: {
+          userId: user.id,
+          ipAddress: ip ?? null,
+          userAgent: userAgent ? userAgent.substring(0, 250) : null,
+          isActive: true,
+        },
+      });
+    }
 
     return {
       message:
@@ -548,6 +565,17 @@ export class AuthService {
 
     const token = this.signToken(user.id, user.email, user.role);
 
+    const ADMIN_SESSION_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'];
+    if (ADMIN_SESSION_ROLES.includes(user.role)) {
+      await this.prisma.adminSession.updateMany({
+        where: { userId: user.id, isActive: true },
+        data: { isActive: false, logoutAt: new Date() },
+      });
+      await this.prisma.adminSession.create({
+        data: { userId: user.id, isActive: true },
+      });
+    }
+
     return {
       message: 'Koneksyon reyisi',
       token,
@@ -562,6 +590,14 @@ export class AuthService {
         kyc: user.kyc ? { status: user.kyc.status } : null,
       },
     };
+  }
+
+  async logoutAdmin(userId: string) {
+    await this.prisma.adminSession.updateMany({
+      where: { userId, isActive: true },
+      data: { isActive: false, logoutAt: new Date() },
+    });
+    return { message: 'Déconnecté avec succès' };
   }
 
   signToken(userId: string, email: string, role: string): string {

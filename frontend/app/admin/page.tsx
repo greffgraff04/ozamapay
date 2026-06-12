@@ -46,6 +46,8 @@ export default function AdminDashboard() {
   // Invitation & daily code state
   const [invitations, setInvitations] = useState<any[]>([]);
   const [dailyCode, setDailyCode] = useState<any>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('SUPER_ADMIN');
@@ -116,7 +118,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
@@ -125,6 +127,8 @@ export default function AdminDashboard() {
         fetch(`${API}/admin/finance-requests`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/invitations`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/daily-code`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/sessions`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/activity-logs`, { headers: H() }).catch(() => null),
       ]);
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
@@ -145,6 +149,14 @@ export default function AdminDashboard() {
       if (dailyCodeRes && dailyCodeRes.ok) {
         const codeData = await dailyCodeRes.json();
         setDailyCode(codeData || null);
+      }
+      if (sessionsRes && sessionsRes.ok) {
+        const sessData = await sessionsRes.json();
+        setSessions(Array.isArray(sessData) ? sessData : []);
+      }
+      if (activityLogsRes && activityLogsRes.ok) {
+        const logsData = await activityLogsRes.json();
+        setActivityLogs(Array.isArray(logsData) ? logsData : []);
       }
 
       setStats(statsData || {});
@@ -396,7 +408,10 @@ export default function AdminDashboard() {
     return `Expire dans ${h}h ${m}min`;
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API}/auth/admin/logout`, { method: 'POST', headers: H() });
+    } catch {}
     localStorage.clear();
     document.cookie = 'token=; path=/; max-age=0';
     window.location.replace('/');
@@ -1607,6 +1622,110 @@ export default function AdminDashboard() {
                       ))}
                     </tbody>
                   </table>
+                )}
+              </div>
+
+              {/* Sessions */}
+              <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                <div className="p-5 border-b border-white/[0.03]">
+                  <h4 className="font-black text-[10px] uppercase tracking-widest text-white/60">Historique des Sessions</h4>
+                </div>
+                {sessions.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-white/20 text-xs font-mono">Aucune session enregistrée</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/[0.03]">
+                          {['Employé', 'Rôle', 'Connexion', 'Déconnexion', 'IP Address', 'Statut'].map(h => (
+                            <th key={h} className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-white/20">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sessions.map((s: any) => (
+                          <tr key={s.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition">
+                            <td className="px-5 py-4">
+                              <div className="font-bold text-xs text-white/80">{s.user?.name || 'N/A'}</div>
+                              <div className="text-[10px] font-mono text-white/30">{s.user?.email}</div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className="text-[9px] font-black bg-white/[0.03] border border-white/[0.06] px-2 py-1 rounded-lg text-[#FF6B00] uppercase tracking-wider">
+                                {s.user?.role}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-[10px] font-mono text-white/50">
+                              {new Date(s.loginAt).toLocaleString('fr-FR')}
+                            </td>
+                            <td className="px-5 py-4 text-[10px] font-mono">
+                              {s.logoutAt ? (
+                                <span className="text-white/40">{new Date(s.logoutAt).toLocaleString('fr-FR')}</span>
+                              ) : (
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                                  <span className="text-green-400 font-bold">En ligne</span>
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-[10px] font-mono text-white/30">{s.ipAddress || '—'}</td>
+                            <td className="px-5 py-4">
+                              {s.isActive ? (
+                                <span className="text-[9px] font-black text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-1 rounded-lg uppercase">Actif</span>
+                              ) : (
+                                <span className="text-[9px] font-black text-white/30 bg-white/[0.02] border border-white/[0.05] px-2 py-1 rounded-lg uppercase">Déconnecté</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Activity Logs */}
+              <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                <div className="p-5 border-b border-white/[0.03]">
+                  <h4 className="font-black text-[10px] uppercase tracking-widest text-white/60">Activité Récente</h4>
+                </div>
+                {activityLogs.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-white/20 text-xs font-mono">Aucune activité enregistrée</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/[0.03]">
+                          {['Employé', 'Action', 'Détails', 'Date / Heure', 'IP'].map(h => (
+                            <th key={h} className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-white/20">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activityLogs.map((log: any) => (
+                          <tr key={log.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition">
+                            <td className="px-5 py-4">
+                              <div className="font-bold text-xs text-white/80">{log.admin?.name || 'Système'}</div>
+                              <div className="text-[10px] font-mono text-white/30">{log.admin?.email}</div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className="text-[9px] font-black font-mono bg-white/[0.03] border border-white/[0.06] px-2 py-1 rounded-lg text-white/60 uppercase tracking-wider">
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-[10px] text-white/40 max-w-[200px] truncate">{log.details || '—'}</td>
+                            <td className="px-5 py-4 text-[10px] font-mono text-white/30">
+                              {new Date(log.createdAt).toLocaleString('fr-FR')}
+                            </td>
+                            <td className="px-5 py-4 text-[10px] font-mono text-white/30">{log.ipAddress || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
 

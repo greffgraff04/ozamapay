@@ -31,15 +31,23 @@ export class AdminController {
     @Req() req: any
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
-    return this.adminService.reviewKyc(kycId, body.status, adminId);
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.reviewKyc(kycId, body.status, adminId);
+    await this.adminService.logActivity(adminId, `KYC_${body.status}`, `KYC ${kycId} — ${body.status}`, ip);
+    return result;
   }
 
   @Post('users/:userId/topup')
   async adminTopup(
     @Param('userId') userId: string,
-    @Body() body: { amount: number }
+    @Body() body: { amount: number },
+    @Req() req: any
   ) {
-    return this.adminService.adminTopup(userId, body.amount);
+    const adminId = req.user?.id || req.user?.sub;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.adminTopup(userId, body.amount);
+    await this.adminService.logActivity(adminId, 'ADMIN_TOPUP', `Topup ${body.amount} HTG → user ${userId}`, ip);
+    return result;
   }
 
   @Post('agents/:agentId/topup')
@@ -111,7 +119,10 @@ export class AdminController {
     @Req() req: any
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
-    return this.adminService.processManualTransaction(txId, body.status, adminId);
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.processManualTransaction(txId, body.status, adminId);
+    await this.adminService.logActivity(adminId, `TX_${body.status}`, `Transaction ${txId} — ${body.status}`, ip);
+    return result;
   }
 
   // ── CEO-ONLY: INVITATION & DAILY CODE ─────────────────────────────────────
@@ -143,5 +154,17 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   async generateCode() {
     return this.adminService.generateDailyCode();
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  async getSessions() {
+    return this.adminService.getSessions();
+  }
+
+  @Get('activity-logs')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  async getActivityLogs() {
+    return this.adminService.getActivityLogs();
   }
 }

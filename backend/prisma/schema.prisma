@@ -57,6 +57,8 @@ model User {
   adminInvitationToken String?
   adminSetupComplete   Boolean @default(false)
 
+  adminSessions   AdminSession[]
+
   @@index([email])
   @@index([role])
 }
@@ -440,6 +442,20 @@ model DailyAccessCode {
   expiresAt   DateTime
   isActive    Boolean  @default(true)
 
+  @@index([isActive])
+}
+
+model AdminSession {
+  id        String    @id @default(uuid())
+  userId    String
+  loginAt   DateTime  @default(now())
+  logoutAt  DateTime?
+  ipAddress String?
+  userAgent String?
+  isActive  Boolean   @default(true)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
   @@index([isActive])
 }
 

@@ -708,6 +708,41 @@ export class AdminService {
     });
   }
 
+  // ── SESSION & ACTIVITY TRACKING ───────────────────────────────────────────
+
+  async getSessions() {
+    return this.prisma.adminSession.findMany({
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { loginAt: 'desc' },
+      take: 200,
+    });
+  }
+
+  async getActivityLogs() {
+    return this.prisma.adminActionLog.findMany({
+      include: {
+        admin: { select: { id: true, name: true, email: true, role: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+  }
+
+  async logActivity(adminId: string, action: string, details: string, ip?: string) {
+    try {
+      const validAdmin = await this.prisma.user.findFirst({
+        where: { id: adminId, role: { in: ['SUPER_ADMIN', 'ADMIN', 'SUPPORT'] } },
+      });
+      if (validAdmin) {
+        await this.prisma.adminActionLog.create({
+          data: { adminId, action, details, ipAddress: ip ?? null },
+        });
+      }
+    } catch {}
+  }
+
   // ── KYC REMINDER ──────────────────────────────────────────────────────────
 
   async sendKycReminder(): Promise<{ sent: number }> {
