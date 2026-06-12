@@ -5,7 +5,7 @@ import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
-  ShieldCheck, Zap, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
+  ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock
 } from 'lucide-react';
@@ -1327,14 +1327,19 @@ export default function Dashboard() {
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
-              {selectedMethod !== 'natcash' && selectedMethod !== 'usdt' && selectedMethod !== 'moncash' ? (
+              {selectedMethod === 'natcash' || selectedMethod === 'usdt' ? (
+                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
+                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
+                </div>
+              ) : selectedMethod === 'moncash' ? (
+                <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
+                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}><Zap size={11} /> Imedya</button>
+                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}><Clock size={11} /> 15-30 minit</button>
+                </div>
+              ) : (
                 <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
                   <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
                   <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
-                </div>
-              ) : (
-                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
-                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
                 </div>
               )}
             </div>
@@ -1346,11 +1351,14 @@ export default function Dashboard() {
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" min="0" value={topUpAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }} />
                 {topUpAmount && (() => {
                   const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
+                  const isMccManual = selectedMethod === 'moncash' && topUpType === 'MANUAL';
                   const feeRate = isMccAuto ? 0.089 : 0.06;
                   const feeAmount = Math.round(topupHTG * feeRate);
                   const amountAfterFee = topupHTG - feeAmount;
                   const feeLabel = isMccAuto
-                    ? 'FRAIS (8.9% — 6% OZAMAPAY + 2.9% MonCash)'
+                    ? '8.9% (6% OZAMAPAY + 2.9% MonCash)'
+                    : isMccManual
+                    ? '6% (OZAMAPAY sèlman)'
                     : 'FRAIS OZAMAPAY (6.0%)';
                   return (
                     <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
