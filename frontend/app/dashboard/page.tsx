@@ -1327,7 +1327,7 @@ export default function Dashboard() {
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
-              {selectedMethod !== 'natcash' && selectedMethod !== 'usdt' ? (
+              {selectedMethod !== 'natcash' && selectedMethod !== 'usdt' && selectedMethod !== 'moncash' ? (
                 <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
                   <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
                   <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
@@ -1381,6 +1381,11 @@ export default function Dashboard() {
                       if (m.id === 'natcash' || m.id === 'usdt') {
                         setSelectedMethod(m.id);
                         setTopUpType('MANUAL');
+                        return;
+                      }
+                      if (m.id === 'moncash') {
+                        setSelectedMethod(m.id);
+                        setTopUpType('AUTOMATIC');
                         return;
                       }
                       setSelectedMethod(m.id);
