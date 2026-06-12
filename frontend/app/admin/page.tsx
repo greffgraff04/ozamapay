@@ -4,7 +4,8 @@ import {
   LayoutDashboard, Users, ShieldCheck, Activity, X, RefreshCw,
   UserX, UserCheck, CheckCircle2, XCircle, ChevronDown, LogOut,
   TrendingUp, DollarSign, Search, Filter, ArrowUpRight, Zap, Clock,
-  Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail
+  Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail,
+  Users2, KeyRound, RotateCcw, Send, AlertTriangle
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -42,6 +43,15 @@ export default function AdminDashboard() {
   const [financeRejectNote, setFinanceRejectNote] = useState<Record<string, string>>({});
   const [kycReminderLoading, setKycReminderLoading] = useState(false);
 
+  // Invitation & daily code state
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [dailyCode, setDailyCode] = useState<any>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('SUPPORT');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [isMaster, setIsMaster] = useState(false);
+
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [agentPackage, setAgentPackage] = useState('STANDARD_AGENT');
@@ -77,6 +87,7 @@ export default function AdminDashboard() {
         const payload = JSON.parse(jsonPayload);
         adminName = payload.name || payload.email?.split('@')[0] || "Admin";
         adminEmail = payload.email || "admin@ozamapay.com";
+        if (payload.isMaster) setIsMaster(true);
       }
     } catch (e) {
       console.error("Token parsing failed safely:", e);
@@ -91,13 +102,15 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/liquidity-requests`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/transactions/pending`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/finance-requests`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/invitations`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/daily-code`, { headers: H() }).catch(() => null),
       ]);
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
@@ -110,6 +123,15 @@ export default function AdminDashboard() {
       setPendingTransactions(Array.isArray(pendingTxData) ? pendingTxData : []);
       const financeData = financeRes && financeRes.ok ? await financeRes.json() : [];
       setFinanceRequests(Array.isArray(financeData) ? financeData : []);
+
+      if (invitationsRes && invitationsRes.ok) {
+        const invData = await invitationsRes.json();
+        setInvitations(Array.isArray(invData) ? invData : []);
+      }
+      if (dailyCodeRes && dailyCodeRes.ok) {
+        const codeData = await dailyCodeRes.json();
+        setDailyCode(codeData || null);
+      }
 
       setStats(statsData || {});
       const userList = Array.isArray(usersData) ? usersData : [];
@@ -312,6 +334,54 @@ export default function AdminDashboard() {
     } catch (e) { console.error(e); }
   };
 
+  const handleInviteEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/invite`, {
+        method: 'POST', headers: H(),
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`✅ Invitation envoyée à ${inviteEmail}`);
+        setShowInviteModal(false);
+        setInviteEmail('');
+        setInviteRole('SUPPORT');
+        await fetchData();
+      } else {
+        showToast(data.message || 'Erreur lors de l\'invitation', 'error');
+      }
+    } catch {
+      showToast('Connexion échouée', 'error');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleRegenerateCode = async () => {
+    try {
+      const res = await fetch(`${API}/admin/generate-code`, { method: 'POST', headers: H() });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`✅ Nouveau code généré: ${data.code}`);
+        await fetchData();
+      } else {
+        showToast(data.message || 'Erreur', 'error');
+      }
+    } catch {
+      showToast('Connexion échouée', 'error');
+    }
+  };
+
+  const formatExpiry = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    if (diff <= 0) return 'Expiré';
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    return `Expire dans ${h}h ${m}min`;
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     document.cookie = 'token=; path=/; max-age=0';
@@ -346,6 +416,7 @@ export default function AdminDashboard() {
     { id: 'transactions', label: 'Topup & Retrè Manuel', icon: FileText, badge: pendingTransactions.length || undefined },
     { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined },
     { id: 'rates', label: 'Taux & Frè', icon: Activity },
+    ...(isMaster ? [{ id: 'equipe', label: 'Équipe', icon: Users2 }] : []),
   ];
 
   if (!mounted || loading) return (
@@ -487,6 +558,40 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+
+              {/* Daily code card — CEO only */}
+              {isMaster && (
+                <div className="col-span-2 lg:col-span-4 bg-gradient-to-br from-[#0F121E] to-[#0D0E14] border border-[#FF6B00]/20 rounded-2xl p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-xl">
+                        <KeyRound size={16} className="text-[#FF6B00]" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Code d'accès journalier</h3>
+                        <p className="text-[9px] font-mono text-white/30 mt-0.5">
+                          {dailyCode ? formatExpiry(dailyCode.expiresAt) : 'Aucun code actif'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {dailyCode ? (
+                        <span className="text-3xl font-black font-mono text-[#FF6B00] tracking-[0.3em]">{dailyCode.code}</span>
+                      ) : (
+                        <span className="text-sm text-white/30 italic font-mono">— — — — — —</span>
+                      )}
+                      <button onClick={handleRegenerateCode}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/[0.06] hover:border-[#FF6B00]/30 rounded-xl text-[10px] font-black uppercase tracking-widest text-white/50 hover:text-[#FF6B00] transition">
+                        <RotateCcw size={12} /> Régénérer
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 bg-[#FF6B00]/5 border border-[#FF6B00]/10 rounded-xl p-3">
+                    <AlertTriangle size={12} className="text-[#FF6B00] shrink-0 mt-0.5" />
+                    <p className="text-[9px] font-mono text-white/40">Partagez ce code uniquement sur le groupe WhatsApp de l'équipe</p>
+                  </div>
+                </div>
+              )}
 
               {stats && stats.treasury && (
                 <div className="bg-gradient-to-r from-[#FF6B00]/5 via-white/[0.01] to-transparent border border-white/[0.04] rounded-2xl p-6">
@@ -1416,8 +1521,116 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* ==================== TAB: ÉQUIPE ==================== */}
+          {activeTab === 'equipe' && isMaster && (
+            <div className="space-y-6">
+
+              {/* Invitations header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Équipe OZAMAPAY</h3>
+                  <p className="text-[9px] font-mono text-white/30 mt-0.5 uppercase tracking-wider">Invitations employés &amp; gestion des accès</p>
+                </div>
+                <button onClick={() => setShowInviteModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-lg shadow-[#FF6B00]/10">
+                  <Send size={12} /> Inviter un employé
+                </button>
+              </div>
+
+              {/* Invitations list */}
+              <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                <div className="p-5 border-b border-white/[0.03]">
+                  <h4 className="font-black text-[10px] uppercase tracking-widest text-white/60">Invitations envoyées</h4>
+                </div>
+                {invitations.length === 0 ? (
+                  <div className="p-10 text-center">
+                    <Users2 size={24} className="text-white/10 mx-auto mb-3" />
+                    <p className="text-white/20 text-xs font-mono">Aucune invitation pour le moment</p>
+                  </div>
+                ) : (
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/[0.03]">
+                        {['Email', 'Rôle', 'Statut', 'Date'].map(h => (
+                          <th key={h} className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-white/20">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invitations.map((inv: any) => (
+                        <tr key={inv.id} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition">
+                          <td className="px-5 py-4 text-xs font-bold text-white/70">{inv.email}</td>
+                          <td className="px-5 py-4">
+                            <span className="text-[9px] font-black bg-white/[0.03] border border-white/[0.06] px-2 py-1 rounded-lg text-[#FF6B00] uppercase tracking-wider">
+                              {inv.role}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4">
+                            {inv.accepted ? (
+                              <span className="text-[9px] font-black text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-1 rounded-lg uppercase">Acceptée</span>
+                            ) : new Date(inv.expiresAt) < new Date() ? (
+                              <span className="text-[9px] font-black text-red-400 bg-red-400/10 border border-red-400/20 px-2 py-1 rounded-lg uppercase">Expirée</span>
+                            ) : (
+                              <span className="text-[9px] font-black text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 px-2 py-1 rounded-lg uppercase">En attente</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-[10px] font-mono text-white/30">
+                            {new Date(inv.createdAt).toLocaleDateString('fr-FR')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+            </div>
+          )}
+
         </div>
       </main>
+
+      {/* INVITE EMPLOYEE MODAL */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-[#0A0B0F]/70 backdrop-blur-md">
+          <div className="bg-[#0D0E14] border border-white/[0.05] w-full max-w-sm rounded-2xl p-6 relative shadow-2xl">
+            <button onClick={() => setShowInviteModal(false)} className="absolute right-5 top-5 text-white/20 hover:text-white transition">
+              <X size={16} />
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-xl">
+                <Send size={14} className="text-[#FF6B00]" />
+              </div>
+              <div>
+                <h3 className="font-black text-xs uppercase tracking-widest text-white/90">Inviter un employé</h3>
+                <p className="text-[9px] font-mono text-white/30 mt-0.5">Lien valable 7 jours</p>
+              </div>
+            </div>
+            <form onSubmit={handleInviteEmployee} className="space-y-4">
+              <div>
+                <label className="text-[9px] font-bold uppercase text-white/30 tracking-widest mb-1.5 block">Email</label>
+                <input
+                  type="email" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="employe@example.com"
+                  className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:border-[#FF6B00]/30 text-white placeholder:text-white/10 transition"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-bold uppercase text-white/30 tracking-widest mb-1.5 block">Rôle</label>
+                <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}
+                  className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:border-[#FF6B00]/30 text-white/80 cursor-pointer transition">
+                  <option value="SUPPORT">Agent Support</option>
+                  <option value="ADMIN">Administrateur</option>
+                </select>
+              </div>
+              <button type="submit" disabled={inviteLoading}
+                className="w-full bg-[#FF6B00] hover:bg-[#E05E00] text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition active:scale-[0.98] shadow-lg shadow-[#FF6B00]/5 disabled:opacity-50">
+                {inviteLoading ? 'Envoi...' : 'Envoyer l\'invitation →'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* PREMIUM TOPUP MODAL */}
       {showTopupModal && (

@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, Ht
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
+import { MasterGuard } from './master.guard';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -111,5 +112,36 @@ export class AdminController {
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
     return this.adminService.processManualTransaction(txId, body.status, adminId);
+  }
+
+  // ── CEO-ONLY: INVITATION & DAILY CODE ─────────────────────────────────────
+
+  @Post('invite')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async inviteEmployee(
+    @Body() body: { email: string; role: string },
+    @Req() req: any,
+  ) {
+    return this.adminService.inviteEmployee(body.email, body.role, req.user.id);
+  }
+
+  @Get('invitations')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  async getInvitations() {
+    return this.adminService.getInvitations();
+  }
+
+  @Get('daily-code')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  async getDailyCode() {
+    return this.adminService.getCurrentDailyCode();
+  }
+
+  @Post('generate-code')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  @HttpCode(HttpStatus.OK)
+  async generateCode() {
+    return this.adminService.generateDailyCode();
   }
 }

@@ -1,5 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Cron } from '@nestjs/schedule';
+import { randomUUID } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
@@ -563,6 +566,149 @@ export class AdminService {
 
     return updatedReq;
   }
+
+  // ── INVITATION SYSTEM ─────────────────────────────────────────────────────
+
+  private generate6CharCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  async inviteEmployee(email: string, role: string, invitedByUserId: string) {
+    const VALID_ROLES = ['SUPPORT', 'ADMIN'];
+    if (!VALID_ROLES.includes(role)) {
+      throw new BadRequestException(`Rôle invalide. Valeurs acceptées: ${VALID_ROLES.join(', ')}`);
+    }
+
+    const existing = await this.prisma.adminInvitation.findUnique({ where: { email } });
+    if (existing && !existing.accepted) {
+      throw new BadRequestException('Une invitation est déjà en cours pour cet email');
+    }
+    if (existing) {
+      await this.prisma.adminInvitation.delete({ where: { email } });
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const invitation = await this.prisma.adminInvitation.create({
+      data: { email, role: role as any, token, expiresAt, invitedBy: invitedByUserId },
+    });
+
+    const link = `${process.env.FRONTEND_URL || 'https://ozamapay.com'}/admin/setup?token=${token}`;
+    await this.mailService.sendAdminInvitation(email, role, link);
+
+    return invitation;
+  }
+
+  async getInvitations() {
+    return this.prisma.adminInvitation.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async validateSetupToken(token: string) {
+    const inv = await this.prisma.adminInvitation.findUnique({ where: { token } });
+    if (!inv) throw new NotFoundException('Token d\'invitation invalide');
+    if (inv.accepted) throw new BadRequestException('Cette invitation a déjà été utilisée');
+    if (inv.expiresAt < new Date()) throw new BadRequestException('L\'invitation a expiré. Demandez une nouvelle invitation.');
+    return { email: inv.email, role: inv.role, expiresAt: inv.expiresAt };
+  }
+
+  async acceptInvitation(token: string, personalInfo: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    password: string;
+  }, dailyCode: string) {
+    const inv = await this.prisma.adminInvitation.findUnique({ where: { token } });
+    if (!inv) throw new UnauthorizedException('Token d\'invitation invalide');
+    if (inv.accepted) throw new BadRequestException('Cette invitation a déjà été utilisée');
+    if (inv.expiresAt < new Date()) throw new BadRequestException('L\'invitation a expiré');
+
+    const activeCode = await this.prisma.dailyAccessCode.findFirst({
+      where: { isActive: true, expiresAt: { gt: new Date() } },
+    });
+    if (!activeCode || activeCode.code !== dailyCode.toUpperCase()) {
+      throw new UnauthorizedException('Code journalier invalide');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({ where: { email: inv.email } });
+    if (existingUser) throw new BadRequestException('Un compte existe déjà avec cet email');
+
+    const hashedPassword = await bcrypt.hash(personalInfo.password, 10);
+    const name = `${personalInfo.firstName} ${personalInfo.lastName}`;
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email: inv.email,
+          password: hashedPassword,
+          name,
+          phone: personalInfo.phone,
+          role: inv.role,
+          adminSetupComplete: true,
+          adminInvitationToken: token,
+        },
+      });
+      await tx.wallet.create({ data: { userId: newUser.id, balance: 0 } });
+      await tx.adminInvitation.update({ where: { token }, data: { accepted: true } });
+      return newUser;
+    });
+
+    await this.mailService.sendWelcome(user.email, user.name || 'Employé');
+    return { message: 'Compte créé avec succès', email: user.email };
+  }
+
+  // ── DAILY ACCESS CODE ──────────────────────────────────────────────────────
+
+  async generateDailyCode(): Promise<{ code: string; expiresAt: Date }> {
+    await this.prisma.dailyAccessCode.updateMany({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+
+    const code = this.generate6CharCode();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.prisma.dailyAccessCode.create({ data: { code, expiresAt, isActive: true } });
+    return { code, expiresAt };
+  }
+
+  async getCurrentDailyCode() {
+    return this.prisma.dailyAccessCode.findFirst({
+      where: { isActive: true },
+      orderBy: { generatedAt: 'desc' },
+    });
+  }
+
+  @Cron('0 0 10 * * *', { timeZone: 'UTC' }) // 6AM Haiti time (UTC-4 = 10AM UTC)
+  async autoGenerateDailyCode(): Promise<void> {
+    const { code } = await this.generateDailyCode();
+
+    const masterUser = await this.prisma.user.findUnique({
+      where: { id: MASTER_ID },
+      select: { email: true, name: true },
+    });
+
+    if (masterUser) {
+      const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      await this.mailService.sendDailyCode(masterUser.email, code, today);
+    }
+
+    await this.prisma.adminActionLog.create({
+      data: {
+        adminId: MASTER_ID,
+        action: 'DAILY_CODE_AUTO_GENERATED',
+        targetType: 'DailyAccessCode',
+        details: 'Code journalier 6 caract. généré automatiquement à 6AM Haiti',
+      },
+    });
+  }
+
+  // ── KYC REMINDER ──────────────────────────────────────────────────────────
 
   async sendKycReminder(): Promise<{ sent: number }> {
     const users = await this.prisma.user.findMany({

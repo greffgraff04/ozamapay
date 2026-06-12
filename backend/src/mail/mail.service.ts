@@ -525,6 +525,97 @@ export class MailService {
     await this.send(email, 'Ayiti nan Mondial 2026 🇭🇹⚽ — OZAMAPAY', html);
   }
 
+  async sendAdminInvitation(email: string, role: string, invitationLink: string): Promise<void> {
+    const roleLabel: Record<string, string> = {
+      ADMIN: 'Administrateur',
+      SUPPORT: 'Agent Support',
+      SUPER_ADMIN: 'Super Administrateur',
+    };
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invitation OZAMAPAY</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+        <tr>
+          <td style="background:#0F121E;padding:28px 40px;">
+            <span style="display:inline-block;padding:4px 12px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;margin-bottom:14px;">OZAMAPAY</span>
+            <p style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.3;">Vous êtes invité(e) à rejoindre l'équipe</p>
+            <p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.6);">Poste : <strong style="color:#FF7A00;">${roleLabel[role] || role}</strong></p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 40px 32px;">
+            <p style="margin:0 0 16px;font-size:14px;color:#444444;line-height:1.7;">Bonjour,</p>
+            <p style="margin:0 0 20px;font-size:14px;color:#444444;line-height:1.7;">Le CEO d'OZAMAPAY vous invite à créer votre compte employé sur la plateforme. Cliquez sur le bouton ci-dessous pour configurer votre accès.</p>
+            <div style="background:#f9f9f9;border-left:3px solid #FF7A00;border-radius:0 6px 6px 0;padding:16px 18px;margin:0 0 24px;">
+              <p style="margin:0;font-size:12px;color:#888888;">Poste assigné</p>
+              <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#0F121E;">${roleLabel[role] || role}</p>
+            </div>
+            <p style="margin:0 0 12px;font-size:13px;color:#666666;line-height:1.6;">Pour finaliser votre inscription, vous aurez besoin :</p>
+            <ul style="margin:0 0 24px;padding-left:20px;font-size:13px;color:#666666;line-height:2;">
+              <li>De vos informations personnelles (prénom, nom, téléphone)</li>
+              <li>De choisir un mot de passe sécurisé</li>
+              <li>Du code journalier fourni par votre supérieur</li>
+            </ul>
+            <a href="${invitationLink}" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Créer mon compte employé &rarr;</a>
+            <p style="margin:20px 0 0;font-size:11px;color:#aaaaaa;text-align:center;">Ce lien expire dans 7 jours. Ne le partagez avec personne.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    await this.send(email, 'Invitation à rejoindre l\'équipe OZAMAPAY', html);
+  }
+
+  async sendDailyCode(email: string, code: string, date: string): Promise<void> {
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Code journalier OZAMAPAY</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#ffffff;border-radius:4px;overflow:hidden;">
+        <tr>
+          <td style="background:#0F121E;padding:24px 40px;">
+            <span style="display:inline-block;padding:4px 12px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;margin-bottom:12px;">OZAMAPAY</span>
+            <p style="margin:0;font-size:20px;font-weight:800;color:#ffffff;">Code d'accès journalier</p>
+            <p style="margin:8px 0 0;font-size:12px;color:rgba(255,255,255,0.5);">${date}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">Voici le code journalier à partager avec l'équipe sur WhatsApp. Il est valable <strong>24 heures</strong>.</p>
+            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:28px;text-align:center;margin:0 0 24px;">
+              <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:3px;color:#FF7A00;text-transform:uppercase;margin-bottom:12px;">Code du jour</p>
+              <p style="margin:0;font-size:48px;font-weight:900;color:#ffffff;letter-spacing:12px;font-family:monospace;">${code}</p>
+            </div>
+            <div style="border-left:3px solid #FF7A00;padding:12px 16px;background:#fff8f0;border-radius:0 6px 6px 0;">
+              <p style="margin:0;font-size:12px;color:#7c4700;">Partagez ce code <strong>uniquement sur le groupe WhatsApp de l'équipe</strong>. Ne l'envoyez jamais par email ou SMS individuel.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="border-top:0.5px solid #eeeeee;padding:16px 40px;background:#f9f9f9;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    await this.send(email, `Code journalier OZAMAPAY — ${date}`, html);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Demann reset modpas — OZAMAPAY',

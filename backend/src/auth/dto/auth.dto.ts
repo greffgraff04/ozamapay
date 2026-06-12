@@ -30,4 +30,8 @@ export class LoginDto {
 
   @IsNotEmpty()
   password: string;
+
+  @IsOptional()
+  @IsString()
+  dailyCode?: string;
 }

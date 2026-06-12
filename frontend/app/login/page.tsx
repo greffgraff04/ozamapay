@@ -7,6 +7,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dailyCode, setDailyCode] = useState('');
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -14,6 +16,9 @@ function LoginForm() {
   useEffect(() => {
     if (searchParams.get('reset') === 'success') {
       setSuccessMsg('Modpas ou chanje avèk siksè. Konekte kounye a.');
+    }
+    if (searchParams.get('setup') === 'success') {
+      setSuccessMsg('Kont ou kreye avèk siksè. Konekte ak kredansyèl ou yo.');
     }
   }, [searchParams]);
 
@@ -28,7 +33,7 @@ function LoginForm() {
       const res = await fetch(`${backendUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, ...(isAdminLogin && dailyCode ? { dailyCode } : {}) }),
       });
 
       const data = await res.json();
@@ -97,6 +102,33 @@ function LoginForm() {
               </a>
             </div>
           </div>
+
+          {/* Admin toggle */}
+          <button
+            type="button"
+            onClick={() => { setIsAdminLogin(!isAdminLogin); setDailyCode(''); }}
+            className={`w-full py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${isAdminLogin ? 'bg-[#0F121E] border-[#FF7A00]/40 text-[#FF7A00]' : 'bg-transparent border-gray-100 text-gray-400 hover:border-gray-200'}`}
+          >
+            {isAdminLogin ? '🔐 Mode Employé OZAMAPAY actif' : 'Je suis un employé OZAMAPAY'}
+          </button>
+
+          {/* Daily code field — admin only */}
+          {isAdminLogin && (
+            <div>
+              <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">
+                Code d'accès journalier
+              </label>
+              <input
+                type="text"
+                placeholder="XXXXXX"
+                value={dailyCode}
+                maxLength={6}
+                onChange={(e) => setDailyCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                className="w-full p-5 rounded-2xl border border-[#FF7A00]/30 outline-none focus:border-[#FF7A00] bg-[#F9FAFB] font-black text-xl text-center tracking-[0.4em] text-[#0F121E]"
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}

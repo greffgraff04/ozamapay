@@ -260,6 +260,19 @@ export class AuthService {
       data: { failedLoginAttempts: 0, loginLockedUntil: null },
     });
 
+    // Daily-code check for admin accounts
+    if (ADMIN_ROLES.includes(user.role)) {
+      const activeCode = await this.prisma.dailyAccessCode.findFirst({
+        where: { isActive: true, expiresAt: { gt: new Date() } },
+      });
+      // Only enforce once a code has been generated (prevents lockout on fresh deploy)
+      if (activeCode) {
+        if (!dto.dailyCode || activeCode.code !== dto.dailyCode.toUpperCase()) {
+          throw new UnauthorizedException('Code journalier invalide');
+        }
+      }
+    }
+
     if (ADMIN_ROLES.includes(user.role) && user.twoFactorEnabled) {
       const tempToken = this.jwtService.sign(
         { sub: user.id, email: user.email, role: user.role, is2FATemp: true },
@@ -549,19 +562,13 @@ export class AuthService {
     };
   }
 
-  signToken(
-    userId: string,
-
-    email: string,
-
-    role: string,
-  ): string {
+  signToken(userId: string, email: string, role: string): string {
+    const masterId = process.env.OZAMAPAY_MASTER_ID;
     return this.jwtService.sign({
       sub: userId,
-
       email,
-
       role,
+      isMaster: masterId ? userId === masterId : false,
     });
   }
 }
