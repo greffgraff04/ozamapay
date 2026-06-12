@@ -1327,19 +1327,14 @@ export default function Dashboard() {
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
-              {selectedMethod === 'natcash' || selectedMethod === 'usdt' ? (
-                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
-                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (15-25 min)</span>
-                </div>
-              ) : selectedMethod === 'moncash' ? (
+              {selectedMethod === 'moncash' ? (
                 <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
                   <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}><Zap size={11} /> Imedya</button>
                   <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}><Clock size={11} /> 15-30 minit</button>
                 </div>
               ) : (
-                <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
-                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}>Automatic</button>
-                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}>Manuel (2H)</button>
+                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
+                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (2H)</span>
                 </div>
               )}
             </div>
@@ -1386,17 +1381,13 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   {paymentMethods.map((m) => (
                     <button key={m.id} onClick={() => {
-                      if (m.id === 'natcash' || m.id === 'usdt') {
-                        setSelectedMethod(m.id);
-                        setTopUpType('MANUAL');
-                        return;
-                      }
                       if (m.id === 'moncash') {
                         setSelectedMethod(m.id);
                         setTopUpType('AUTOMATIC');
                         return;
                       }
                       setSelectedMethod(m.id);
+                      setTopUpType('MANUAL');
                     }} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
                       <div className="flex items-center gap-3">
                         <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
