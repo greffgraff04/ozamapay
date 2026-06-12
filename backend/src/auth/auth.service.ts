@@ -267,6 +267,8 @@ export class AuthService {
       });
       // Only enforce once a code has been generated (prevents lockout on fresh deploy)
       if (activeCode) {
+        console.log('Stored code:', JSON.stringify(activeCode.code));
+        console.log('Submitted code:', JSON.stringify(dto.dailyCode?.toUpperCase()));
         if (!dto.dailyCode || activeCode.code !== dto.dailyCode.toUpperCase()) {
           throw new UnauthorizedException('Code journalier invalide');
         }
