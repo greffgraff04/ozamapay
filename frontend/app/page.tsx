@@ -25,6 +25,7 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dailyCode, setDailyCode] = useState('');
   const [requires2FA, setRequires2FA] = useState(false);
   const [tempToken, setTempToken] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -52,6 +53,7 @@ export default function HomePage() {
         setShowGate(false);
         setError('');
         setPassword('');
+        setDailyCode('');
         setRequires2FA(false);
         setTempToken('');
         setTotpCode('');
@@ -84,7 +86,7 @@ export default function HomePage() {
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, dailyCode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -160,7 +162,7 @@ export default function HomePage() {
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center"
           style={{ backdropFilter: 'blur(18px)', background: 'rgba(5,7,15,0.85)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) { setShowGate(false); setError(''); setPassword(''); } }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowGate(false); setError(''); setPassword(''); setDailyCode(''); } }}
         >
           <div className="w-full max-w-[340px] mx-4 bg-[#0D0E14] border border-white/[0.06] rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 
@@ -196,6 +198,21 @@ export default function HomePage() {
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
+
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1.5 block">
+                    Code Journalier (6 caractères)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={dailyCode}
+                    onChange={e => { setDailyCode(e.target.value.toUpperCase()); setError(''); }}
+                    className="w-full bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 text-xs font-mono text-white/80 outline-none focus:border-[#FF6B00]/40 transition placeholder:text-white/20 uppercase tracking-widest"
+                    placeholder="000000"
+                    autoComplete="off"
+                  />
+                </div>
 
                 {error && (
                   <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider text-center animate-in fade-in duration-150">
