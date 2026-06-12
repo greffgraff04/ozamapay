@@ -3,6 +3,8 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
 import { MasterGuard } from './master.guard';
+import { CooGuard } from './coo.guard';
+import { AgentAccessGuard } from './agent-access.guard';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -20,11 +22,13 @@ export class AdminController {
   }
 
   @Get('agents')
+  @UseGuards(AgentAccessGuard)
   async getAllAgents() {
     return this.adminService.getAllAgents();
   }
 
   @Patch('kyc/:id/review')
+  @UseGuards(CooGuard)
   async reviewKyc(
     @Param('id') kycId: string,
     @Body() body: { status: 'APPROVED' | 'REJECTED'; adminId?: string },
@@ -38,6 +42,7 @@ export class AdminController {
   }
 
   @Post('users/:userId/topup')
+  @UseGuards(CooGuard)
   async adminTopup(
     @Param('userId') userId: string,
     @Body() body: { amount: number },
@@ -51,6 +56,7 @@ export class AdminController {
   }
 
   @Post('agents/:agentId/topup')
+  @UseGuards(AgentAccessGuard)
   async adminTopupAgent(
     @Param('agentId') agentId: string,
     @Body() body: { amount: number }
@@ -59,6 +65,7 @@ export class AdminController {
   }
 
   @Patch('users/:userId/suspend')
+  @UseGuards(CooGuard)
   async suspendUser(
     @Param('userId') userId: string,
     @Body() body: { isSuspended: boolean }
@@ -72,6 +79,7 @@ export class AdminController {
   }
 
   @Patch('liquidity-requests/:id/approve')
+  @UseGuards(AgentAccessGuard)
   async approveLiquidityRequest(
     @Param('id') id: string,
     @Body() body: { adminNote?: string },
@@ -80,6 +88,7 @@ export class AdminController {
   }
 
   @Patch('liquidity-requests/:id/reject')
+  @UseGuards(AgentAccessGuard)
   async rejectLiquidityRequest(
     @Param('id') id: string,
     @Body() body: { adminNote?: string },
@@ -88,11 +97,13 @@ export class AdminController {
   }
 
   @Get('finance-requests')
+  @UseGuards(CooGuard)
   async getFinanceRequests() {
     return this.adminService.getFinanceRequests();
   }
 
   @Patch('finance-requests/:id/process')
+  @UseGuards(CooGuard)
   @HttpCode(HttpStatus.OK)
   async processFinanceRequest(
     @Param('id') id: string,
@@ -102,17 +113,20 @@ export class AdminController {
   }
 
   @Get('transactions/pending')
+  @UseGuards(CooGuard)
   async getPendingRequests() {
     return this.adminService.getPendingRequests();
   }
 
   @Post('send-kyc-reminder')
+  @UseGuards(CooGuard)
   @HttpCode(HttpStatus.OK)
   async sendKycReminder() {
     return this.adminService.sendKycReminder();
   }
 
   @Patch('transactions/:id/process')
+  @UseGuards(CooGuard)
   async processManualTransaction(
     @Param('id') txId: string,
     @Body() body: { status: 'COMPLETED' | 'REJECTED'; adminId?: string },
