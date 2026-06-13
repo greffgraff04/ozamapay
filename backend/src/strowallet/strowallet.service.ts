@@ -135,7 +135,7 @@ export class StrowalletService {
       postal_code: '33127',
       country: 'USA',
       amount_usd: String(amountUsd),
-      phone: user.phone || '50936401900',
+      phone: user.phone || '3055550100',
     };
 
     const virtualCard = await this.prisma.$transaction(async (tx) => {
