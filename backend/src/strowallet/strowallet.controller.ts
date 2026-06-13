@@ -7,11 +7,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class StrowalletController {
   constructor(private readonly strowalletService: StrowalletService) {}
 
-  @Get('health')
-  checkHealth() {
-    return this.strowalletService.checkHealth();
-  }
-
   @Get('my-card')
   getMyCardLocalData(@Request() req) {
     return this.strowalletService.getMyCardLocalData(req.user.id);
