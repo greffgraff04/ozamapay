@@ -11,6 +11,14 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
+const STROWALLET_BILLING = {
+  street: '3401 N. Miami Ave, Ste 230',
+  city: 'Miami',
+  state: 'Florida',
+  zip: '33127',
+  country: 'United States',
+};
+
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
   bank_htg: { acc: "000-000-000", name: "Ralph Olivier Greffin", bank: "Capital Bank (Gourdes)" },
@@ -2033,17 +2041,66 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        {/* Adres - full width */}
+                        {/* Billing Address - full width */}
                         <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Billing</p>
-                          <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-xs">
-                            {user?.kyc?.line1 || '—'}, {user?.kyc?.city || 'Jacmel'}, Haiti · {user?.kyc?.zipCode || '0000'}
-                          </p>
+                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
+                          {[
+                            { label: 'Street', value: STROWALLET_BILLING.street },
+                            { label: 'City',   value: STROWALLET_BILLING.city },
+                            { label: 'State',  value: STROWALLET_BILLING.state },
+                            { label: 'ZIP',    value: STROWALLET_BILLING.zip },
+                            { label: 'Country',value: STROWALLET_BILLING.country },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                              <div>
+                                <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
+                                <span className="text-[#0F121E] font-bold text-xs">{value}</span>
+                              </div>
+                              <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
+                                <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
 
                       </div>
                     </div>
                   )}
+
+                  {/* BILLING ADDRESS — always visible */}
+                  <div className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4 mb-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
+                        <Landmark size={14} className="text-white" />
+                      </div>
+                      <p className="text-[#0F121E] font-black text-sm uppercase tracking-tight">Billing Address</p>
+                    </div>
+                    {[
+                      { label: 'Street',  value: STROWALLET_BILLING.street },
+                      { label: 'City',    value: STROWALLET_BILLING.city },
+                      { label: 'State',   value: STROWALLET_BILLING.state },
+                      { label: 'ZIP',     value: STROWALLET_BILLING.zip },
+                      { label: 'Country', value: STROWALLET_BILLING.country },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                        <div>
+                          <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
+                          <p className="text-[#0F121E] font-bold text-sm">{value}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(value)}
+                          className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
+                        >
+                          <Copy size={13} className="text-gray-400" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                      <p className="text-red-600 text-[10px] leading-relaxed font-bold">
+                        ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
+                      </p>
+                    </div>
+                  </div>
 
                   {/* NFC BADGE */}
                   <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
