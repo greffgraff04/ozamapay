@@ -1119,6 +1119,7 @@ export default function Dashboard() {
               ) : (
                 transactions.slice(0, 4).map((t: any, idx) => {
                   const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                    t.type === 'PAYMENT' || t.type === 'CARD' ||
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   const amt = (t.amount || 0).toLocaleString();
@@ -1192,6 +1193,7 @@ export default function Dashboard() {
               ) : (
                 transactions.map((t: any, idx) => {
                   const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                    t.type === 'PAYMENT' || t.type === 'CARD' ||
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   return (
@@ -1204,12 +1206,14 @@ export default function Dashboard() {
 <p className="font-black text-sm uppercase italic leading-none tracking-tight text-black">
   {t.type === 'TOPUP' ? (t.method || 'Depot') :
    t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
+   t.type === 'PAYMENT' ? (t.title || t.description || 'Peman Visa') :
+   t.type === 'CARD' ? (t.title || 'Viz Kont') :
    isDebit
     ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
     : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
 </p>
                           <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">
-                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
+                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : t.type === 'PAYMENT' ? 'Peman Visa' : t.type === 'CARD' ? 'Viz' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
                       </div>
