@@ -57,6 +57,23 @@ export class StrowalletService {
     return data;
   }
 
+  // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
+
+  async checkHealth(): Promise<{ status: 'ok' | 'error'; message?: string }> {
+    const url = `${this.BASE_URL}/fetch-nfccard-detail/`;
+    try {
+      await axios.get(url, {
+        params: { public_key: this.PUBLIC_KEY, mode: this.MODE, card_id: 'health-check' },
+        timeout: 10000,
+      });
+      return { status: 'ok' };
+    } catch (error: any) {
+      // Any HTTP response from Strowallet (even 4xx) means the API is reachable
+      if (error?.response) return { status: 'ok' };
+      return { status: 'error', message: error?.message || 'Strowallet unreachable' };
+    }
+  }
+
   // ─── 1. CREATE NFC CARD (otomatik, pa bezwen compliance review) ─────────────
 
   async createAndFundCard(userId: string, amountUsd: number) {
