@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
-const STROWALLET_BILLING = {
+const CARD_BILLING = {
   street: '3401 N. Miami Ave, Ste 230',
   city: 'Miami',
   state: 'Florida',
@@ -102,7 +102,7 @@ export default function Dashboard() {
   const [financeLoading, setFinanceLoading] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number>(135);
 
-  // --- NEW KYC STATES (STROWALLET DYNAMIC) ---
+  // --- NEW KYC STATES ---
   const [showKycForm, setShowKycForm] = useState(false);
   const [kycLoading, setKycLoading] = useState(false);
   
@@ -2052,11 +2052,11 @@ export default function Dashboard() {
                         <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
                           <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
                           {[
-                            { label: 'Street', value: STROWALLET_BILLING.street },
-                            { label: 'City',   value: STROWALLET_BILLING.city },
-                            { label: 'State',  value: STROWALLET_BILLING.state },
-                            { label: 'ZIP',    value: STROWALLET_BILLING.zip },
-                            { label: 'Country',value: STROWALLET_BILLING.country },
+                            { label: 'Street', value: CARD_BILLING.street },
+                            { label: 'City',   value: CARD_BILLING.city },
+                            { label: 'State',  value: CARD_BILLING.state },
+                            { label: 'ZIP',    value: CARD_BILLING.zip },
+                            { label: 'Country',value: CARD_BILLING.country },
                           ].map(({ label, value }) => (
                             <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
                               <div>
@@ -2083,11 +2083,11 @@ export default function Dashboard() {
                       <p className="text-[#0F121E] font-black text-sm uppercase tracking-tight">Billing Address</p>
                     </div>
                     {[
-                      { label: 'Street',  value: STROWALLET_BILLING.street },
-                      { label: 'City',    value: STROWALLET_BILLING.city },
-                      { label: 'State',   value: STROWALLET_BILLING.state },
-                      { label: 'ZIP',     value: STROWALLET_BILLING.zip },
-                      { label: 'Country', value: STROWALLET_BILLING.country },
+                      { label: 'Street',  value: CARD_BILLING.street },
+                      { label: 'City',    value: CARD_BILLING.city },
+                      { label: 'State',   value: CARD_BILLING.state },
+                      { label: 'ZIP',     value: CARD_BILLING.zip },
+                      { label: 'Country', value: CARD_BILLING.country },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
                         <div>
@@ -2156,7 +2156,7 @@ export default function Dashboard() {
                             <p className="text-[#0F121E] font-bold text-sm">${Number(rechargeAmount).toFixed(2)} USD</p>
                           </div>
                           <div className="flex justify-between items-center mb-1">
-                            <p className="text-gray-400 text-xs">Frè (${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)})</p>
+                            <p className="text-gray-400 text-xs">Frè Sèvis: $1.90 + 1.9%</p>
                             <p className="text-orange-500 font-bold text-sm">+ ${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)} USD</p>
                           </div>
                           <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center">
