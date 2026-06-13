@@ -2149,24 +2149,37 @@ export default function Dashboard() {
                         />
                         <span className="text-gray-400 text-sm">USD</span>
                       </div>
-                      {rechargeAmount && Number(rechargeAmount) > 0 && (
-                        <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4">
-                          <div className="flex justify-between items-center mb-1">
-                            <p className="text-gray-400 text-xs">Montan recharge</p>
-                            <p className="text-[#0F121E] font-bold text-sm">${Number(rechargeAmount).toFixed(2)} USD</p>
+                      {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
+                        const amt = Number(rechargeAmount);
+                        const serviceFee = 1.90 + amt * 0.019;
+                        const ozamapayFee = Math.round(amt * 0.02 * 100) / 100;
+                        const totalUsd = amt + serviceFee + ozamapayFee;
+                        const totalHtg = Math.ceil(totalUsd * exchangeRate);
+                        return (
+                          <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4">
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-gray-400 text-xs">Montan recharge</p>
+                              <p className="text-[#0F121E] font-bold text-sm">${amt.toFixed(2)} USD</p>
+                            </div>
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-gray-400 text-xs">Frè Sèvis: $1.90 + 1.9%</p>
+                              <p className="text-orange-500 font-bold text-sm">+ ${serviceFee.toFixed(2)} USD</p>
+                            </div>
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-gray-400 text-xs">Frè OZAMAPAY: 2%</p>
+                              <p className="text-orange-500 font-bold text-sm">+ ${ozamapayFee.toFixed(2)} USD</p>
+                            </div>
+                            <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center mb-1">
+                              <p className="text-gray-600 text-xs font-semibold">Total USD</p>
+                              <p className="text-[#0F121E] font-black text-sm">${totalUsd.toFixed(2)} USD</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-gray-600 text-xs font-semibold">Total HTG</p>
+                              <p className="text-[#0F121E] font-black text-base">{totalHtg.toLocaleString()} HTG</p>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center mb-1">
-                            <p className="text-gray-400 text-xs">Frè Sèvis: $1.90 + 1.9%</p>
-                            <p className="text-orange-500 font-bold text-sm">+ ${(1.90 + Number(rechargeAmount) * 0.019).toFixed(2)} USD</p>
-                          </div>
-                          <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center">
-                            <p className="text-gray-600 text-xs font-semibold">Total HTG</p>
-                            <p className="text-[#0F121E] font-black text-base">
-                              {Math.ceil((Number(rechargeAmount) + 1.90 + Number(rechargeAmount) * 0.019) * exchangeRate).toLocaleString()} HTG
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                       <div className="grid grid-cols-3 gap-2 mb-6">
                         {['5', '10', '20'].map(amt => (
                           <button

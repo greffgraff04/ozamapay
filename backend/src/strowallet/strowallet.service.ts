@@ -13,6 +13,8 @@ export class StrowalletService {
   private readonly CARD_CREATION_FEE_USD = 2.50;
   private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
   private readonly CARD_RECHARGE_FEE_PCT = 0.019;
+  private readonly OZAMAPAY_RECHARGE_FEE_PCT = 0.02;
+  private readonly MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
   constructor(
     private prisma: PrismaService,
@@ -214,25 +216,27 @@ export class StrowalletService {
     if (card.status !== 'ACTIVE') throw new BadRequestException('Kat ou a pa aktif');
 
     const exchangeRate = await this.getExchangeRate();
-    const feeUsd = this.CARD_RECHARGE_FEE_FLAT_USD + amountUsd * this.CARD_RECHARGE_FEE_PCT;
-    const totalUsd = amountUsd + feeUsd;
+    const serviceFeeUsd = this.CARD_RECHARGE_FEE_FLAT_USD + amountUsd * this.CARD_RECHARGE_FEE_PCT;
+    const ozamapayFeeUsd = Math.round(amountUsd * this.OZAMAPAY_RECHARGE_FEE_PCT * 100) / 100;
+    const totalUsd = amountUsd + serviceFeeUsd + ozamapayFeeUsd;
     const totalHtg = Math.ceil(totalUsd * exchangeRate);
+    const ozamapayFeeHtg = Math.round(ozamapayFeeUsd * exchangeRate * 100) / 100;
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (!wallet || Number(wallet.balance) < totalHtg) {
       throw new BadRequestException(
-        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (recharge $${amountUsd} + frè $${feeUsd.toFixed(2)})`
+        `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (recharge $${amountUsd} + frè sèvis $${serviceFeeUsd.toFixed(2)} + OZAMAPAY $${ozamapayFeeUsd.toFixed(2)})`
       );
     }
 
-    // Debi HTG wallet + recharje kat (transaksyon atomik — si Strowallet echwe, debi pa pase)
+    // Debi total (amount + serviceFee + ozamapayFee) — voye amount sèlman bay Strowallet
     await this.prisma.$transaction(async (tx) => {
       await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: totalHtg } },
       });
 
-      // Apèl Strowallet NFC fund
+      // Apèl Strowallet — amount sèlman, pa gen frè
       await this.nfcPost('fund-withdraw-nfccard', {
         card_id: card.cardId,
         amount: String(amountUsd),
@@ -244,15 +248,21 @@ export class StrowalletService {
         data: { balance: { increment: amountUsd } },
       });
 
+      // Kredi frè OZAMAPAY nan master wallet
+      await tx.wallet.update({
+        where: { userId: this.MASTER_ID },
+        data: { balance: { increment: ozamapayFeeHtg } },
+      });
+
       await tx.transaction.create({
         data: {
           senderWalletId: wallet.id,
           type: 'CARD',
           amount: totalHtg,
-          netAmount: totalHtg,
-          fee: Math.round(feeUsd * exchangeRate * 100) / 100,
+          netAmount: Math.ceil(amountUsd * exchangeRate),
+          fee: Math.round((serviceFeeUsd + ozamapayFeeUsd) * exchangeRate * 100) / 100,
           status: 'COMPLETED',
-          description: `Recharge kat NFC $${amountUsd} + frè $${feeUsd.toFixed(2)}`,
+          description: `Recharge kat NFC $${amountUsd} + frè sèvis $${serviceFeeUsd.toFixed(2)} + OZAMAPAY $${ozamapayFeeUsd.toFixed(2)}`,
           reference: `CARD-FUND-${card.cardId}-${Date.now()}`,
         },
       });
