@@ -39,8 +39,13 @@ export class StrowalletService {
       ({ data } = await axios.post(url, null, { params: payload }));
     } catch (error: any) {
       const detail = error?.response?.data;
-      console.error('Strowallet API error:', detail || error?.message || error);
-      const msg = detail?.message || detail?.error || error?.message || 'Strowallet unreachable';
+      console.error('Strowallet API error:', JSON.stringify(detail) || error?.message || error);
+      const rawMsg = detail?.message || detail?.error || detail?.msg || detail?.detail;
+      const msg = typeof rawMsg === 'string'
+        ? rawMsg
+        : rawMsg != null
+          ? JSON.stringify(rawMsg)
+          : (typeof detail === 'string' ? detail : detail != null ? JSON.stringify(detail) : error?.message || 'Strowallet unreachable');
       throw new BadRequestException(`Strowallet: ${msg}`);
     }
     if (data?.success === false || data?.status === false) {
