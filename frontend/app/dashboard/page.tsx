@@ -181,6 +181,13 @@ export default function Dashboard() {
     showToast("Kopye ak siksè!", "success");
   };
 
+  const toErrorMsg = (msg: any, fallback = 'Erè'): string => {
+    if (!msg) return fallback;
+    if (typeof msg === 'string') return msg;
+    if (Array.isArray(msg)) return msg.join(', ');
+    return JSON.stringify(msg);
+  };
+
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const m = Math.floor(diff / 60000);
@@ -1814,7 +1821,7 @@ export default function Dashboard() {
                           fetchData();
                         } else {
                           const errorData = contentType?.includes('application/json') ? await res.json() : null;
-                          alert(errorData?.message || 'Erè pandan kreyasyon kat la.');
+                          alert(toErrorMsg(errorData?.message, 'Erè pandan kreyasyon kat la.'));
                         }
                       } catch (err) {
                         alert('Sèvè a pa ka jwenn requete a.');
@@ -2189,7 +2196,7 @@ export default function Dashboard() {
                               setRechargeAmount('');
                               fetchData();
                             } else {
-                              alert(data.message || 'Erè recharge');
+                              alert(toErrorMsg(data.message, 'Erè recharge'));
                             }
                           } catch {
                             alert('Erè koneksyon');
