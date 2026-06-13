@@ -262,11 +262,25 @@ export class StrowalletService {
     return data?.data || data?.history || [];
   }
 
-  // ─── 5. LOCAL DATA ────────────────────────────────────────────────────────────
+  // ─── 5. LOCAL DATA (with live balance sync) ──────────────────────────────────
 
   async getMyCardLocalData(userId: string) {
     const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
     if (!card) return null;
+
+    try {
+      const data = await this.nfcGet('fetch-nfccard-detail', { card_id: card.cardId });
+      const liveBalance = parseFloat(data?.response?.card_detail?.balance ?? data?.data?.balance);
+      if (!isNaN(liveBalance)) {
+        return await this.prisma.virtualCard.update({
+          where: { userId },
+          data: { balance: liveBalance },
+        });
+      }
+    } catch {
+      // Fall back to cached balance if Strowallet is unavailable
+    }
+
     return card;
   }
 
