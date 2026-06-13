@@ -133,7 +133,7 @@ export class StrowalletService {
       city: 'Miami',
       state: 'FL',
       postal_code: '33127',
-      country: 'US',
+      country: 'USA',
       amount_usd: String(amountUsd),
       phone: user.phone || '50936401900',
     };
