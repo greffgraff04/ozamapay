@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -168,5 +169,87 @@ export class GiftCardsService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
+  }
+
+  // ─── Webhook ──────────────────────────────────────────────────────────────
+
+  verifyWebhookSignature(rawBody: string, signature: string, timestamp: string): boolean {
+    const secret = process.env.RELOADLY_WEBHOOK_SECRET;
+    if (!secret || !signature || !timestamp) return false;
+    // Reloadly signs: HMAC-SHA256(secret, rawBody + ":" + timestamp) → hex
+    const dataToSign = rawBody + ':' + timestamp;
+    const expected = createHmac('sha256', secret).update(dataToSign).digest('hex');
+    try {
+      return timingSafeEqual(Buffer.from(expected), Buffer.from(signature.trim()));
+    } catch {
+      return false;
+    }
+  }
+
+  async processWebhook(body: any): Promise<void> {
+    const { event, status, transaction } = body ?? {};
+
+    if (event !== 'giftcard_transaction.status') return;
+
+    // customIdentifier is the orderId we sent when placing the order
+    const customId: string | undefined = transaction?.customIdentifier;
+    const reloadlyTxId: number | undefined = transaction?.id;
+
+    if (!customId) {
+      this.logger.warn('Reloadly webhook: missing customIdentifier');
+      return;
+    }
+
+    const order = await this.prisma.giftCardOrder.findUnique({ where: { id: customId } });
+    if (!order) {
+      this.logger.warn(`Reloadly webhook: GiftCardOrder not found for id=${customId}`);
+      return;
+    }
+
+    // Idempotency — ignore if already in a terminal state
+    if (order.status === 'COMPLETED' || order.status === 'FAILED') return;
+
+    if (status === 'SUCCESSFUL') {
+      let redeemCode: string | null = null;
+      if (reloadlyTxId) {
+        try {
+          const cards = await this.reloadlyGet(`/orders/${reloadlyTxId}/cards`);
+          redeemCode = cards?.[0]?.cardNumber ?? cards?.[0]?.pinCode ?? null;
+        } catch (err: any) {
+          this.logger.warn(`Could not fetch redeem code for tx ${reloadlyTxId}: ${err.message}`);
+        }
+      }
+      await this.prisma.giftCardOrder.update({
+        where: { id: order.id },
+        data: { status: 'COMPLETED', redeemCode: redeemCode ?? undefined },
+      });
+      this.logger.log(`GiftCardOrder ${order.id} → COMPLETED`);
+    } else if (status === 'FAILED') {
+      // margin = htgPaid × (0.05 / 1.05)
+      const htgPaid = Number(order.htgPaid);
+      const marginHTG = Math.round((htgPaid * MARGIN) / (1 + MARGIN) * 100) / 100;
+
+      await this.prisma.$transaction(async (tx) => {
+        const current = await tx.giftCardOrder.findUnique({ where: { id: order.id } });
+        if (!current || current.status === 'COMPLETED' || current.status === 'FAILED') return;
+
+        // Refund full amount to user
+        await tx.wallet.update({
+          where: { userId: order.userId },
+          data: { balance: { increment: htgPaid } },
+        });
+        // Claw back margin from master wallet
+        await tx.wallet.update({
+          where: { userId: MASTER_ID },
+          data: { balance: { decrement: marginHTG } },
+        });
+        await tx.giftCardOrder.update({
+          where: { id: order.id },
+          data: { status: 'FAILED' },
+        });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+      this.logger.log(`GiftCardOrder ${order.id} → FAILED, refunded ${htgPaid} HTG to user`);
+    }
   }
 }
