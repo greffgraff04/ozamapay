@@ -90,7 +90,8 @@ export class PaymentsController {
   async moncashConnectWebhook(
     @RawBody() rawBody: Buffer,
     @Body() body: any,
-    @Headers('x-signature') signature?: string,
+    @Headers('x-mcc-signature') signature?: string,
+    @Headers('x-mcc-timestamp') _timestamp?: string,
   ) {
     if (!signature || !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
       throw new BadRequestException('Signature webhook envalid');
