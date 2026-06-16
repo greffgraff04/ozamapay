@@ -101,9 +101,21 @@ export class MonCashConnectService {
 
   verifyWebhook(payload: string, signature: string): boolean {
     const secret = process.env.MONCASHCONNECT_WEBHOOK_SECRET as string;
-    const expected = createHmac('sha256', secret).update(payload).digest('hex');
+    // Strip "whsec_" prefix if MonCash Connect sends it prefixed
+    const normalizedSecret = secret?.startsWith('whsec_') ? secret.slice(6) : secret;
+    const expected = createHmac('sha256', normalizedSecret).update(payload).digest('hex');
+
+    this.logger.log('Received signature: ' + signature);
+    this.logger.log('Expected signature: ' + expected);
+    this.logger.log('Secret used: ' + secret?.substring(0, 10) + '...');
+
+    // Normalize incoming signature: strip "whsec_" prefix if present, trim whitespace
+    const normalizedSig = signature?.startsWith('whsec_')
+      ? signature.slice(6).trim()
+      : signature?.trim();
+
     try {
-      return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+      return timingSafeEqual(Buffer.from(expected), Buffer.from(normalizedSig));
     } catch {
       return false;
     }
