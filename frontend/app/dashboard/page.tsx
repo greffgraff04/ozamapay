@@ -7,7 +7,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
-  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock
+  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
@@ -145,6 +145,15 @@ export default function Dashboard() {
   // Onboarding tour
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+
+  // Gift cards
+  const [gcProducts, setGcProducts] = useState<any[]>([]);
+  const [gcLoading, setGcLoading] = useState(false);
+  const [gcSelectedBrand, setGcSelectedBrand] = useState<string | null>(null);
+  const [gcSelectedDenom, setGcSelectedDenom] = useState<number | null>(null);
+  const [gcOrderLoading, setGcOrderLoading] = useState(false);
+  const [gcOrderResult, setGcOrderResult] = useState<any>(null);
+  const [gcOrders, setGcOrders] = useState<any[]>([]);
  
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -411,6 +420,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchData();
+    }
+    if (activeTab === 'giftcards' && gcProducts.length === 0) {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      setGcLoading(true);
+      Promise.all([
+        fetch(`${backendUrl}/giftcards/products`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      ]).then(([products, orders]) => {
+        setGcProducts(Array.isArray(products?.content) ? products.content : (Array.isArray(products) ? products : []));
+        setGcOrders(Array.isArray(orders) ? orders : []);
+      }).catch(() => {}).finally(() => setGcLoading(false));
     }
   }, [activeTab]);
 
@@ -2611,18 +2632,232 @@ export default function Dashboard() {
 
       </div>
 
+      {/* ── GIFT CARDS TAB ─────────────────────────────────────────────── */}
+      {activeTab === 'giftcards' && (() => {
+        const BRANDS = [
+          { name: 'Netflix',     keywords: ['netflix'],     color: 'bg-red-600',    letter: 'N' },
+          { name: 'Amazon',      keywords: ['amazon'],      color: 'bg-yellow-500', letter: 'A' },
+          { name: 'Google Play', keywords: ['google play'], color: 'bg-green-500',  letter: 'G' },
+          { name: 'Spotify',     keywords: ['spotify'],     color: 'bg-green-700',  letter: 'S' },
+          { name: 'Uber',        keywords: ['uber'],        color: 'bg-black',      letter: 'U' },
+          { name: 'Airbnb',      keywords: ['airbnb'],      color: 'bg-pink-500',   letter: 'B' },
+        ];
+
+        const brandProducts = (brand: typeof BRANDS[0]) =>
+          gcProducts.filter(p =>
+            brand.keywords.some(kw => p.productName?.toLowerCase().includes(kw))
+          );
+
+        const selectedBrandObj = BRANDS.find(b => b.name === gcSelectedBrand) ?? null;
+        const denominations: number[] = selectedBrandObj
+          ? (brandProducts(selectedBrandObj)
+              .flatMap((p: any) => p.fixedRecipientDenominations ?? [])
+              .filter((v: number, i: number, a: number[]) => a.indexOf(v) === i)
+              .sort((a: number, b: number) => a - b))
+          : [];
+
+        const selectedProduct = selectedBrandObj
+          ? brandProducts(selectedBrandObj).find((p: any) =>
+              (p.fixedRecipientDenominations ?? []).includes(gcSelectedDenom)
+            ) ?? brandProducts(selectedBrandObj)[0]
+          : null;
+
+        const htgPrice = gcSelectedDenom
+          ? Math.round(gcSelectedDenom * exchangeRate * 1.05 * 100) / 100
+          : null;
+
+        const handleOrder = async () => {
+          if (!selectedProduct || !gcSelectedDenom) return;
+          const token = localStorage.getItem('token');
+          if (!token) return;
+          setGcOrderLoading(true);
+          try {
+            const res = await fetch(`${backendUrl}/giftcards/order`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ productId: selectedProduct.productId, unitPrice: gcSelectedDenom }),
+            });
+            const data = await res.json();
+            if (!res.ok) { showToast(data.message || 'Erè pandan kòmand lan', 'error'); return; }
+            setGcOrderResult(data);
+            fetchData();
+          } catch { showToast('Erè rezo', 'error'); }
+          finally { setGcOrderLoading(false); }
+        };
+
+        return (
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '102px' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+              {gcOrderResult ? (
+                <button onClick={() => { setGcOrderResult(null); setGcSelectedBrand(null); setGcSelectedDenom(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                  <ChevronRight size={14} className="rotate-180" /> Retounen
+                </button>
+              ) : gcSelectedBrand ? (
+                <button onClick={() => { setGcSelectedBrand(null); setGcSelectedDenom(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                  <ChevronRight size={14} className="rotate-180" /> Retounen
+                </button>
+              ) : (
+                <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                  <ShoppingCart size={14} /> Back Home
+                </button>
+              )}
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Gift<br/>Cards</h2>
+            </div>
+
+            <div style={{ height: 'calc(100vh - 190px)', overflowY: 'auto' }} className="pb-28">
+
+              {/* ORDER SUCCESS */}
+              {gcOrderResult && (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 size={40} className="text-green-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-black text-xl uppercase tracking-tight">{gcOrderResult.productName}</p>
+                    <p className="text-gray-400 text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                  </div>
+                  {gcOrderResult.redeemCode ? (
+                    <div className="w-full bg-gray-50 rounded-3xl p-6 text-center">
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
+                      <p className="font-black text-2xl tracking-widest text-[#0F121E] break-all">{gcOrderResult.redeemCode}</p>
+                      <button
+                        onClick={() => copyToClipboard(gcOrderResult.redeemCode)}
+                        className="mt-4 flex items-center gap-2 mx-auto bg-[#0F121E] text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
+                      >
+                        <Copy size={16} /> Kopye Kòd la
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 rounded-3xl p-5 text-center w-full">
+                      <p className="text-yellow-700 font-bold text-sm">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400">Nouvo balans: <span className="font-black text-[#0F121E]">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
+                </div>
+              )}
+
+              {/* DENOMINATION SELECTOR */}
+              {!gcOrderResult && gcSelectedBrand && selectedBrandObj && (
+                <div className="px-4 space-y-6">
+                  <div className="flex items-center gap-4 py-2">
+                    <div className={`w-14 h-14 rounded-2xl ${selectedBrandObj.color} flex items-center justify-center text-white font-black text-2xl`}>
+                      {selectedBrandObj.letter}
+                    </div>
+                    <div>
+                      <p className="font-black text-xl uppercase">{selectedBrandObj.name}</p>
+                      <p className="text-xs text-gray-400">{denominations.length} valè disponib</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Chwazi Montan (USD)</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {denominations.length > 0 ? denominations.map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setGcSelectedDenom(d)}
+                          className={`py-4 rounded-2xl font-black text-sm border-2 transition-all active:scale-95 ${gcSelectedDenom === d ? 'bg-[#0F121E] text-white border-[#0F121E]' : 'bg-white border-gray-100 text-[#0F121E]'}`}
+                        >
+                          ${d}
+                        </button>
+                      )) : (
+                        <p className="col-span-3 text-gray-400 text-sm text-center py-4">Pa gen valè disponib pou mak sa a.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {gcSelectedDenom && htgPrice && (
+                    <div className="bg-gray-50 rounded-3xl p-5 space-y-2">
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Pri USD</span><span className="font-black">${gcSelectedDenom}</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Taux ({exchangeRate} HTG)</span><span className="font-black">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Maji OZAMAPAY (5%)</span><span className="font-black">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between border-t border-gray-200 pt-2 mt-2"><span className="text-sm font-black">Total HTG</span><span className="font-black text-[#FF7A00]">{htgPrice.toFixed(2)} HTG</span></div>
+                    </div>
+                  )}
+
+                  <button
+                    disabled={!gcSelectedDenom || gcOrderLoading}
+                    onClick={handleOrder}
+                    className="w-full py-5 bg-[#0F121E] text-white font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
+                  >
+                    {gcOrderLoading ? 'Pwosesis...' : `Achte — ${htgPrice ? htgPrice.toFixed(2) + ' HTG' : '—'}`}
+                  </button>
+                </div>
+              )}
+
+              {/* BRAND GRID */}
+              {!gcOrderResult && !gcSelectedBrand && (
+                <div className="px-4 space-y-6">
+                  {gcLoading ? (
+                    <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" /></div>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Mak Popilè</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {BRANDS.map(brand => {
+                            const prods = brandProducts(brand);
+                            if (prods.length === 0) return null;
+                            return (
+                              <button
+                                key={brand.name}
+                                onClick={() => { setGcSelectedBrand(brand.name); setGcSelectedDenom(null); setGcOrderResult(null); }}
+                                className="bg-white border border-gray-100 rounded-3xl p-5 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm"
+                              >
+                                <div className={`w-14 h-14 rounded-2xl ${brand.color} flex items-center justify-center text-white font-black text-2xl`}>
+                                  {brand.letter}
+                                </div>
+                                <p className="font-black text-sm text-[#0F121E]">{brand.name}</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{prods.length} opsyon</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {gcOrders.length > 0 && (
+                        <div>
+                          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Dènye Achats</p>
+                          <div className="space-y-3">
+                            {gcOrders.slice(0, 5).map((o: any) => (
+                              <div key={o.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
+                                <div>
+                                  <p className="font-black text-sm">{o.productName}</p>
+                                  <p className="text-xs text-gray-400">${o.unitPrice} · {Number(o.htgPaid).toFixed(2)} HTG</p>
+                                </div>
+                                <div className="text-right">
+                                  {o.redeemCode && (
+                                    <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00]"><Copy size={16} /></button>
+                                  )}
+                                  <p className={`text-[10px] font-black uppercase mt-1 ${o.status === 'COMPLETED' ? 'text-green-500' : o.status === 'FAILED' ? 'text-red-500' : 'text-yellow-500'}`}>{o.status}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* BOTTOM NAVIGATION */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50">
         {[
-          { id: 'home', icon: <Home size={24} />, label: 'HOME' },
-          { id: 'finance', icon: <Landmark size={24} />, label: 'FINANCE' },
-          { id: 'cards', icon: <CreditCard size={24} />, label: 'CARDS' },
-          { id: 'profile', icon: <User size={24} />, label: 'PROFILE' }
+          { id: 'home',       icon: <Home size={22} />,         label: 'HOME' },
+          { id: 'finance',    icon: <Landmark size={22} />,     label: 'FINANCE' },
+          { id: 'giftcards',  icon: <ShoppingCart size={22} />, label: 'GIFTS' },
+          { id: 'cards',      icon: <CreditCard size={22} />,   label: 'CARDS' },
+          { id: 'profile',    icon: <User size={22} />,         label: 'PROFILE' },
         ].map((item) => (
-          <button 
-            key={item.id} 
+          <button
+            key={item.id}
             onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
-            className={`w-14 h-14 flex flex-col items-center justify-center transition-all ${activeTab === item.id ? 'text-[#FF7A00] scale-110' : 'text-[#8E929B] opacity-30 hover:opacity-100'}`}
+            className={`w-12 h-14 flex flex-col items-center justify-center transition-all ${activeTab === item.id ? 'text-[#FF7A00] scale-110' : 'text-[#8E929B] opacity-30 hover:opacity-100'}`}
           >
             {item.icon}
             <span className="text-[7px] font-black uppercase mt-1 tracking-widest">{item.label}</span>

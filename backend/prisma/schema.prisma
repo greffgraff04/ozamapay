@@ -58,6 +58,7 @@ model User {
   adminSetupComplete   Boolean @default(false)
 
   adminSessions   AdminSession[]
+  giftCardOrders  GiftCardOrder[]
 
   @@index([email])
   @@index([role])
@@ -482,6 +483,22 @@ enum LiquidityRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model GiftCardOrder {
+  id          String   @id @default(uuid())
+  userId      String
+  productId   Int
+  productName String
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  htgPaid     Decimal  @db.Decimal(18, 2)
+  redeemCode  String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
 }
 
 model LiquidityRequest {

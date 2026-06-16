@@ -18,6 +18,7 @@ import { MailModule } from './mail/mail.module';
 import { HealthModule } from './health/health.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { MerchantModule } from './merchant/merchant.module';
+import { GiftCardsModule } from './giftcards/giftcards.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MerchantModule } from './merchant/merchant.module';
     HealthModule,
     SubscriptionModule,
     MerchantModule,
+    GiftCardsModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [
