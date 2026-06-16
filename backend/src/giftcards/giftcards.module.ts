@@ -8,3 +8,4 @@ import { PrismaService } from '../prisma/prisma.service';
   providers: [GiftCardsService, PrismaService],
 })
 export class GiftCardsModule {}
+// ReloadlyAuthService is provided globally via ReloadlyAuthModule in AppModule

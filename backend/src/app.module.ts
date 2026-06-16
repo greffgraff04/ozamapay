@@ -19,6 +19,8 @@ import { HealthModule } from './health/health.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { MerchantModule } from './merchant/merchant.module';
 import { GiftCardsModule } from './giftcards/giftcards.module';
+import { ReloadlyAuthModule } from './reloadly/reloadly-auth.module';
+import { AirtimeModule } from './airtime/airtime.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { GiftCardsModule } from './giftcards/giftcards.module';
     SubscriptionModule,
     MerchantModule,
     GiftCardsModule,
+    ReloadlyAuthModule,
+    AirtimeModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

@@ -2,47 +2,26 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReloadlyAuthService } from '../reloadly/reloadly-auth.service';
 
-const RELOADLY_AUTH_URL = 'https://auth.reloadly.com/oauth/token';
 const RELOADLY_BASE = 'https://giftcards.reloadly.com';
+const GIFTCARDS_AUDIENCE = 'https://giftcards.reloadly.com';
 const MARGIN = 0.05;
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
 @Injectable()
 export class GiftCardsService {
   private readonly logger = new Logger(GiftCardsService.name);
-  private accessToken: string | null = null;
-  private tokenExpiresAt = 0;
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  // ─── Auth ────────────────────────────────────────────────────────────────
-
-  private async getToken(): Promise<string> {
-    if (this.accessToken && Date.now() < this.tokenExpiresAt) {
-      return this.accessToken;
-    }
-    const res = await fetch(RELOADLY_AUTH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: process.env.RELOADLY_CLIENT_ID,
-        client_secret: process.env.RELOADLY_CLIENT_SECRET,
-        grant_type: 'client_credentials',
-        audience: 'https://giftcards.reloadly.com',
-      }),
-    });
-    if (!res.ok) throw new Error(`Reloadly auth failed: ${await res.text()}`);
-    const data = await res.json();
-    this.accessToken = data.access_token;
-    this.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
-    return this.accessToken!;
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reloadlyAuth: ReloadlyAuthService,
+  ) {}
 
   // ─── HTTP helpers ─────────────────────────────────────────────────────────
 
   private async reloadlyGet(path: string) {
-    const token = await this.getToken();
+    const token = await this.reloadlyAuth.getToken(GIFTCARDS_AUDIENCE);
     const res = await fetch(`${RELOADLY_BASE}${path}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -54,7 +33,7 @@ export class GiftCardsService {
   }
 
   private async reloadlyPost(path: string, body: any) {
-    const token = await this.getToken();
+    const token = await this.reloadlyAuth.getToken(GIFTCARDS_AUDIENCE);
     const res = await fetch(`${RELOADLY_BASE}${path}`, {
       method: 'POST',
       headers: {
@@ -139,7 +118,6 @@ export class GiftCardsService {
       finalStatus = redeemCode ? 'COMPLETED' : 'PROCESSING';
     } catch (err: any) {
       this.logger.error(`Reloadly order failed for orderId ${orderId}: ${err.message}`);
-      // Refund
       await this.prisma.$transaction(async (tx) => {
         await tx.wallet.update({ where: { userId }, data: { balance: { increment: htgCost } } });
         await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { decrement: marginHTG } } });
@@ -148,7 +126,6 @@ export class GiftCardsService {
       throw new BadRequestException(`Reloadly order echwe: ${err.message}`);
     }
 
-    // 3 — Persist result
     await this.prisma.giftCardOrder.update({
       where: { id: orderId },
       data: { redeemCode: redeemCode ?? undefined, status: finalStatus },
@@ -176,7 +153,6 @@ export class GiftCardsService {
   verifyWebhookSignature(rawBody: string, signature: string, timestamp: string): boolean {
     const secret = process.env.RELOADLY_WEBHOOK_SECRET;
     if (!secret || !signature || !timestamp) return false;
-    // Reloadly signs: HMAC-SHA256(secret, rawBody + ":" + timestamp) → hex
     const dataToSign = rawBody + ':' + timestamp;
     const expected = createHmac('sha256', secret).update(dataToSign).digest('hex');
     try {
@@ -191,7 +167,6 @@ export class GiftCardsService {
 
     if (event !== 'giftcard_transaction.status') return;
 
-    // customIdentifier is the orderId we sent when placing the order
     const customId: string | undefined = transaction?.customIdentifier;
     const reloadlyTxId: number | undefined = transaction?.id;
 
@@ -206,7 +181,6 @@ export class GiftCardsService {
       return;
     }
 
-    // Idempotency — ignore if already in a terminal state
     if (order.status === 'COMPLETED' || order.status === 'FAILED') return;
 
     if (status === 'SUCCESSFUL') {
@@ -225,7 +199,6 @@ export class GiftCardsService {
       });
       this.logger.log(`GiftCardOrder ${order.id} → COMPLETED`);
     } else if (status === 'FAILED') {
-      // margin = htgPaid × (0.05 / 1.05)
       const htgPaid = Number(order.htgPaid);
       const marginHTG = Math.round((htgPaid * MARGIN) / (1 + MARGIN) * 100) / 100;
 
@@ -233,12 +206,10 @@ export class GiftCardsService {
         const current = await tx.giftCardOrder.findUnique({ where: { id: order.id } });
         if (!current || current.status === 'COMPLETED' || current.status === 'FAILED') return;
 
-        // Refund full amount to user
         await tx.wallet.update({
           where: { userId: order.userId },
           data: { balance: { increment: htgPaid } },
         });
-        // Claw back margin from master wallet
         await tx.wallet.update({
           where: { userId: MASTER_ID },
           data: { balance: { decrement: marginHTG } },

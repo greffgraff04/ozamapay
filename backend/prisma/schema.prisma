@@ -59,6 +59,7 @@ model User {
 
   adminSessions   AdminSession[]
   giftCardOrders  GiftCardOrder[]
+  airtimeOrders   AirtimeOrder[]
 
   @@index([email])
   @@index([role])
@@ -496,6 +497,23 @@ model GiftCardOrder {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model AirtimeOrder {
+  id            String   @id @default(uuid())
+  userId        String
+  operatorId    Int
+  operatorName  String
+  amount        Decimal  @db.Decimal(18, 2)
+  htgPaid       Decimal  @db.Decimal(18, 2)
+  phoneNumber   String
+  status        String   @default("PENDING")
+  transactionId String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])

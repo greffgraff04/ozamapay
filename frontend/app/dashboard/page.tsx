@@ -7,7 +7,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
-  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart
+  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
  
@@ -154,7 +154,16 @@ export default function Dashboard() {
   const [gcOrderLoading, setGcOrderLoading] = useState(false);
   const [gcOrderResult, setGcOrderResult] = useState<any>(null);
   const [gcOrders, setGcOrders] = useState<any[]>([]);
- 
+  // Airtime (Kredi) sub-section
+  const [gcSection, setGcSection] = useState<'gifts' | 'airtime'>('gifts');
+  const [atOperators, setAtOperators] = useState<any[]>([]);
+  const [atOpLoading, setAtOpLoading] = useState(false);
+  const [atSelectedOp, setAtSelectedOp] = useState<any>(null);
+  const [atAmount, setAtAmount] = useState<number | null>(null);
+  const [atPhone, setAtPhone] = useState('');
+  const [atLoading, setAtLoading] = useState(false);
+  const [atResult, setAtResult] = useState<any>(null);
+
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
@@ -434,6 +443,18 @@ export default function Dashboard() {
       }).catch(() => {}).finally(() => setGcLoading(false));
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (gcSection !== 'airtime' || atOperators.length > 0 || atOpLoading) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setAtOpLoading(true);
+    fetch(`${backendUrl}/airtime/operators`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(ops => setAtOperators(Array.isArray(ops) ? ops : []))
+      .catch(() => {})
+      .finally(() => setAtOpLoading(false));
+  }, [gcSection]);
 
   useEffect(() => {
     if (activeTab !== 'home') return;
@@ -2685,10 +2706,47 @@ export default function Dashboard() {
           finally { setGcOrderLoading(false); }
         };
 
+        const digicelOp = atOperators.find((op: any) => op.name?.toLowerCase().includes('digicel'));
+        const natcomOp = atOperators.find((op: any) => op.name?.toLowerCase().includes('natcom') || op.name?.toLowerCase().includes('nattel'));
+        const AT_AMOUNTS = [50, 100, 200, 500, 1000];
+
+        const handleAirtimeOrder = async () => {
+          if (!atSelectedOp || !atAmount || !atPhone.trim()) return;
+          const token = localStorage.getItem('token');
+          if (!token) return;
+          setAtLoading(true);
+          try {
+            const res = await fetch(`${backendUrl}/airtime/topup`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ operatorId: atSelectedOp.operatorId, amount: atAmount, phoneNumber: atPhone.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) { showToast(data.message || 'Erè pandan rechaj la', 'error'); return; }
+            setAtResult(data);
+            fetchData();
+          } catch { showToast('Erè rezo', 'error'); }
+          finally { setAtLoading(false); }
+        };
+
         return (
           <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '102px' }}>
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
-              {gcOrderResult ? (
+              {gcSection === 'airtime' ? (
+                atResult ? (
+                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                    <ChevronRight size={14} className="rotate-180" /> Retounen
+                  </button>
+                ) : atSelectedOp ? (
+                  <button onClick={() => { setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                    <ChevronRight size={14} className="rotate-180" /> Retounen
+                  </button>
+                ) : (
+                  <button onClick={() => setGcSection('gifts')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
+                    <ChevronRight size={14} className="rotate-180" /> Gift Cards
+                  </button>
+                )
+              ) : gcOrderResult ? (
                 <button onClick={() => { setGcOrderResult(null); setGcSelectedBrand(null); setGcSelectedDenom(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                   <ChevronRight size={14} className="rotate-180" /> Retounen
                 </button>
@@ -2701,13 +2759,29 @@ export default function Dashboard() {
                   <ShoppingCart size={14} /> Back Home
                 </button>
               )}
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Gift<br/>Cards</h2>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
+                {gcSection === 'airtime' ? <>Achte<br/>Kredi</> : <>Gift<br/>Cards</>}
+              </h2>
             </div>
 
             <div style={{ height: 'calc(100vh - 190px)', overflowY: 'auto' }} className="pb-28">
 
+              {/* SEGMENT SWITCHER */}
+              {!gcOrderResult && !gcSelectedBrand && !atResult && !atSelectedOp && (
+                <div className="px-4 pb-4">
+                  <div className="bg-gray-100 p-1 rounded-2xl flex gap-1">
+                    <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#0F121E] text-white shadow-sm' : 'text-gray-400'}`}>
+                      <ShoppingCart size={11} />Gift Cards
+                    </button>
+                    <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#0F121E] text-white shadow-sm' : 'text-gray-400'}`}>
+                      <Phone size={11} />Kredi
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* ORDER SUCCESS */}
-              {gcOrderResult && (
+              {gcSection === 'gifts' && gcOrderResult && (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
                   <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
                     <CheckCircle2 size={40} className="text-green-500" />
@@ -2737,7 +2811,7 @@ export default function Dashboard() {
               )}
 
               {/* DENOMINATION SELECTOR */}
-              {!gcOrderResult && gcSelectedBrand && selectedBrandObj && (
+              {gcSection === 'gifts' && !gcOrderResult && gcSelectedBrand && selectedBrandObj && (
                 <div className="px-4 space-y-6">
                   <div className="flex items-center gap-4 py-2">
                     <div className={`w-14 h-14 rounded-2xl ${selectedBrandObj.color} flex items-center justify-center text-white font-black text-2xl`}>
@@ -2786,7 +2860,7 @@ export default function Dashboard() {
               )}
 
               {/* BRAND GRID */}
-              {!gcOrderResult && !gcSelectedBrand && (
+              {gcSection === 'gifts' && !gcOrderResult && !gcSelectedBrand && (
                 <div className="px-4 space-y-6">
                   {gcLoading ? (
                     <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" /></div>
@@ -2840,6 +2914,140 @@ export default function Dashboard() {
                   )}
                 </div>
               )}
+
+              {/* ── AIRTIME (KREDI) SECTION ─────────────────────────────── */}
+
+              {/* AIRTIME SUCCESS */}
+              {gcSection === 'airtime' && atResult && (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 size={40} className="text-green-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-black text-xl uppercase tracking-tight">Kredi Voye!</p>
+                    <p className="text-gray-400 text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-gray-400 text-xs mt-1">{atResult.operatorName}</p>
+                  </div>
+                  <div className="w-full bg-gray-50 rounded-3xl p-5 text-center">
+                    <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Peye</p>
+                    <p className="font-black text-2xl text-[#0F121E]">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
+                    <p className="text-xs text-gray-400 mt-3">Nouvo balans: <span className="font-black text-[#0F121E]">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
+                  </div>
+                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="w-full py-4 bg-[#0F121E] text-white font-black uppercase rounded-3xl tracking-widest text-sm active:scale-95 transition-all">
+                    Rechaj Ankò
+                  </button>
+                </div>
+              )}
+
+              {/* AIRTIME — AMOUNT + PHONE */}
+              {gcSection === 'airtime' && !atResult && atSelectedOp && (
+                <div className="px-4 space-y-5">
+                  <div className="flex items-center gap-4 py-2">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl ${atSelectedOp.name?.toLowerCase().includes('digicel') ? 'bg-red-600' : 'bg-blue-600'}`}>
+                      <Phone size={24} />
+                    </div>
+                    <div>
+                      <p className="font-black text-xl uppercase">{atSelectedOp.name}</p>
+                      <p className="text-xs text-gray-400">Ayiti · HTG</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Montan (HTG)</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {AT_AMOUNTS.map(amt => (
+                        <button
+                          key={amt}
+                          onClick={() => setAtAmount(amt)}
+                          className={`py-4 rounded-2xl font-black text-sm border-2 transition-all active:scale-95 ${atAmount === amt ? 'bg-[#0F121E] text-white border-[#0F121E]' : 'bg-white border-gray-100 text-[#0F121E]'}`}
+                        >
+                          {amt} HTG
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Nimewo Telefòn</p>
+                    <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-4">
+                      <span className="font-black text-[#0F121E]">+509</span>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="4X XX XXXX"
+                        value={atPhone}
+                        onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                        className="flex-1 bg-transparent font-black text-[#0F121E] outline-none placeholder:text-gray-300 tracking-widest"
+                      />
+                    </div>
+                  </div>
+
+                  {atAmount && (
+                    <div className="bg-gray-50 rounded-3xl p-5 space-y-2">
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Rechaj</span><span className="font-black">{atAmount} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Frè OZAMAPAY (5%)</span><span className="font-black">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between border-t border-gray-200 pt-2 mt-2"><span className="text-sm font-black">Total</span><span className="font-black text-[#FF7A00]">{(atAmount * 1.05).toFixed(2)} HTG</span></div>
+                    </div>
+                  )}
+
+                  <button
+                    disabled={!atAmount || atPhone.trim().length < 8 || atLoading}
+                    onClick={handleAirtimeOrder}
+                    className="w-full py-5 bg-[#0F121E] text-white font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
+                  >
+                    {atLoading ? 'Pwosesis...' : `Voye Kredi — ${atAmount ? (atAmount * 1.05).toFixed(2) + ' HTG' : '—'}`}
+                  </button>
+                </div>
+              )}
+
+              {/* AIRTIME — OPERATOR SELECTION */}
+              {gcSection === 'airtime' && !atResult && !atSelectedOp && (
+                <div className="px-4 space-y-6">
+                  {atOpLoading ? (
+                    <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" /></div>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Chwazi Operatè</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          {digicelOp && (
+                            <button
+                              onClick={() => setAtSelectedOp(digicelOp)}
+                              className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm"
+                            >
+                              <div className="w-16 h-16 rounded-2xl bg-red-600 flex items-center justify-center">
+                                <Phone size={28} className="text-white" />
+                              </div>
+                              <p className="font-black text-sm text-[#0F121E]">Digicel</p>
+                              <div className="w-3 h-3 rounded-full bg-red-500" />
+                            </button>
+                          )}
+                          {natcomOp && (
+                            <button
+                              onClick={() => setAtSelectedOp(natcomOp)}
+                              className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col items-center gap-3 active:scale-95 transition-all shadow-sm"
+                            >
+                              <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center">
+                                <Phone size={28} className="text-white" />
+                              </div>
+                              <p className="font-black text-sm text-[#0F121E]">Natcom</p>
+                              <div className="w-3 h-3 rounded-full bg-blue-500" />
+                            </button>
+                          )}
+                          {!digicelOp && !natcomOp && !atOpLoading && (
+                            <p className="col-span-2 text-center text-gray-400 text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-4">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Nòt</p>
+                        <p className="text-xs text-gray-500">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
             </div>
           </div>
         );
