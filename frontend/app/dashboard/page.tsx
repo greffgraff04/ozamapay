@@ -2730,8 +2730,8 @@ export default function Dashboard() {
         };
 
         return (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: gcSection === 'gifts' ? '82px' : '120px', background: '#0C0F1A', minHeight: '100vh' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#0F121E', borderBottom: '1px solid #1E2433' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '82px', background: gcSection === 'gifts' ? '#0C0F1A' : '#ffffff', minHeight: '100vh' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: gcSection === 'gifts' ? '#0F121E' : '#ffffff', borderBottom: gcSection === 'gifts' ? '1px solid #1E2433' : '1px solid #f0f0f0' }} className="px-4 pt-4 pb-4">
               {gcSection === 'airtime' ? (
                 atResult ? (
                   <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
@@ -2759,14 +2759,12 @@ export default function Dashboard() {
                   <ShoppingCart size={14} /> Back Home
                 </button>
               )}
-              {gcSection === 'airtime' ? (
-                <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none text-white">Achte<br/>Kredi</h2>
-              ) : (
-                <div>
-                  <p className="text-sm font-semibold text-white tracking-widest uppercase whitespace-nowrap">Gift Cards</p>
-                  <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
-                </div>
-              )}
+              <div>
+                <p className={`text-sm font-semibold tracking-widest uppercase whitespace-nowrap ${gcSection === 'gifts' ? 'text-white' : 'text-[#0F121E]'}`}>
+                  {gcSection === 'airtime' ? 'Kredi' : 'Gift Cards'}
+                </p>
+                <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
+              </div>
             </div>
 
             <div style={{ minHeight: 'calc(100vh - 82px)', overflowY: 'auto' }} className="pb-28">
@@ -2774,11 +2772,11 @@ export default function Dashboard() {
               {/* SEGMENT SWITCHER */}
               {!gcOrderResult && !gcSelectedBrand && !atResult && !atSelectedOp && (
                 <div className="px-4 pb-4">
-                  <div className="p-1 rounded-2xl flex gap-1" style={{ background: '#1A1F2E' }}>
-                    <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[#8E929B]'}`}>
+                  <div className="p-1 rounded-2xl flex gap-1" style={{ background: gcSection === 'gifts' ? '#1A1F2E' : '#f3f4f6' }}>
+                    <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
                       <ShoppingCart size={11} />Gift Cards
                     </button>
-                    <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[#8E929B]'}`}>
+                    <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[#8E929B]'}`}>
                       <Phone size={11} />Kredi
                     </button>
                   </div>
@@ -2942,20 +2940,20 @@ export default function Dashboard() {
               {/* AIRTIME SUCCESS */}
               {gcSection === 'airtime' && atResult && (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,122,0,0.12)' }}>
-                    <CheckCircle2 size={40} className="text-[#FF7A00]" />
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 size={40} className="text-green-500" />
                   </div>
                   <div className="text-center">
-                    <p className="font-black text-xl uppercase tracking-tight text-white">Kredi Voye!</p>
-                    <p className="text-[#8E929B] text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-[#8E929B] text-xs mt-1">{atResult.operatorName}</p>
+                    <p className="font-bold text-xl text-[#0F121E]">Kredi Voye!</p>
+                    <p className="text-gray-500 text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-gray-400 text-xs mt-1">{atResult.operatorName}</p>
                   </div>
-                  <div className="w-full rounded-3xl p-5 text-center" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                    <p className="text-xs text-[#8E929B] uppercase font-bold tracking-widest mb-1">Peye</p>
-                    <p className="font-black text-2xl text-white">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
-                    <p className="text-xs text-[#8E929B] mt-3">Nouvo balans: <span className="font-black text-white">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
+                  <div className="w-full rounded-3xl p-5 text-center bg-gray-50 border border-gray-100">
+                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-widest mb-1">Peye</p>
+                    <p className="font-bold text-2xl text-[#0F121E]">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
+                    <p className="text-xs text-gray-400 mt-3">Nouvo balans: <span className="font-semibold text-[#0F121E]">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
                   </div>
-                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="w-full py-4 text-white font-black uppercase rounded-3xl tracking-widest text-sm active:scale-95 transition-all" style={{ background: '#FF7A00' }}>
+                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="w-full py-4 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm active:scale-95 transition-all bg-[#FF7A00]">
                     Rechaj Ankò
                   </button>
                 </div>
@@ -2972,22 +2970,22 @@ export default function Dashboard() {
                       <Phone size={18} className="text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-base text-white">{atSelectedOp.name}</p>
-                      <p className="text-xs text-[#8E929B] mt-0.5">Ayiti · HTG</p>
+                      <p className="font-semibold text-base text-[#0F121E]">{atSelectedOp.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Ayiti · HTG</p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Montan (HTG)</p>
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Montan (HTG)</p>
                     <div className="grid grid-cols-3 gap-2">
                       {AT_AMOUNTS.map(amt => (
                         <button
                           key={amt}
                           onClick={() => setAtAmount(amt)}
-                          className="py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
+                          className="py-4 rounded-2xl font-semibold text-sm transition-all active:scale-95"
                           style={atAmount === amt
                             ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: '#1A1F2E', color: '#fff', border: '1px solid #2D3748' }}
+                            : { background: '#f3f4f6', color: '#0F121E', border: '1px solid #e5e7eb' }}
                         >
                           {amt}
                         </button>
@@ -2996,27 +2994,27 @@ export default function Dashboard() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Nimewo Telefòn</p>
-                    <div className="flex items-center gap-2 rounded-2xl px-4 py-4" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                      <span className="font-black text-[#FF7A00]">+509</span>
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Nimewo Telefòn</p>
+                    <div className="flex items-center gap-2 rounded-2xl px-4 py-4 bg-gray-50 border border-gray-200">
+                      <span className="font-semibold text-[#FF7A00]">+509</span>
                       <input
                         type="tel"
                         inputMode="numeric"
                         placeholder="4X XX XXXX"
                         value={atPhone}
                         onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                        className="flex-1 bg-transparent font-black text-white outline-none placeholder:text-[#3D4455] tracking-widest"
+                        className="flex-1 bg-transparent font-semibold text-[#0F121E] outline-none placeholder:text-gray-300 tracking-widest"
                       />
                     </div>
                   </div>
 
                   {atAmount && (
-                    <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                      <div className="flex justify-between"><span className="text-sm text-[#8E929B]">Rechaj</span><span className="font-bold text-white">{atAmount} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[#8E929B]">Frè OZAMAPAY (5%)</span><span className="font-bold text-white">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid #2D3748' }}>
-                        <span className="text-sm font-bold text-white">Total</span>
-                        <span className="font-black text-[#FF7A00]">{(atAmount * 1.05).toFixed(2)} HTG</span>
+                    <div className="rounded-2xl p-4 space-y-2.5 bg-gray-50 border border-gray-100">
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Rechaj</span><span className="font-semibold text-[#0F121E]">{atAmount} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Frè OZAMAPAY (5%)</span><span className="font-semibold text-[#0F121E]">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between pt-2.5 mt-1 border-t border-gray-200">
+                        <span className="text-sm font-semibold text-[#0F121E]">Total</span>
+                        <span className="font-semibold text-[#FF7A00]">{(atAmount * 1.05).toFixed(2)} HTG</span>
                       </div>
                     </div>
                   )}
@@ -3024,8 +3022,8 @@ export default function Dashboard() {
                   <button
                     disabled={!atAmount || atPhone.trim().length < 8 || atLoading}
                     onClick={handleAirtimeOrder}
-                    className="w-full py-5 text-white font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: atAmount && atPhone.trim().length >= 8 ? '#FF7A00' : '#1A1F2E', border: '1px solid #2D3748' }}
+                    className="w-full py-5 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
+                    style={{ background: atAmount && atPhone.trim().length >= 8 ? '#FF7A00' : '#e5e7eb', color: atAmount && atPhone.trim().length >= 8 ? '#fff' : '#9ca3af' }}
                   >
                     {atLoading ? 'Pwosesis...' : `Voye Kredi — ${atAmount ? (atAmount * 1.05).toFixed(2) + ' HTG' : '—'}`}
                   </button>
@@ -3040,20 +3038,20 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <div>
-                        <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Chwazi Operatè</p>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Chwazi Operatè</p>
                         <div className="space-y-2">
                           {digicelOp && (
                             <button
                               onClick={() => setAtSelectedOp(digicelOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:scale-[0.98] transition-all"
-                              style={{ background: '#1A1F2E', border: '1px solid #2D3748', borderLeftWidth: '2px', borderLeftColor: '#E50914' }}
+                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
+                              style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#E50914' }}>
                                 <Phone size={18} className="text-white" />
                               </div>
                               <div className="flex-1 text-left">
-                                <p className="text-white font-medium text-sm">Digicel</p>
-                                <p className="text-[#8E929B] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
+                                <p className="text-[#0F121E] font-medium text-sm">Digicel</p>
+                                <p className="text-gray-400 text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
                               </div>
                               <ChevronRight size={16} className="text-[#FF7A00]" />
                             </button>
@@ -3061,27 +3059,27 @@ export default function Dashboard() {
                           {natcomOp && (
                             <button
                               onClick={() => setAtSelectedOp(natcomOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:scale-[0.98] transition-all"
-                              style={{ background: '#1A1F2E', border: '1px solid #2D3748', borderLeftWidth: '2px', borderLeftColor: '#1A4FD6' }}
+                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
+                              style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#1A4FD6' }}>
                                 <Phone size={18} className="text-white" />
                               </div>
                               <div className="flex-1 text-left">
-                                <p className="text-white font-medium text-sm">Natcom</p>
-                                <p className="text-[#8E929B] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
+                                <p className="text-[#0F121E] font-medium text-sm">Natcom</p>
+                                <p className="text-gray-400 text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
                               </div>
                               <ChevronRight size={16} className="text-[#FF7A00]" />
                             </button>
                           )}
                           {!digicelOp && !natcomOp && (
-                            <p className="text-center text-[#8E929B] text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
+                            <p className="text-center text-gray-400 text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
                           )}
                         </div>
                       </div>
-                      <div className="rounded-2xl p-4" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                        <p className="text-[10px] text-[#8E929B] font-bold uppercase tracking-widest mb-1">Nòt</p>
-                        <p className="text-xs text-[#8E929B]">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
+                      <div className="rounded-2xl p-4 bg-gray-50 border border-gray-100">
+                        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mb-1">Nòt</p>
+                        <p className="text-xs text-gray-400">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
                       </div>
                     </>
                   )}
