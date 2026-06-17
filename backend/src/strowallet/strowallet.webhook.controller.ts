@@ -18,17 +18,24 @@ export class StrowalletWebhookController {
       throw new UnauthorizedException('Invalid webhook secret');
     }
 
-    this.logger.log(`Webhook resevwa soti nan StroWallet: event=${payload?.event || payload?.event_type}`);
-
-    // StroWallet ka voye jaden 'event' oswa 'event_type'
+    // Log the raw event type so we can see exactly what Strowallet sends
     const eventType = payload?.event || payload?.event_type;
+    this.logger.log(`Webhook resevwa soti nan StroWallet: event=${eventType} | payload=${JSON.stringify(payload)}`);
 
-    if (payload && (eventType === 'card.transaction' || eventType === 'card.transaction.success')) {
-      // Rekipere done yo nan payload la san danje
-      const data = payload.data || payload; 
+    // Strowallet bitvcard sends "virtualcard.transaction" for card purchases.
+    // Also accept legacy variants in case they change it.
+    const isCardTx = eventType === 'virtualcard.transaction'
+      || eventType === 'card.transaction'
+      || eventType === 'card.transaction.success';
+
+    if (payload && isCardTx) {
+      // Strowallet nests card data inside a "data" field
+      const data = payload.data || payload;
       const { card_id, amount, merchant, reference, status } = data;
 
-      const isApproved = status === 'SUCCESS' || status === 'APPROVED' || status === 'successful';
+      // Strowallet uses "SUCCESSFUL"; accept all known approval values
+      const isApproved = status === 'SUCCESSFUL' || status === 'SUCCESS'
+        || status === 'APPROVED' || status === 'successful';
 
       if (isApproved && card_id && amount) {
         try {
@@ -81,7 +88,11 @@ export class StrowalletWebhookController {
       }
     }
 
-    // Toujou retounen 200 OK bay StroWallet pou l pa kontinye voye menm notification an
+    if (!isCardTx) {
+      this.logger.warn(`[Webhook] Evènman enkoni oswa pa sipòte: ${eventType}`);
+    }
+
+    // Always return 200 so Strowallet does not keep retrying
     return { received: true };
   }
 }
