@@ -2656,11 +2656,11 @@ export default function Dashboard() {
       {/* ── GIFT CARDS TAB ─────────────────────────────────────────────── */}
       {activeTab === 'giftcards' && (() => {
         const BRANDS = [
-          { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914' },
-          { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853' },
-          { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954' },
-          { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA' },
-          { name: 'Airbnb',      keywords: ['airbnb'],      letter: 'B', accent: '#FF5A5F' },
+          { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914', img: '/giftcards/netflix.png' },
+          { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853', img: '/giftcards/googleplay.png' },
+          { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954', img: '/giftcards/spotify.png' },
+          { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA', img: '/giftcards/uber.png' },
+          { name: 'Airbnb',      keywords: ['airbnb'],      letter: 'B', accent: '#FF5A5F', img: '/giftcards/airbnb.png' },
         ];
 
         const brandProducts = (brand: typeof BRANDS[0]) =>
@@ -2813,10 +2813,13 @@ export default function Dashboard() {
                 <div className="px-4 space-y-5">
                   <div className="flex items-center gap-4 py-2">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0"
-                      style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: selectedBrandObj.accent }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}
                     >
-                      {selectedBrandObj.letter}
+                      {selectedBrandObj.img
+                        ? <img src={selectedBrandObj.img} alt={selectedBrandObj.name} className="w-8 h-8 object-contain" />
+                        : <span className="font-black text-base" style={{ color: selectedBrandObj.accent }}>{selectedBrandObj.letter}</span>
+                      }
                     </div>
                     <div>
                       <p className="font-semibold text-base text-[#0F121E]">{selectedBrandObj.name}</p>
@@ -2888,10 +2891,13 @@ export default function Dashboard() {
                                 style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                               >
                                 <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0"
-                                  style={{ background: '#f3f4f6', color: brand.accent }}
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                                  style={{ background: '#f3f4f6' }}
                                 >
-                                  {brand.letter}
+                                  {brand.img
+                                    ? <img src={brand.img} alt={brand.name} className="w-8 h-8 object-contain" />
+                                    : <span className="font-black text-base" style={{ color: brand.accent }}>{brand.letter}</span>
+                                  }
                                 </div>
                                 <div className="flex-1 text-left">
                                   <p className="text-[#0F121E] font-medium text-sm leading-none">{brand.name}</p>
@@ -2959,10 +2965,14 @@ export default function Dashboard() {
                 <div className="px-4 space-y-5">
                   <div className="flex items-center gap-4 py-2">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: atSelectedOp.name?.toLowerCase().includes('digicel') ? '#E50914' : '#1A4FD6' }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ background: '#f3f4f6' }}
                     >
-                      <Phone size={18} className="text-white" />
+                      <img
+                        src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/giftcards/digicel.png' : '/giftcards/natcom.png'}
+                        alt={atSelectedOp.name}
+                        className="w-8 h-8 object-contain"
+                      />
                     </div>
                     <div>
                       <p className="font-semibold text-base text-[#0F121E]">{atSelectedOp.name}</p>
@@ -3041,8 +3051,8 @@ export default function Dashboard() {
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#E50914' }}>
-                                <Phone size={18} className="text-white" />
+                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
+                                <img src="/giftcards/digicel.png" alt="Digicel" className="w-8 h-8 object-contain" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Digicel</p>
@@ -3057,8 +3067,8 @@ export default function Dashboard() {
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#1A4FD6' }}>
-                                <Phone size={18} className="text-white" />
+                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
+                                <img src="/giftcards/natcom.png" alt="Natcom" className="w-8 h-8 object-contain" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Natcom</p>
