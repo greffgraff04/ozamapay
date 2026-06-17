@@ -9,90 +9,155 @@ export class StrowalletWebhookController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  async handleStrowalletWebhook(
-    @Body() payload: any,
-    @Req() req: any,
-  ) {
+  async handleStrowalletWebhook(@Body() payload: any, @Req() req: any) {
     const secret = req.query.secret;
     if (!secret || secret !== process.env.STROWALLET_WEBHOOK_SECRET) {
       throw new UnauthorizedException('Invalid webhook secret');
     }
 
-    // Log the raw event type so we can see exactly what Strowallet sends
-    const eventType = payload?.event || payload?.event_type;
-    this.logger.log(`Webhook resevwa soti nan StroWallet: event=${eventType} | payload=${JSON.stringify(payload)}`);
+    const event = payload?.event as string | undefined;
+    this.logger.log(`[Strowallet] event=${event} | ${JSON.stringify(payload)}`);
 
-    // Strowallet bitvcard sends "virtualcard.transaction" for card purchases.
-    // Also accept legacy variants in case they change it.
-    const isCardTx = eventType === 'virtualcard.transaction'
-      || eventType === 'card.transaction'
-      || eventType === 'card.transaction.success';
-
-    if (payload && isCardTx) {
-      // Strowallet nests card data inside a "data" field
-      const data = payload.data || payload;
-      const { card_id, amount, merchant, reference, status } = data;
-
-      // Strowallet uses "SUCCESSFUL"; accept all known approval values
-      const isApproved = status === 'SUCCESSFUL' || status === 'SUCCESS'
-        || status === 'APPROVED' || status === 'successful';
-
-      if (isApproved && card_id && amount) {
-        try {
-          await this.prisma.$transaction(async (tx) => {
-            // Chache kat la ak tout wallet mèt kat la
-            const virtualCard = await tx.virtualCard.findUnique({
-              where: { cardId: card_id },
-              include: { user: { include: { wallet: true } } }
-            });
-
-            if (!virtualCard) {
-              this.logger.warn(`[Webhook] Kat vityèl avèk ID ${card_id} pa egziste nan database la.`);
-              return;
-            }
-
-            const walletId = virtualCard.user.wallet?.id;
-            if (!walletId) {
-              this.logger.error(`[Webhook] Itilizatè a pa gen Wallet lokal pou lye tranzaksyon an.`);
-              return; // Evite mete null pou Prisma pa kase
-            }
-
-            const parsedAmount = Number(amount);
-
-            // 1. Desann balans kat la nan database nou an
-            await tx.virtualCard.update({
-              where: { cardId: card_id },
-              data: { balance: { decrement: parsedAmount } }
-            });
-
-            // 2. Kreye istorik tranzaksyon an pou itilizatè a ka wè l sou Next.js
-            await tx.transaction.create({
-              data: {
-                reference: reference || `STR-TX-${Date.now()}`,
-                senderWalletId: walletId, // RANJE! Pa gen null ankò
-                amount: parsedAmount,
-                fee: 0.00,
-                netAmount: parsedAmount,
-                type: 'PAYMENT',
-                status: 'COMPLETED',
-                title: 'Peman kat Visa',
-                description: merchant ? `Peman kat Visa — ${merchant}` : 'Peman kat Visa',
-              }
-            });
-
-            this.logger.log(`[Webhook] [Siksè] Balans kat ${card_id} mete ajou: -${parsedAmount} USD`);
-          });
-        } catch (error: any) {
-          this.logger.error(`[Webhook] Erreur pandan tretman tranzaksyon: ${error.message}`);
-        }
-      }
+    switch (event) {
+      case 'virtualcard.transaction.authorization':
+        await this.handleAuthorization(payload);
+        break;
+      case 'virtualcard.transaction.declined':
+        await this.handleDeclined(payload);
+        break;
+      case 'virtualcard.transaction.declined.terminated':
+        await this.handleTerminated(payload);
+        break;
+      case 'virtualcard.topup.complete':
+        // HTG debit + VirtualCard.balance increment are already done optimistically
+        // by fundVirtualCard() before this webhook arrives — no DB write needed.
+        this.logger.log(`[Strowallet][topup.complete] Confirmed recharge cardId=${payload?.cardId} amount=${payload?.amount}`);
+        break;
+      default:
+        this.logger.warn(`[Strowallet] Unhandled event: ${event}`);
     }
 
-    if (!isCardTx) {
-      this.logger.warn(`[Webhook] Evènman enkoni oswa pa sipòte: ${eventType}`);
-    }
-
-    // Always return 200 so Strowallet does not keep retrying
     return { received: true };
+  }
+
+  // ── authorization ─────────────────────────────────────────────────────────
+
+  private async handleAuthorization(payload: any) {
+    const { cardId, amount, merchant, narrative, reference } = payload;
+
+    if (!cardId || !amount) {
+      this.logger.error('[Strowallet][auth] Missing cardId or amount — skipping');
+      return;
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const card = await tx.virtualCard.findUnique({
+          where: { cardId },
+          include: { user: { include: { wallet: true } } },
+        });
+
+        if (!card) {
+          this.logger.warn(`[Strowallet][auth] Unknown cardId: ${cardId}`);
+          return;
+        }
+
+        const walletId = card.user.wallet?.id;
+        if (!walletId) {
+          this.logger.error(`[Strowallet][auth] No HTG wallet for userId=${card.userId}`);
+          return;
+        }
+
+        const parsedAmount = parseFloat(amount);
+        const description = merchant
+          ? `Visa — ${merchant}`
+          : (narrative ?? 'Peman kat Visa');
+
+        // Decrement card USD balance to keep local display in sync
+        await tx.virtualCard.update({
+          where: { cardId },
+          data: { balance: { decrement: parsedAmount } },
+        });
+
+        // Record for transaction history display.
+        // senderWalletId = owner's HTG wallet (ownership link only — HTG balance is NOT touched).
+        await tx.transaction.create({
+          data: {
+            reference: reference ?? `STR-AUTH-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            senderWalletId: walletId,
+            amount: parsedAmount,
+            fee: 0,
+            netAmount: parsedAmount,
+            type: 'PAYMENT',
+            status: 'COMPLETED',
+            title: 'Peman kat Visa',
+            description,
+          },
+        });
+
+        this.logger.log(`[Strowallet][auth] OK cardId=${cardId} -${parsedAmount} USD merchant=${merchant ?? narrative}`);
+      });
+    } catch (err: any) {
+      this.logger.error(`[Strowallet][auth] Error: ${err.message}`);
+    }
+  }
+
+  // ── declined ──────────────────────────────────────────────────────────────
+
+  private async handleDeclined(payload: any) {
+    const { cardId, amount, merchant, narrative, reference } = payload;
+    this.logger.warn(`[Strowallet][declined] cardId=${cardId} amount=${amount} merchant=${merchant}`);
+
+    if (!cardId) return;
+
+    try {
+      const card = await this.prisma.virtualCard.findUnique({
+        where: { cardId },
+        include: { user: { include: { wallet: true } } },
+      });
+
+      const walletId = card?.user?.wallet?.id;
+      if (!walletId) return;
+
+      const parsedAmount = parseFloat(amount ?? '0');
+      const description = merchant
+        ? `Refize — ${merchant}`
+        : (narrative ?? 'Tranzaksyon refize');
+
+      await this.prisma.transaction.create({
+        data: {
+          reference: reference ?? `STR-DEC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          senderWalletId: walletId,
+          amount: parsedAmount,
+          fee: 0,
+          netAmount: parsedAmount,
+          type: 'PAYMENT',
+          status: 'FAILED',
+          title: 'Kat Visa Refize',
+          description,
+        },
+      });
+    } catch (err: any) {
+      this.logger.error(`[Strowallet][declined] Error: ${err.message}`);
+    }
+  }
+
+  // ── terminated ────────────────────────────────────────────────────────────
+
+  private async handleTerminated(payload: any) {
+    const { cardId } = payload;
+    this.logger.warn(`[Strowallet][terminated] cardId=${cardId}`);
+
+    if (!cardId) return;
+
+    try {
+      await this.prisma.virtualCard.update({
+        where: { cardId },
+        data: { status: 'TERMINATED' },
+      });
+      this.logger.log(`[Strowallet][terminated] Card ${cardId} marked TERMINATED`);
+    } catch (err: any) {
+      this.logger.error(`[Strowallet][terminated] Error: ${err.message}`);
+    }
   }
 }
