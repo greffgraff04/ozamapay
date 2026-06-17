@@ -2814,10 +2814,10 @@ export default function Dashboard() {
                   <div className="flex items-center gap-4 py-2">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}
+                      style={{ border: '1px solid #e5e7eb' }}
                     >
                       {selectedBrandObj.img
-                        ? <img src={selectedBrandObj.img} alt={selectedBrandObj.name} className="w-8 h-8 object-contain" />
+                        ? <img src={selectedBrandObj.img} alt={selectedBrandObj.name} className="w-full h-full object-cover" />
                         : <span className="font-black text-base" style={{ color: selectedBrandObj.accent }}>{selectedBrandObj.letter}</span>
                       }
                     </div>
@@ -2892,10 +2892,9 @@ export default function Dashboard() {
                               >
                                 <div
                                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                                  style={{ background: '#f3f4f6' }}
                                 >
                                   {brand.img
-                                    ? <img src={brand.img} alt={brand.name} className="w-8 h-8 object-contain" />
+                                    ? <img src={brand.img} alt={brand.name} className="w-full h-full object-cover" />
                                     : <span className="font-black text-base" style={{ color: brand.accent }}>{brand.letter}</span>
                                   }
                                 </div>
@@ -2966,12 +2965,11 @@ export default function Dashboard() {
                   <div className="flex items-center gap-4 py-2">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ background: '#f3f4f6' }}
                     >
                       <img
                         src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/digicel.png' : '/natcom.png'}
                         alt={atSelectedOp.name}
-                        className="w-8 h-8 object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div>
@@ -3051,8 +3049,8 @@ export default function Dashboard() {
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
-                                <img src="/digicel.png" alt="Digicel" className="w-8 h-8 object-contain" />
+                              <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
+                                <img src="/digicel.png" alt="Digicel" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Digicel</p>
@@ -3067,8 +3065,8 @@ export default function Dashboard() {
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
-                                <img src="/natcom.png" alt="Natcom" className="w-8 h-8 object-contain" />
+                              <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
+                                <img src="/natcom.png" alt="Natcom" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Natcom</p>
