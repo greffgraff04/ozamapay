@@ -2657,7 +2657,6 @@ export default function Dashboard() {
       {activeTab === 'giftcards' && (() => {
         const BRANDS = [
           { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914' },
-          { name: 'Amazon',      keywords: ['amazon'],      letter: 'A', accent: '#FF9900' },
           { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853' },
           { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954' },
           { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA' },
@@ -2730,8 +2729,8 @@ export default function Dashboard() {
         };
 
         return (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '82px', background: gcSection === 'gifts' ? '#0C0F1A' : '#ffffff', minHeight: '100vh' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: gcSection === 'gifts' ? '#0F121E' : '#ffffff', borderBottom: gcSection === 'gifts' ? '1px solid #1E2433' : '1px solid #f0f0f0' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '140px', background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#ffffff', borderBottom: '1px solid #f0f0f0' }} className="px-4 pt-4 pb-4">
               {gcSection === 'airtime' ? (
                 atResult ? (
                   <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
@@ -2760,28 +2759,24 @@ export default function Dashboard() {
                 </button>
               )}
               <div>
-                <p className={`text-sm font-semibold tracking-widest uppercase whitespace-nowrap ${gcSection === 'gifts' ? 'text-white' : 'text-[#0F121E]'}`}>
+                <p className="text-sm font-semibold tracking-widest uppercase whitespace-nowrap text-[#0F121E]">
                   {gcSection === 'airtime' ? 'Kredi' : 'Gift Cards'}
                 </p>
                 <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
               </div>
+              <div className="mt-2">
+                <div className="p-1 rounded-2xl flex gap-1" style={{ background: '#f3f4f6' }}>
+                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
+                    <ShoppingCart size={11} />Gift Cards
+                  </button>
+                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
+                    <Phone size={11} />Kredi
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div style={{ minHeight: 'calc(100vh - 82px)', overflowY: 'auto' }} className="pb-28">
-
-              {/* SEGMENT SWITCHER */}
-              {!gcOrderResult && !gcSelectedBrand && !atResult && !atSelectedOp && (
-                <div className="px-4 pb-4">
-                  <div className="p-1 rounded-2xl flex gap-1" style={{ background: gcSection === 'gifts' ? '#1A1F2E' : '#f3f4f6' }}>
-                    <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
-                      <ShoppingCart size={11} />Gift Cards
-                    </button>
-                    <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[#8E929B]'}`}>
-                      <Phone size={11} />Kredi
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div style={{ height: 'calc(100vh - 140px)', overflowY: 'auto', position: 'relative' }} className="pb-28">
 
               {/* ORDER SUCCESS */}
               {gcSection === 'gifts' && gcOrderResult && (
@@ -2790,13 +2785,13 @@ export default function Dashboard() {
                     <CheckCircle2 size={40} className="text-[#FF7A00]" />
                   </div>
                   <div className="text-center">
-                    <p className="font-black text-xl uppercase tracking-tight text-white">{gcOrderResult.productName}</p>
-                    <p className="text-[#8E929B] text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                    <p className="font-black text-xl uppercase tracking-tight text-[#0F121E]">{gcOrderResult.productName}</p>
+                    <p className="text-gray-500 text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
                   </div>
                   {gcOrderResult.redeemCode ? (
-                    <div className="w-full rounded-3xl p-6 text-center" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                      <p className="text-xs text-[#8E929B] uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
-                      <p className="font-black text-2xl tracking-widest text-white break-all">{gcOrderResult.redeemCode}</p>
+                    <div className="w-full rounded-3xl p-6 text-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
+                      <p className="font-black text-2xl tracking-widest text-[#0F121E] break-all">{gcOrderResult.redeemCode}</p>
                       <button
                         onClick={() => copyToClipboard(gcOrderResult.redeemCode)}
                         className="mt-4 flex items-center gap-2 mx-auto bg-[#FF7A00] text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
@@ -2805,11 +2800,11 @@ export default function Dashboard() {
                       </button>
                     </div>
                   ) : (
-                    <div className="rounded-3xl p-5 text-center w-full" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
+                    <div className="rounded-3xl p-5 text-center w-full" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
                       <p className="text-[#FF7A00] font-bold text-sm">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
                     </div>
                   )}
-                  <p className="text-xs text-[#8E929B]">Nouvo balans: <span className="font-black text-white">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
+                  <p className="text-xs text-gray-400">Nouvo balans: <span className="font-black text-[#0F121E]">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
                 </div>
               )}
 
@@ -2819,12 +2814,12 @@ export default function Dashboard() {
                   <div className="flex items-center gap-4 py-2">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0"
-                      style={{ background: '#0F121E', border: '1px solid #2D3748', color: selectedBrandObj.accent }}
+                      style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: selectedBrandObj.accent }}
                     >
                       {selectedBrandObj.letter}
                     </div>
                     <div>
-                      <p className="font-semibold text-base text-white">{selectedBrandObj.name}</p>
+                      <p className="font-semibold text-base text-[#0F121E]">{selectedBrandObj.name}</p>
                       <p className="text-xs text-[#8E929B] mt-0.5">{denominations.length} valè disponib</p>
                     </div>
                   </div>
@@ -2839,7 +2834,7 @@ export default function Dashboard() {
                           className="py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
                           style={gcSelectedDenom === d
                             ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: '#1A1F2E', color: '#fff', border: '1px solid #2D3748' }}
+                            : { background: '#f3f4f6', color: '#0F121E', border: '1px solid #e5e7eb' }}
                         >
                           ${d}
                         </button>
@@ -2850,12 +2845,12 @@ export default function Dashboard() {
                   </div>
 
                   {gcSelectedDenom && htgPrice && (
-                    <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
-                      <div className="flex justify-between"><span className="text-sm text-[#8E929B]">Pri USD</span><span className="font-bold text-white">${gcSelectedDenom}</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[#8E929B]">Taux ({exchangeRate} HTG)</span><span className="font-bold text-white">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[#8E929B]">Frè OZAMAPAY (5%)</span><span className="font-bold text-white">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid #2D3748' }}>
-                        <span className="text-sm font-bold text-white">Total HTG</span>
+                    <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Pri USD</span><span className="font-bold text-[#0F121E]">${gcSelectedDenom}</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Taux ({exchangeRate} HTG)</span><span className="font-bold text-[#0F121E]">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-gray-500">Frè OZAMAPAY (5%)</span><span className="font-bold text-[#0F121E]">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid #e5e7eb' }}>
+                        <span className="text-sm font-bold text-[#0F121E]">Total HTG</span>
                         <span className="font-black text-[#FF7A00]">{htgPrice.toFixed(2)} HTG</span>
                       </div>
                     </div>
@@ -2864,8 +2859,8 @@ export default function Dashboard() {
                   <button
                     disabled={!gcSelectedDenom || gcOrderLoading}
                     onClick={handleOrder}
-                    className="w-full py-5 text-white font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: gcSelectedDenom ? '#FF7A00' : '#1A1F2E', border: '1px solid #2D3748' }}
+                    className="w-full py-5 font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
+                    style={{ background: gcSelectedDenom ? '#FF7A00' : '#e5e7eb', color: gcSelectedDenom ? '#fff' : '#9ca3af' }}
                   >
                     {gcOrderLoading ? 'Pwosesis...' : `Achte — ${htgPrice ? htgPrice.toFixed(2) + ' HTG' : '—'}`}
                   </button>
@@ -2890,16 +2885,16 @@ export default function Dashboard() {
                                 key={brand.name}
                                 onClick={() => { setGcSelectedBrand(brand.name); setGcSelectedDenom(null); setGcOrderResult(null); }}
                                 className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:scale-[0.98] transition-all"
-                                style={{ background: '#1A1F2E', border: '1px solid #2D3748', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
+                                style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                               >
                                 <div
                                   className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0"
-                                  style={{ background: '#0F121E', color: brand.accent }}
+                                  style={{ background: '#f3f4f6', color: brand.accent }}
                                 >
                                   {brand.letter}
                                 </div>
                                 <div className="flex-1 text-left">
-                                  <p className="text-white font-medium text-sm leading-none">{brand.name}</p>
+                                  <p className="text-[#0F121E] font-medium text-sm leading-none">{brand.name}</p>
                                   <p className="text-[#8E929B] text-[10px] mt-1 font-medium uppercase tracking-wide">{prods.length} opsyon</p>
                                 </div>
                                 <ChevronRight size={16} className="text-[#FF7A00] flex-shrink-0" />
@@ -2914,9 +2909,9 @@ export default function Dashboard() {
                           <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Dènye Achats</p>
                           <div className="space-y-2">
                             {gcOrders.slice(0, 5).map((o: any) => (
-                              <div key={o.id} className="rounded-2xl p-4 flex justify-between items-center" style={{ background: '#1A1F2E', border: '1px solid #2D3748' }}>
+                              <div key={o.id} className="rounded-2xl p-4 flex justify-between items-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
                                 <div>
-                                  <p className="font-semibold text-sm text-white">{o.productName}</p>
+                                  <p className="font-semibold text-sm text-[#0F121E]">{o.productName}</p>
                                   <p className="text-xs text-[#8E929B] mt-0.5">${o.unitPrice} · {Number(o.htgPaid).toFixed(2)} HTG</p>
                                 </div>
                                 <div className="text-right">
