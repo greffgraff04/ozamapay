@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 @Injectable()
 export class StrowalletService {
+  private readonly logger = new Logger(StrowalletService.name);
   private readonly BASE_URL = 'https://strowallet.com/api/bitvcard';
   private readonly PUBLIC_KEY: string;
   private readonly MODE = 'live';
@@ -41,17 +42,12 @@ export class StrowalletService {
       ({ data } = await axios.post(url, null, { params: payload }));
     } catch (error: any) {
       const detail = error?.response?.data;
-      console.error('Strowallet API error:', JSON.stringify(detail) || error?.message || error);
-      const rawMsg = detail?.message || detail?.error || detail?.msg || detail?.detail;
-      const msg = typeof rawMsg === 'string'
-        ? rawMsg
-        : rawMsg != null
-          ? JSON.stringify(rawMsg)
-          : (typeof detail === 'string' ? detail : detail != null ? JSON.stringify(detail) : error?.message || 'Strowallet unreachable');
-      throw new BadRequestException(`Strowallet: ${msg}`);
+      this.logger.error(`Strowallet API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
     if (data?.success === false || data?.status === false) {
-      throw new BadRequestException(data?.message || 'Strowallet error');
+      this.logger.error(`Strowallet error [${endpoint}]: ${JSON.stringify(data)}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
     return data;
   }
@@ -59,9 +55,16 @@ export class StrowalletService {
   private async nfcGet(endpoint: string, params: Record<string, string>) {
     const url = `${this.BASE_URL}/${endpoint}/`;
     const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
-    const { data } = await axios.get(url, { params: payload });
+    let data: any;
+    try {
+      ({ data } = await axios.get(url, { params: payload }));
+    } catch (error: any) {
+      this.logger.error(`Strowallet GET error [${endpoint}]: ${error?.message}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+    }
     if (data?.success === false || data?.status === false) {
-      throw new BadRequestException(data?.message || 'Strowallet error');
+      this.logger.error(`Strowallet GET failed [${endpoint}]: ${JSON.stringify(data)}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
     return data;
   }
@@ -79,7 +82,8 @@ export class StrowalletService {
     } catch (error: any) {
       // Any HTTP response from Strowallet (even 4xx) means the API is reachable
       if (error?.response) return { status: 'ok' };
-      return { status: 'error', message: error?.message || 'Strowallet unreachable' };
+      this.logger.warn(`Strowallet health check failed: ${error?.message}`);
+      return { status: 'error', message: 'Strowallet unreachable' };
     }
   }
 

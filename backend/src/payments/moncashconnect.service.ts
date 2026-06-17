@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -60,11 +60,13 @@ export class MonCashConnectService {
       data = await res.json();
 
       if (!res.ok) {
-        throw new Error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
+        this.logger.error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
+        throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
       }
     } catch (err: any) {
-      console.error('MoncashConnect error:', (err as Error).message);
-      throw err;
+      if (err instanceof BadRequestException) throw err;
+      this.logger.error(`MonCashConnect pay-create error: ${(err as Error).message}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
 
     const paymentUrl: string = data.paymentUrl ?? data.payment_url ?? data.url ?? '';
@@ -91,7 +93,7 @@ export class MonCashConnectService {
           },
         });
       } catch (err: any) {
-        console.error('MoncashConnect createPaymentRequest DB error:', err.message, err.code);
+        this.logger.error(`MonCashConnect createPaymentRequest DB error: ${err.message} (code: ${err.code})`);
         throw err;
       }
     }

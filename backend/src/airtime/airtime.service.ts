@@ -106,7 +106,7 @@ export class AirtimeService {
         await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { decrement: marginHTG } } });
         await tx.airtimeOrder.update({ where: { id: orderId }, data: { status: 'FAILED' } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-      throw new BadRequestException(`Rechaj echwe: ${err.message}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
 
     await this.prisma.airtimeOrder.update({

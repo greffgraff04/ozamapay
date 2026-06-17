@@ -123,7 +123,7 @@ export class GiftCardsService {
         await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { decrement: marginHTG } } });
         await tx.giftCardOrder.update({ where: { id: orderId }, data: { status: 'FAILED' } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-      throw new BadRequestException(`Reloadly order echwe: ${err.message}`);
+      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
 
     await this.prisma.giftCardOrder.update({
