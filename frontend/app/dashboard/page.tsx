@@ -2656,11 +2656,11 @@ export default function Dashboard() {
       {/* ── GIFT CARDS TAB ─────────────────────────────────────────────── */}
       {activeTab === 'giftcards' && (() => {
         const BRANDS = [
-          { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914', img: '/giftcards/netflix.png' },
-          { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853', img: '/giftcards/googleplay.png' },
-          { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954', img: '/giftcards/spotify.png' },
-          { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA', img: '/giftcards/uber.png' },
-          { name: 'Airbnb',      keywords: ['airbnb'],      letter: 'B', accent: '#FF5A5F', img: '/giftcards/airbnb.png' },
+          { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914', img: '/netflix.png' },
+          { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853', img: '/googleplay.png' },
+          { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954', img: '/spotify.png' },
+          { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA', img: '/uber.png' },
+          { name: 'Airbnb',      keywords: ['airbnb'],      letter: 'B', accent: '#FF5A5F', img: '/airbnb.png' },
         ];
 
         const brandProducts = (brand: typeof BRANDS[0]) =>
@@ -2969,7 +2969,7 @@ export default function Dashboard() {
                       style={{ background: '#f3f4f6' }}
                     >
                       <img
-                        src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/giftcards/digicel.png' : '/giftcards/natcom.png'}
+                        src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/digicel.png' : '/natcom.png'}
                         alt={atSelectedOp.name}
                         className="w-8 h-8 object-contain"
                       />
@@ -3052,7 +3052,7 @@ export default function Dashboard() {
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
-                                <img src="/giftcards/digicel.png" alt="Digicel" className="w-8 h-8 object-contain" />
+                                <img src="/digicel.png" alt="Digicel" className="w-8 h-8 object-contain" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Digicel</p>
@@ -3068,7 +3068,7 @@ export default function Dashboard() {
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f3f4f6' }}>
-                                <img src="/giftcards/natcom.png" alt="Natcom" className="w-8 h-8 object-contain" />
+                                <img src="/natcom.png" alt="Natcom" className="w-8 h-8 object-contain" />
                               </div>
                               <div className="flex-1 text-left">
                                 <p className="text-[#0F121E] font-medium text-sm">Natcom</p>
