@@ -3091,8 +3091,8 @@ export default function Dashboard() {
         {[
           { id: 'home',       icon: <Home size={22} />,         label: 'HOME' },
           { id: 'finance',    icon: <Landmark size={22} />,     label: 'FINANCE' },
-          { id: 'giftcards',  icon: <ShoppingCart size={22} />, label: 'GIFTS' },
           { id: 'cards',      icon: <CreditCard size={22} />,   label: 'CARDS' },
+          { id: 'giftcards',  icon: <ShoppingCart size={22} />, label: 'GIFTS' },
           { id: 'profile',    icon: <User size={22} />,         label: 'PROFILE' },
         ].map((item) => (
           <button
