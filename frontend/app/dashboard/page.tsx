@@ -1238,44 +1238,44 @@ export default function Dashboard() {
           </div>
 
           {/* ── Desktop home layout (2-col, hidden on mobile) ── */}
-          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-10 lg:py-10 animate-in fade-in duration-500">
+          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-10 lg:py-10 lg:items-start animate-in fade-in duration-500">
 
             {/* LEFT COLUMN — balance + actions + activity */}
             <div className="flex flex-col gap-8">
 
               {/* Balance card */}
               <div
-                className="relative w-full overflow-hidden rounded-2xl shadow-lg"
-                style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}
+                className="relative w-full max-w-[420px] overflow-hidden rounded-2xl shadow-lg"
+                style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.6 / 1' }}
               >
-                <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
+                <div className="h-full flex flex-col justify-end p-5 text-white relative z-10">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                  <h2 className="text-5xl font-black tracking-tighter italic">
-                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
+                  <h2 className="text-3xl font-black tracking-tighter italic">
+                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-lg font-normal">HTG</span>
                   </h2>
                 </div>
               </div>
 
               {/* Quick actions */}
-              <div className="grid grid-cols-5 gap-4">
+              <div className="flex flex-row gap-4">
                 {[
-                  { id: 'SEND',    icon: <Send size={20} />,       tab: 'send' },
-                  { id: 'TOPUP',   icon: <PlusCircle size={20} />, tab: 'topup' },
-                  { id: 'RETRAIT', icon: <Banknote size={20} />,   tab: 'withdraw' },
-                  { id: 'CARDS',   icon: <CreditCard size={20} />, tab: 'cards' },
+                  { id: 'SEND',    icon: <Send size={18} />,       tab: 'send' },
+                  { id: 'TOPUP',   icon: <PlusCircle size={18} />, tab: 'topup' },
+                  { id: 'RETRAIT', icon: <Banknote size={18} />,   tab: 'withdraw' },
+                  { id: 'CARDS',   icon: <CreditCard size={18} />, tab: 'cards' },
                 ].map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-2 hover:scale-105 transition-all">
-                    <div className="w-full aspect-square rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
-                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 hover:scale-105 transition-all">
-                  <div className="w-full aspect-square rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
-                    <QrCode size={20} />
+                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    <QrCode size={18} />
                   </div>
-                  <span className="text-[9px] font-black uppercase tracking-widest opacity-70">QR</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest opacity-70">QR</span>
                 </button>
               </div>
 
