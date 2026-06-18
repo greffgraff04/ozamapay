@@ -766,7 +766,7 @@ export default function Dashboard() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'Itilizatè';
  
   return (
-    <main className="min-h-screen bg-white text-[#0F121E] font-sans overflow-x-hidden relative pb-28">
+    <main className="min-h-screen bg-white text-[#0F121E] font-sans overflow-x-hidden relative pb-28 lg:pb-0 lg:pl-64">
       
       {/* TOAST NOTIFICATION */}
       {toast && (
@@ -982,11 +982,13 @@ export default function Dashboard() {
         </header>
       )}
  
-      <div className="px-4">
-        
+      <div className="px-4 lg:px-8">
+
         {/* --- HOME SECTION --- */}
         {activeTab === 'home' && (
-          <div className="animate-in fade-in duration-500" style={{ paddingTop: '420px' }}>
+          <>
+          {/* ── Mobile layout (hidden on desktop) ── */}
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: '420px' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 }}>
               <header className="px-4 pt-4 pb-4 flex justify-between items-center">
@@ -1233,6 +1235,167 @@ export default function Dashboard() {
             </div>
             </div>
           </div>
+
+          {/* ── Desktop home layout (2-col, hidden on mobile) ── */}
+          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-8 lg:py-8 animate-in fade-in duration-500">
+
+            {/* LEFT COLUMN — balance + actions + activity */}
+            <div className="flex flex-col gap-6">
+
+              {/* Balance card */}
+              <div
+                className="relative w-full overflow-hidden rounded-2xl shadow-lg"
+                style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}
+              >
+                <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
+                  <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
+                  <h2 className="text-5xl font-black tracking-tighter italic">
+                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
+                  </h2>
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div className="grid grid-cols-5 gap-3">
+                {[
+                  { id: 'SEND',    icon: <Send size={20} />,       tab: 'send' },
+                  { id: 'TOPUP',   icon: <PlusCircle size={20} />, tab: 'topup' },
+                  { id: 'RETRAIT', icon: <Banknote size={20} />,   tab: 'withdraw' },
+                  { id: 'CARDS',   icon: <CreditCard size={20} />, tab: 'cards' },
+                ].map((item) => (
+                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-2 hover:scale-105 transition-all">
+                    <div className="w-full aspect-square rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                      {item.icon}
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                  </button>
+                ))}
+                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 hover:scale-105 transition-all">
+                  <div className="w-full aspect-square rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    <QrCode size={20} />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest opacity-70">QR</span>
+                </button>
+              </div>
+
+              {/* Recent activity */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
+                    <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
+                  </h3>
+                  <button
+                    onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }}
+                    className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest hover:underline"
+                  >
+                    See More +
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {transactions.length === 0 ? (
+                    <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-3xl border border-black/[0.04]">
+                      Pa gen okenn tranzaksyon pou kounye a.
+                    </p>
+                  ) : (
+                    transactions.slice(0, 5).map((t: any, idx: number) => {
+                      const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                        t.type === 'PAYMENT' || t.type === 'CARD' ||
+                        (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+                      const amt = (t.amount || 0).toLocaleString();
+                      const METHOD_DISPLAY_D: Record<string, string> = {
+                        MONCASHCONNECT: 'MonCash', MONCASH: 'MonCash', MonCash: 'MonCash',
+                        NATCASH: 'NatCash', ZELLE: 'Zelle', CASHAPP: 'CashApp', PAYPAL: 'PayPal', ADMIN: 'Admin',
+                      };
+                      const serviceNameD = (() => {
+                        if (t.type === 'TOPUP') return 'Topup';
+                        if (t.type === 'TRANSFER') return 'Transfer';
+                        if (t.type === 'WITHDRAWAL') return 'Retrè';
+                        if (t.type === 'CARD') return 'Visa';
+                        if (t.type === 'PAYMENT') return 'Peman';
+                        return t.type || 'Tranzaksyon';
+                      })();
+                      const methodLabelD = t.type === 'TOPUP' && t.method
+                        ? (METHOD_DISPLAY_D[t.method] || t.method) : null;
+                      const txTitleD = `${serviceNameD} ${amt} HTG${methodLabelD ? ` · ${methodLabelD}` : ''}`;
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                              {isDebit ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
+                            </div>
+                            <div>
+                              <p className="font-black text-[11px] uppercase italic tracking-tight text-[#0F121E]">{txTitleD}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">{t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}</p>
+                            </div>
+                          </div>
+                          <span className={`text-xs font-black tabular-nums ${isDebit ? 'text-red-500' : 'text-green-600'}`}>
+                            {isDebit ? '−' : '+'}{amt} HTG
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN — upsell / feature cards */}
+            <div className="flex flex-col gap-5">
+              <div>
+                <h2 className="text-xl font-black text-[#0F121E] uppercase italic tracking-tight mb-1">
+                  Alè pi lwen ak lajan ou
+                </h2>
+                <p className="text-xs text-gray-400 font-medium">Dekouvri tout sèvis OZAMAPAY ofri ou</p>
+              </div>
+
+              {/* Virtual Card */}
+              <button
+                onClick={() => setActiveTab('cards')}
+                className="group relative overflow-hidden rounded-2xl bg-[#0F121E] p-6 text-left hover:bg-[#1a1f2e] transition-all border border-white/5"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                    <CreditCard size={20} className="text-[#FF7A00]" />
+                  </div>
+                  <ChevronRight size={16} className="text-gray-500 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                </div>
+                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Kat Vityèl NFC</h3>
+                <p className="text-gray-400 text-[11px] leading-relaxed">Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
+              </button>
+
+              {/* Gift Cards */}
+              <button
+                onClick={() => setActiveTab('giftcards')}
+                className="group relative overflow-hidden rounded-2xl bg-white border border-black/[0.06] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[#FDF8F3] transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                    <ShoppingCart size={20} className="text-[#FF7A00]" />
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                </div>
+                <h3 className="text-[#0F121E] font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
+                <p className="text-gray-400 text-[11px] leading-relaxed">Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
+              </button>
+
+              {/* Finance services */}
+              <button
+                onClick={() => setActiveTab('finance')}
+                className="group relative overflow-hidden rounded-2xl bg-white border border-black/[0.06] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[#FDF8F3] transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                    <Landmark size={20} className="text-[#FF7A00]" />
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                </div>
+                <h3 className="text-[#0F121E] font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
+                <p className="text-gray-400 text-[11px] leading-relaxed">Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
+              </button>
+            </div>
+
+          </div>
+          </>
         )}
 
         {/* --- HISTORY SECTION --- */}
@@ -3094,8 +3257,56 @@ export default function Dashboard() {
         );
       })()}
 
+      {/* ─── DESKTOP SIDEBAR ─── */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-40 bg-[#0F121E] flex-col">
+        {/* Wordmark */}
+        <div className="px-6 py-7 border-b border-white/10">
+          <span className="text-[#FF7A00] font-black text-xl italic tracking-tight uppercase">
+            OZAMA<span className="text-white">PAY</span>
+          </span>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 py-6 px-3 flex flex-col gap-1 overflow-y-auto">
+          {[
+            { id: 'home',      icon: <Home size={20} />,         label: 'Home' },
+            { id: 'finance',   icon: <Landmark size={20} />,     label: 'Finance' },
+            { id: 'cards',     icon: <CreditCard size={20} />,   label: 'Cards' },
+            { id: 'giftcards', icon: <ShoppingCart size={20} />, label: 'Gifts' },
+            { id: 'profile',   icon: <User size={20} />,         label: 'Profile' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                activeTab === item.id
+                  ? 'bg-[#FF7A00]/10 text-[#FF7A00]'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {activeTab === item.id && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* User footer */}
+        <div className="px-4 py-5 border-t border-white/10 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center text-[#FF7A00] font-black text-sm shrink-0">
+            {displayName.substring(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-white text-xs font-bold truncate">{displayName}</p>
+            <p className="text-gray-500 text-[10px] truncate">{user?.email}</p>
+          </div>
+        </div>
+      </aside>
+
       {/* BOTTOM NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50 lg:hidden">
         {[
           { id: 'home',       icon: <Home size={22} />,         label: 'HOME' },
           { id: 'finance',    icon: <Landmark size={22} />,     label: 'FINANCE' },
