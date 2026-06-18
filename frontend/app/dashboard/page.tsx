@@ -982,7 +982,7 @@ export default function Dashboard() {
         </header>
       )}
  
-      <div className="px-4 lg:px-8">
+      <div className="px-4 lg:px-8 lg:max-w-[1400px] lg:mx-auto lg:w-full">
 
         {/* --- HOME SECTION --- */}
         {activeTab === 'home' && (
@@ -1237,10 +1237,10 @@ export default function Dashboard() {
           </div>
 
           {/* ── Desktop home layout (2-col, hidden on mobile) ── */}
-          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-8 lg:py-8 animate-in fade-in duration-500">
+          <div className="hidden lg:grid lg:grid-cols-2 lg:gap-10 lg:py-10 animate-in fade-in duration-500">
 
             {/* LEFT COLUMN — balance + actions + activity */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-8">
 
               {/* Balance card */}
               <div
@@ -1256,7 +1256,7 @@ export default function Dashboard() {
               </div>
 
               {/* Quick actions */}
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 gap-4">
                 {[
                   { id: 'SEND',    icon: <Send size={20} />,       tab: 'send' },
                   { id: 'TOPUP',   icon: <PlusCircle size={20} />, tab: 'topup' },
@@ -1340,7 +1340,7 @@ export default function Dashboard() {
             </div>
 
             {/* RIGHT COLUMN — upsell / feature cards */}
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-6">
               <div>
                 <h2 className="text-xl font-black text-[#0F121E] uppercase italic tracking-tight mb-1">
                   Alè pi lwen ak lajan ou
@@ -3267,7 +3267,7 @@ export default function Dashboard() {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-6 px-3 flex flex-col gap-1 overflow-y-auto">
+        <nav className="flex-1 py-6 px-3 flex flex-col gap-2 overflow-y-auto">
           {[
             { id: 'home',      icon: <Home size={20} />,         label: 'Home' },
             { id: 'finance',   icon: <Landmark size={20} />,     label: 'Finance' },
@@ -3278,7 +3278,7 @@ export default function Dashboard() {
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === item.id
                   ? 'bg-[#FF7A00]/10 text-[#FF7A00]'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
