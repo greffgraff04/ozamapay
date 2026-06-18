@@ -68,6 +68,8 @@ export default function Dashboard() {
 
   const [virtualCard, setVirtualCard] = useState<any>(null);
   const [showCardDetails, setShowCardDetails] = useState<boolean>(false);
+  const [secretDetailsLoading, setSecretDetailsLoading] = useState(false);
+  const [secretDetailsFailed, setSecretDetailsFailed] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('moncash');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
@@ -168,7 +170,39 @@ export default function Dashboard() {
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
- 
+
+  const fetchSecretDetails = async () => {
+    if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
+    setSecretDetailsFailed(false);
+    setSecretDetailsLoading(true);
+    setShowCardDetails(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${backendUrl}/v1/cards/secret-details`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVirtualCard((prev: any) => ({
+          ...prev,
+          cardNumber: data.cardNumber,
+          cvv: data.cvv,
+          expiryDate: data.expiryDate,
+          cardName: data.cardName,
+          balance: data.balance,
+          last4: data.last4,
+        }));
+      } else {
+        setSecretDetailsFailed(true);
+      }
+    } catch {
+      setSecretDetailsFailed(true);
+    } finally {
+      setSecretDetailsLoading(false);
+    }
+  };
+
   const paymentMethods = [
     { id: 'zelle', label: 'Zelle', img: 'zelle.png', info: "786 868 6782", name: "Ralph Olivier Greffin" },
     { id: 'cashapp', label: 'CashApp', img: 'cashapp.png', info: "$Pascoue93", name: "Ralph Olivier Greffin" },
@@ -1980,7 +2014,7 @@ export default function Dashboard() {
           <div className="animate-in fade-in duration-700">
             {!virtualCard?.cardId ? (
               /* ===== CREATION FORM ===== */
-              <div className="px-4 pt-6">
+              <div className="px-4 pt-6 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 {/* Card preview placeholder */}
                 <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{aspectRatio: '1.586'}}>
                   <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -2039,9 +2073,40 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+            ) : virtualCard?.status === 'TERMINATED' ? (
+              /* ===== CARD TERMINATED ===== */
+              <div className="px-4 pt-6 lg:max-w-[700px] lg:mx-auto lg:py-10 animate-in fade-in duration-500">
+                <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{ aspectRatio: '1.586' }}>
+                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover opacity-40 grayscale" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
+                    <span className="bg-red-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full">DEZAKTIVE</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-3xl border border-red-100 shadow-sm p-6 mb-4">
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                      <X size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-[#0F121E] font-black text-sm mb-1">Kat Dezaktive</p>
+                      <p className="text-gray-500 text-sm leading-relaxed">
+                        Kat ou a te dezaktive. Kreye yon nouvo kat Visa gratis kounye a.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setVirtualCard(null)}
+                    className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  >
+                    <Zap size={16} /> KREYE NOUVO KAT
+                  </button>
+                </div>
+              </div>
             ) : (
               /* ===== CARD DISPLAY ===== */
-              <div className="animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px)' }}>
+              <>
+                {/* Mobile layout */}
+                <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px)' }}>
 
                 {/* FIXED CARD */}
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
@@ -2127,27 +2192,7 @@ export default function Dashboard() {
                           if (btn.action === 'recharge') { setShowRechargeModal(true); return; }
                           if (btn.action === 'info') {
                             if (showCardDetails) { setShowCardDetails(false); return; }
-                            try {
-                              const token = localStorage.getItem('token');
-                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                              const res = await fetch(`${currentBackendUrl}/v1/cards/secret-details`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                setVirtualCard((prev: any) => ({
-                                  ...prev,
-                                  cardNumber: data.cardNumber,
-                                  cvv: data.cvv,
-                                  expiryDate: data.expiryDate,
-                                  cardName: data.cardName,
-                                  balance: data.balance,
-                                  last4: data.last4,
-                                }));
-                                setShowCardDetails(true);
-                              } else { alert(data.message || 'Erè'); }
-                            } catch { alert('Erè koneksyon'); }
+                            fetchSecretDetails();
                             return;
                           }
                           if (btn.action === 'freeze') {
@@ -2182,7 +2227,9 @@ export default function Dashboard() {
                             ? 'bg-orange-500 border-orange-500'
                             : 'bg-orange-50 border-orange-100'
                         }`}>
-                          {btn.action === 'info' && showCardDetails
+                          {btn.action === 'info' && secretDetailsLoading
+                            ? <div className="w-5 h-5 border-2 border-orange-300 border-t-white rounded-full animate-spin" />
+                            : btn.action === 'info' && showCardDetails
                             ? <EyeOff size={22} className="text-white" />
                             : btn.action === 'freeze' && virtualCard?.status === 'FROZEN'
                             ? <Unlock size={22} className="text-white" />
@@ -2214,69 +2261,91 @@ export default function Dashboard() {
                           <EyeOff size={18} />
                         </button>
                       </div>
-                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
 
-                        {/* Nimewo konplè - full width */}
-                        <div style={{gridColumn: '1 / -1', background: 'var(--color-background-secondary, #f5f5f5)'}} className="rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
-                          <div className="flex items-center justify-between gap-2">
-                            <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
-                              {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
-                            </p>
-                            <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
-                              <Copy size={13} className="text-gray-300" />
-                            </button>
+                      {secretDetailsLoading ? (
+                        <div className="flex flex-col gap-2.5 animate-pulse">
+                          <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                          <div className="flex gap-2.5">
+                            <div className="h-14 bg-gray-100 rounded-xl flex-1" />
+                            <div className="h-14 bg-gray-100 rounded-xl flex-1" />
                           </div>
+                          <div className="h-14 bg-gray-100 rounded-xl w-full" />
                         </div>
-
-                        {/* CVV */}
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
-                          <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                      ) : secretDetailsFailed ? (
+                        <div className="flex flex-col items-center gap-3 py-4">
+                          <p className="text-gray-400 text-sm text-center">Echèk chajman detay kat</p>
+                          <button
+                            onClick={fetchSecretDetails}
+                            className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
+                          >
+                            Eseye Ankò
+                          </button>
                         </div>
+                      ) : (
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
 
-                        {/* Ekspire */}
-                        <div className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
-                          <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
-                        </div>
-
-                        {/* Nom sou kat - full width */}
-                        <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
-                          <div className="flex items-center justify-between gap-2">
-                            <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
-                              {virtualCard?.cardName || '————'}
-                            </p>
-                            <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
-                              <Copy size={13} className="text-gray-300" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Billing Address - full width */}
-                        <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
-                          <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
-                          {[
-                            { label: 'Street', value: CARD_BILLING.street },
-                            { label: 'City',   value: CARD_BILLING.city },
-                            { label: 'State',  value: CARD_BILLING.state },
-                            { label: 'ZIP',    value: CARD_BILLING.zip },
-                            { label: 'Country',value: CARD_BILLING.country },
-                          ].map(({ label, value }) => (
-                            <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-                              <div>
-                                <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
-                                <span className="text-[#0F121E] font-bold text-xs">{value}</span>
-                              </div>
-                              <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
-                                <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                          {/* Nimewo konplè - full width */}
+                          <div style={{gridColumn: '1 / -1', background: 'var(--color-background-secondary, #f5f5f5)'}} className="rounded-xl p-3">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                                {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
+                              </p>
+                              <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
+                                <Copy size={13} className="text-gray-300" />
                               </button>
                             </div>
-                          ))}
-                        </div>
+                          </div>
 
-                      </div>
+                          {/* CVV */}
+                          <div className="bg-gray-50 rounded-xl p-3">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
+                            <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                          </div>
+
+                          {/* Ekspire */}
+                          <div className="bg-gray-50 rounded-xl p-3">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
+                            <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                          </div>
+
+                          {/* Nom sou kat - full width */}
+                          <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                                {virtualCard?.cardName || '————'}
+                              </p>
+                              <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
+                                <Copy size={13} className="text-gray-300" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Billing Address - full width */}
+                          <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
+                            {[
+                              { label: 'Street', value: CARD_BILLING.street },
+                              { label: 'City',   value: CARD_BILLING.city },
+                              { label: 'State',  value: CARD_BILLING.state },
+                              { label: 'ZIP',    value: CARD_BILLING.zip },
+                              { label: 'Country',value: CARD_BILLING.country },
+                            ].map(({ label, value }) => (
+                              <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                                <div>
+                                  <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
+                                  <span className="text-[#0F121E] font-bold text-xs">{value}</span>
+                                </div>
+                                <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
+                                  <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -2329,7 +2398,278 @@ export default function Dashboard() {
 
                 </div>{/* end scrollable */}
 
-                {/* RECHARGE MODAL */}
+                </div>{/* end lg:hidden mobile */}
+
+                {/* ── DESKTOP CARDS ──────────────────────────────── */}
+                <div className="hidden lg:block animate-in fade-in duration-500">
+                  <div className="max-w-[1400px] mx-auto px-8 py-10">
+                    <div className="flex gap-10 items-start">
+
+                      {/* Left: card image + action buttons */}
+                      <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
+                        {/* Card */}
+                        <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: '1.586' }}>
+                          <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
+                            <div />
+                            <div>
+                              <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
+                              <button
+                                onClick={() => {
+                                  const num = showCardDetails && virtualCard?.cardNumber
+                                    ? virtualCard.cardNumber
+                                    : virtualCard?.cardId;
+                                  navigator.clipboard.writeText(num || '');
+                                  alert('Nimewo kopye!');
+                                }}
+                                className="flex items-center gap-2 group"
+                              >
+                                <p className="text-white font-bold text-base tracking-wider drop-shadow">
+                                  {showCardDetails && virtualCard?.cardNumber
+                                    ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
+                                    : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
+                                  }
+                                </p>
+                                <Copy size={12} className="text-white/50 group-hover:text-white" />
+                              </button>
+                            </div>
+                            <div className="flex justify-between items-end">
+                              <div>
+                                <p className="text-white/60 text-[10px] mb-0.5">Cardholder</p>
+                                <p className="text-white font-bold text-sm leading-tight">
+                                  {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
+                                </p>
+                                <p className="text-white/60 text-[10px] mt-1.5 mb-0.5">Expires</p>
+                                <p className="text-white font-bold text-sm">
+                                  {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
+                                </p>
+                              </div>
+                              <p className="text-white/30 font-black text-lg tracking-widest">VISA</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3">
+                          {[
+                            { icon: <Eye size={20} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
+                            { icon: <Zap size={20} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
+                            { icon: <Copy size={20} className="text-orange-500" />, label: 'KOPYE', action: 'copy' },
+                            { icon: <Lock size={20} className="text-orange-500" />, label: 'BLOKE', action: 'freeze' },
+                          ].map((btn) => (
+                            <button
+                              key={btn.action}
+                              onClick={async () => {
+                                if (btn.action === 'copy') {
+                                  const num = showCardDetails && virtualCard?.cardNumber
+                                    ? virtualCard.cardNumber
+                                    : virtualCard?.cardId;
+                                  navigator.clipboard.writeText(num || '');
+                                  alert('Nimewo kopye!');
+                                  return;
+                                }
+                                if (btn.action === 'recharge') { setShowRechargeModal(true); return; }
+                                if (btn.action === 'info') {
+                                  if (showCardDetails) { setShowCardDetails(false); return; }
+                                  fetchSecretDetails();
+                                  return;
+                                }
+                                if (btn.action === 'freeze') {
+                                  try {
+                                    const token = localStorage.getItem('token');
+                                    const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                                    const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                                    const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
+                                      method: 'POST',
+                                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok) {
+                                      setVirtualCard((prev: any) => ({
+                                        ...prev,
+                                        status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
+                                      }));
+                                      alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!');
+                                    } else { alert(data.message || 'Erè'); }
+                                  } catch { alert('Erè koneksyon'); }
+                                  return;
+                                }
+                              }}
+                              className="flex flex-col items-center gap-1.5"
+                            >
+                              <div className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center border-2 transition-all ${
+                                (btn.action === 'info' && showCardDetails) || (btn.action === 'freeze' && virtualCard?.status === 'FROZEN')
+                                  ? 'bg-orange-500 border-orange-500'
+                                  : 'bg-orange-50 border-orange-100'
+                              }`}>
+                                {btn.action === 'info' && secretDetailsLoading
+                                  ? <div className="w-5 h-5 border-2 border-orange-300 border-t-white rounded-full animate-spin" />
+                                  : btn.action === 'info' && showCardDetails
+                                  ? <EyeOff size={20} className="text-white" />
+                                  : btn.action === 'freeze' && virtualCard?.status === 'FROZEN'
+                                  ? <Unlock size={20} className="text-white" />
+                                  : btn.icon
+                                }
+                              </div>
+                              <p className="text-[9px] font-black uppercase tracking-wider text-[#0F121E]">{btn.label}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Right: details */}
+                      <div className="flex-1 flex flex-col gap-4 min-w-0">
+
+                        {/* Balance */}
+                        <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
+                          <div>
+                            <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
+                            <p className="text-[#0F121E] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-gray-400">USD</span></p>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
+                            <Wallet2 size={22} className="text-white" />
+                          </div>
+                        </div>
+
+                        {/* Card details panel (conditional) */}
+                        {showCardDetails && (
+                          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
+                              <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
+                                <EyeOff size={18} />
+                              </button>
+                            </div>
+
+                            {secretDetailsLoading ? (
+                              <div className="flex flex-col gap-2.5 animate-pulse">
+                                <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                                <div className="flex gap-2.5">
+                                  <div className="h-14 bg-gray-100 rounded-xl flex-1" />
+                                  <div className="h-14 bg-gray-100 rounded-xl flex-1" />
+                                </div>
+                                <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                              </div>
+                            ) : secretDetailsFailed ? (
+                              <div className="flex flex-col items-center gap-3 py-4">
+                                <p className="text-gray-400 text-sm text-center">Echèk chajman detay kat</p>
+                                <button
+                                  onClick={fetchSecretDetails}
+                                  className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
+                                >
+                                  Eseye Ankò
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-2.5">
+                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[#0F121E] font-bold text-sm truncate">
+                                      {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
+                                    </p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
+                                      <Copy size={13} className="text-gray-300" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
+                                  <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                                </div>
+                                <div className="bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
+                                  <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                                </div>
+                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-[#0F121E] font-bold text-sm truncate">
+                                      {virtualCard?.cardName || '————'}
+                                    </p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
+                                      <Copy size={13} className="text-gray-300" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
+                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
+                                  {[
+                                    { label: 'Street', value: CARD_BILLING.street },
+                                    { label: 'City',   value: CARD_BILLING.city },
+                                    { label: 'State',  value: CARD_BILLING.state },
+                                    { label: 'ZIP',    value: CARD_BILLING.zip },
+                                    { label: 'Country',value: CARD_BILLING.country },
+                                  ].map(({ label, value }) => (
+                                    <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                                      <div>
+                                        <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
+                                        <span className="text-[#0F121E] font-bold text-xs">{value}</span>
+                                      </div>
+                                      <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
+                                        <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Billing Address — always visible */}
+                        <div className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
+                              <Landmark size={14} className="text-white" />
+                            </div>
+                            <p className="text-[#0F121E] font-black text-sm uppercase tracking-tight">Billing Address</p>
+                          </div>
+                          {[
+                            { label: 'Street',  value: CARD_BILLING.street },
+                            { label: 'City',    value: CARD_BILLING.city },
+                            { label: 'State',   value: CARD_BILLING.state },
+                            { label: 'ZIP',     value: CARD_BILLING.zip },
+                            { label: 'Country', value: CARD_BILLING.country },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                              <div>
+                                <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
+                                <p className="text-[#0F121E] font-bold text-sm">{value}</p>
+                              </div>
+                              <button
+                                onClick={() => copyToClipboard(value)}
+                                className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-orange-50 transition-all"
+                              >
+                                <Copy size={13} className="text-gray-400" />
+                              </button>
+                            </div>
+                          ))}
+                          <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                            <p className="text-red-600 text-[10px] leading-relaxed font-bold">
+                              ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* NFC badge */}
+                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+                            <Smartphone size={18} className="text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
+                            <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
+                          </div>
+                          <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RECHARGE MODAL — fixed overlay, visible on all breakpoints */}
                 {showRechargeModal && (
                   <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
                     <div className="bg-white w-full rounded-t-3xl p-6 pb-28 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -2436,17 +2776,17 @@ export default function Dashboard() {
                   </div>
                 )}
 
-              </div>
+              </>
             )}
           </div>
         )}
- 
+
         {/* --- PROFILE SECTION --- */}
         {activeTab === 'profile' && (
           <div className="animate-in slide-in-from-bottom duration-700 pb-8">
             {showKycForm ? (
               /* KYC FORM */
-              <div className="animate-in zoom-in duration-300">
+              <div className="animate-in zoom-in duration-300 lg:max-w-[700px] lg:mx-auto lg:py-10 lg:px-4">
                 <div className="pb-4 mb-6">
                   <button onClick={() => setShowKycForm(false)} className="flex items-center gap-2 text-[#FF6B00] font-black italic uppercase text-[10px] tracking-widest mb-4">
                     <ChevronRight size={14} className="rotate-180" /> Anile / Tounen
@@ -2540,6 +2880,8 @@ export default function Dashboard() {
             ) : (
               /* PROFILE VIEW */
               <>
+                {/* Mobile layout */}
+                <div className="lg:hidden">
                 {/* HERO CARD — fixed under header */}
                 <div
                   style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}
@@ -2810,6 +3152,243 @@ export default function Dashboard() {
                   <LogOut size={18} className="text-red-500" />
                   <span className="text-red-500 font-black text-sm uppercase">Dekonekte</span>
                 </button>
+                </div>{/* end lg:hidden */}
+
+                {/* ── DESKTOP PROFILE ──────────────────────────────── */}
+                <div className="hidden lg:block">
+                  <div className="max-w-[700px] mx-auto px-8 py-10">
+
+                    {/* Hero card — in-flow on desktop, not fixed */}
+                    <div className="bg-[#0F121E] rounded-2xl p-8 mb-8">
+                      <div className="flex items-center gap-6">
+                        <div className="relative flex-shrink-0">
+                          {profilePhoto ? (
+                            <img src={profilePhoto} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-lg" />
+                          ) : (
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg">
+                              <span className="text-white text-3xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => profilePhotoInputRef.current?.click()}
+                            disabled={profilePhotoUploading}
+                            className="absolute bottom-0 right-0 w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-md border-2 border-[#0F121E] hover:bg-[#e85f00] transition disabled:opacity-60"
+                          >
+                            {profilePhotoUploading
+                              ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              : <Camera size={14} className="text-white" />
+                            }
+                          </button>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {isEditingProfile ? (
+                            <div className="space-y-2">
+                              <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
+                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
+                              <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
+                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={handleEditProfile} disabled={editProfileLoading}
+                                  className="flex-1 py-2 rounded-xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50">
+                                  {editProfileLoading ? '...' : 'Sove'}
+                                </button>
+                                <button onClick={() => setIsEditingProfile(false)}
+                                  className="flex-1 py-2 rounded-xl bg-white/10 text-white/70 text-xs font-black uppercase tracking-wider hover:bg-white/20 transition">
+                                  Anile
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-white font-black text-2xl leading-tight">{displayName}</h3>
+                                <button
+                                  onClick={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setIsEditingProfile(true); }}
+                                  className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 hover:text-[#FF6B00] transition"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              </div>
+                              <p className="text-white/50 text-sm mt-1">{user?.email}</p>
+                              <div className="flex gap-2 mt-3 flex-wrap">
+                                {user?.kyc?.status === 'APPROVED' ? (
+                                  <span className="text-xs font-black uppercase bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/30">✓ Verified</span>
+                                ) : user?.kyc?.status === 'PENDING' ? (
+                                  <span className="text-xs font-black uppercase bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full border border-orange-500/30">⏳ Pending</span>
+                                ) : (
+                                  <span className="text-xs font-black uppercase bg-white/10 text-white/50 px-3 py-1 rounded-full border border-white/10">Unverified</span>
+                                )}
+                                {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
+                                  <span className="text-xs font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-3 py-1 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats — 3-col grid */}
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
+                        <p className="text-xs font-black uppercase text-gray-400 mb-2">Balans</p>
+                        <p className="text-xl font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400 font-bold mt-1">HTG</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
+                        <p className="text-xs font-black uppercase text-gray-400 mb-2">KYC</p>
+                        <div className="flex justify-center mb-1">
+                          <BadgeCheck size={26} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-300'} />
+                        </div>
+                        <p className={`text-xs font-black uppercase ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                          {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
+                        <p className="text-xs font-black uppercase text-gray-400 mb-2">Wòl</p>
+                        <div className="flex justify-center mb-1">
+                          {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
+                            <Briefcase size={26} className="text-[#FF6B00]" />
+                          ) : (
+                            <User size={26} className="text-gray-400" />
+                          )}
+                        </div>
+                        <p className="text-xs font-black uppercase text-gray-500">{user?.role || 'USER'}</p>
+                      </div>
+                    </div>
+
+                    {/* Menu */}
+                    <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-6">
+                      <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
+                        <div className="flex-1 text-left">
+                          <p className="font-bold text-sm text-[#0F121E]">Sekirite & PIN</p>
+                          <p className="text-xs text-gray-400">Chanje PIN ou</p>
+                        </div>
+                        <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-gray-300`} />
+                      </button>
+                      {showSecurityCard && (
+                        <div className="px-4 pb-4 border-b border-gray-50"><UserSecurityCard /></div>
+                      )}
+                      <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <div className={`p-2.5 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
+                          <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="font-bold text-sm text-[#0F121E]">Verifikasyon KYC</p>
+                          <p className="text-xs text-gray-400">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {user?.kyc?.status === 'APPROVED' ? (
+                            <span className="text-xs font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">✓ Done</span>
+                          ) : user?.kyc?.status === 'PENDING' ? (
+                            <span className="text-xs font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
+                          ) : (
+                            <span className="text-xs font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">$25</span>
+                          )}
+                          <ChevronRight size={18} className="text-gray-300" />
+                        </div>
+                      </button>
+                      {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
+                        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                          <div className="flex-1 text-left">
+                            <p className="font-bold text-sm text-[#0F121E]">Agent Dashboard</p>
+                            <p className="text-xs text-gray-400">Jere kont ajan w lan</p>
+                          </div>
+                          <ChevronRight size={18} className="text-gray-300" />
+                        </button>
+                      ) : user?.agent?.status === 'PENDING' ? (
+                        <div className="w-full flex items-center gap-4 p-5 border-b border-gray-50">
+                          <div className="bg-yellow-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
+                          <div className="flex-1 text-left">
+                            <p className="font-bold text-sm text-[#0F121E]">Aplikasyon Ajan</p>
+                            <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            if (user?.kyc?.status !== 'APPROVED') {
+                              showToast('Ou dwe gen KYC apwouve anvan ou ka vin yon Ajan.', 'error');
+                              return;
+                            }
+                            const token = localStorage.getItem('token');
+                            try {
+                              const res = await fetch(`${backendUrl}/agents/apply`, {
+                                method: 'POST',
+                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` }),
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                showToast('Aplikasyon w lan soumèt! Admin ap revize l. 🚀', 'success');
+                                fetchData();
+                              } else {
+                                showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
+                              }
+                            } catch {
+                              showToast('Erè rezo. Verifye koneksyon ou.', 'error');
+                            }
+                          }}
+                          className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                          <div className="flex-1 text-left">
+                            <p className="font-bold text-sm text-[#0F121E]">Vin yon Ajan</p>
+                            <p className="text-xs text-gray-400">Aplike kounye a — Requis: KYC Apwouve</p>
+                          </div>
+                          <ChevronRight size={18} className="text-gray-300" />
+                        </button>
+                      )}
+                      <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors">
+                        <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
+                        <div className="flex-1 text-left">
+                          <p className="font-bold text-sm text-[#0F121E]">Taux & Frè</p>
+                          <p className="text-xs text-gray-400">BRH, P2P, Topup, Retrait</p>
+                        </div>
+                        <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-gray-300`} />
+                      </button>
+                      {showRates && (
+                        <div className="px-5 pb-5 border-t border-gray-50 space-y-2 pt-3">
+                          {[
+                            { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
+                            { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
+                            { label: 'Topup (Depo)', value: '6%', color: 'text-[#0F121E]' },
+                            { label: 'Retrait', value: '2%', color: 'text-[#0F121E]' },
+                          ].map(r => (
+                            <div key={r.label} className="flex justify-between items-center py-1">
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{r.label}</span>
+                              <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Support */}
+                    <button
+                      onClick={() => { window.location.href = '/support'; }}
+                      className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 mb-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0">
+                        <HelpCircle size={20} className="text-blue-500" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-bold text-sm text-[#0F121E]">Sipò & Èd</p>
+                        <p className="text-xs text-gray-400">Kontakte nou</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300" />
+                    </button>
+
+                    {/* Logout */}
+                    <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 hover:bg-red-100 transition-all">
+                      <LogOut size={18} className="text-red-500" />
+                      <span className="text-red-500 font-black text-sm uppercase">Dekonekte</span>
+                    </button>
+
+                  </div>
+                </div>
               </>
             )}
           </div>
