@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete l nan yon lòt katab
 import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
@@ -3258,12 +3259,17 @@ export default function Dashboard() {
       })()}
 
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-40 bg-[#0F121E] flex-col">
-        {/* Wordmark */}
-        <div className="px-6 py-7 border-b border-white/10">
-          <span className="text-[#FF7A00] font-black text-xl italic tracking-tight uppercase">
-            OZAMA<span className="text-white">PAY</span>
-          </span>
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-40 bg-white border-r border-gray-100 flex-col">
+        {/* Logo */}
+        <div className="px-6 py-7 border-b border-gray-100">
+          <Image
+            src="/logo.png"
+            alt="OZAMAPAY"
+            width={120}
+            height={40}
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </div>
 
         {/* Nav items */}
@@ -3281,7 +3287,7 @@ export default function Dashboard() {
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === item.id
                   ? 'bg-[#FF7A00]/10 text-[#FF7A00]'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               {item.icon}
@@ -3294,12 +3300,12 @@ export default function Dashboard() {
         </nav>
 
         {/* User footer */}
-        <div className="px-4 py-5 border-t border-white/10 flex items-center gap-3">
+        <div className="px-4 py-5 border-t border-gray-100 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center text-[#FF7A00] font-black text-sm shrink-0">
             {displayName.substring(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-white text-xs font-bold truncate">{displayName}</p>
+            <p className="text-gray-900 text-xs font-bold truncate">{displayName}</p>
             <p className="text-gray-500 text-[10px] truncate">{user?.email}</p>
           </div>
         </div>
