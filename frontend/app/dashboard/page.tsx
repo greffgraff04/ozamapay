@@ -1023,7 +1023,7 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <>
           {/* ── Mobile layout (hidden on desktop) ── */}
-          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: '420px' }}>
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: '460px' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 }}>
               <header className="px-4 pt-4 pb-4 flex justify-between items-center">
@@ -1110,9 +1110,19 @@ export default function Dashboard() {
                    style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
                 <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                  <h2 className="text-5xl font-black tracking-tighter italic">
-                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-2xl font-normal">HTG</span>
-                  </h2>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-white/70 text-sm font-black uppercase tracking-wider">HTG</span>
+                    {(() => {
+                      const raw = Number(user.wallet?.balance || 0);
+                      const [whole, dec] = raw.toFixed(2).split('.');
+                      return (
+                        <h2 className="text-5xl font-black tracking-tighter italic leading-none">
+                          {Number(whole).toLocaleString()}
+                          <span className="text-2xl font-bold">.{dec}</span>
+                        </h2>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
  
@@ -1195,15 +1205,16 @@ export default function Dashboard() {
                 </div>
               )}
               </div>
+              {/* RECENT ACTIVITY header — pinned in fixed hero, never scrolls */}
+              <div className="flex justify-between items-end px-4 pt-2 pb-3">
+                <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
+                  <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
+                </h3>
+                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
+              </div>
             </div>
- 
-            <div style={{ height: 'calc(100vh - 420px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            <div className="flex justify-between items-end mb-5 mt-2">
-              <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
-                <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
-              </h3>
-              <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
-            </div>
+
+            <div style={{ height: 'calc(100vh - 460px)', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
  
             <div className="space-y-3">
               {transactions.length === 0 ? (
