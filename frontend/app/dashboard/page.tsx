@@ -1023,9 +1023,9 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <>
           {/* ── Mobile layout (hidden on desktop) ── */}
-          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: '460px' }}>
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(460px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40 }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-4 pb-4 flex justify-between items-center">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
@@ -1214,7 +1214,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ height: 'calc(100vh - 460px)', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
+            <div style={{ height: 'calc(100vh - 460px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
  
             <div className="space-y-3">
               {transactions.length === 0 ? (
