@@ -2895,10 +2895,10 @@ export default function Dashboard() {
                 {/* Mobile layout */}
                 <div className="lg:hidden">
                 {/* HERO CARD — fixed under header */}
-                <div
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}
-                  className="px-4 pt-4 pb-3"
-                >
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
+                  {/* White safe-area zone — never inherits dark card color */}
+                  <div style={{ height: 'env(safe-area-inset-top)' }} />
+                  <div className="px-4 pt-4 pb-3">
                   <div className="bg-[#0F121E] rounded-3xl p-6">
                     <div className="flex items-center gap-4">
                       {/* Avatar with camera overlay */}
@@ -2998,7 +2998,8 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                </div>
+                  </div>{/* end px-4 pt-4 pb-3 */}
+                </div>{/* end position:fixed */}
 
                 {/* Spacer so scrollable content clears the fixed hero */}
                 <div style={{ paddingTop: 'calc(168px + env(safe-area-inset-top))' }} />
