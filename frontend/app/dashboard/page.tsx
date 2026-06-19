@@ -1115,10 +1115,10 @@ export default function Dashboard() {
                       const raw = Number(user.wallet?.balance || 0);
                       const [whole, dec] = raw.toFixed(2).split('.');
                       return (
-                        <h2 className="text-5xl font-black tracking-tighter italic leading-none">
+                        <h2 className="text-3xl font-black tracking-tighter italic leading-none">
                           <span className="text-white/70">HTG</span>
                           {' '}{Number(whole).toLocaleString('fr-FR')}
-                          <span className="text-2xl font-bold">.{dec}</span>
+                          <span className="text-lg font-bold">.{dec}</span>
                         </h2>
                       );
                     })()}
