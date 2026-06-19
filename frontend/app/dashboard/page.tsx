@@ -1110,14 +1110,14 @@ export default function Dashboard() {
                    style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
                 <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-white/70 text-sm font-black uppercase tracking-wider">HTG</span>
+                  <div className="flex items-baseline gap-2">
                     {(() => {
                       const raw = Number(user.wallet?.balance || 0);
                       const [whole, dec] = raw.toFixed(2).split('.');
                       return (
                         <h2 className="text-5xl font-black tracking-tighter italic leading-none">
-                          {Number(whole).toLocaleString()}
+                          <span className="text-white/70">HTG</span>
+                          {' '}{Number(whole).toLocaleString('fr-FR')}
                           <span className="text-2xl font-bold">.{dec}</span>
                         </h2>
                       );
