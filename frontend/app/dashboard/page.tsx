@@ -812,8 +812,9 @@ export default function Dashboard() {
             opacity: toastFading ? 0 : 1,
             transform: toastFading ? 'translateY(-6px)' : 'translateY(0)',
             transition: 'opacity 0.35s ease, transform 0.35s ease',
+            top: 'calc(1.5rem + env(safe-area-inset-top))',
           }}
-          className="fixed top-6 left-4 right-4 z-[999] border border-white/10 text-white px-4 py-4 rounded-2xl shadow-xl"
+          className="fixed left-4 right-4 z-[999] border border-white/10 text-white px-4 py-4 rounded-2xl shadow-xl"
         >
           <div className="flex items-center gap-3">
             <Zap size={15} className={`flex-shrink-0 ${toast.type === 'success' ? 'text-green-400' : toast.type === 'warning' ? 'text-yellow-400' : 'text-[#FF7A00]'}`} />
@@ -1496,8 +1497,8 @@ export default function Dashboard() {
  
         {/* --- SEND SECTION --- */}
 {activeTab === 'send' && (
-  <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '92px' }}>
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+  <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
       <button
         onClick={() => setActiveTab('home')}
         className="mb-4 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
@@ -1590,8 +1591,8 @@ export default function Dashboard() {
 )}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: '152px' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <PlusCircle size={14} /> Back Home
               </button>
@@ -1608,7 +1609,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <div style={{ height: 'calc(100vh - 240px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
               <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
@@ -1788,15 +1789,15 @@ export default function Dashboard() {
 
         {/* --- WITHDRAW SECTION --- */}
         {activeTab === 'withdraw' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: '92px' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <Banknote size={14} /> Back Home
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Withdraw</h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retire kòb ou rapidman</p>
             </div>
-            <div style={{ height: 'calc(100vh - 180px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div style={{ height: 'calc(100vh - 180px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
               <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
@@ -1865,14 +1866,14 @@ export default function Dashboard() {
 
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '102px' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <Landmark size={14} /> Back Home
               </button>
               <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Ozama<br/>Exchange</h2>
             </div>
-            <div style={{ height: 'calc(100vh - 190px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="grid gap-4">
               {[
                 { id: 'wise', name: 'Wise', desc: 'USD Transfer', img: 'wise.png' },
@@ -1903,8 +1904,8 @@ export default function Dashboard() {
  
         {/* --- SERVICE DETAIL --- */}
         {activeTab === 'finance' && selectedFinanceService && (
-          <div className="animate-in zoom-in duration-500" style={{ paddingTop: '132px' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in zoom-in duration-500" style={{ paddingTop: 'calc(132px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <ChevronRight size={14} className="rotate-180" /> Back to Services
               </button>
@@ -1917,7 +1918,7 @@ export default function Dashboard() {
                 <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Sell / Cashout</button>
               </div>
             </div>
-            <div style={{ height: 'calc(100vh - 220px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div style={{ height: 'calc(100vh - 220px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             {financeType === 'BUY' && (
               <div className="mb-8 space-y-3">
                 <div className="bg-[#0F121E] p-8 text-white rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
@@ -2117,10 +2118,10 @@ export default function Dashboard() {
               /* ===== CARD DISPLAY ===== */
               <>
                 {/* Mobile layout */}
-                <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px)' }}>
+                <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px + env(safe-area-inset-top))' }}>
 
                 {/* FIXED CARD */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}>
 
                   {/* Card image */}
                   <div className="px-4 pt-12">
@@ -2179,7 +2180,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* SCROLLABLE CONTENT */}
-                <div style={{ height: 'calc(100vh - 56vw - 48px)', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
+                <div style={{ height: 'calc(100vh - 56vw - 48px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
 
                   {/* 5 ACTION BUTTONS */}
                   <div className="flex justify-between items-center mt-4 pb-3">
@@ -2895,7 +2896,7 @@ export default function Dashboard() {
                 <div className="lg:hidden">
                 {/* HERO CARD — fixed under header */}
                 <div
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}
                   className="px-4 pt-4 pb-3"
                 >
                   <div className="bg-[#0F121E] rounded-3xl p-6">
@@ -3000,7 +3001,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Spacer so scrollable content clears the fixed hero */}
-                <div style={{ paddingTop: '168px' }} />
+                <div style={{ paddingTop: 'calc(168px + env(safe-area-inset-top))' }} />
 
                 {/* STATS ROW */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
@@ -3483,8 +3484,8 @@ export default function Dashboard() {
         };
 
         return (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: '140px', background: '#ffffff', minHeight: '100vh' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#ffffff', borderBottom: '1px solid #f0f0f0' }} className="px-4 pt-4 pb-4">
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(140px + env(safe-area-inset-top))', background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#ffffff', borderBottom: '1px solid #f0f0f0', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               {gcSection === 'airtime' ? (
                 atResult ? (
                   <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
@@ -3530,7 +3531,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ height: 'calc(100vh - 140px)', overflowY: 'auto', position: 'relative' }} className="pb-28">
+            <div style={{ height: 'calc(100vh - 140px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-28">
 
               {/* ORDER SUCCESS */}
               {gcSection === 'gifts' && gcOrderResult && (
