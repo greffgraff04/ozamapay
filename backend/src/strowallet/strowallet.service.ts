@@ -313,9 +313,9 @@ export class StrowalletService {
     const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
-    await this.nfcPost('freezeactivate-nfc', {
+    await this.nfcGet('freezeactivate-nfc', {
       card_id: card.cardId,
-      action: 'freeze',
+      status: 'frozen',
     });
 
     await this.prisma.virtualCard.update({
@@ -330,9 +330,9 @@ export class StrowalletService {
     const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
-    await this.nfcPost('freezeactivate-nfc', {
+    await this.nfcGet('freezeactivate-nfc', {
       card_id: card.cardId,
-      action: 'activate',
+      status: 'active',
     });
 
     await this.prisma.virtualCard.update({

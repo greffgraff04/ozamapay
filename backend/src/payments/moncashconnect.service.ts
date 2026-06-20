@@ -1,12 +1,15 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
 const BASE_URL = 'https://hvlmeoqyxaguzcujpmit.supabase.co/functions/v1';
-const FEE_RATE = 0.06;
+const FEE_RATE = 0.089; // 6% OZAMAPAY + 2.9% MonCash processing
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
+// Transactions older than this are considered abandoned and eligible for expiry
+const STALE_MINUTES = 15;
 
 @Injectable()
 export class MonCashConnectService {
@@ -163,6 +166,96 @@ export class MonCashConnectService {
       try {
         await this.mailService.sendTopupConfirmed(user.email, user.name ?? 'Kliyan', netAmount, 'MonCash');
       } catch {}
+    }
+  }
+
+  // ── STATUS CHECK ────────────────────────────────────────────────────────────
+  // Probes the MonCashConnect pay-status endpoint if it exists.
+  // Returns 'COMPLETED' | 'FAILED' | 'PENDING' on a known answer, null when
+  // the endpoint is unavailable or the response is unrecognisable.
+  async checkPaymentStatus(referenceId: string): Promise<'COMPLETED' | 'FAILED' | 'PENDING' | null> {
+    try {
+      const res = await fetch(`${BASE_URL}/pay-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.MONCASHCONNECT_SECRET_KEY}`,
+        },
+        body: JSON.stringify({ referenceId }),
+      });
+
+      if (!res.ok) {
+        this.logger.warn(`MonCashConnect pay-status: HTTP ${res.status} for ${referenceId} — endpoint may not exist`);
+        return null;
+      }
+
+      const data = await res.json();
+      const raw: string = data?.status ?? data?.payment_status ?? data?.state ?? '';
+      const upper = raw.toUpperCase();
+
+      if (['COMPLETED', 'SUCCESSFUL', 'SUCCESS', 'PAID'].includes(upper)) return 'COMPLETED';
+      if (['FAILED', 'CANCELLED', 'EXPIRED', 'REJECTED'].includes(upper)) return 'FAILED';
+      if (upper === 'PENDING') return 'PENDING';
+
+      this.logger.warn(`MonCashConnect pay-status: unrecognised status "${raw}" for ${referenceId}`);
+      return null;
+    } catch (err: any) {
+      this.logger.warn(`MonCashConnect pay-status check error for ${referenceId}: ${err.message}`);
+      return null;
+    }
+  }
+
+  // ── EXPIRY CRON ─────────────────────────────────────────────────────────────
+  // Runs every 5 minutes. For each PENDING MonCash transaction older than
+  // STALE_MINUTES it first tries the pay-status endpoint:
+  //   • status COMPLETED  → credit the wallet via processWebhookPayment (missed-webhook recovery)
+  //   • status FAILED / null (endpoint unavailable) → mark CANCELLED
+  @Cron('*/5 * * * *')
+  async expireStalePayments(): Promise<void> {
+    const cutoff = new Date(Date.now() - STALE_MINUTES * 60 * 1000);
+
+    const stale = await this.prisma.transaction.findMany({
+      where: {
+        type: 'TOPUP',
+        status: 'PENDING',
+        method: 'MonCash',
+        createdAt: { lte: cutoff },
+      },
+      select: { id: true, reference: true },
+    });
+
+    if (stale.length === 0) return;
+
+    this.logger.log(`MonCashConnect expiry: processing ${stale.length} stale PENDING transaction(s)`);
+
+    for (const tx of stale) {
+      try {
+        const paymentStatus = await this.checkPaymentStatus(tx.reference);
+
+        if (paymentStatus === 'COMPLETED') {
+          // Webhook was never received — recover by crediting the wallet now.
+          // processWebhookPayment re-checks status inside a Serializable transaction
+          // so it is safe to call even if the webhook arrives concurrently.
+          this.logger.warn(
+            `MonCashConnect: recovered missed webhook for reference ${tx.reference} — crediting wallet`,
+          );
+          await this.processWebhookPayment({ referenceId: tx.reference });
+        } else {
+          // Either confirmed not paid, or status endpoint is unavailable — cancel.
+          const updated = await this.prisma.transaction.updateMany({
+            where: { id: tx.id, status: 'PENDING' },
+            data: { status: 'CANCELLED' },
+          });
+          if (updated.count > 0) {
+            this.logger.log(
+              `MonCashConnect: cancelled stale transaction ${tx.id} ` +
+              `(pay-status returned: ${paymentStatus ?? 'unavailable'})`,
+            );
+          }
+        }
+      } catch (err: any) {
+        this.logger.error(`MonCashConnect expiry: error on transaction ${tx.id}: ${err.message}`);
+      }
     }
   }
 }
