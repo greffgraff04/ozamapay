@@ -98,6 +98,10 @@ export class PaymentsController {
   ) {
     this.logger.log(`MCConnect webhook hit — sig=${signature?.substring(0, 20)}... body=${JSON.stringify(body)}`);
 
+    if (!rawBody) {
+      this.logger.error('MCConnect webhook: rawBody is undefined — Content-Type may not be application/json or body parser misconfiguration');
+      throw new BadRequestException('Corps brut manke — pa ka verifye signature webhook');
+    }
     if (!signature || !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
       throw new BadRequestException('Signature webhook envalid');
     }

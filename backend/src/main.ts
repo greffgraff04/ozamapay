@@ -11,9 +11,14 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  // Konfigirasyon limit pou JSON ak URL-encoded atravè vèsyon Express ki anndan NestJS la
+  // Konfigirasyon limit pou JSON ak URL-encoded. The verify callback captures req.rawBody
+  // so @RawBody() works in the webhook controller. This middleware runs before NestJS's own
+  // body parsers (registered during listen/init), so it must set req.rawBody here directly.
   const server = app.getHttpAdapter().getInstance();
-  server.use(require('express').json({ limit: '5mb' }));
+  server.use(require('express').json({
+    limit: '5mb',
+    verify: (req: any, _res: any, buf: Buffer) => { req.rawBody = buf; },
+  }));
   server.use(require('express').urlencoded({ limit: '5mb', extended: true }));
 
   // Intercept health check paths before NestJS/ThrottlerGuard to prevent 429s
