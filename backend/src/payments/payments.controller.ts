@@ -8,6 +8,7 @@ import {
   UseGuards,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -18,6 +19,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
+  private readonly logger = new Logger(PaymentsController.name);
+
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly monCashConnectService: MonCashConnectService,
@@ -93,6 +96,8 @@ export class PaymentsController {
     @Headers('x-mcc-signature') signature?: string,
     @Headers('x-mcc-timestamp') _timestamp?: string,
   ) {
+    this.logger.log(`MCConnect webhook hit — sig=${signature?.substring(0, 20)}... body=${JSON.stringify(body)}`);
+
     if (!signature || !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature)) {
       throw new BadRequestException('Signature webhook envalid');
     }

@@ -1,6 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -129,37 +128,83 @@ export class MonCashConnectService {
   }
 
   async processWebhookPayment(body: any): Promise<void> {
+    this.logger.log(`MCConnect webhook body: ${JSON.stringify(body)}`);
+
     const referenceId: string | undefined = body.referenceId ?? body.reference_id ?? body.reference;
 
-    if (!referenceId) return;
+    if (!referenceId) {
+      this.logger.warn('MCConnect webhook: no referenceId in body — ignoring');
+      return;
+    }
 
     const transaction = await this.prisma.transaction.findFirst({
       where: { reference: referenceId },
       include: { receiverWallet: true },
     });
 
-    if (!transaction) return;
+    if (!transaction) {
+      this.logger.warn(`MCConnect webhook: no transaction found for ref=${referenceId}`);
+      return;
+    }
 
-    if (transaction.status !== 'PENDING') return;
+    if (transaction.status !== 'PENDING') {
+      this.logger.log(`MCConnect webhook: tx ${transaction.id} already ${transaction.status} — skipping`);
+      return;
+    }
 
     const amountHTG = Number(transaction.amount);
     const fee = Math.round(amountHTG * FEE_RATE * 100) / 100;
     const netAmount = Math.round((amountHTG - fee) * 100) / 100;
     const userId = transaction.receiverWallet?.userId;
-    if (!userId) return;
 
-    await this.prisma.$transaction(async (tx) => {
-      // Re-read status inside the transaction to prevent concurrent double-credit
-      const current = await tx.transaction.findUnique({ where: { id: transaction.id } });
-      if (!current || current.status !== 'PENDING') return;
+    if (!userId) {
+      this.logger.error(`MCConnect webhook: tx ${transaction.id} has no receiverWallet userId`);
+      return;
+    }
 
-      await tx.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } });
-      await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
-      await tx.transaction.update({
+    if (!MASTER_ID) {
+      this.logger.error('MCConnect webhook: OZAMAPAY_MASTER_ID env var is not set — aborting');
+      throw new Error('OZAMAPAY_MASTER_ID is not configured');
+    }
+
+    this.logger.log(
+      `MCConnect webhook: crediting tx=${transaction.id} amount=${amountHTG} fee=${fee} net=${netAmount} userId=${userId.substring(0, 8)}...`,
+    );
+
+    // Atomic claim: updateMany with status filter is a safe, PgBouncer-compatible
+    // double-credit guard (Serializable $transaction callback fails on Neon pooler).
+    const claimed = await this.prisma.transaction.updateMany({
+      where: { id: transaction.id, status: 'PENDING' },
+      data: { status: 'PROCESSING' },
+    });
+
+    if (claimed.count === 0) {
+      this.logger.warn(`MCConnect webhook: tx ${transaction.id} already claimed by another process — skipping`);
+      return;
+    }
+
+    try {
+      await this.prisma.$transaction([
+        this.prisma.wallet.update({ where: { userId }, data: { balance: { increment: netAmount } } }),
+        this.prisma.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } }),
+        this.prisma.transaction.update({
+          where: { id: transaction.id },
+          data: { status: 'COMPLETED', fee, netAmount },
+        }),
+      ]);
+    } catch (err: any) {
+      this.logger.error(
+        `MCConnect webhook: $transaction failed for tx ${transaction.id}: ${err.message} (code=${err.code ?? 'n/a'})`,
+      );
+      // Revert PROCESSING → PENDING so the next webhook retry can reclaim it
+      await this.prisma.transaction.update({
         where: { id: transaction.id },
-        data: { status: 'COMPLETED', fee, netAmount },
+        data: { status: 'PENDING' },
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      throw err;
+    }
+
+    this.logger.log(`MCConnect webhook: tx ${transaction.id} COMPLETED — credited ${netAmount} HTG to user`);
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user) {
