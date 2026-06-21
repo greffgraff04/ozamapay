@@ -8,9 +8,11 @@ import {
   ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
-  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone
+  HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
+  Sun, Moon
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTheme } from '../../contexts/ThemeContext';
  
 const CARD_BILLING = {
   street: '3401 N. Miami Ave, Ste 230',
@@ -170,6 +172,8 @@ export default function Dashboard() {
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
+
+  const { colors, isDark, toggleTheme } = useTheme();
 
   const fetchSecretDetails = async () => {
     if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
@@ -792,7 +796,7 @@ export default function Dashboard() {
   };
  
   if (loading || !user || !minLoadDone) return (
-    <div className="min-h-screen bg-[#0A0B0F] flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen bg-[var(--oz-bg)] flex flex-col items-center justify-center gap-6">
       <img src="/logoicon.png" alt="OzamaPay" className="w-44 h-44 object-contain animate-pulse" />
       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
     </div>
@@ -801,7 +805,7 @@ export default function Dashboard() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'Itilizatè';
  
   return (
-    <main className="min-h-screen bg-white text-[#0F121E] font-sans overflow-x-hidden relative pb-28 lg:pb-0 lg:pl-64">
+    <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-28 lg:pb-0 lg:pl-64" style={{ backgroundColor: colors.background, color: colors.textPrimary }}>
       
       {/* TOAST NOTIFICATION */}
       {toast && (
@@ -863,10 +867,10 @@ export default function Dashboard() {
         };
         return (
           <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center p-4" style={{ background: 'rgba(0,0,0,0.88)' }}>
-            <div className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-full max-w-sm bg-[var(--oz-surface)] rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in duration-300">
               {/* Skip */}
               <div className="flex justify-end px-5 pt-4">
-                <button onClick={finish} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition">
+                <button onClick={finish} className="text-[10px] font-black text-[var(--oz-text-sec)] uppercase tracking-widest hover:text-[var(--oz-text-sec)] transition">
                   Pase
                 </button>
               </div>
@@ -882,15 +886,15 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
-                <h2 className="text-xl font-black text-[#0F121E] leading-tight mb-3">{step.title}</h2>
-                <p className="text-sm text-gray-500 leading-relaxed mb-8">{step.text}</p>
+                <h2 className="text-xl font-black text-[var(--oz-text)] leading-tight mb-3">{step.title}</h2>
+                <p className="text-sm text-[var(--oz-text-sec)] leading-relaxed mb-8">{step.text}</p>
 
                 {/* Progress dots */}
                 <div className="flex justify-center gap-2 mb-6">
                   {steps.map((_, i) => (
                     <div
                       key={i}
-                      className={`h-2 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-6 bg-[#FF6B00]' : 'w-2 bg-gray-200'}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-6 bg-[#FF6B00]' : 'w-2 bg-[var(--oz-border)]'}`}
                     />
                   ))}
                 </div>
@@ -929,9 +933,9 @@ export default function Dashboard() {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(v => !v)}
-              className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative"
+              className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
             >
-              <Bell size={20} className="text-[#0F121E]" />
+              <Bell size={20} className="text-[var(--oz-text)]" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -944,11 +948,11 @@ export default function Dashboard() {
               <>
                 {/* backdrop */}
                 <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                <div className="absolute right-0 top-14 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-[#F0F0F0] overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-80 bg-[var(--oz-surface)] rounded-3xl shadow-2xl border border-[var(--oz-border)] overflow-hidden">
                   {/* Header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--oz-border)]">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-[#0F121E] uppercase tracking-wider">Notifikasyon</span>
+                      <span className="text-sm font-black text-[var(--oz-text)] uppercase tracking-wider">Notifikasyon</span>
                       {unreadCount > 0 && (
                         <span className="text-[9px] font-black bg-[#FF6B00] text-white px-2 py-0.5 rounded-full">{unreadCount}</span>
                       )}
@@ -964,7 +968,7 @@ export default function Dashboard() {
                       )}
                       <button
                         onClick={() => setShowNotifications(false)}
-                        className="w-7 h-7 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition"
+                        className="w-7 h-7 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition"
                       >
                         <X size={13} />
                       </button>
@@ -976,13 +980,13 @@ export default function Dashboard() {
                     {notifications.length === 0 ? (
                       <div className="py-12 flex flex-col items-center gap-3">
                         <Bell size={28} className="text-gray-200" />
-                        <p className="text-xs text-gray-400 font-bold">Pa gen notifikasyon toujou</p>
+                        <p className="text-xs text-[var(--oz-text-sec)] font-bold">Pa gen notifikasyon toujou</p>
                       </div>
                     ) : (
                       notifications.map((n: any) => (
                         <div
                           key={n.id}
-                          className={`flex items-start gap-3 px-5 py-4 border-b border-[#F8F9FA] last:border-0 ${n.isRead ? 'bg-[#F8F9FA]' : 'bg-white'}`}
+                          className={`flex items-start gap-3 px-5 py-4 border-b border-[var(--oz-border)] last:border-0 ${n.isRead ? 'bg-[var(--oz-surface)]' : 'bg-[var(--oz-bg)]'}`}
                         >
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                             n.type === 'SUCCESS' ? 'bg-emerald-100' :
@@ -1000,9 +1004,9 @@ export default function Dashboard() {
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-[#0F121E] leading-snug">{n.title}</p>
-                            <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{n.message}</p>
-                            <p className="text-[10px] text-gray-300 mt-1 font-bold">{timeAgo(n.createdAt)}</p>
+                            <p className="text-xs font-black text-[var(--oz-text)] leading-snug">{n.title}</p>
+                            <p className="text-[11px] text-[var(--oz-text-sec)] mt-0.5 leading-relaxed">{n.message}</p>
+                            <p className="text-[10px] text-[var(--oz-text-sec)] mt-1 font-bold">{timeAgo(n.createdAt)}</p>
                           </div>
                           {!n.isRead && (
                             <div className="w-2 h-2 bg-[#FF6B00] rounded-full shrink-0 mt-1.5" />
@@ -1026,7 +1030,7 @@ export default function Dashboard() {
           {/* ── Mobile layout (hidden on desktop) ── */}
           <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(460px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-4 pb-4 flex justify-between items-center">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
@@ -1044,9 +1048,9 @@ export default function Dashboard() {
                 <div className="relative">
                   <button
                     onClick={() => setShowNotifications(v => !v)}
-                    className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center border border-black/5 active:scale-90 transition-all relative"
+                    className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
                   >
-                    <Bell size={20} className="text-[#0F121E]" />
+                    <Bell size={20} className="text-[var(--oz-text)]" />
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -1058,10 +1062,10 @@ export default function Dashboard() {
                   {showNotifications && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                      <div className="absolute right-0 top-14 z-50 w-80 bg-white rounded-3xl shadow-2xl border border-[#F0F0F0] overflow-hidden">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0F0]">
+                      <div className="absolute right-0 top-14 z-50 w-80 bg-[var(--oz-surface)] rounded-3xl shadow-2xl border border-[var(--oz-border)] overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--oz-border)]">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-[#0F121E] uppercase tracking-wider">Notifikasyon</span>
+                            <span className="text-sm font-black text-[var(--oz-text)] uppercase tracking-wider">Notifikasyon</span>
                             {unreadCount > 0 && (
                               <span className="text-[9px] font-black bg-[#FF6B00] text-white px-2 py-0.5 rounded-full">{unreadCount}</span>
                             )}
@@ -1072,7 +1076,7 @@ export default function Dashboard() {
                                 Li tout
                               </button>
                             )}
-                            <button onClick={() => setShowNotifications(false)} className="w-7 h-7 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition">
+                            <button onClick={() => setShowNotifications(false)} className="w-7 h-7 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
                               <X size={13} />
                             </button>
                           </div>
@@ -1081,20 +1085,20 @@ export default function Dashboard() {
                           {notifications.length === 0 ? (
                             <div className="py-12 flex flex-col items-center gap-3">
                               <Bell size={28} className="text-gray-200" />
-                              <p className="text-xs text-gray-400 font-bold">Pa gen notifikasyon toujou</p>
+                              <p className="text-xs text-[var(--oz-text-sec)] font-bold">Pa gen notifikasyon toujou</p>
                             </div>
                           ) : (
                             notifications.map((n: any) => (
-                              <div key={n.id} className={`flex items-start gap-3 px-5 py-4 border-b border-[#F8F9FA] last:border-0 ${n.isRead ? 'bg-[#F8F9FA]' : 'bg-white'}`}>
+                              <div key={n.id} className={`flex items-start gap-3 px-5 py-4 border-b border-[var(--oz-border)] last:border-0 ${n.isRead ? 'bg-[var(--oz-surface)]' : 'bg-[var(--oz-bg)]'}`}>
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${n.type === 'SUCCESS' ? 'bg-emerald-100' : n.type === 'ERROR' ? 'bg-red-100' : n.type === 'WARNING' ? 'bg-yellow-100' : 'bg-[#FF6B00]/10'}`}>
                                   <span className={`text-[10px] font-black ${n.type === 'SUCCESS' ? 'text-emerald-600' : n.type === 'ERROR' ? 'text-red-500' : n.type === 'WARNING' ? 'text-yellow-600' : 'text-[#FF6B00]'}`}>
                                     {n.type === 'SUCCESS' ? '✓' : n.type === 'ERROR' ? '✕' : n.type === 'WARNING' ? '!' : 'i'}
                                   </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-black text-[#0F121E] leading-snug">{n.title}</p>
-                                  <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{n.message}</p>
-                                  <p className="text-[10px] text-gray-300 mt-1 font-bold">{timeAgo(n.createdAt)}</p>
+                                  <p className="text-xs font-black text-[var(--oz-text)] leading-snug">{n.title}</p>
+                                  <p className="text-[11px] text-[var(--oz-text-sec)] mt-0.5 leading-relaxed">{n.message}</p>
+                                  <p className="text-[10px] text-[var(--oz-text-sec)] mt-1 font-bold">{timeAgo(n.createdAt)}</p>
                                 </div>
                                 {!n.isRead && <div className="w-2 h-2 bg-[#FF6B00] rounded-full shrink-0 mt-1.5" />}
                               </div>
@@ -1136,14 +1140,14 @@ export default function Dashboard() {
                   { id: 'CARDS', icon: <CreditCard size={20} />, tab: 'cards' },
                 ].map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
-                    <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
                     <span className="text-[7px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
-                  <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                     <QrCode size={20} />
                   </div>
                   <span className="text-[7px] font-black uppercase tracking-widest opacity-70">QR</span>
@@ -1154,13 +1158,13 @@ export default function Dashboard() {
               {showQrModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowQrModal(false)}>
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                  <div className="relative bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="relative bg-[var(--oz-surface)] rounded-3xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <h3 className="font-black text-lg text-[#0F121E] uppercase tracking-tight">Kòd QR Peman Ou</h3>
-                        <p className="text-[10px] text-gray-400 mt-0.5 font-bold">Lòt moun skane sa pou voye kòb ba ou</p>
+                        <h3 className="font-black text-lg text-[var(--oz-text)] uppercase tracking-tight">Kòd QR Peman Ou</h3>
+                        <p className="text-[10px] text-[var(--oz-text-sec)] mt-0.5 font-bold">Lòt moun skane sa pou voye kòb ba ou</p>
                       </div>
-                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition">
+                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
                         <X size={16} />
                       </button>
                     </div>
@@ -1176,8 +1180,8 @@ export default function Dashboard() {
                         />
                       </div>
                       <div className="text-center">
-                        <p className="text-xs font-black text-[#0F121E]">{displayName}</p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">{user?.email}</p>
+                        <p className="text-xs font-black text-[var(--oz-text)]">{displayName}</p>
+                        <p className="text-[11px] text-[var(--oz-text-sec)] mt-0.5">{user?.email}</p>
                       </div>
                       <div className="flex gap-3 w-full">
                         <button
@@ -1196,7 +1200,7 @@ export default function Dashboard() {
                             a.download = 'ozamapay-qr.svg';
                             a.click();
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-100 text-[#0F121E] text-xs font-black uppercase tracking-wider hover:bg-gray-200 transition"
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[var(--oz-surface)] text-[var(--oz-text)] text-xs font-black uppercase tracking-wider hover:bg-[var(--oz-border)] transition"
                         >
                           <Download size={14} /> Download
                         </button>
@@ -1208,7 +1212,7 @@ export default function Dashboard() {
               </div>
               {/* RECENT ACTIVITY header — pinned in fixed hero, never scrolls */}
               <div className="flex justify-between items-end px-4 pt-2 pb-3">
-                <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
+                <h3 className="font-black italic uppercase text-sm tracking-wide flex items-center gap-2">
                   <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
                 </h3>
                 <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
@@ -1219,7 +1223,7 @@ export default function Dashboard() {
  
             <div className="space-y-3">
               {transactions.length === 0 ? (
-                <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-[2.2rem] border border-black/[0.04]">
+                <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-[2.2rem] border border-[var(--oz-border)]">
                   Pa gen okenn tranzaksyon pou kounye a.
                 </p>
               ) : (
@@ -1252,19 +1256,19 @@ export default function Dashboard() {
                       case 'COMPLETED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-green-100 text-green-600">Konplète</span>;
                       case 'PENDING': case 'PROCESSING': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">Atant</span>;
                       case 'FAILED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-500">Echwe</span>;
-                      case 'REJECTED': case 'CANCELLED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Rejte</span>;
+                      case 'REJECTED': case 'CANCELLED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-[var(--oz-surface)] text-[var(--oz-text-sec)]">Rejte</span>;
                       default: return null;
                     }
                   })();
 
                   return (
-                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-white rounded-[2.2rem] border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
+                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[2.2rem] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
                         </div>
                         <div>
-                          <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-black max-w-[180px]">
+                          <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-[var(--oz-text)] max-w-[180px]">
                             {txTitle}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -1311,14 +1315,14 @@ export default function Dashboard() {
                   { id: 'CARDS',   icon: <CreditCard size={18} />, tab: 'cards' },
                 ].map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-black/5 shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                     <QrCode size={18} />
                   </div>
                   <span className="text-[8px] font-black uppercase tracking-widest opacity-70">QR</span>
@@ -1340,7 +1344,7 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-3">
                   {transactions.length === 0 ? (
-                    <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-3xl border border-black/[0.04]">
+                    <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)]">
                       Pa gen okenn tranzaksyon pou kounye a.
                     </p>
                   ) : (
@@ -1365,14 +1369,14 @@ export default function Dashboard() {
                         ? (METHOD_DISPLAY_D[t.method] || t.method) : null;
                       const txTitleD = `${serviceNameD} ${amt} HTG${methodLabelD ? ` · ${methodLabelD}` : ''}`;
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-black/[0.04] hover:border-[#FF7A00]/20 transition-all">
+                        <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-2xl border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                               {isDebit ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
                             </div>
                             <div>
-                              <p className="font-black text-[11px] uppercase italic tracking-tight text-[#0F121E]">{txTitleD}</p>
-                              <p className="text-[10px] text-gray-400 mt-0.5">{t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}</p>
+                              <p className="font-black text-[11px] uppercase italic tracking-tight text-[var(--oz-text)]">{txTitleD}</p>
+                              <p className="text-[10px] text-[var(--oz-text-sec)] mt-0.5">{t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}</p>
                             </div>
                           </div>
                           <span className={`text-xs font-black tabular-nums ${isDebit ? 'text-red-500' : 'text-green-600'}`}>
@@ -1389,10 +1393,10 @@ export default function Dashboard() {
             {/* RIGHT COLUMN — upsell / feature cards */}
             <div className="flex flex-col gap-6">
               <div>
-                <h2 className="text-xl font-black text-[#0F121E] uppercase italic tracking-tight mb-1">
+                <h2 className="text-xl font-black text-[var(--oz-text)] uppercase italic tracking-tight mb-1">
                   Alè pi lwen ak lajan ou
                 </h2>
-                <p className="text-xs text-gray-400 font-medium">Dekouvri tout sèvis OZAMAPAY ofri ou</p>
+                <p className="text-xs text-[var(--oz-text-sec)] font-medium">Dekouvri tout sèvis OZAMAPAY ofri ou</p>
               </div>
 
               {/* Virtual Card */}
@@ -1404,40 +1408,40 @@ export default function Dashboard() {
                   <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <CreditCard size={20} className="text-[#FF7A00]" />
                   </div>
-                  <ChevronRight size={16} className="text-gray-500 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
                 </div>
                 <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Kat Vityèl NFC</h3>
-                <p className="text-gray-400 text-[11px] leading-relaxed">Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
+                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
               </button>
 
               {/* Gift Cards */}
               <button
                 onClick={() => setActiveTab('giftcards')}
-                className="group relative overflow-hidden rounded-2xl bg-white border border-black/[0.06] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[#FDF8F3] transition-all"
+                className="group relative overflow-hidden rounded-2xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <ShoppingCart size={20} className="text-[#FF7A00]" />
                   </div>
-                  <ChevronRight size={16} className="text-gray-400 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
                 </div>
-                <h3 className="text-[#0F121E] font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
-                <p className="text-gray-400 text-[11px] leading-relaxed">Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
+                <h3 className="text-[var(--oz-text)] font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
+                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
               </button>
 
               {/* Finance services */}
               <button
                 onClick={() => setActiveTab('finance')}
-                className="group relative overflow-hidden rounded-2xl bg-white border border-black/[0.06] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[#FDF8F3] transition-all"
+                className="group relative overflow-hidden rounded-2xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <Landmark size={20} className="text-[#FF7A00]" />
                   </div>
-                  <ChevronRight size={16} className="text-gray-400 group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
                 </div>
-                <h3 className="text-[#0F121E] font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
-                <p className="text-gray-400 text-[11px] leading-relaxed">Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
+                <h3 className="text-[var(--oz-text)] font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
+                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
               </button>
             </div>
 
@@ -1451,10 +1455,10 @@ export default function Dashboard() {
             <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] flex items-center gap-2">
               <ChevronRight size={14} className="rotate-180" /> Retounen
             </button>
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-8 text-[#0F121E]">Istorik Konplè</h2>
+            <h2 className="text-4xl font-black italic uppercase tracking-wide mb-8 text-[var(--oz-text)]">Istorik Konplè</h2>
             <div className="space-y-3">
               {transactions.length === 0 ? (
-                <p className="text-gray-400 text-xs italic text-center py-6 bg-white rounded-xl border border-black/5 shadow-sm">
+                <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-xl border border-[var(--oz-border)] shadow-sm">
                   Pa gen okenn istwa tranzaksyon.
                 </p>
               ) : (
@@ -1464,13 +1468,13 @@ export default function Dashboard() {
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   return (
-                    <div key={idx} className="flex items-center justify-between p-6 bg-white border border-black/5 rounded-xl shadow-sm">
+                    <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-xl shadow-sm">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
                         </div>
                         <div>
-<p className="font-black text-sm uppercase italic leading-none tracking-tight text-black">
+<p className="font-black text-sm uppercase italic leading-none tracking-tight text-[var(--oz-text)]">
   {t.type === 'TOPUP' ? (t.method || 'Depot') :
    t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
    t.type === 'PAYMENT' ? (t.title || t.description || 'Peman Visa') :
@@ -1479,7 +1483,7 @@ export default function Dashboard() {
     ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
     : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
 </p>
-                          <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">
+                          <p className="text-[9px] text-[var(--oz-text-sec)] font-bold uppercase mt-1">
                             {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : t.type === 'PAYMENT' ? 'Peman Visa' : t.type === 'CARD' ? 'Viz' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
@@ -1498,7 +1502,7 @@ export default function Dashboard() {
         {/* --- SEND SECTION --- */}
 {activeTab === 'send' && (
   <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
       <button
         onClick={() => setActiveTab('home')}
         className="mb-4 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
@@ -1520,7 +1524,7 @@ export default function Dashboard() {
         </label>
 
         <input
-          className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white transition-all"
+          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-bold outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)] transition-all"
           placeholder="example@ozamapay.com"
           value={recipient}
           onChange={(e) =>
@@ -1540,7 +1544,7 @@ export default function Dashboard() {
         </label>
 
         <input
-          className="w-full p-8 bg-gray-50 rounded-[2rem] font-black italic text-4xl outline-none border border-black/5 focus:bg-white"
+          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-black italic text-4xl outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)]"
           placeholder="0.00"
           type="number"
           min="0"
@@ -1563,7 +1567,7 @@ export default function Dashboard() {
           type="password"
           inputMode="numeric"
           maxLength={4}
-          className="w-full p-8 bg-gray-50 rounded-[2rem] font-black text-3xl outline-none border border-black/5 focus:bg-white transition-all tracking-[12px]"
+          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-black text-3xl outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)] transition-all tracking-[12px]"
           placeholder="••••"
           value={pin}
           onChange={(e) =>
@@ -1592,29 +1596,29 @@ export default function Dashboard() {
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
           <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <PlusCircle size={14} /> Back Home
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
+              <p className="text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
               {selectedMethod === 'moncash' ? (
-                <div className="bg-gray-100 p-2 rounded-[2rem] flex gap-2 border border-black/5">
-                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'AUTOMATIC' ? 'bg-white text-[#FF7A00] shadow-sm' : 'text-gray-400'}`}><Zap size={11} /> Imedya</button>
-                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-gray-400'}`}><Clock size={11} /> 15-30 minit</button>
+                <div className="bg-[var(--oz-surface)] p-2 rounded-[2rem] flex gap-2 border border-[var(--oz-border)]">
+                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'AUTOMATIC' ? 'bg-[var(--oz-surface)] text-[#FF7A00] shadow-sm' : 'text-[var(--oz-text-sec)]'}`}><Zap size={11} /> Imedya</button>
+                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-[var(--oz-text-sec)]'}`}><Clock size={11} /> 15-30 minit</button>
                 </div>
               ) : (
-                <div className="bg-gray-100 p-4 rounded-[2rem] flex items-center justify-center border border-black/5">
-                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[#0F121E]">Manuel (2H)</span>
+                <div className="bg-[var(--oz-surface)] p-4 rounded-[2rem] flex items-center justify-center border border-[var(--oz-border)]">
+                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[var(--oz-text)]">Manuel (2H)</span>
                 </div>
               )}
             </div>
             <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
-              <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-black/5 relative overflow-hidden">
+              <div className="bg-[var(--oz-surface)] p-8 rounded-[2.5rem] border border-[var(--oz-border)] relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
                 <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[#0F121E]" placeholder="0" type="number" min="0" value={topUpAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }} />
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[var(--oz-text)]" placeholder="0" type="number" min="0" value={topUpAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }} />
                 {topUpAmount && (() => {
                   const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
                   const isMccManual = selectedMethod === 'moncash' && topUpType === 'MANUAL';
@@ -1627,16 +1631,16 @@ export default function Dashboard() {
                     ? '6% (OZAMAPAY sèlman)'
                     : 'FRAIS OZAMAPAY (6.0%)';
                   return (
-                    <div className="mt-4 pt-4 border-t border-black/5 animate-in fade-in space-y-2">
+                    <div className="mt-4 pt-4 border-t border-[var(--oz-border)] animate-in fade-in space-y-2">
                       {topupIsIntl && (
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic text-gray-400">Ekivalan HTG</span>
-                          <span className="text-[10px] font-black italic text-[#0F121E]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
+                          <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Ekivalan HTG</span>
+                          <span className="text-[10px] font-black italic text-[var(--oz-text)]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeLabel}</span>
-                        <span className="text-[10px] font-black uppercase italic text-gray-400">{feeAmount.toLocaleString()} HTG</span>
+                        <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">{feeLabel}</span>
+                        <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">{feeAmount.toLocaleString()} HTG</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
@@ -1659,7 +1663,7 @@ export default function Dashboard() {
                       }
                       setSelectedMethod(m.id);
                       setTopUpType('MANUAL');
-                    }} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
+                    }} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}>
                       <div className="flex items-center gap-3">
                         <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
                         <span className="font-black italic uppercase text-[10px]">{m.label}</span>
@@ -1708,7 +1712,7 @@ export default function Dashboard() {
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 relative">
                       <button
                         onClick={() => setShowMoncashGuide(false)}
-                        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                        className="absolute top-3 right-3 text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]"
                       >
                         <X size={16} />
                       </button>
@@ -1751,7 +1755,7 @@ export default function Dashboard() {
                     Peye via MonCash →
                   </button>
                   {mccPolling && (
-                    <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse py-2">
+                    <p className="text-center text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest animate-pulse py-2">
                       Ap verifye peman ou… 🔄
                     </p>
                   )}
@@ -1761,7 +1765,7 @@ export default function Dashboard() {
                       setMccPolling(false);
                       if (mccPollRef.current) clearInterval(mccPollRef.current);
                     }}
-                    className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-gray-400 hover:text-red-400 transition-all"
+                    className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-[var(--oz-text-sec)] hover:text-red-400 transition-all"
                   >
                     Anile
                   </button>
@@ -1771,7 +1775,7 @@ export default function Dashboard() {
                   onClick={handlePaymentLogic}
                   disabled={topupLoading || !(topUpAmount && selectedMethod)}
                   className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                    topUpAmount && selectedMethod && !topupLoading ? 'bg-[#FF7A00] text-white' : 'bg-gray-200 text-gray-400'
+                    topUpAmount && selectedMethod && !topupLoading ? 'bg-[#FF7A00] text-white' : 'bg-[var(--oz-border)] text-[var(--oz-text-sec)]'
                   }`}
                 >
                   {topupLoading ? (
@@ -1790,12 +1794,12 @@ export default function Dashboard() {
         {/* --- WITHDRAW SECTION --- */}
         {activeTab === 'withdraw' && (
           <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <Banknote size={14} /> Back Home
               </button>
               <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Withdraw</h2>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Retire kòb ou rapidman</p>
+              <p className="text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest">Retire kòb ou rapidman</p>
             </div>
             <div style={{ height: 'calc(100vh - 180px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
@@ -1827,7 +1831,7 @@ export default function Dashboard() {
                 <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Ki kote pou n voye kòb la?</label>
                 <div className="grid grid-cols-2 gap-3">
                   {paymentMethods.map((m) => (
-                    <button key={m.id} onClick={() => setWithdrawMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-black/5 bg-white'}`}>
+                    <button key={m.id} onClick={() => setWithdrawMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}>
                       <div className="flex items-center gap-3">
                         <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
                         <span className="font-black italic uppercase text-[10px]">{m.label}</span>
@@ -1842,7 +1846,7 @@ export default function Dashboard() {
                 <div className="animate-in slide-in-from-top duration-300 space-y-4">
                   <div className="space-y-2">
                     <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Enfòmasyon Kont ou ({withdrawMethod})</label>
-                    <input className="w-full p-8 bg-gray-50 rounded-[2rem] font-bold outline-none border border-black/5 focus:bg-white" 
+                    <input className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-bold outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)]" 
                            placeholder={withdrawMethod === 'bank' ? "Nimewo Kont & Non Bank..." : "Nimewo Telefòn oswa Tag..."} 
                            value={withdrawAccountInfo} 
                            onChange={(e) => setWithdrawAccountInfo(e.target.value)} />
@@ -1856,7 +1860,7 @@ export default function Dashboard() {
                 </div>
               )}
  
-              <button onClick={handleWithdraw} className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${withdrawAmount && withdrawMethod ? 'bg-[#0F121E] text-white' : 'bg-gray-200 text-gray-400'}`}>
+              <button onClick={handleWithdraw} className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${withdrawAmount && withdrawMethod ? 'bg-[#0F121E] text-white' : 'bg-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}>
                 Confirm Withdrawal
               </button>
             </div>
@@ -1867,7 +1871,7 @@ export default function Dashboard() {
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
           <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <Landmark size={14} /> Back Home
               </button>
@@ -1884,14 +1888,14 @@ export default function Dashboard() {
                 { id: 'usdt', name: 'USDT ONLY', desc: 'TRC20 Network', img: 'usdt.png' },
                 { id: 'gaming', name: 'Gaming Topup', desc: 'Diamonds & Coins', img: 'gaming.png' }
               ].map(item => (
-                <button key={item.id} onClick={() => setSelectedFinanceService(item)} className="p-8 bg-gray-50 rounded-[2.5rem] border border-black/5 flex items-center justify-between group active:scale-95 transition-all hover:bg-white hover:shadow-xl">
+                <button key={item.id} onClick={() => setSelectedFinanceService(item)} className="p-8 bg-[var(--oz-surface)] rounded-[2.5rem] border border-[var(--oz-border)] flex items-center justify-between group active:scale-95 transition-all hover:bg-[var(--oz-surface)] hover:shadow-xl">
                   <div className="flex items-center gap-6 text-left">
-                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-[#FF7A00] shadow-sm p-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[#FF7A00] shadow-sm p-3">
                        <img src={`/${item.img}`} alt="" className="w-full h-full object-contain" />
                     </div>
                     <div>
                       <h4 className="font-black italic uppercase text-sm">{item.name}</h4>
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mt-1 tracking-widest">{item.desc}</p>
+                      <p className="text-[9px] font-bold text-[var(--oz-text-sec)] uppercase mt-1 tracking-widest">{item.desc}</p>
                     </div>
                   </div>
                   <ChevronRight size={20} className="text-[#FF7A00] group-hover:translate-x-1 transition-transform" />
@@ -1905,7 +1909,7 @@ export default function Dashboard() {
         {/* --- SERVICE DETAIL --- */}
         {activeTab === 'finance' && selectedFinanceService && (
           <div className="animate-in zoom-in duration-500" style={{ paddingTop: 'calc(132px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <ChevronRight size={14} className="rotate-180" /> Back to Services
               </button>
@@ -1913,9 +1917,9 @@ export default function Dashboard() {
                 <img src={`/${selectedFinanceService.img}`} className="w-10 h-10 object-contain" alt="" />
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter">{selectedFinanceService.name}</h2>
               </div>
-              <div className="bg-gray-100 p-2 rounded-3xl flex gap-2">
-                <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Buy / Deposit</button>
-                <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-gray-400'}`}>Sell / Cashout</button>
+              <div className="bg-[var(--oz-surface)] p-2 rounded-3xl flex gap-2">
+                <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-[var(--oz-text-sec)]'}`}>Buy / Deposit</button>
+                <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-[var(--oz-text-sec)]'}`}>Sell / Cashout</button>
               </div>
             </div>
             <div style={{ height: 'calc(100vh - 220px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
@@ -1963,28 +1967,28 @@ export default function Dashboard() {
             <div className="space-y-5">
               {selectedFinanceService.id === 'gaming' && (
                 <div className="space-y-4">
-                  <select value={financeDetails.gamePack} onChange={(e) => setFinanceDetails({...financeDetails, gamePack: e.target.value})} className="w-full p-6 bg-gray-50 rounded-2xl font-black uppercase italic text-xs border border-black/5 outline-none focus:border-[#FF7A00]">
+                  <select value={financeDetails.gamePack} onChange={(e) => setFinanceDetails({...financeDetails, gamePack: e.target.value})} className="w-full p-6 bg-[var(--oz-surface)] rounded-2xl font-black uppercase italic text-xs border border-[var(--oz-border)] outline-none focus:border-[#FF7A00]">
                     <option value="">CHWAZI JWÈT LA</option>
                     <option value="FREE FIRE (Diamonds)">FREE FIRE (Diamonds)</option>
                     <option value="PUBG MOBILE (UC)">PUBG MOBILE (UC)</option>
                     <option value="CALL OF DUTY (CP)">CALL OF DUTY (CP)</option>
                   </select>
-                  <input value={financeDetails.gameId} onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})} className="w-full p-6 bg-gray-50 rounded-2xl font-bold uppercase text-xs border border-black/5 outline-none" placeholder="METE PLAYER ID OU LA..." />
+                  <input value={financeDetails.gameId} onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})} className="w-full p-6 bg-[var(--oz-surface)] rounded-2xl font-bold uppercase text-xs border border-[var(--oz-border)] outline-none" placeholder="METE PLAYER ID OU LA..." />
                 </div>
               )}
  
-              <div className="bg-gray-50 p-8 rounded-3xl border border-black/5">
+              <div className="bg-[var(--oz-surface)] p-8 rounded-3xl border border-[var(--oz-border)]">
                 <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-widest">Montan ({selectedFinanceService.id === 'usdt' ? 'USDT' : 'USD'})</label>
                 <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" min="0" value={financeDetails.amount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setFinanceDetails({...financeDetails, amount: val}); }} />
-                <div className="mt-4 pt-4 border-t border-black/5 flex justify-between">
-                    <span className="text-[10px] font-black italic uppercase text-gray-400">Frais Echanj: 6%</span>
+                <div className="mt-4 pt-4 border-t border-[var(--oz-border)] flex justify-between">
+                    <span className="text-[10px] font-black italic uppercase text-[var(--oz-text-sec)]">Frais Echanj: 6%</span>
                     <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = {exchangeRate} HTG</span>
                 </div>
               </div>
               
               {selectedFinanceService.id !== 'gaming' && (
                 <input
-                  className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none border border-black/5 text-sm placeholder:text-xs placeholder:text-gray-400"
+                  className="w-full p-5 bg-[var(--oz-surface)] rounded-2xl font-bold outline-none border border-[var(--oz-border)] text-sm placeholder:text-xs placeholder:text-[var(--oz-text-sec)]"
                   placeholder={selectedFinanceService.id === 'usdt' ? 'Adrès TRC20 Wallet ou (pou resevwa USDT)' : 'Email oswa Username Sèvis la...'}
                   onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
                 />
@@ -1995,9 +1999,9 @@ export default function Dashboard() {
                     <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">
                       {financeType === 'BUY' ? 'Etap Final: Upload Prèv Peman' : 'Upload Screenshot Tranzaksyon USDT'}
                     </p>
-                    <button onClick={() => financeFileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-white flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
+                    <button onClick={() => financeFileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-[var(--oz-surface)] flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
                         <Upload size={24} className="text-[#FF7A00]" />
-                        <span className="text-[9px] font-black uppercase italic text-gray-500">{financeReceipt ? financeReceipt.name : 'Chwazi Screenshot la'}</span>
+                        <span className="text-[9px] font-black uppercase italic text-[var(--oz-text-sec)]">{financeReceipt ? financeReceipt.name : 'Chwazi Screenshot la'}</span>
                     </button>
                 </div>
               )}
@@ -2033,26 +2037,26 @@ export default function Dashboard() {
                 </div>
 
                 {/* Creation form */}
-                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-4">
+                <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] shadow-sm p-5 mb-4">
                   <div className="flex justify-between items-center mb-3">
-                    <p className="font-bold text-[#0F121E]">KREYE KAT VISA</p>
-                    <span className="bg-[#b8e832] text-black text-xs font-black px-3 py-1 rounded-full">GRATIS</span>
+                    <p className="font-bold text-[var(--oz-text)]">KREYE KAT VISA</p>
+                    <span className="bg-[#b8e832] text-[#0F121E] text-xs font-black px-3 py-1 rounded-full">GRATIS</span>
                   </div>
                   <p className="text-orange-500 text-sm font-medium mb-4">
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Depo Inisyal (Min. $3 USD)</p>
-                  <div className="flex items-center justify-between w-full border border-gray-200 rounded-2xl px-4 py-3 mb-4">
-                    <span className="text-gray-400 mr-2">$</span>
+                  <p className="text-xs text-[var(--oz-text-sec)] uppercase tracking-wider mb-2">Depo Inisyal (Min. $3 USD)</p>
+                  <div className="flex items-center justify-between w-full border border-[var(--oz-border)] rounded-2xl px-4 py-3 mb-4">
+                    <span className="text-[var(--oz-text-sec)] mr-2">$</span>
                     <input
                       type="number"
                       min="3"
                       value={cardCreateAmount}
                       onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                      className="flex-1 outline-none text-[#0F121E] font-bold text-lg"
+                      className="flex-1 outline-none text-[var(--oz-text)] font-bold text-lg"
                       placeholder="3"
                     />
-                    <span className="text-gray-400 text-sm ml-2">USD</span>
+                    <span className="text-[var(--oz-text-sec)] text-sm ml-2">USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -2094,14 +2098,14 @@ export default function Dashboard() {
                     <span className="bg-red-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full">DEZAKTIVE</span>
                   </div>
                 </div>
-                <div className="bg-white rounded-3xl border border-red-100 shadow-sm p-6 mb-4">
+                <div className="bg-[var(--oz-surface)] rounded-3xl border border-red-100 shadow-sm p-6 mb-4">
                   <div className="flex items-start gap-3 mb-5">
                     <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
                       <X size={20} className="text-red-500" />
                     </div>
                     <div>
-                      <p className="text-[#0F121E] font-black text-sm mb-1">Kat Dezaktive</p>
-                      <p className="text-gray-500 text-sm leading-relaxed">
+                      <p className="text-[var(--oz-text)] font-black text-sm mb-1">Kat Dezaktive</p>
+                      <p className="text-[var(--oz-text-sec)] text-sm leading-relaxed">
                         Kat ou a te dezaktive. Kreye yon nouvo kat Visa gratis kounye a.
                       </p>
                     </div>
@@ -2121,7 +2125,7 @@ export default function Dashboard() {
                 <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px + env(safe-area-inset-top))' }}>
 
                 {/* FIXED CARD */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white', paddingTop: 'env(safe-area-inset-top)' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
 
                   {/* Card image */}
                   <div className="px-4 pt-12">
@@ -2248,7 +2252,7 @@ export default function Dashboard() {
                             : btn.icon
                           }
                         </div>
-                        <p className="text-[9px] font-black uppercase tracking-wider text-[#0F121E]">{btn.label}</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-[var(--oz-text)]">{btn.label}</p>
                       </button>
                     ))}
                   </div>
@@ -2257,7 +2261,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 mb-3">
                     <div>
                       <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
-                      <p className="text-[#0F121E] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-gray-400">USD</span></p>
+                      <p className="text-[var(--oz-text)] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-[var(--oz-text-sec)]">USD</span></p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
                       <Wallet2 size={22} className="text-white" />
@@ -2266,26 +2270,26 @@ export default function Dashboard() {
 
                   {/* CARD DETAILS — shown only when showCardDetails is true */}
                   {showCardDetails && (
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 mb-3">
+                    <div className="bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl shadow-sm p-4 mb-3">
                       <div className="flex justify-between items-center mb-3">
-                        <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
-                        <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
+                        <p className="text-[var(--oz-text)] font-black text-sm">Detay Kat</p>
+                        <button onClick={() => setShowCardDetails(false)} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]">
                           <EyeOff size={18} />
                         </button>
                       </div>
 
                       {secretDetailsLoading ? (
                         <div className="flex flex-col gap-2.5 animate-pulse">
-                          <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                          <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
                           <div className="flex gap-2.5">
-                            <div className="h-14 bg-gray-100 rounded-xl flex-1" />
-                            <div className="h-14 bg-gray-100 rounded-xl flex-1" />
+                            <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
+                            <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
                           </div>
-                          <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                          <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
                         </div>
                       ) : secretDetailsFailed ? (
                         <div className="flex flex-col items-center gap-3 py-4">
-                          <p className="text-gray-400 text-sm text-center">Echèk chajman detay kat</p>
+                          <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
                           <button
                             onClick={fetchSecretDetails}
                             className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
@@ -2298,45 +2302,45 @@ export default function Dashboard() {
 
                           {/* Nimewo konplè - full width */}
                           <div style={{gridColumn: '1 / -1', background: 'var(--color-background-secondary, #f5f5f5)'}} className="rounded-xl p-3">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
                             <div className="flex items-center justify-between gap-2">
-                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
                                 {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
                               </p>
                               <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
-                                <Copy size={13} className="text-gray-300" />
+                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
                               </button>
                             </div>
                           </div>
 
                           {/* CVV */}
-                          <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
-                            <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                          <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
+                            <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
                           </div>
 
                           {/* Ekspire */}
-                          <div className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
-                            <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                          <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
+                            <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
                           </div>
 
                           {/* Nom sou kat - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
+                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-xl p-3">
+                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
                             <div className="flex items-center justify-between gap-2">
-                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[#0F121E] font-bold text-sm">
+                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
                                 {virtualCard?.cardName || '————'}
                               </p>
                               <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
-                                <Copy size={13} className="text-gray-300" />
+                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
                               </button>
                             </div>
                           </div>
 
                           {/* Billing Address - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-gray-50 rounded-xl p-3">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
+                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-xl p-3">
+                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
                             {[
                               { label: 'Street', value: CARD_BILLING.street },
                               { label: 'City',   value: CARD_BILLING.city },
@@ -2344,13 +2348,13 @@ export default function Dashboard() {
                               { label: 'ZIP',    value: CARD_BILLING.zip },
                               { label: 'Country',value: CARD_BILLING.country },
                             ].map(({ label, value }) => (
-                              <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                              <div key={label} className="flex items-center justify-between py-1.5 border-b border-[var(--oz-border)] last:border-0">
                                 <div>
-                                  <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
-                                  <span className="text-[#0F121E] font-bold text-xs">{value}</span>
+                                  <span className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider">{label}: </span>
+                                  <span className="text-[var(--oz-text)] font-bold text-xs">{value}</span>
                                 </div>
                                 <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
-                                  <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                                  <Copy size={11} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]" />
                                 </button>
                               </div>
                             ))}
@@ -2362,12 +2366,12 @@ export default function Dashboard() {
                   )}
 
                   {/* BILLING ADDRESS — always visible */}
-                  <div className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4 mb-3">
+                  <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4 mb-3">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
                         <Landmark size={14} className="text-white" />
                       </div>
-                      <p className="text-[#0F121E] font-black text-sm uppercase tracking-tight">Billing Address</p>
+                      <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
                     </div>
                     {[
                       { label: 'Street',  value: CARD_BILLING.street },
@@ -2376,16 +2380,16 @@ export default function Dashboard() {
                       { label: 'ZIP',     value: CARD_BILLING.zip },
                       { label: 'Country', value: CARD_BILLING.country },
                     ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                      <div key={label} className="flex items-center justify-between py-2.5 border-b border-[var(--oz-border)] last:border-0">
                         <div>
-                          <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
-                          <p className="text-[#0F121E] font-bold text-sm">{value}</p>
+                          <p className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
+                          <p className="text-[var(--oz-text)] font-bold text-sm">{value}</p>
                         </div>
                         <button
                           onClick={() => copyToClipboard(value)}
-                          className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
+                          className="w-8 h-8 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
                         >
-                          <Copy size={13} className="text-gray-400" />
+                          <Copy size={13} className="text-[var(--oz-text-sec)]" />
                         </button>
                       </div>
                     ))}
@@ -2402,8 +2406,8 @@ export default function Dashboard() {
                       <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
-                      <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
+                      <p className="text-[var(--oz-text)] font-bold text-sm">Google Pay & Apple Pay</p>
+                      <p className="text-[var(--oz-text-sec)] text-xs">Kat ou a sipòte NFC contactless</p>
                     </div>
                     <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
                   </div>
@@ -2523,7 +2527,7 @@ export default function Dashboard() {
                                   : btn.icon
                                 }
                               </div>
-                              <p className="text-[9px] font-black uppercase tracking-wider text-[#0F121E]">{btn.label}</p>
+                              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--oz-text)]">{btn.label}</p>
                             </button>
                           ))}
                         </div>
@@ -2536,7 +2540,7 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
                           <div>
                             <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
-                            <p className="text-[#0F121E] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-gray-400">USD</span></p>
+                            <p className="text-[var(--oz-text)] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-[var(--oz-text-sec)]">USD</span></p>
                           </div>
                           <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
                             <Wallet2 size={22} className="text-white" />
@@ -2545,26 +2549,26 @@ export default function Dashboard() {
 
                         {/* Card details panel (conditional) */}
                         {showCardDetails && (
-                          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                          <div className="bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl shadow-sm p-4">
                             <div className="flex justify-between items-center mb-3">
-                              <p className="text-[#0F121E] font-black text-sm">Detay Kat</p>
-                              <button onClick={() => setShowCardDetails(false)} className="text-gray-300 hover:text-gray-500">
+                              <p className="text-[var(--oz-text)] font-black text-sm">Detay Kat</p>
+                              <button onClick={() => setShowCardDetails(false)} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]">
                                 <EyeOff size={18} />
                               </button>
                             </div>
 
                             {secretDetailsLoading ? (
                               <div className="flex flex-col gap-2.5 animate-pulse">
-                                <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                                <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
                                 <div className="flex gap-2.5">
-                                  <div className="h-14 bg-gray-100 rounded-xl flex-1" />
-                                  <div className="h-14 bg-gray-100 rounded-xl flex-1" />
+                                  <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
+                                  <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
                                 </div>
-                                <div className="h-14 bg-gray-100 rounded-xl w-full" />
+                                <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
                               </div>
                             ) : secretDetailsFailed ? (
                               <div className="flex flex-col items-center gap-3 py-4">
-                                <p className="text-gray-400 text-sm text-center">Echèk chajman detay kat</p>
+                                <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
                                 <button
                                   onClick={fetchSecretDetails}
                                   className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
@@ -2574,38 +2578,38 @@ export default function Dashboard() {
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 gap-2.5">
-                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
-                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[#0F121E] font-bold text-sm truncate">
+                                    <p className="text-[var(--oz-text)] font-bold text-sm truncate">
                                       {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
                                     </p>
                                     <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
-                                      <Copy size={13} className="text-gray-300" />
+                                      <Copy size={13} className="text-[var(--oz-text-sec)]" />
                                     </button>
                                   </div>
                                 </div>
-                                <div className="bg-gray-50 rounded-xl p-3">
-                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">CVV</p>
-                                  <p className="text-[#0F121E] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
+                                <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
+                                  <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
                                 </div>
-                                <div className="bg-gray-50 rounded-xl p-3">
-                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
-                                  <p className="text-[#0F121E] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
+                                <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
+                                  <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
                                 </div>
-                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
-                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[#0F121E] font-bold text-sm truncate">
+                                    <p className="text-[var(--oz-text)] font-bold text-sm truncate">
                                       {virtualCard?.cardName || '————'}
                                     </p>
                                     <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
-                                      <Copy size={13} className="text-gray-300" />
+                                      <Copy size={13} className="text-[var(--oz-text-sec)]" />
                                     </button>
                                   </div>
                                 </div>
-                                <div className="col-span-2 bg-gray-50 rounded-xl p-3">
-                                  <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
                                   {[
                                     { label: 'Street', value: CARD_BILLING.street },
                                     { label: 'City',   value: CARD_BILLING.city },
@@ -2613,13 +2617,13 @@ export default function Dashboard() {
                                     { label: 'ZIP',    value: CARD_BILLING.zip },
                                     { label: 'Country',value: CARD_BILLING.country },
                                   ].map(({ label, value }) => (
-                                    <div key={label} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                                    <div key={label} className="flex items-center justify-between py-1.5 border-b border-[var(--oz-border)] last:border-0">
                                       <div>
-                                        <span className="text-gray-400 text-[9px] uppercase tracking-wider">{label}: </span>
-                                        <span className="text-[#0F121E] font-bold text-xs">{value}</span>
+                                        <span className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider">{label}: </span>
+                                        <span className="text-[var(--oz-text)] font-bold text-xs">{value}</span>
                                       </div>
                                       <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
-                                        <Copy size={11} className="text-gray-300 hover:text-gray-500" />
+                                        <Copy size={11} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]" />
                                       </button>
                                     </div>
                                   ))}
@@ -2630,12 +2634,12 @@ export default function Dashboard() {
                         )}
 
                         {/* Billing Address — always visible */}
-                        <div className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
+                        <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4">
                           <div className="flex items-center gap-2 mb-3">
                             <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
                               <Landmark size={14} className="text-white" />
                             </div>
-                            <p className="text-[#0F121E] font-black text-sm uppercase tracking-tight">Billing Address</p>
+                            <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
                           </div>
                           {[
                             { label: 'Street',  value: CARD_BILLING.street },
@@ -2644,16 +2648,16 @@ export default function Dashboard() {
                             { label: 'ZIP',     value: CARD_BILLING.zip },
                             { label: 'Country', value: CARD_BILLING.country },
                           ].map(({ label, value }) => (
-                            <div key={label} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+                            <div key={label} className="flex items-center justify-between py-2.5 border-b border-[var(--oz-border)] last:border-0">
                               <div>
-                                <p className="text-gray-400 text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
-                                <p className="text-[#0F121E] font-bold text-sm">{value}</p>
+                                <p className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
+                                <p className="text-[var(--oz-text)] font-bold text-sm">{value}</p>
                               </div>
                               <button
                                 onClick={() => copyToClipboard(value)}
-                                className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-orange-50 transition-all"
+                                className="w-8 h-8 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center hover:bg-orange-50 transition-all"
                               >
-                                <Copy size={13} className="text-gray-400" />
+                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
                               </button>
                             </div>
                           ))}
@@ -2670,8 +2674,8 @@ export default function Dashboard() {
                             <Smartphone size={18} className="text-white" />
                           </div>
                           <div>
-                            <p className="text-[#0F121E] font-bold text-sm">Google Pay & Apple Pay</p>
-                            <p className="text-gray-400 text-xs">Kat ou a sipòte NFC contactless</p>
+                            <p className="text-[var(--oz-text)] font-bold text-sm">Google Pay & Apple Pay</p>
+                            <p className="text-[var(--oz-text-sec)] text-xs">Kat ou a sipòte NFC contactless</p>
                           </div>
                           <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
                         </div>
@@ -2684,28 +2688,28 @@ export default function Dashboard() {
                 {/* RECHARGE MODAL — fixed overlay, visible on all breakpoints */}
                 {showRechargeModal && (
                   <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-white w-full rounded-t-3xl p-6 pb-28 shadow-2xl max-h-[90vh] overflow-y-auto">
-                      <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                    <div className="bg-[var(--oz-surface)] w-full rounded-t-3xl p-6 pb-28 shadow-2xl max-h-[90vh] overflow-y-auto">
+                      <div className="w-10 h-1 bg-[var(--oz-border)] rounded-full mx-auto mb-6"></div>
                       <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-[#0F121E] font-black text-lg">Recharge Kat</h3>
-                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }} className="text-gray-400">
+                        <h3 className="text-[var(--oz-text)] font-black text-lg">Recharge Kat</h3>
+                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }} className="text-[var(--oz-text-sec)]">
                           <X size={20} />
                         </button>
                       </div>
-                      <p className="text-gray-400 text-sm mb-2">Balans aktyèl: <span className="text-orange-500 font-bold">${Number(virtualCard?.balance || 0).toFixed(2)} USD</span></p>
-                      <p className="text-gray-400 text-xs uppercase tracking-wider mb-2 mt-4">Montan (USD)</p>
-                      <div className="flex items-center border-2 border-gray-100 rounded-2xl px-4 py-3 mb-3 focus-within:border-orange-400 transition-colors">
+                      <p className="text-[var(--oz-text-sec)] text-sm mb-2">Balans aktyèl: <span className="text-orange-500 font-bold">${Number(virtualCard?.balance || 0).toFixed(2)} USD</span></p>
+                      <p className="text-[var(--oz-text-sec)] text-xs uppercase tracking-wider mb-2 mt-4">Montan (USD)</p>
+                      <div className="flex items-center border-2 border-[var(--oz-border)] rounded-2xl px-4 py-3 mb-3 focus-within:border-orange-400 transition-colors">
                         <span className="text-orange-500 font-bold mr-2 text-lg">$</span>
                         <input
                           type="number"
                           min="1"
                           value={rechargeAmount}
                           onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setRechargeAmount(val); }}
-                          className="flex-1 outline-none text-[#0F121E] font-bold text-xl"
+                          className="flex-1 outline-none text-[var(--oz-text)] font-bold text-xl"
                           placeholder="0.00"
                           autoFocus
                         />
-                        <span className="text-gray-400 text-sm">USD</span>
+                        <span className="text-[var(--oz-text-sec)] text-sm">USD</span>
                       </div>
                       {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
                         const amt = Number(rechargeAmount);
@@ -2716,24 +2720,24 @@ export default function Dashboard() {
                         return (
                           <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4">
                             <div className="flex justify-between items-center mb-1">
-                              <p className="text-gray-400 text-xs">Montan recharge</p>
-                              <p className="text-[#0F121E] font-bold text-sm">${amt.toFixed(2)} USD</p>
+                              <p className="text-[var(--oz-text-sec)] text-xs">Montan recharge</p>
+                              <p className="text-[var(--oz-text)] font-bold text-sm">${amt.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center mb-1">
-                              <p className="text-gray-400 text-xs">Frè Sèvis: $1.90 + 1.9%</p>
+                              <p className="text-[var(--oz-text-sec)] text-xs">Frè Sèvis: $1.90 + 1.9%</p>
                               <p className="text-orange-500 font-bold text-sm">+ ${serviceFee.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center mb-1">
-                              <p className="text-gray-400 text-xs">Frè OZAMAPAY: 2%</p>
+                              <p className="text-[var(--oz-text-sec)] text-xs">Frè OZAMAPAY: 2%</p>
                               <p className="text-orange-500 font-bold text-sm">+ ${ozamapayFee.toFixed(2)} USD</p>
                             </div>
                             <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center mb-1">
-                              <p className="text-gray-600 text-xs font-semibold">Total USD</p>
-                              <p className="text-[#0F121E] font-black text-sm">${totalUsd.toFixed(2)} USD</p>
+                              <p className="text-[var(--oz-text-sec)] text-xs font-semibold">Total USD</p>
+                              <p className="text-[var(--oz-text)] font-black text-sm">${totalUsd.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="text-gray-600 text-xs font-semibold">Total HTG</p>
-                              <p className="text-[#0F121E] font-black text-base">{totalHtg.toLocaleString()} HTG</p>
+                              <p className="text-[var(--oz-text-sec)] text-xs font-semibold">Total HTG</p>
+                              <p className="text-[var(--oz-text)] font-black text-base">{totalHtg.toLocaleString()} HTG</p>
                             </div>
                           </div>
                         );
@@ -2743,7 +2747,7 @@ export default function Dashboard() {
                           <button
                             key={amt}
                             onClick={() => setRechargeAmount(amt)}
-                            className={`py-2 rounded-xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-gray-100 text-gray-400'}`}
+                            className={`py-2 rounded-xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}
                           >
                             ${amt}
                           </button>
@@ -2807,73 +2811,73 @@ export default function Dashboard() {
                     <h2 className="text-2xl font-black italic uppercase tracking-tighter">KYC Verification</h2>
                     <span className="text-[10px] font-black bg-orange-50 text-[#FF6B00] px-3 py-1 rounded-full border border-orange-100">Etap 1/2</span>
                   </div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Mete enfòmasyon reyèl pou deboke limit lan</p>
+                  <p className="text-[9px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest mt-1">Mete enfòmasyon reyèl pou deboke limit lan</p>
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Premye Non</label>
-                      <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Eg: Ralph" value={kycData.firstName} onChange={(e) => setKycData({ ...kycData, firstName: e.target.value })} />
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Premye Non</label>
+                      <input type="text" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Eg: Ralph" value={kycData.firstName} onChange={(e) => setKycData({ ...kycData, firstName: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Siyati</label>
-                      <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Eg: Greffin" value={kycData.lastName} onChange={(e) => setKycData({ ...kycData, lastName: e.target.value })} />
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Siyati</label>
+                      <input type="text" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Eg: Greffin" value={kycData.lastName} onChange={(e) => setKycData({ ...kycData, lastName: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Dat Nesans</label>
-                      <input type="date" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" value={kycData.dateOfBirth} onChange={(e) => setKycData({ ...kycData, dateOfBirth: e.target.value })} />
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Dat Nesans</label>
+                      <input type="date" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" value={kycData.dateOfBirth} onChange={(e) => setKycData({ ...kycData, dateOfBirth: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Telefòn</label>
-                      <input type="tel" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="50933333333" value={kycData.phoneNumber} onChange={(e) => setKycData({ ...kycData, phoneNumber: e.target.value })} />
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Telefòn</label>
+                      <input type="tel" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="50933333333" value={kycData.phoneNumber} onChange={(e) => setKycData({ ...kycData, phoneNumber: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Adrès</label>
-                    <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="45, Rue Faubert" value={kycData.line1} onChange={(e) => setKycData({ ...kycData, line1: e.target.value })} />
+                    <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Adrès</label>
+                    <input type="text" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="45, Rue Faubert" value={kycData.line1} onChange={(e) => setKycData({ ...kycData, line1: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vil</label>
-                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Pétion-Ville" value={kycData.city} onChange={(e) => setKycData({ ...kycData, city: e.target.value })} />
+                      <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Vil</label>
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Pétion-Ville" value={kycData.city} onChange={(e) => setKycData({ ...kycData, city: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Depatman</label>
-                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="Ouest" value={kycData.state} onChange={(e) => setKycData({ ...kycData, state: e.target.value })} />
+                      <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Depatman</label>
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Ouest" value={kycData.state} onChange={(e) => setKycData({ ...kycData, state: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase text-gray-400 ml-1 tracking-widest">Zip</label>
-                      <input type="text" className="w-full p-3 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="6110" value={kycData.zipCode} onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })} />
+                      <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Zip</label>
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="6110" value={kycData.zipCode} onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Kalite Dokiman</label>
-                    <select value={kycData.idType} onChange={(e) => setKycData({ ...kycData, idType: e.target.value })} className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-black uppercase italic text-xs outline-none text-gray-900 transition-colors">
+                    <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Kalite Dokiman</label>
+                    <select value={kycData.idType} onChange={(e) => setKycData({ ...kycData, idType: e.target.value })} className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-black uppercase italic text-xs outline-none text-[var(--oz-text)] transition-colors">
                       <option value="NATIONAL_ID">CIN (Kat Elektoral)</option>
                       <option value="PASSPORT">Paspò (Passport)</option>
                       <option value="DRIVERS_LICENSE">Lisans Kondwi</option>
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Nimewo Dokiman</label>
-                    <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-gray-900 text-xs transition-colors" placeholder="01-01-99-1990-00-00000" value={kycData.idNumber} onChange={(e) => setKycData({ ...kycData, idNumber: e.target.value })} />
+                    <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Nimewo Dokiman</label>
+                    <input type="text" className="w-full p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="01-01-99-1990-00-00000" value={kycData.idNumber} onChange={(e) => setKycData({ ...kycData, idNumber: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Foto Pyès Idantite</label>
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Foto Pyès Idantite</label>
                       <button type="button" onClick={() => idCardInputRef.current?.click()} className="w-full p-5 rounded-2xl border-2 border-dashed border-[#FF6B00]/30 bg-orange-50/50 flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
                         <FileText size={22} className="text-[#FF6B00]" />
-                        <span className="text-[8px] font-black uppercase italic text-gray-500 text-center">{idCardFile ? idCardFile.name : 'Chwazi foto pyès'}</span>
+                        <span className="text-[8px] font-black uppercase italic text-[var(--oz-text-sec)] text-center">{idCardFile ? idCardFile.name : 'Chwazi foto pyès'}</span>
                       </button>
                       <input type="file" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-gray-400 ml-1 tracking-widest">Selfie / Portrait</label>
+                      <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Selfie / Portrait</label>
                       <button type="button" onClick={() => userPhotoInputRef.current?.click()} className="w-full p-5 rounded-2xl border-2 border-dashed border-[#FF6B00]/30 bg-orange-50/50 flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
                         <Camera size={22} className="text-[#FF6B00]" />
-                        <span className="text-[8px] font-black uppercase italic text-gray-500 text-center">{userPhotoFile ? userPhotoFile.name : 'Chwazi selfie'}</span>
+                        <span className="text-[8px] font-black uppercase italic text-[var(--oz-text-sec)] text-center">{userPhotoFile ? userPhotoFile.name : 'Chwazi selfie'}</span>
                       </button>
                       <input type="file" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
                     </div>
@@ -2881,7 +2885,7 @@ export default function Dashboard() {
                   <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-3">
                     <Info size={18} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">
-                      Sistèm lan ap debite <span className="text-black font-black">3,375 HTG ($25 USD)</span> otomatikman pou frè verifikasyon.
+                      Sistèm lan ap debite <span className="text-[var(--oz-text)] font-black">3,375 HTG ($25 USD)</span> otomatikman pou frè verifikasyon.
                     </p>
                   </div>
                   <button onClick={handleKycSubmit} disabled={kycLoading} className="w-full bg-[#FF6B00] text-white py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-lg text-xs transition-all active:scale-95 hover:bg-[#e66000] flex items-center justify-center gap-2 disabled:opacity-50">
@@ -3006,54 +3010,54 @@ export default function Dashboard() {
 
                 {/* STATS ROW */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Balans</p>
+                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
+                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">Balans</p>
                     <p className="text-sm font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
-                    <p className="text-[8px] text-gray-400 font-bold">HTG</p>
+                    <p className="text-[8px] text-[var(--oz-text-sec)] font-bold">HTG</p>
                   </div>
-                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">KYC</p>
+                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
+                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">KYC</p>
                     <div className="flex justify-center">
-                      <BadgeCheck size={22} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-300'} />
+                      <BadgeCheck size={22} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'} />
                     </div>
-                    <p className={`text-[8px] font-black uppercase mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                    <p className={`text-[8px] font-black uppercase mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'}`}>
                       {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
                     </p>
                   </div>
-                  <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                    <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Wòl</p>
+                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
+                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">Wòl</p>
                     <div className="flex justify-center">
                       {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                         <Briefcase size={22} className="text-[#FF6B00]" />
                       ) : (
-                        <User size={22} className="text-gray-400" />
+                        <User size={22} className="text-[var(--oz-text-sec)]" />
                       )}
                     </div>
-                    <p className="text-[8px] font-black uppercase text-gray-500 mt-1">{user?.role || 'USER'}</p>
+                    <p className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] mt-1">{user?.role || 'USER'}</p>
                   </div>
                 </div>
 
                 {/* MENU LIST */}
-                <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-4">
-                  <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-4">
+                  <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
                     <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[#0F121E]">Sekirite & PIN</p>
-                      <p className="text-xs text-gray-400">Chanje PIN ou</p>
+                      <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
+                      <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
                     </div>
-                    <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-gray-300`} />
+                    <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
                   </button>
                   {showSecurityCard && (
-                    <div className="px-4 pb-4 border-b border-gray-50"><UserSecurityCard /></div>
+                    <div className="px-4 pb-4 border-b border-[var(--oz-border)]"><UserSecurityCard /></div>
                   )}
 
-                  <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                  <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
                     <div className={`p-2 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
                       <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[#0F121E]">Verifikasyon KYC</p>
-                      <p className="text-xs text-gray-400">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
+                      <p className="font-bold text-sm text-[var(--oz-text)]">Verifikasyon KYC</p>
+                      <p className="text-xs text-[var(--oz-text-sec)]">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {user?.kyc?.status === 'APPROVED' ? (
@@ -3061,26 +3065,26 @@ export default function Dashboard() {
                       ) : user?.kyc?.status === 'PENDING' ? (
                         <span className="text-[8px] font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
                       ) : (
-                        <span className="text-[8px] font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">$25</span>
+                        <span className="text-[8px] font-black bg-[var(--oz-surface)] text-[var(--oz-text-sec)] px-2 py-0.5 rounded-full uppercase">$25</span>
                       )}
-                      <ChevronRight size={18} className="text-gray-300" />
+                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                     </div>
                   </button>
 
                   {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors">
+                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
                       <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[#0F121E]">Agent Dashboard</p>
-                        <p className="text-xs text-gray-400">Jere kont ajan w lan</p>
+                        <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
+                        <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
                       </div>
-                      <ChevronRight size={18} className="text-gray-300" />
+                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                     </button>
                   ) : user?.agent?.status === 'PENDING' ? (
-                    <div className="w-full flex items-center gap-4 p-5 border-b border-gray-50">
+                    <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
                       <div className="bg-yellow-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[#0F121E]">Aplikasyon Ajan</p>
+                        <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
                         <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
                       </div>
                     </div>
@@ -3109,35 +3113,35 @@ export default function Dashboard() {
                           showToast('Erè rezo. Verifye koneksyon ou.', 'error');
                         }
                       }}
-                      className="w-full flex items-center gap-4 p-5 border-b border-gray-50 active:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors"
                     >
                       <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[#0F121E]">Vin yon Ajan</p>
-                        <p className="text-xs text-gray-400">Aplike kounye a — Requis: KYC Apwouve</p>
+                        <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
+                        <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
                       </div>
-                      <ChevronRight size={18} className="text-gray-300" />
+                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                     </button>
                   )}
 
-                  <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-gray-50 transition-colors">
+                  <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-[var(--oz-surface)] transition-colors">
                     <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[#0F121E]">Taux & Frè</p>
-                      <p className="text-xs text-gray-400">BRH, P2P, Topup, Retrait</p>
+                      <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
+                      <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
                     </div>
-                    <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-gray-300`} />
+                    <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
                   </button>
                   {showRates && (
-                    <div className="px-5 pb-5 border-t border-gray-50 space-y-2 pt-3">
+                    <div className="px-5 pb-5 border-t border-[var(--oz-border)] space-y-2 pt-3">
                       {[
                         { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
                         { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
-                        { label: 'Topup (Depo)', value: '6%', color: 'text-[#0F121E]' },
-                        { label: 'Retrait', value: '2%', color: 'text-[#0F121E]' },
+                        { label: 'Topup (Depo)', value: '6%', color: 'text-[var(--oz-text)]' },
+                        { label: 'Retrait', value: '2%', color: 'text-[var(--oz-text)]' },
                       ].map(r => (
                         <div key={r.label} className="flex justify-between items-center py-1">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{r.label}</span>
+                          <span className="text-xs font-bold text-[var(--oz-text-sec)] uppercase tracking-tight">{r.label}</span>
                           <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
                         </div>
                       ))}
@@ -3148,17 +3152,40 @@ export default function Dashboard() {
                 {/* SUPPORT */}
                 <button
                   onClick={() => { window.location.href = '/support'; }}
-                  className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 mb-3 active:bg-gray-50 transition-colors"
+                  className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-3 active:bg-[var(--oz-surface)] transition-colors"
                 >
                   <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0">
                     <HelpCircle size={20} className="text-blue-500" />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-bold text-sm text-[#0F121E]">Sipò & Èd</p>
-                    <p className="text-xs text-gray-400">Kontakte nou</p>
+                    <p className="font-bold text-sm text-[var(--oz-text)]">Sipò & Èd</p>
+                    <p className="text-xs text-[var(--oz-text-sec)]">Kontakte nou</p>
                   </div>
-                  <ChevronRight size={18} className="text-gray-300" />
+                  <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                 </button>
+
+                {/* Theme toggle */}
+                <div className="flex items-center justify-between px-5 py-4 mb-3 rounded-2xl" style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: '#FF7A001A' }}>
+                      {isDark ? <Moon size={18} className="text-[#FF7A00]" /> : <Sun size={18} className="text-[#FF7A00]" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-black italic uppercase tracking-wide" style={{ color: colors.textPrimary }}>Mòd Eskran</p>
+                      <p className="text-[10px] font-bold" style={{ color: colors.textSecondary }}>{isDark ? 'Mòd Nwa' : 'Mòd Klè'}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                    style={{ backgroundColor: isDark ? '#FF7A00' : '#ECECEF' }}
+                  >
+                    <span
+                      className="absolute top-0.5 left-0.5 w-5 h-5 bg-[var(--oz-surface)] rounded-full shadow transition-transform duration-200"
+                      style={{ transform: isDark ? 'translateX(24px)' : 'translateX(0)' }}
+                    />
+                  </button>
+                </div>
 
                 {/* LOGOUT */}
                 <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 active:bg-red-100 transition-all">
@@ -3243,53 +3270,53 @@ export default function Dashboard() {
 
                     {/* Stats — 3-col grid */}
                     <div className="grid grid-cols-3 gap-6 mb-8">
-                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-400 mb-2">Balans</p>
+                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
+                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">Balans</p>
                         <p className="text-xl font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
-                        <p className="text-xs text-gray-400 font-bold mt-1">HTG</p>
+                        <p className="text-xs text-[var(--oz-text-sec)] font-bold mt-1">HTG</p>
                       </div>
-                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-400 mb-2">KYC</p>
+                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
+                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">KYC</p>
                         <div className="flex justify-center mb-1">
-                          <BadgeCheck size={26} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-300'} />
+                          <BadgeCheck size={26} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'} />
                         </div>
-                        <p className={`text-xs font-black uppercase ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                        <p className={`text-xs font-black uppercase ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'}`}>
                           {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-2xl p-6 text-center border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-400 mb-2">Wòl</p>
+                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
+                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">Wòl</p>
                         <div className="flex justify-center mb-1">
                           {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                             <Briefcase size={26} className="text-[#FF6B00]" />
                           ) : (
-                            <User size={26} className="text-gray-400" />
+                            <User size={26} className="text-[var(--oz-text-sec)]" />
                           )}
                         </div>
-                        <p className="text-xs font-black uppercase text-gray-500">{user?.role || 'USER'}</p>
+                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)]">{user?.role || 'USER'}</p>
                       </div>
                     </div>
 
                     {/* Menu */}
-                    <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden mb-6">
-                      <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-6">
+                      <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
                         <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
                         <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[#0F121E]">Sekirite & PIN</p>
-                          <p className="text-xs text-gray-400">Chanje PIN ou</p>
+                          <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
+                          <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
                         </div>
-                        <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-gray-300`} />
+                        <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
                       </button>
                       {showSecurityCard && (
-                        <div className="px-4 pb-4 border-b border-gray-50"><UserSecurityCard /></div>
+                        <div className="px-4 pb-4 border-b border-[var(--oz-border)]"><UserSecurityCard /></div>
                       )}
-                      <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
                         <div className={`p-2.5 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
                           <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[#0F121E]">Verifikasyon KYC</p>
-                          <p className="text-xs text-gray-400">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
+                          <p className="font-bold text-sm text-[var(--oz-text)]">Verifikasyon KYC</p>
+                          <p className="text-xs text-[var(--oz-text-sec)]">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {user?.kyc?.status === 'APPROVED' ? (
@@ -3297,25 +3324,25 @@ export default function Dashboard() {
                           ) : user?.kyc?.status === 'PENDING' ? (
                             <span className="text-xs font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
                           ) : (
-                            <span className="text-xs font-black bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase">$25</span>
+                            <span className="text-xs font-black bg-[var(--oz-surface)] text-[var(--oz-text-sec)] px-2 py-0.5 rounded-full uppercase">$25</span>
                           )}
-                          <ChevronRight size={18} className="text-gray-300" />
+                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                         </div>
                       </button>
                       {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
                           <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                           <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[#0F121E]">Agent Dashboard</p>
-                            <p className="text-xs text-gray-400">Jere kont ajan w lan</p>
+                            <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
+                            <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
                           </div>
-                          <ChevronRight size={18} className="text-gray-300" />
+                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                         </button>
                       ) : user?.agent?.status === 'PENDING' ? (
-                        <div className="w-full flex items-center gap-4 p-5 border-b border-gray-50">
+                        <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
                           <div className="bg-yellow-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                           <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[#0F121E]">Aplikasyon Ajan</p>
+                            <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
                             <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
                           </div>
                         </div>
@@ -3344,34 +3371,34 @@ export default function Dashboard() {
                               showToast('Erè rezo. Verifye koneksyon ou.', 'error');
                             }
                           }}
-                          className="w-full flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                          className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors"
                         >
                           <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                           <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[#0F121E]">Vin yon Ajan</p>
-                            <p className="text-xs text-gray-400">Aplike kounye a — Requis: KYC Apwouve</p>
+                            <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
+                            <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
                           </div>
-                          <ChevronRight size={18} className="text-gray-300" />
+                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                         </button>
                       )}
-                      <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors">
+                      <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 hover:bg-[var(--oz-surface)] transition-colors">
                         <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
                         <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[#0F121E]">Taux & Frè</p>
-                          <p className="text-xs text-gray-400">BRH, P2P, Topup, Retrait</p>
+                          <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
+                          <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
                         </div>
-                        <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-gray-300`} />
+                        <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
                       </button>
                       {showRates && (
-                        <div className="px-5 pb-5 border-t border-gray-50 space-y-2 pt-3">
+                        <div className="px-5 pb-5 border-t border-[var(--oz-border)] space-y-2 pt-3">
                           {[
                             { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
                             { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
-                            { label: 'Topup (Depo)', value: '6%', color: 'text-[#0F121E]' },
-                            { label: 'Retrait', value: '2%', color: 'text-[#0F121E]' },
+                            { label: 'Topup (Depo)', value: '6%', color: 'text-[var(--oz-text)]' },
+                            { label: 'Retrait', value: '2%', color: 'text-[var(--oz-text)]' },
                           ].map(r => (
                             <div key={r.label} className="flex justify-between items-center py-1">
-                              <span className="text-xs font-bold text-gray-500 uppercase tracking-tight">{r.label}</span>
+                              <span className="text-xs font-bold text-[var(--oz-text-sec)] uppercase tracking-tight">{r.label}</span>
                               <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
                             </div>
                           ))}
@@ -3382,17 +3409,40 @@ export default function Dashboard() {
                     {/* Support */}
                     <button
                       onClick={() => { window.location.href = '/support'; }}
-                      className="w-full bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-4 mb-4 hover:bg-gray-50 transition-colors"
+                      className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-4 hover:bg-[var(--oz-surface)] transition-colors"
                     >
                       <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0">
                         <HelpCircle size={20} className="text-blue-500" />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[#0F121E]">Sipò & Èd</p>
-                        <p className="text-xs text-gray-400">Kontakte nou</p>
+                        <p className="font-bold text-sm text-[var(--oz-text)]">Sipò & Èd</p>
+                        <p className="text-xs text-[var(--oz-text-sec)]">Kontakte nou</p>
                       </div>
-                      <ChevronRight size={18} className="text-gray-300" />
+                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
                     </button>
+
+                    {/* Theme toggle */}
+                    <div className="flex items-center justify-between px-5 py-4 mb-4 rounded-2xl" style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: '#FF7A001A' }}>
+                          {isDark ? <Moon size={18} className="text-[#FF7A00]" /> : <Sun size={18} className="text-[#FF7A00]" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black italic uppercase tracking-wide" style={{ color: colors.textPrimary }}>Mòd Eskran</p>
+                          <p className="text-[10px] font-bold" style={{ color: colors.textSecondary }}>{isDark ? 'Mòd Nwa' : 'Mòd Klè'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={toggleTheme}
+                        className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none"
+                        style={{ backgroundColor: isDark ? '#FF7A00' : '#ECECEF' }}
+                      >
+                        <span
+                          className="absolute top-0.5 left-0.5 w-5 h-5 bg-[var(--oz-surface)] rounded-full shadow transition-transform duration-200"
+                          style={{ transform: isDark ? 'translateX(24px)' : 'translateX(0)' }}
+                        />
+                      </button>
+                    </div>
 
                     {/* Logout */}
                     <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 hover:bg-red-100 transition-all">
@@ -3515,17 +3565,17 @@ export default function Dashboard() {
                 </button>
               )}
               <div>
-                <p className="text-sm font-semibold tracking-widest uppercase whitespace-nowrap text-[#0F121E]">
+                <p className="text-sm font-semibold tracking-widest uppercase whitespace-nowrap text-[var(--oz-text)]">
                   {gcSection === 'airtime' ? 'Kredi' : 'Gift Cards'}
                 </p>
                 <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
               </div>
               <div className="mt-2">
                 <div className="p-1 rounded-2xl flex gap-1" style={{ background: '#f3f4f6' }}>
-                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
+                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
                     <ShoppingCart size={11} />Gift Cards
                   </button>
-                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-gray-400'}`}>
+                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
                     <Phone size={11} />Kredi
                   </button>
                 </div>
@@ -3541,13 +3591,13 @@ export default function Dashboard() {
                     <CheckCircle2 size={40} className="text-[#FF7A00]" />
                   </div>
                   <div className="text-center">
-                    <p className="font-black text-xl uppercase tracking-tight text-[#0F121E]">{gcOrderResult.productName}</p>
-                    <p className="text-gray-500 text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                    <p className="font-black text-xl uppercase tracking-tight text-[var(--oz-text)]">{gcOrderResult.productName}</p>
+                    <p className="text-[var(--oz-text-sec)] text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
                   </div>
                   {gcOrderResult.redeemCode ? (
                     <div className="w-full rounded-3xl p-6 text-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
-                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
-                      <p className="font-black text-2xl tracking-widest text-[#0F121E] break-all">{gcOrderResult.redeemCode}</p>
+                      <p className="text-xs text-[var(--oz-text-sec)] uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
+                      <p className="font-black text-2xl tracking-widest text-[var(--oz-text)] break-all">{gcOrderResult.redeemCode}</p>
                       <button
                         onClick={() => copyToClipboard(gcOrderResult.redeemCode)}
                         className="mt-4 flex items-center gap-2 mx-auto bg-[#FF7A00] text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
@@ -3560,7 +3610,7 @@ export default function Dashboard() {
                       <p className="text-[#FF7A00] font-bold text-sm">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
                     </div>
                   )}
-                  <p className="text-xs text-gray-400">Nouvo balans: <span className="font-black text-[#0F121E]">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
+                  <p className="text-xs text-[var(--oz-text-sec)]">Nouvo balans: <span className="font-black text-[var(--oz-text)]">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
                 </div>
               )}
 
@@ -3578,7 +3628,7 @@ export default function Dashboard() {
                       }
                     </div>
                     <div>
-                      <p className="font-semibold text-base text-[#0F121E]">{selectedBrandObj.name}</p>
+                      <p className="font-semibold text-base text-[var(--oz-text)]">{selectedBrandObj.name}</p>
                       <p className="text-xs text-[#8E929B] mt-0.5">{denominations.length} valè disponib</p>
                     </div>
                   </div>
@@ -3605,11 +3655,11 @@ export default function Dashboard() {
 
                   {gcSelectedDenom && htgPrice && (
                     <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
-                      <div className="flex justify-between"><span className="text-sm text-gray-500">Pri USD</span><span className="font-bold text-[#0F121E]">${gcSelectedDenom}</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-gray-500">Taux ({exchangeRate} HTG)</span><span className="font-bold text-[#0F121E]">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-gray-500">Frè OZAMAPAY (5%)</span><span className="font-bold text-[#0F121E]">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Pri USD</span><span className="font-bold text-[var(--oz-text)]">${gcSelectedDenom}</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Taux ({exchangeRate} HTG)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Frè OZAMAPAY (5%)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
                       <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid #e5e7eb' }}>
-                        <span className="text-sm font-bold text-[#0F121E]">Total HTG</span>
+                        <span className="text-sm font-bold text-[var(--oz-text)]">Total HTG</span>
                         <span className="font-black text-[#FF7A00]">{htgPrice.toFixed(2)} HTG</span>
                       </div>
                     </div>
@@ -3655,7 +3705,7 @@ export default function Dashboard() {
                                   }
                                 </div>
                                 <div className="flex-1 text-left">
-                                  <p className="text-[#0F121E] font-medium text-sm leading-none">{brand.name}</p>
+                                  <p className="text-[var(--oz-text)] font-medium text-sm leading-none">{brand.name}</p>
                                   <p className="text-[#8E929B] text-[10px] mt-1 font-medium uppercase tracking-wide">{prods.length} opsyon</p>
                                 </div>
                                 <ChevronRight size={16} className="text-[#FF7A00] flex-shrink-0" />
@@ -3672,7 +3722,7 @@ export default function Dashboard() {
                             {gcOrders.slice(0, 5).map((o: any) => (
                               <div key={o.id} className="rounded-2xl p-4 flex justify-between items-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
                                 <div>
-                                  <p className="font-semibold text-sm text-[#0F121E]">{o.productName}</p>
+                                  <p className="font-semibold text-sm text-[var(--oz-text)]">{o.productName}</p>
                                   <p className="text-xs text-[#8E929B] mt-0.5">${o.unitPrice} · {Number(o.htgPaid).toFixed(2)} HTG</p>
                                 </div>
                                 <div className="text-right">
@@ -3700,14 +3750,14 @@ export default function Dashboard() {
                     <CheckCircle2 size={40} className="text-green-500" />
                   </div>
                   <div className="text-center">
-                    <p className="font-bold text-xl text-[#0F121E]">Kredi Voye!</p>
-                    <p className="text-gray-500 text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-gray-400 text-xs mt-1">{atResult.operatorName}</p>
+                    <p className="font-bold text-xl text-[var(--oz-text)]">Kredi Voye!</p>
+                    <p className="text-[var(--oz-text-sec)] text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-[var(--oz-text-sec)] text-xs mt-1">{atResult.operatorName}</p>
                   </div>
-                  <div className="w-full rounded-3xl p-5 text-center bg-gray-50 border border-gray-100">
-                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-widest mb-1">Peye</p>
-                    <p className="font-bold text-2xl text-[#0F121E]">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
-                    <p className="text-xs text-gray-400 mt-3">Nouvo balans: <span className="font-semibold text-[#0F121E]">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
+                  <div className="w-full rounded-3xl p-5 text-center bg-[var(--oz-surface)] border border-[var(--oz-border)]">
+                    <p className="text-xs text-[var(--oz-text-sec)] uppercase font-semibold tracking-widest mb-1">Peye</p>
+                    <p className="font-bold text-2xl text-[var(--oz-text)]">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
+                    <p className="text-xs text-[var(--oz-text-sec)] mt-3">Nouvo balans: <span className="font-semibold text-[var(--oz-text)]">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
                   </div>
                   <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="w-full py-4 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm active:scale-95 transition-all bg-[#FF7A00]">
                     Rechaj Ankò
@@ -3729,13 +3779,13 @@ export default function Dashboard() {
                       />
                     </div>
                     <div>
-                      <p className="font-semibold text-base text-[#0F121E]">{atSelectedOp.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Ayiti · HTG</p>
+                      <p className="font-semibold text-base text-[var(--oz-text)]">{atSelectedOp.name}</p>
+                      <p className="text-xs text-[var(--oz-text-sec)] mt-0.5">Ayiti · HTG</p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Montan (HTG)</p>
+                    <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Montan (HTG)</p>
                     <div className="grid grid-cols-3 gap-2">
                       {AT_AMOUNTS.map(amt => (
                         <button
@@ -3753,8 +3803,8 @@ export default function Dashboard() {
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Nimewo Telefòn</p>
-                    <div className="flex items-center gap-2 rounded-2xl px-4 py-4 bg-gray-50 border border-gray-200">
+                    <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Nimewo Telefòn</p>
+                    <div className="flex items-center gap-2 rounded-2xl px-4 py-4 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
                       <span className="font-semibold text-[#FF7A00]">+509</span>
                       <input
                         type="tel"
@@ -3762,17 +3812,17 @@ export default function Dashboard() {
                         placeholder="4X XX XXXX"
                         value={atPhone}
                         onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                        className="flex-1 bg-transparent font-semibold text-[#0F121E] outline-none placeholder:text-gray-300 tracking-widest"
+                        className="flex-1 bg-transparent font-semibold text-[var(--oz-text)] outline-none placeholder:text-[var(--oz-text-sec)] tracking-widest"
                       />
                     </div>
                   </div>
 
                   {atAmount && (
-                    <div className="rounded-2xl p-4 space-y-2.5 bg-gray-50 border border-gray-100">
-                      <div className="flex justify-between"><span className="text-sm text-gray-500">Rechaj</span><span className="font-semibold text-[#0F121E]">{atAmount} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-gray-500">Frè OZAMAPAY (5%)</span><span className="font-semibold text-[#0F121E]">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1 border-t border-gray-200">
-                        <span className="text-sm font-semibold text-[#0F121E]">Total</span>
+                    <div className="rounded-2xl p-4 space-y-2.5 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
+                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Rechaj</span><span className="font-semibold text-[var(--oz-text)]">{atAmount} HTG</span></div>
+                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Frè OZAMAPAY (5%)</span><span className="font-semibold text-[var(--oz-text)]">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
+                      <div className="flex justify-between pt-2.5 mt-1 border-t border-[var(--oz-border)]">
+                        <span className="text-sm font-semibold text-[var(--oz-text)]">Total</span>
                         <span className="font-semibold text-[#FF7A00]">{(atAmount * 1.05).toFixed(2)} HTG</span>
                       </div>
                     </div>
@@ -3797,20 +3847,20 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Chwazi Operatè</p>
+                        <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Chwazi Operatè</p>
                         <div className="space-y-2">
                           {digicelOp && (
                             <button
                               onClick={() => setAtSelectedOp(digicelOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
+                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
                                 <img src="/digicel.png" alt="Digicel" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
-                                <p className="text-[#0F121E] font-medium text-sm">Digicel</p>
-                                <p className="text-gray-400 text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
+                                <p className="text-[var(--oz-text)] font-medium text-sm">Digicel</p>
+                                <p className="text-[var(--oz-text-sec)] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
                               </div>
                               <ChevronRight size={16} className="text-[#FF7A00]" />
                             </button>
@@ -3818,27 +3868,27 @@ export default function Dashboard() {
                           {natcomOp && (
                             <button
                               onClick={() => setAtSelectedOp(natcomOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-white active:scale-[0.98] transition-all"
+                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
                               style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
                               <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
                                 <img src="/natcom.png" alt="Natcom" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
-                                <p className="text-[#0F121E] font-medium text-sm">Natcom</p>
-                                <p className="text-gray-400 text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
+                                <p className="text-[var(--oz-text)] font-medium text-sm">Natcom</p>
+                                <p className="text-[var(--oz-text-sec)] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
                               </div>
                               <ChevronRight size={16} className="text-[#FF7A00]" />
                             </button>
                           )}
                           {!digicelOp && !natcomOp && (
-                            <p className="text-center text-gray-400 text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
+                            <p className="text-center text-[var(--oz-text-sec)] text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
                           )}
                         </div>
                       </div>
-                      <div className="rounded-2xl p-4 bg-gray-50 border border-gray-100">
-                        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mb-1">Nòt</p>
-                        <p className="text-xs text-gray-400">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
+                      <div className="rounded-2xl p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
+                        <p className="text-[10px] text-[var(--oz-text-sec)] font-semibold uppercase tracking-widest mb-1">Nòt</p>
+                        <p className="text-xs text-[var(--oz-text-sec)]">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
                       </div>
                     </>
                   )}
@@ -3851,9 +3901,9 @@ export default function Dashboard() {
       })()}
 
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-40 bg-white border-r border-gray-100 flex-col">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-40 flex-col" style={{ backgroundColor: colors.surface, borderRight: `1px solid ${colors.border}` }}>
         {/* Logo */}
-        <div className="px-6 py-7 border-b border-gray-100">
+        <div className="px-6 py-7" style={{ borderBottom: `1px solid ${colors.border}` }}>
           <Image
             src="/logo.png"
             alt="OZAMAPAY"
@@ -3879,8 +3929,9 @@ export default function Dashboard() {
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
                 activeTab === item.id
                   ? 'bg-[#FF7A00]/10 text-[#FF7A00]'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  : 'hover:bg-[var(--oz-surface)]'
               }`}
+              style={activeTab !== item.id ? { color: colors.textSecondary } : {}}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -3892,19 +3943,19 @@ export default function Dashboard() {
         </nav>
 
         {/* User footer */}
-        <div className="px-4 py-5 border-t border-gray-100 flex items-center gap-3">
+        <div className="px-4 py-5 flex items-center gap-3" style={{ borderTop: `1px solid ${colors.border}` }}>
           <div className="w-9 h-9 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center text-[#FF7A00] font-black text-sm shrink-0">
             {displayName.substring(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-gray-900 text-xs font-bold truncate">{displayName}</p>
-            <p className="text-gray-500 text-[10px] truncate">{user?.email}</p>
+            <p className="text-xs font-bold truncate" style={{ color: colors.textPrimary }}>{displayName}</p>
+            <p className="text-[var(--oz-text-sec)] text-[10px] truncate">{user?.email}</p>
           </div>
         </div>
       </aside>
 
       {/* BOTTOM NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-black/5 h-24 flex items-center justify-around px-4 z-50 lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 backdrop-blur-xl h-24 flex items-center justify-around px-4 z-50 lg:hidden" style={{ backgroundColor: colors.surface + 'CC', borderTop: `1px solid ${colors.border}` }}>
         {[
           { id: 'home',       icon: <Home size={22} />,         label: 'HOME' },
           { id: 'finance',    icon: <Landmark size={22} />,     label: 'FINANCE' },
