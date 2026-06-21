@@ -1,6 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
@@ -101,56 +100,6 @@ export class MonCashConnectService {
     }
 
     return { paymentUrl, referenceId: monCashRef };
-  }
-
-  verifyWebhook(payload: string, signature: string, timestamp?: string): boolean {
-    const secret = process.env.MONCASHCONNECT_WEBHOOK_SECRET as string;
-    const secretSuffix = secret?.startsWith('whsec_') ? secret.slice(6) : secret;
-
-    // Two possible key encodings for the suffix:
-    //   keyRaw  — suffix used as UTF-8 string bytes (current approach)
-    //   keyHex  — suffix hex-decoded to raw bytes (e.g. "9a4f..." → 24-byte buffer)
-    const keyRaw = secretSuffix;
-    let keyHex: Buffer | null = null;
-    try {
-      if (/^[0-9a-fA-F]+$/.test(secretSuffix) && secretSuffix.length % 2 === 0) {
-        keyHex = Buffer.from(secretSuffix, 'hex');
-      }
-    } catch { /* not valid hex */ }
-
-    // Two possible payload forms:
-    //   p1 — raw body alone
-    //   p2 — raw body + ":" + timestamp (MonCashConnect official: data_to_sign = payload + ":" + request_timestamp)
-    const p1 = payload;
-    const p2 = timestamp ? `${payload}:${timestamp}` : null;
-
-    const normalizedSig = signature?.trim().startsWith('sha256=')
-      ? signature.trim()
-      : 'sha256=' + signature?.trim();
-
-    this.logger.log(`MCConnect verifyWebhook — received: ${signature} | secret prefix: ${secret?.substring(0, 10)}... | timestamp: ${timestamp ?? 'none'}`);
-
-    const candidates: Array<{ label: string; key: string | Buffer; payloadStr: string }> = [
-      { label: 'key=raw, payload=body',       key: keyRaw, payloadStr: p1 },
-      ...(p2 ? [{ label: 'key=raw, payload=body:ts', key: keyRaw, payloadStr: p2 }] : []),
-      ...(keyHex ? [{ label: 'key=hex, payload=body',       key: keyHex, payloadStr: p1 }] : []),
-      ...(keyHex && p2 ? [{ label: 'key=hex, payload=body:ts', key: keyHex, payloadStr: p2 }] : []),
-    ];
-
-    for (const { label, key, payloadStr } of candidates) {
-      try {
-        const hmacHex = createHmac('sha256', key).update(payloadStr).digest('hex');
-        const expected = 'sha256=' + hmacHex;
-        this.logger.log(`  [${label}] → ${expected}`);
-        if (timingSafeEqual(Buffer.from(expected), Buffer.from(normalizedSig))) {
-          this.logger.log(`  ✓ MATCH on [${label}]`);
-          return true;
-        }
-      } catch { /* buffer length mismatch or other */ }
-    }
-
-    this.logger.warn('MCConnect verifyWebhook: no candidate matched — signature rejected');
-    return false;
   }
 
   async processWebhookPayment(body: any): Promise<void> {

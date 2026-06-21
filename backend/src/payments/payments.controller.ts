@@ -8,9 +8,12 @@ import {
   UseGuards,
   BadRequestException,
   UnauthorizedException,
+  HttpException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { constructEvent, MonCashError } from '@moncashconnect/sdk';
 import { SkipThrottle } from '@nestjs/throttler';
 
 import { PaymentsService } from './payments.service';
@@ -92,20 +95,46 @@ export class PaymentsController {
   @SkipThrottle()
   async moncashConnectWebhook(
     @RawBody() rawBody: Buffer,
-    @Body() body: any,
     @Headers('x-mcc-signature') signature?: string,
-    @Headers('x-mcc-timestamp') _timestamp?: string,
+    @Headers('x-mcc-timestamp') timestamp?: string,
   ) {
-    this.logger.log(`MCConnect webhook hit — sig=${signature?.substring(0, 20)}... body=${JSON.stringify(body)}`);
+    this.logger.log(`MCConnect webhook hit — sig=${signature?.substring(0, 20)}... ts=${timestamp}`);
 
     if (!rawBody) {
-      this.logger.error('MCConnect webhook: rawBody is undefined — Content-Type may not be application/json or body parser misconfiguration');
+      this.logger.error('MCConnect webhook: rawBody is undefined');
       throw new BadRequestException('Corps brut manke — pa ka verifye signature webhook');
     }
-    if (!signature || !this.monCashConnectService.verifyWebhook(rawBody.toString(), signature, _timestamp)) {
-      throw new BadRequestException('Signature webhook envalid');
+
+    let event: any;
+    try {
+      event = constructEvent(
+        rawBody,
+        signature ?? '',
+        timestamp ?? '',
+        process.env.MONCASHCONNECT_WEBHOOK_SECRET ?? '',
+      );
+    } catch (err: any) {
+      if (err instanceof MonCashError) {
+        this.logger.warn(`MCConnect webhook verification failed [${err.statusCode}]: ${err.message}`);
+        throw new HttpException(err.message, err.statusCode || HttpStatus.BAD_REQUEST);
+      }
+      throw err;
     }
-    await this.monCashConnectService.processWebhookPayment(body);
+
+    this.logger.log(`MCConnect webhook verified: event=${event.event} ref=${event.reference} amount=${event.amount}`);
+
+    // Acknowledge 200 immediately — MonCashConnect retries on non-2xx after 60s.
+    // Fire-and-forget; the 15-min cron recovers any processing failures.
+    if (event.event === 'payment.completed') {
+      this.monCashConnectService.processWebhookPayment(event).catch((err: any) =>
+        this.logger.error(`MCConnect webhook background error: ${err?.message}`, err?.stack),
+      );
+    } else if (event.event === 'payment.failed') {
+      this.logger.warn(`MCConnect webhook: payment.failed for ref=${event.reference}`);
+    } else {
+      this.logger.log(`MCConnect webhook: unhandled event type "${event.event}" — ignoring`);
+    }
+
     return { received: true };
   }
 }
