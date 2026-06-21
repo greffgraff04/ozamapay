@@ -103,35 +103,19 @@ export class MonCashConnectService {
   }
 
   async processWebhookPayment(body: any): Promise<void> {
-    this.logger.log(`MCConnect webhook body: ${JSON.stringify(body)}`);
-
-    try {
-      await this._processWebhookPaymentInner(body);
-    } catch (err: any) {
-      this.logger.error(
-        `MCConnect webhook UNHANDLED ERROR: ${err.message} (code=${err.code ?? 'n/a'})`,
-        err.stack,
-      );
-      throw err;
-    }
-  }
-
-  private async _processWebhookPaymentInner(body: any): Promise<void> {
     const referenceId: string | undefined = body.referenceId ?? body.reference_id ?? body.reference;
-
-    this.logger.log(`MCConnect webhook: extracted referenceId="${referenceId ?? 'NONE'}" from fields referenceId=${body.referenceId} reference_id=${body.reference_id} reference=${body.reference}`);
 
     if (!referenceId) {
       this.logger.warn('MCConnect webhook: no referenceId in body — ignoring');
       return;
     }
 
+    this.logger.log(`MCConnect webhook: processing ref=${referenceId}`);
+
     const transaction = await this.prisma.transaction.findFirst({
       where: { reference: referenceId },
       include: { receiverWallet: true },
     });
-
-    this.logger.log(`MCConnect webhook: findFirst result for ref=${referenceId}: ${transaction ? `found id=${transaction.id} status=${transaction.status}` : 'NOT FOUND'}`);
 
     if (!transaction) {
       this.logger.warn(`MCConnect webhook: no transaction found for ref=${referenceId}`);
@@ -158,23 +142,18 @@ export class MonCashConnectService {
       throw new Error('OZAMAPAY_MASTER_ID is not configured');
     }
 
-    this.logger.log(
-      `MCConnect webhook: crediting tx=${transaction.id} amount=${amountHTG} fee=${fee} net=${netAmount} userId=${userId.substring(0, 8)}... MASTER_ID=${MASTER_ID.substring(0, 8)}...`,
-    );
-
-    // Atomic claim: updateMany with status filter is a safe, PgBouncer-compatible
-    // double-credit guard (Serializable $transaction callback fails on Neon pooler).
+    // Atomic claim: updateMany PENDING→PROCESSING is PgBouncer-safe (no Serializable session state).
     const claimed = await this.prisma.transaction.updateMany({
       where: { id: transaction.id, status: 'PENDING' },
       data: { status: 'PROCESSING' },
     });
 
-    this.logger.log(`MCConnect webhook: updateMany claim result: count=${claimed.count}`);
-
     if (claimed.count === 0) {
-      this.logger.warn(`MCConnect webhook: tx ${transaction.id} already claimed by another process — skipping`);
+      this.logger.warn(`MCConnect webhook: tx ${transaction.id} already claimed — skipping`);
       return;
     }
+
+    this.logger.log(`MCConnect webhook: crediting tx=${transaction.id} amount=${amountHTG} fee=${fee} net=${netAmount}`);
 
     try {
       await this.prisma.$transaction([
@@ -186,18 +165,12 @@ export class MonCashConnectService {
         }),
       ]);
     } catch (err: any) {
-      this.logger.error(
-        `MCConnect webhook: $transaction failed for tx ${transaction.id}: ${err.message} (code=${err.code ?? 'n/a'})`,
-      );
-      // Revert PROCESSING → PENDING so the next webhook retry can reclaim it
+      this.logger.error(`MCConnect webhook: $transaction failed for tx ${transaction.id}: ${err.message} (code=${err.code ?? 'n/a'})`);
       try {
-        await this.prisma.transaction.update({
-          where: { id: transaction.id },
-          data: { status: 'PENDING' },
-        });
+        await this.prisma.transaction.update({ where: { id: transaction.id }, data: { status: 'PENDING' } });
         this.logger.log(`MCConnect webhook: reverted tx ${transaction.id} PROCESSING → PENDING for retry`);
       } catch (revertErr: any) {
-        this.logger.error(`MCConnect webhook: revert also failed for tx ${transaction.id}: ${revertErr.message}`);
+        this.logger.error(`MCConnect webhook: revert failed for tx ${transaction.id}: ${revertErr.message}`);
       }
       throw err;
     }
@@ -276,9 +249,9 @@ export class MonCashConnectService {
         const paymentStatus = await this.checkPaymentStatus(tx.reference);
 
         if (paymentStatus === 'COMPLETED') {
-          // Webhook was never received — recover by crediting the wallet now.
-          // processWebhookPayment re-checks status inside a Serializable transaction
-          // so it is safe to call even if the webhook arrives concurrently.
+          // Webhook was never received — recover by crediting now.
+          // processWebhookPayment uses an atomic updateMany PENDING→PROCESSING claim,
+          // so concurrent webhook retries are safe (only one will win the claim).
           this.logger.warn(
             `MonCashConnect: recovered missed webhook for reference ${tx.reference} — crediting wallet`,
           );
