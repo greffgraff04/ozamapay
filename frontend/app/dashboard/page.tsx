@@ -968,7 +968,7 @@ export default function Dashboard() {
                       )}
                       <button
                         onClick={() => setShowNotifications(false)}
-                        className="w-7 h-7 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition"
+                        className="w-7 h-7 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition"
                       >
                         <X size={13} />
                       </button>
@@ -1076,7 +1076,7 @@ export default function Dashboard() {
                                 Li tout
                               </button>
                             )}
-                            <button onClick={() => setShowNotifications(false)} className="w-7 h-7 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
+                            <button onClick={() => setShowNotifications(false)} className="w-7 h-7 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
                               <X size={13} />
                             </button>
                           </div>
@@ -1111,7 +1111,7 @@ export default function Dashboard() {
                 </div>
               </header>
               <div className="px-4 pb-4">
-              <div className="relative w-full overflow-hidden rounded-2xl shadow-lg"
+              <div className="relative w-full overflow-hidden rounded-[32px] shadow-xl"
                    style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
                 <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
                   <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
@@ -1164,7 +1164,7 @@ export default function Dashboard() {
                         <h3 className="font-black text-lg text-[var(--oz-text)] uppercase tracking-tight">Kòd QR Peman Ou</h3>
                         <p className="text-[10px] text-[var(--oz-text-sec)] mt-0.5 font-bold">Lòt moun skane sa pou voye kòb ba ou</p>
                       </div>
-                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
+                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
                         <X size={16} />
                       </button>
                     </div>
@@ -1262,7 +1262,7 @@ export default function Dashboard() {
                   })();
 
                   return (
-                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[2.2rem] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
+                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
@@ -1295,7 +1295,7 @@ export default function Dashboard() {
 
               {/* Balance card */}
               <div
-                className="relative w-full max-w-[420px] overflow-hidden rounded-2xl shadow-lg"
+                className="relative w-full max-w-[420px] overflow-hidden rounded-[32px] shadow-xl"
                 style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.6 / 1' }}
               >
                 <div className="h-full flex flex-col justify-end p-5 text-white relative z-10">
@@ -1369,9 +1369,9 @@ export default function Dashboard() {
                         ? (METHOD_DISPLAY_D[t.method] || t.method) : null;
                       const txTitleD = `${serviceNameD} ${amt} HTG${methodLabelD ? ` · ${methodLabelD}` : ''}`;
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-2xl border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
+                        <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                               {isDebit ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
                             </div>
                             <div>
@@ -1402,10 +1402,10 @@ export default function Dashboard() {
               {/* Virtual Card */}
               <button
                 onClick={() => setActiveTab('cards')}
-                className="group relative overflow-hidden rounded-2xl bg-[#0F121E] p-6 text-left hover:bg-[#1a1f2e] transition-all border border-white/5"
+                className="group relative overflow-hidden rounded-3xl bg-[#0F121E] p-6 text-left hover:bg-[#1a1f2e] transition-all border border-white/5"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <CreditCard size={20} className="text-[#FF7A00]" />
                   </div>
                   <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
@@ -1417,10 +1417,10 @@ export default function Dashboard() {
               {/* Gift Cards */}
               <button
                 onClick={() => setActiveTab('giftcards')}
-                className="group relative overflow-hidden rounded-2xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all"
+                className="group relative overflow-hidden rounded-3xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all shadow-lg"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <ShoppingCart size={20} className="text-[#FF7A00]" />
                   </div>
                   <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
@@ -1432,10 +1432,10 @@ export default function Dashboard() {
               {/* Finance services */}
               <button
                 onClick={() => setActiveTab('finance')}
-                className="group relative overflow-hidden rounded-2xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all"
+                className="group relative overflow-hidden rounded-3xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all shadow-lg"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
                     <Landmark size={20} className="text-[#FF7A00]" />
                   </div>
                   <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
@@ -1458,7 +1458,7 @@ export default function Dashboard() {
             <h2 className="text-4xl font-black italic uppercase tracking-wide mb-8 text-[var(--oz-text)]">Istorik Konplè</h2>
             <div className="space-y-3">
               {transactions.length === 0 ? (
-                <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-xl border border-[var(--oz-border)] shadow-sm">
+                <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] shadow-sm">
                   Pa gen okenn istwa tranzaksyon.
                 </p>
               ) : (
@@ -1468,7 +1468,7 @@ export default function Dashboard() {
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   return (
-                    <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-xl shadow-sm">
+                    <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                           {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
@@ -1684,7 +1684,7 @@ export default function Dashboard() {
                     <span className="font-black italic text-lg text-white truncate pr-4">
                         {paymentMethods.find(x => x.id === selectedMethod)?.info}
                     </span>
-                    <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-3 bg-[#FF7A00] rounded-xl active:scale-90">
+                    <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-3 bg-[#FF7A00] rounded-2xl active:scale-90">
                       <Copy size={16} />
                     </button>
                   </div>
@@ -1934,7 +1934,7 @@ export default function Dashboard() {
                     {selectedFinanceService.id === 'usdt' ? (
                       <div className="flex items-start gap-3 mb-2">
                         <p className="font-black italic text-sm tracking-tight break-all flex-1">{PAYMENT_INFO.usdt.acc}</p>
-                        <button onClick={() => copyToClipboard(PAYMENT_INFO.usdt.acc)} className="flex-shrink-0 p-2 bg-[#FF7A00] rounded-xl active:scale-90 transition-transform">
+                        <button onClick={() => copyToClipboard(PAYMENT_INFO.usdt.acc)} className="flex-shrink-0 p-2 bg-[#FF7A00] rounded-2xl active:scale-90 transition-transform">
                           <Copy size={14} />
                         </button>
                       </div>
@@ -2280,19 +2280,19 @@ export default function Dashboard() {
 
                       {secretDetailsLoading ? (
                         <div className="flex flex-col gap-2.5 animate-pulse">
-                          <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
+                          <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
                           <div className="flex gap-2.5">
-                            <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
-                            <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
+                            <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
+                            <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
                           </div>
-                          <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
+                          <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
                         </div>
                       ) : secretDetailsFailed ? (
                         <div className="flex flex-col items-center gap-3 py-4">
                           <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
                           <button
                             onClick={fetchSecretDetails}
-                            className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
+                            className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-2xl active:scale-95 transition-all"
                           >
                             Eseye Ankò
                           </button>
@@ -2301,7 +2301,7 @@ export default function Dashboard() {
                         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
 
                           {/* Nimewo konplè - full width */}
-                          <div style={{gridColumn: '1 / -1', background: 'var(--color-background-secondary, #f5f5f5)'}} className="rounded-xl p-3">
+                          <div style={{gridColumn: '1 / -1', background: 'var(--oz-surface)'}} className="rounded-2xl p-3">
                             <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
                             <div className="flex items-center justify-between gap-2">
                               <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
@@ -2314,19 +2314,19 @@ export default function Dashboard() {
                           </div>
 
                           {/* CVV */}
-                          <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                          <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
                             <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
                             <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
                           </div>
 
                           {/* Ekspire */}
-                          <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                          <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
                             <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
                             <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
                           </div>
 
                           {/* Nom sou kat - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-xl p-3">
+                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-2xl p-3">
                             <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
                             <div className="flex items-center justify-between gap-2">
                               <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
@@ -2339,7 +2339,7 @@ export default function Dashboard() {
                           </div>
 
                           {/* Billing Address - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-xl p-3">
+                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-2xl p-3">
                             <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
                             {[
                               { label: 'Street', value: CARD_BILLING.street },
@@ -2368,7 +2368,7 @@ export default function Dashboard() {
                   {/* BILLING ADDRESS — always visible */}
                   <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4 mb-3">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-2xl bg-orange-500 flex items-center justify-center">
                         <Landmark size={14} className="text-white" />
                       </div>
                       <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
@@ -2387,13 +2387,13 @@ export default function Dashboard() {
                         </div>
                         <button
                           onClick={() => copyToClipboard(value)}
-                          className="w-8 h-8 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
+                          className="w-8 h-8 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
                         >
                           <Copy size={13} className="text-[var(--oz-text-sec)]" />
                         </button>
                       </div>
                     ))}
-                    <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                    <div className="mt-3 p-3 bg-red-50 rounded-2xl border border-red-100">
                       <p className="text-red-600 text-[10px] leading-relaxed font-bold">
                         ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
                       </p>
@@ -2402,7 +2402,7 @@ export default function Dashboard() {
 
                   {/* NFC BADGE */}
                   <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center">
                       <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
@@ -2559,26 +2559,26 @@ export default function Dashboard() {
 
                             {secretDetailsLoading ? (
                               <div className="flex flex-col gap-2.5 animate-pulse">
-                                <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
+                                <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
                                 <div className="flex gap-2.5">
-                                  <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
-                                  <div className="h-14 bg-[var(--oz-surface)] rounded-xl flex-1" />
+                                  <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
+                                  <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
                                 </div>
-                                <div className="h-14 bg-[var(--oz-surface)] rounded-xl w-full" />
+                                <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
                               </div>
                             ) : secretDetailsFailed ? (
                               <div className="flex flex-col items-center gap-3 py-4">
                                 <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
                                 <button
                                   onClick={fetchSecretDetails}
-                                  className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl active:scale-95 transition-all"
+                                  className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-2xl active:scale-95 transition-all"
                                 >
                                   Eseye Ankò
                                 </button>
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 gap-2.5">
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
                                   <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="text-[var(--oz-text)] font-bold text-sm truncate">
@@ -2589,15 +2589,15 @@ export default function Dashboard() {
                                     </button>
                                   </div>
                                 </div>
-                                <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                                <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
                                   <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
                                   <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
                                 </div>
-                                <div className="bg-[var(--oz-surface)] rounded-xl p-3">
+                                <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
                                   <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
                                   <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
                                 </div>
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
                                   <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="text-[var(--oz-text)] font-bold text-sm truncate">
@@ -2608,7 +2608,7 @@ export default function Dashboard() {
                                     </button>
                                   </div>
                                 </div>
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-xl p-3">
+                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
                                   <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
                                   {[
                                     { label: 'Street', value: CARD_BILLING.street },
@@ -2636,7 +2636,7 @@ export default function Dashboard() {
                         {/* Billing Address — always visible */}
                         <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-2xl bg-orange-500 flex items-center justify-center">
                               <Landmark size={14} className="text-white" />
                             </div>
                             <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
@@ -2655,13 +2655,13 @@ export default function Dashboard() {
                               </div>
                               <button
                                 onClick={() => copyToClipboard(value)}
-                                className="w-8 h-8 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center hover:bg-orange-50 transition-all"
+                                className="w-8 h-8 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center hover:bg-orange-50 transition-all"
                               >
                                 <Copy size={13} className="text-[var(--oz-text-sec)]" />
                               </button>
                             </div>
                           ))}
-                          <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100">
+                          <div className="mt-3 p-3 bg-red-50 rounded-2xl border border-red-100">
                             <p className="text-red-600 text-[10px] leading-relaxed font-bold">
                               ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
                             </p>
@@ -2670,7 +2670,7 @@ export default function Dashboard() {
 
                         {/* NFC badge */}
                         <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center">
                             <Smartphone size={18} className="text-white" />
                           </div>
                           <div>
@@ -2747,7 +2747,7 @@ export default function Dashboard() {
                           <button
                             key={amt}
                             onClick={() => setRechargeAmount(amt)}
-                            className={`py-2 rounded-xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}
+                            className={`py-2 rounded-2xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}
                           >
                             ${amt}
                           </button>
@@ -2841,15 +2841,15 @@ export default function Dashboard() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Vil</label>
-                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Pétion-Ville" value={kycData.city} onChange={(e) => setKycData({ ...kycData, city: e.target.value })} />
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Pétion-Ville" value={kycData.city} onChange={(e) => setKycData({ ...kycData, city: e.target.value })} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Depatman</label>
-                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Ouest" value={kycData.state} onChange={(e) => setKycData({ ...kycData, state: e.target.value })} />
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="Ouest" value={kycData.state} onChange={(e) => setKycData({ ...kycData, state: e.target.value })} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Zip</label>
-                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="6110" value={kycData.zipCode} onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })} />
+                      <input type="text" className="w-full p-3 bg-[var(--oz-surface)] border border-[var(--oz-border)] focus:border-[#FF6B00] rounded-2xl font-bold outline-none text-[var(--oz-text)] text-xs transition-colors" placeholder="6110" value={kycData.zipCode} onChange={(e) => setKycData({ ...kycData, zipCode: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -2948,26 +2948,26 @@ export default function Dashboard() {
                               value={editName}
                               onChange={e => setEditName(e.target.value)}
                               placeholder="Non"
-                              className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
+                              className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
                             />
                             <input
                               type="tel"
                               value={editPhone}
                               onChange={e => setEditPhone(e.target.value)}
                               placeholder="Telefòn"
-                              className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
+                              className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
                             />
                             <div className="flex gap-2 pt-1">
                               <button
                                 onClick={handleEditProfile}
                                 disabled={editProfileLoading}
-                                className="flex-1 py-1.5 rounded-xl bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50"
+                                className="flex-1 py-1.5 rounded-2xl bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50"
                               >
                                 {editProfileLoading ? '...' : 'Sove'}
                               </button>
                               <button
                                 onClick={() => setIsEditingProfile(false)}
-                                className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider hover:bg-white/20 transition"
+                                className="flex-1 py-1.5 rounded-2xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider hover:bg-white/20 transition"
                               >
                                 Anile
                               </button>
@@ -3040,7 +3040,7 @@ export default function Dashboard() {
                 {/* MENU LIST */}
                 <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-4">
                   <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                    <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
+                    <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
                     <div className="flex-1 text-left">
                       <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
                       <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
@@ -3052,7 +3052,7 @@ export default function Dashboard() {
                   )}
 
                   <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                    <div className={`p-2 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
+                    <div className={`p-2 rounded-2xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
                       <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
                     </div>
                     <div className="flex-1 text-left">
@@ -3073,7 +3073,7 @@ export default function Dashboard() {
 
                   {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                     <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                      <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                      <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                       <div className="flex-1 text-left">
                         <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
                         <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
@@ -3082,7 +3082,7 @@ export default function Dashboard() {
                     </button>
                   ) : user?.agent?.status === 'PENDING' ? (
                     <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
-                      <div className="bg-yellow-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
+                      <div className="bg-yellow-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                       <div className="flex-1 text-left">
                         <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
                         <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
@@ -3115,7 +3115,7 @@ export default function Dashboard() {
                       }}
                       className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors"
                     >
-                      <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                      <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                       <div className="flex-1 text-left">
                         <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
                         <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
@@ -3125,7 +3125,7 @@ export default function Dashboard() {
                   )}
 
                   <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-[var(--oz-surface)] transition-colors">
-                    <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
+                    <div className="bg-blue-50 p-2 rounded-2xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
                     <div className="flex-1 text-left">
                       <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
                       <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
@@ -3154,7 +3154,7 @@ export default function Dashboard() {
                   onClick={() => { window.location.href = '/support'; }}
                   className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-3 active:bg-[var(--oz-surface)] transition-colors"
                 >
-                  <div className="bg-blue-50 p-2 rounded-xl flex-shrink-0">
+                  <div className="bg-blue-50 p-2 rounded-2xl flex-shrink-0">
                     <HelpCircle size={20} className="text-blue-500" />
                   </div>
                   <div className="flex-1 text-left">
@@ -3224,16 +3224,16 @@ export default function Dashboard() {
                           {isEditingProfile ? (
                             <div className="space-y-2">
                               <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
-                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
+                                className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
                               <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
-                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
+                                className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
                               <div className="flex gap-2 pt-1">
                                 <button onClick={handleEditProfile} disabled={editProfileLoading}
-                                  className="flex-1 py-2 rounded-xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50">
+                                  className="flex-1 py-2 rounded-2xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50">
                                   {editProfileLoading ? '...' : 'Sove'}
                                 </button>
                                 <button onClick={() => setIsEditingProfile(false)}
-                                  className="flex-1 py-2 rounded-xl bg-white/10 text-white/70 text-xs font-black uppercase tracking-wider hover:bg-white/20 transition">
+                                  className="flex-1 py-2 rounded-2xl bg-white/10 text-white/70 text-xs font-black uppercase tracking-wider hover:bg-white/20 transition">
                                   Anile
                                 </button>
                               </div>
@@ -3300,7 +3300,7 @@ export default function Dashboard() {
                     {/* Menu */}
                     <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-6">
                       <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
+                        <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
                         <div className="flex-1 text-left">
                           <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
                           <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
@@ -3311,7 +3311,7 @@ export default function Dashboard() {
                         <div className="px-4 pb-4 border-b border-[var(--oz-border)]"><UserSecurityCard /></div>
                       )}
                       <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className={`p-2.5 rounded-xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
+                        <div className={`p-2.5 rounded-2xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
                           <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
                         </div>
                         <div className="flex-1 text-left">
@@ -3331,7 +3331,7 @@ export default function Dashboard() {
                       </button>
                       {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
                         <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                          <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                          <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                           <div className="flex-1 text-left">
                             <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
                             <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
@@ -3340,7 +3340,7 @@ export default function Dashboard() {
                         </button>
                       ) : user?.agent?.status === 'PENDING' ? (
                         <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
-                          <div className="bg-yellow-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
+                          <div className="bg-yellow-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                           <div className="flex-1 text-left">
                             <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
                             <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
@@ -3373,7 +3373,7 @@ export default function Dashboard() {
                           }}
                           className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors"
                         >
-                          <div className="bg-orange-50 p-2.5 rounded-xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
+                          <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
                           <div className="flex-1 text-left">
                             <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
                             <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
@@ -3382,7 +3382,7 @@ export default function Dashboard() {
                         </button>
                       )}
                       <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
+                        <div className="bg-blue-50 p-2.5 rounded-2xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
                         <div className="flex-1 text-left">
                           <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
                           <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
@@ -3411,7 +3411,7 @@ export default function Dashboard() {
                       onClick={() => { window.location.href = '/support'; }}
                       className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-4 hover:bg-[var(--oz-surface)] transition-colors"
                     >
-                      <div className="bg-blue-50 p-2.5 rounded-xl flex-shrink-0">
+                      <div className="bg-blue-50 p-2.5 rounded-2xl flex-shrink-0">
                         <HelpCircle size={20} className="text-blue-500" />
                       </div>
                       <div className="flex-1 text-left">
@@ -3571,11 +3571,11 @@ export default function Dashboard() {
                 <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
               </div>
               <div className="mt-2">
-                <div className="p-1 rounded-2xl flex gap-1" style={{ background: '#f3f4f6' }}>
-                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
+                <div className="p-1 rounded-3xl flex gap-1" style={{ background: 'var(--oz-surface)' }}>
+                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-2xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
                     <ShoppingCart size={11} />Gift Cards
                   </button>
-                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
+                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-2xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
                     <Phone size={11} />Kredi
                   </button>
                 </div>
@@ -3595,7 +3595,7 @@ export default function Dashboard() {
                     <p className="text-[var(--oz-text-sec)] text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
                   </div>
                   {gcOrderResult.redeemCode ? (
-                    <div className="w-full rounded-3xl p-6 text-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                    <div className="w-full rounded-3xl p-6 text-center" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
                       <p className="text-xs text-[var(--oz-text-sec)] uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
                       <p className="font-black text-2xl tracking-widest text-[var(--oz-text)] break-all">{gcOrderResult.redeemCode}</p>
                       <button
@@ -3606,7 +3606,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                   ) : (
-                    <div className="rounded-3xl p-5 text-center w-full" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                    <div className="rounded-3xl p-5 text-center w-full" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
                       <p className="text-[#FF7A00] font-bold text-sm">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
                     </div>
                   )}
@@ -3619,8 +3619,8 @@ export default function Dashboard() {
                 <div className="px-4 space-y-5">
                   <div className="flex items-center gap-4 py-2">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ border: '1px solid #e5e7eb' }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ border: '1px solid var(--oz-border)' }}
                     >
                       {selectedBrandObj.img
                         ? <img src={selectedBrandObj.img} alt={selectedBrandObj.name} className="w-full h-full object-cover" />
@@ -3643,7 +3643,7 @@ export default function Dashboard() {
                           className="py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
                           style={gcSelectedDenom === d
                             ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: '#f3f4f6', color: '#0F121E', border: '1px solid #e5e7eb' }}
+                            : { background: 'var(--oz-surface)', color: 'var(--oz-text)', border: '1px solid var(--oz-border)' }}
                         >
                           ${d}
                         </button>
@@ -3654,11 +3654,11 @@ export default function Dashboard() {
                   </div>
 
                   {gcSelectedDenom && htgPrice && (
-                    <div className="rounded-2xl p-4 space-y-2.5" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                    <div className="rounded-3xl p-4 space-y-2.5" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
                       <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Pri USD</span><span className="font-bold text-[var(--oz-text)]">${gcSelectedDenom}</span></div>
                       <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Taux ({exchangeRate} HTG)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
                       <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Frè OZAMAPAY (5%)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid #e5e7eb' }}>
+                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid var(--oz-border)' }}>
                         <span className="text-sm font-bold text-[var(--oz-text)]">Total HTG</span>
                         <span className="font-black text-[#FF7A00]">{htgPrice.toFixed(2)} HTG</span>
                       </div>
@@ -3669,7 +3669,7 @@ export default function Dashboard() {
                     disabled={!gcSelectedDenom || gcOrderLoading}
                     onClick={handleOrder}
                     className="w-full py-5 font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: gcSelectedDenom ? '#FF7A00' : '#e5e7eb', color: gcSelectedDenom ? '#fff' : '#9ca3af' }}
+                    style={{ background: gcSelectedDenom ? '#FF7A00' : 'var(--oz-border)', color: gcSelectedDenom ? '#fff' : 'var(--oz-text-sec)' }}
                   >
                     {gcOrderLoading ? 'Pwosesis...' : `Achte — ${htgPrice ? htgPrice.toFixed(2) + ' HTG' : '—'}`}
                   </button>
@@ -3694,10 +3694,10 @@ export default function Dashboard() {
                                 key={brand.name}
                                 onClick={() => { setGcSelectedBrand(brand.name); setGcSelectedDenom(null); setGcOrderResult(null); }}
                                 className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:scale-[0.98] transition-all"
-                                style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
+                                style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                               >
                                 <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                                  className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
                                 >
                                   {brand.img
                                     ? <img src={brand.img} alt={brand.name} className="w-full h-full object-cover" />
@@ -3720,7 +3720,7 @@ export default function Dashboard() {
                           <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Dènye Achats</p>
                           <div className="space-y-2">
                             {gcOrders.slice(0, 5).map((o: any) => (
-                              <div key={o.id} className="rounded-2xl p-4 flex justify-between items-center" style={{ background: '#f8f9fa', border: '1px solid #e5e7eb' }}>
+                              <div key={o.id} className="rounded-[28px] p-4 flex justify-between items-center" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
                                 <div>
                                   <p className="font-semibold text-sm text-[var(--oz-text)]">{o.productName}</p>
                                   <p className="text-xs text-[#8E929B] mt-0.5">${o.unitPrice} · {Number(o.htgPaid).toFixed(2)} HTG</p>
@@ -3770,7 +3770,7 @@ export default function Dashboard() {
                 <div className="px-4 space-y-5">
                   <div className="flex items-center gap-4 py-2">
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
                     >
                       <img
                         src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/digicel.png' : '/natcom.png'}
@@ -3794,7 +3794,7 @@ export default function Dashboard() {
                           className="py-4 rounded-2xl font-semibold text-sm transition-all active:scale-95"
                           style={atAmount === amt
                             ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: '#f3f4f6', color: '#0F121E', border: '1px solid #e5e7eb' }}
+                            : { background: 'var(--oz-surface)', color: 'var(--oz-text)', border: '1px solid var(--oz-border)' }}
                         >
                           {amt}
                         </button>
@@ -3832,7 +3832,7 @@ export default function Dashboard() {
                     disabled={!atAmount || atPhone.trim().length < 8 || atLoading}
                     onClick={handleAirtimeOrder}
                     className="w-full py-5 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: atAmount && atPhone.trim().length >= 8 ? '#FF7A00' : '#e5e7eb', color: atAmount && atPhone.trim().length >= 8 ? '#fff' : '#9ca3af' }}
+                    style={{ background: atAmount && atPhone.trim().length >= 8 ? '#FF7A00' : 'var(--oz-border)', color: atAmount && atPhone.trim().length >= 8 ? '#fff' : 'var(--oz-text-sec)' }}
                   >
                     {atLoading ? 'Pwosesis...' : `Voye Kredi — ${atAmount ? (atAmount * 1.05).toFixed(2) + ' HTG' : '—'}`}
                   </button>
@@ -3853,9 +3853,9 @@ export default function Dashboard() {
                             <button
                               onClick={() => setAtSelectedOp(digicelOp)}
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
-                              style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
+                              style={{ border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
+                              <div className="w-10 h-10 rounded-2xl flex-shrink-0 overflow-hidden">
                                 <img src="/digicel.png" alt="Digicel" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
@@ -3869,9 +3869,9 @@ export default function Dashboard() {
                             <button
                               onClick={() => setAtSelectedOp(natcomOp)}
                               className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
-                              style={{ border: '1px solid #e5e7eb', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
+                              style={{ border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
                             >
-                              <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden">
+                              <div className="w-10 h-10 rounded-2xl flex-shrink-0 overflow-hidden">
                                 <img src="/natcom.png" alt="Natcom" className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 text-left">
@@ -3926,7 +3926,7 @@ export default function Dashboard() {
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all ${
                 activeTab === item.id
                   ? 'bg-[#FF7A00]/10 text-[#FF7A00]'
                   : 'hover:bg-[var(--oz-surface)]'
@@ -3944,7 +3944,7 @@ export default function Dashboard() {
 
         {/* User footer */}
         <div className="px-4 py-5 flex items-center gap-3" style={{ borderTop: `1px solid ${colors.border}` }}>
-          <div className="w-9 h-9 rounded-xl bg-[#FF7A00]/10 flex items-center justify-center text-[#FF7A00] font-black text-sm shrink-0">
+          <div className="w-9 h-9 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center text-[#FF7A00] font-black text-sm shrink-0">
             {displayName.substring(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0">

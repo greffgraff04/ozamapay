@@ -156,7 +156,7 @@ export default function TransactionsPage() {
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <button
             onClick={() => { window.location.href = "/dashboard"; }}
-            className="w-9 h-9 rounded-xl transition flex items-center justify-center"
+            className="w-9 h-9 rounded-2xl transition flex items-center justify-center"
             style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.surface, color: colors.textPrimary }}
           >
             <ArrowLeft size={17} />
@@ -167,7 +167,7 @@ export default function TransactionsPage() {
           </div>
           <button
             onClick={fetchTransactions}
-            className="w-9 h-9 rounded-xl transition flex items-center justify-center"
+            className="w-9 h-9 rounded-2xl transition flex items-center justify-center"
             style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.surface, color: colors.textPrimary }}
           >
             <RefreshCw size={15} />
@@ -183,7 +183,7 @@ export default function TransactionsPage() {
             <button
               key={f}
               onClick={() => { setFilter(f); setVisibleCount(20); }}
-              className="shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition"
+              className="shrink-0 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition"
               style={
                 filter === f
                   ? { backgroundColor: '#FF6B00', color: '#FFFFFF' }
@@ -215,7 +215,7 @@ export default function TransactionsPage() {
               return (
                 <div
                   key={t.id || idx}
-                  className="rounded-2xl p-4 flex items-center gap-4"
+                  className="rounded-[28px] p-4 flex items-center gap-4"
                   style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}
                 >
                   <TxIcon type={t.type} isDebit={isDebit} isDark={isDark} />
