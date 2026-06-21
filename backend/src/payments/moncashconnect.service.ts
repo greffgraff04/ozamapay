@@ -120,9 +120,9 @@ export class MonCashConnectService {
 
     // Two possible payload forms:
     //   p1 — raw body alone
-    //   p2 — timestamp + "." + raw body (Stripe-style replay-prevention)
+    //   p2 — raw body + ":" + timestamp (MonCashConnect official: data_to_sign = payload + ":" + request_timestamp)
     const p1 = payload;
-    const p2 = timestamp ? `${timestamp}.${payload}` : null;
+    const p2 = timestamp ? `${payload}:${timestamp}` : null;
 
     const normalizedSig = signature?.trim().startsWith('sha256=')
       ? signature.trim()
@@ -131,10 +131,10 @@ export class MonCashConnectService {
     this.logger.log(`MCConnect verifyWebhook — received: ${signature} | secret prefix: ${secret?.substring(0, 10)}... | timestamp: ${timestamp ?? 'none'}`);
 
     const candidates: Array<{ label: string; key: string | Buffer; payloadStr: string }> = [
-      { label: 'key=raw,  payload=body',           key: keyRaw, payloadStr: p1 },
-      ...(p2 ? [{ label: 'key=raw,  payload=ts.body', key: keyRaw, payloadStr: p2 }] : []),
-      ...(keyHex ? [{ label: 'key=hex,  payload=body',      key: keyHex, payloadStr: p1 }] : []),
-      ...(keyHex && p2 ? [{ label: 'key=hex,  payload=ts.body', key: keyHex, payloadStr: p2 }] : []),
+      { label: 'key=raw, payload=body',       key: keyRaw, payloadStr: p1 },
+      ...(p2 ? [{ label: 'key=raw, payload=body:ts', key: keyRaw, payloadStr: p2 }] : []),
+      ...(keyHex ? [{ label: 'key=hex, payload=body',       key: keyHex, payloadStr: p1 }] : []),
+      ...(keyHex && p2 ? [{ label: 'key=hex, payload=body:ts', key: keyHex, payloadStr: p2 }] : []),
     ];
 
     for (const { label, key, payloadStr } of candidates) {
