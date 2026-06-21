@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  Query,
   UseGuards,
   Req,
   UseInterceptors,
@@ -37,7 +38,7 @@ export class WalletController {
   @Get('stats')
   async getWalletStats(@Req() req: any) {
     const wallet = await this.walletService.getWallet(req.user.id);
-    const transactions = await this.walletService.getTransactions(req.user.id);
+    const { data: transactions, total } = await this.walletService.getTransactions(req.user.id, 50, 0);
 
     const totalIncoming = transactions
       .filter((t: any) => t.status === 'COMPLETED' && t.receiverWalletId === wallet?.id)
@@ -53,7 +54,7 @@ export class WalletController {
       currency: wallet ? wallet.currency : 'HTG',
       totalIncoming,
       totalOutgoing,
-      transactionsCount: transactions.length,
+      transactionsCount: total,
     };
   }
 
@@ -61,8 +62,15 @@ export class WalletController {
   // RALE TRANZAKSYON YO
   // ======================================================
   @Get('transactions')
-  async getTransactions(@Req() req: any) {
-    return this.walletService.getTransactions(req.user.id);
+  async getTransactions(
+    @Req() req: any,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('type') type?: string,
+  ) {
+    const parsedLimit = Math.min(Number(limit) || 5, 50);
+    const parsedOffset = Math.max(Number(offset) || 0, 0);
+    return this.walletService.getTransactions(req.user.id, parsedLimit, parsedOffset, type || undefined);
   }
 
   // ======================================================

@@ -350,7 +350,7 @@ export default function Dashboard() {
         cardRes?.ok ? cardRes.json().catch(() => null) : null,
       ]);
 
-      setTransactions(Array.isArray(txData) ? txData : []);
+      setTransactions(Array.isArray(txData?.data) ? txData.data : []);
 
       if (meData) {
         setUser(meData);

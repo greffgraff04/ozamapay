@@ -81,12 +81,12 @@ export default function TransactionsPage() {
     if (!token) { window.location.href = "/login"; return; }
     try {
       const [txRes, meRes] = await Promise.all([
-        fetch(`${backendUrl}/wallet/transactions`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${backendUrl}/wallet/transactions?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (txRes.ok) {
         const data = await txRes.json();
-        setTransactions(Array.isArray(data) ? data : []);
+        setTransactions(Array.isArray(data?.data) ? data.data : []);
       }
       if (meRes.ok) {
         const me = await meRes.json();

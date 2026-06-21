@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 
-import { Prisma } from '@prisma/client';
+import { Prisma, TransactionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -84,14 +84,21 @@ export class WalletService {
   // TRANSACTIONS
   // ======================================================
 
-  async getTransactions(userId: string) {
-    const transactions = await this.prisma.transaction.findMany({
-      where: {
-        OR: [
-          { senderWallet: { userId } },
-          { receiverWallet: { userId } },
-        ],
-      },
+  async getTransactions(
+    userId: string,
+    limit = 5,
+    offset = 0,
+    type?: string,
+  ): Promise<{ data: any[]; total: number; hasMore: boolean }> {
+    const where: Prisma.TransactionWhereInput = {
+      AND: [
+        { OR: [{ senderWallet: { userId } }, { receiverWallet: { userId } }] },
+        ...(type ? [{ type: type as TransactionType }] : []),
+      ],
+    };
+
+    const rows = await this.prisma.transaction.findMany({
+      where,
       include: {
         senderWallet: {
           include: {
@@ -115,13 +122,18 @@ export class WalletService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 5,
+      take: limit,
+      skip: offset,
     });
 
-    return transactions.map(({ commissions, ...tx }) => ({
+    const total = await this.prisma.transaction.count({ where });
+
+    const data = rows.map(({ commissions, ...tx }) => ({
       ...tx,
       agentFirstName: commissions[0]?.agent?.user?.name?.split(' ')[0] ?? null,
     }));
+
+    return { data, total, hasMore: offset + limit < total };
   }
 
   // ======================================================
