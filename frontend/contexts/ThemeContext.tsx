@@ -45,17 +45,17 @@ const LIGHT_COLORS: ThemeColors = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  colors: LIGHT_COLORS,
-  isDark: false,
+  colors: DARK_COLORS,
+  isDark: true,
   toggleTheme: () => {},
-  mode: 'light',
+  mode: 'dark',
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [mode, setMode] = useState<ThemeMode>('dark');
 
   useEffect(() => {
-    const saved = localStorage.getItem('ozama-theme') as ThemeMode | null;
+    const saved = localStorage.getItem('ozamapay-dashboard-theme') as ThemeMode | null;
     if (saved === 'dark' || saved === 'light') {
       setMode(saved);
     }
@@ -64,7 +64,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     setMode(prev => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('ozama-theme', next);
+      localStorage.setItem('ozamapay-dashboard-theme', next);
       return next;
     });
   };
@@ -85,7 +85,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ colors, isDark, toggleTheme, mode }}>
-      <div style={cssVars}>
+      <div style={{ ...cssVars, backgroundColor: colors.background, color: colors.textPrimary, minHeight: '100vh', transition: 'background-color 0.2s, color 0.2s' }}>
         {children}
       </div>
     </ThemeContext.Provider>
