@@ -5,7 +5,7 @@ import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete
 import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
-  ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
+  ArrowDown, ArrowUp, ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [selectedMethod, setSelectedMethod] = useState('moncash');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
+  const [topupNote, setTopupNote] = useState('');
   const [mccPaymentUrl, setMccPaymentUrl] = useState<string | null>(null);
   const [mccPolling, setMccPolling] = useState(false);
   const [mccInitialBalance, setMccInitialBalance] = useState(0);
@@ -146,6 +147,10 @@ export default function Dashboard() {
 
   // QR modal
   const [showQrModal, setShowQrModal] = useState(false);
+
+  // Send money bottom-sheet modal
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showPin, setShowPin] = useState(false);
 
   // Onboarding tour
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -1112,21 +1117,38 @@ export default function Dashboard() {
               </header>
               <div className="px-4 pb-4">
               <div className="relative w-full overflow-hidden rounded-[32px] shadow-xl"
-                   style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.8 / 1' }}>
-                <div className="h-full flex flex-col justify-end p-8 text-white relative z-10">
-                  <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                  <div className="flex items-baseline gap-2">
-                    {(() => {
-                      const raw = Number(user.wallet?.balance || 0);
-                      const [whole, dec] = raw.toFixed(2).split('.');
-                      return (
-                        <h2 className="text-3xl font-black tracking-tighter italic leading-none">
-                          <span className="text-white/70">HTG</span>
-                          {' '}{Number(whole).toLocaleString('fr-FR')}
-                          <span className="text-lg font-bold">.{dec}</span>
-                        </h2>
-                      );
-                    })()}
+                   style={{ background: '#FF7A00', aspectRatio: '1.8 / 1' }}>
+                <div className="h-full flex flex-col justify-between p-8 text-white">
+                  <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.4em]">BALANS AKTYÈL</p>
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      {(() => {
+                        const raw = Number(user.wallet?.balance || 0);
+                        const [whole, dec] = raw.toFixed(2).split('.');
+                        return (
+                          <h2 className="text-3xl font-black tracking-tighter italic leading-none">
+                            <span className="text-white/70">HTG</span>
+                            {' '}{Number(whole).toLocaleString('fr-FR')}
+                            <span className="text-lg font-bold">.{dec}</span>
+                          </h2>
+                        );
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-0">
+                      <div className="flex-1">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
+                        <p className="text-sm font-black text-white">
+                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                        </p>
+                      </div>
+                      <div className="w-px h-8 bg-white/30 mx-3" />
+                      <div className="flex-1">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
+                        <p className="text-sm font-black text-white">
+                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1134,20 +1156,20 @@ export default function Dashboard() {
               {/* QUICK ACTIONS */}
               <div className="grid grid-cols-5 gap-2 mt-4">
                 {[
-                  { id: 'SEND', icon: <Send size={20} />, tab: 'send' },
-                  { id: 'TOPUP', icon: <PlusCircle size={20} />, tab: 'topup' },
-                  { id: 'RETRAIT', icon: <Banknote size={20} />, tab: 'withdraw' },
-                  { id: 'CARDS', icon: <CreditCard size={20} />, tab: 'cards' },
+                  { id: 'SEND', icon: <Send size={20} />, action: () => setShowSendModal(true) },
+                  { id: 'TOPUP', icon: <PlusCircle size={20} />, action: () => setActiveTab('topup') },
+                  { id: 'RETRAIT', icon: <Banknote size={20} />, action: () => setActiveTab('withdraw') },
+                  { id: 'CARDS', icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
-                    <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
+                    <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
                     <span className="text-[7px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
-                  <div className="w-full aspect-square rounded-[1.6rem] bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                     <QrCode size={20} />
                   </div>
                   <span className="text-[7px] font-black uppercase tracking-widest opacity-70">QR</span>
@@ -1213,9 +1235,9 @@ export default function Dashboard() {
               {/* RECENT ACTIVITY header — pinned in fixed hero, never scrolls */}
               <div className="flex justify-between items-end px-4 pt-2 pb-3">
                 <h3 className="font-black italic uppercase text-sm tracking-wide flex items-center gap-2">
-                  <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
+                  <Activity size={14} className="text-[#FF7A00]" /> DÈNYE TRANZAKSYON
                 </h3>
-                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">See More +</button>
+                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">Wè Tout →</button>
               </div>
             </div>
 
@@ -1264,8 +1286,8 @@ export default function Dashboard() {
                   return (
                     <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                          {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                          {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
                         </div>
                         <div>
                           <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-[var(--oz-text)] max-w-[180px]">
@@ -1296,33 +1318,50 @@ export default function Dashboard() {
               {/* Balance card */}
               <div
                 className="relative w-full max-w-[420px] overflow-hidden rounded-[32px] shadow-xl"
-                style={{ backgroundImage: "url('/card.png')", backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '1.6 / 1' }}
+                style={{ background: '#FF7A00', aspectRatio: '1.6 / 1' }}
               >
-                <div className="h-full flex flex-col justify-end p-5 text-white relative z-10">
-                  <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] mb-1">CURRENT BALANCE</p>
-                  <h2 className="text-3xl font-black tracking-tighter italic">
-                    {user.wallet?.balance?.toLocaleString() || '0'} <span className="text-white/80 text-lg font-normal">HTG</span>
-                  </h2>
+                <div className="h-full flex flex-col justify-between p-6 text-white">
+                  <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.4em]">BALANS AKTYÈL</p>
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tighter italic mb-4">
+                      HTG {user.wallet?.balance?.toLocaleString() || '0'}
+                    </h2>
+                    <div className="flex items-center gap-0">
+                      <div className="flex-1">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
+                        <p className="text-sm font-black text-white">
+                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                        </p>
+                      </div>
+                      <div className="w-px h-8 bg-white/30 mx-3" />
+                      <div className="flex-1">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
+                        <p className="text-sm font-black text-white">
+                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Quick actions */}
               <div className="flex flex-row gap-4">
                 {[
-                  { id: 'SEND',    icon: <Send size={18} />,       tab: 'send' },
-                  { id: 'TOPUP',   icon: <PlusCircle size={18} />, tab: 'topup' },
-                  { id: 'RETRAIT', icon: <Banknote size={18} />,   tab: 'withdraw' },
-                  { id: 'CARDS',   icon: <CreditCard size={18} />, tab: 'cards' },
+                  { id: 'SEND',    icon: <Send size={18} />,       action: () => setShowSendModal(true) },
+                  { id: 'TOPUP',   icon: <PlusCircle size={18} />, action: () => setActiveTab('topup') },
+                  { id: 'RETRAIT', icon: <Banknote size={18} />,   action: () => setActiveTab('withdraw') },
+                  { id: 'CARDS',   icon: <CreditCard size={18} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.tab)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-[#FDF8F3] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                     <QrCode size={18} />
                   </div>
                   <span className="text-[8px] font-black uppercase tracking-widest opacity-70">QR</span>
@@ -1333,13 +1372,13 @@ export default function Dashboard() {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
-                    <Activity size={14} className="text-[#FF7A00]" /> Recent Activity
+                    <Activity size={14} className="text-[#FF7A00]" /> DÈNYE TRANZAKSYON
                   </h3>
                   <button
                     onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }}
                     className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest hover:underline"
                   >
-                    See More +
+                    Wè Tout →
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -1371,8 +1410,8 @@ export default function Dashboard() {
                       return (
                         <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                              {isDebit ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                              {isDebit ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
                             </div>
                             <div>
                               <p className="font-black text-[11px] uppercase italic tracking-tight text-[var(--oz-text)]">{txTitleD}</p>
@@ -1470,8 +1509,8 @@ export default function Dashboard() {
                   return (
                     <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isDebit ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
-                          {isDebit ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />}
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                          {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
                         </div>
                         <div>
 <p className="font-black text-sm uppercase italic leading-none tracking-tight text-[var(--oz-text)]">
@@ -1499,293 +1538,274 @@ export default function Dashboard() {
           </div>
         )}
  
-        {/* --- SEND SECTION --- */}
-{activeTab === 'send' && (
-  <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-      <button
-        onClick={() => setActiveTab('home')}
-        className="mb-4 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2"
-      >
-        <ArrowLeftRight size={14} className="rotate-180" />
-        Back Home
-      </button>
-      <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">
-        Send<br />Money
-      </h2>
+        {/* --- SEND MONEY BOTTOM-SHEET MODAL --- */}
+{showSendModal && (
+  <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={() => setShowSendModal(false)}>
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <div
+      className="relative w-full max-w-lg rounded-t-[32px] shadow-2xl animate-in slide-in-from-bottom duration-300"
+      style={{ background: colors.background }}
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Handle bar */}
+      <div className="flex justify-center pt-3 pb-1">
+        <div className="w-10 h-1 rounded-full bg-[var(--oz-border)]" />
+      </div>
+      <div className="px-6 pt-3 pb-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-black italic uppercase tracking-tighter" style={{ color: colors.textPrimary }}>VOYE LAJAN</h2>
+          <button onClick={() => setShowSendModal(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: colors.surface, color: colors.textSecondary }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* RECIPIENT */}
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest ml-1" style={{ color: colors.textSecondary }}>EMAIL DESTINATÈ</label>
+            <input
+              className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
+              style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+              placeholder="example@ozamapay.com"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+            />
+          </div>
+
+          {/* AMOUNT */}
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest ml-1 flex items-center gap-2" style={{ color: colors.textSecondary }}>
+              MONTAN (HTG)
+              <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-500 font-black text-[8px]">FRÈ: 0%</span>
+            </label>
+            <input
+              className="w-full px-5 py-4 rounded-2xl font-black italic text-3xl outline-none border"
+              style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+              placeholder="0.00"
+              type="number"
+              min="0"
+              value={amount}
+              onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setAmount(val); }}
+            />
+          </div>
+
+          {/* PIN */}
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black uppercase tracking-widest ml-1" style={{ color: colors.textSecondary }}>KÒD PIN SEKIRITE</label>
+            <div className="relative">
+              <input
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                maxLength={4}
+                className="w-full px-5 py-4 pr-14 rounded-2xl font-black text-2xl outline-none border tracking-[10px]"
+                style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+                placeholder="••••"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(p => !p)}
+                className="absolute right-4 top-1/2 -translate-y-1/2"
+                style={{ color: colors.textSecondary }}
+              >
+                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {/* SUBMIT */}
+          <button
+            onClick={() => { handleSendMoney(recipient, amount, pin); setShowSendModal(false); }}
+            className="w-full py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs text-white mt-2"
+            style={{ background: '#FF7A00' }}
+          >
+            KONFIME TRANSFÈ
+          </button>
+        </div>
+      </div>
     </div>
-    <div style={{ height: 'calc(100vh - 180px)', overflowY: 'auto', position: 'relative' }} className="pb-24">
-    <div className="space-y-6">
-      
-      {/* RECIPIENT */}
-      <div className="space-y-2">
-        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
-          Recipient Email
-        </label>
-
-        <input
-          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-bold outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)] transition-all"
-          placeholder="example@ozamapay.com"
-          value={recipient}
-          onChange={(e) =>
-            setRecipient(e.target.value)
-          }
-        />
-      </div>
-
-      {/* AMOUNT */}
-      <div className="space-y-2">
-        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
-          Amount (HTG)
-
-          <span className="text-[#FF7A00] ml-2">
-            FEE: 0%
-          </span>
-        </label>
-
-        <input
-          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-black italic text-4xl outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)]"
-          placeholder="0.00"
-          type="number"
-          min="0"
-          value={amount}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (Number(val) < 0) return;
-            setAmount(val);
-          }}
-        />
-      </div>
-
-      {/* SECURITY PIN */}
-      <div className="space-y-2">
-        <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">
-          Security PIN
-        </label>
-
-        <input
-          type="password"
-          inputMode="numeric"
-          maxLength={4}
-          className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-black text-3xl outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)] transition-all tracking-[12px]"
-          placeholder="••••"
-          value={pin}
-          onChange={(e) =>
-            setPin(e.target.value)
-          }
-        />
-      </div>
-
-      {/* BUTTON */}
-      <button
-        onClick={() =>
-          handleSendMoney(
-            recipient,
-            amount,
-            pin,
-          )
-        }
-        className="w-full bg-[#0F121E] text-white py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs"
-      >
-        Confirm Transfer
-      </button>
-    </div>
-    </div>{/* end scroll */}
   </div>
 )}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(112px + env(safe-area-inset-top))' }}>
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <PlusCircle size={14} /> Back Home
               </button>
-              <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Add Funds</h2>
-              <p className="text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Chaje bous ou ak sekirite</p>
-              {selectedMethod === 'moncash' ? (
-                <div className="bg-[var(--oz-surface)] p-2 rounded-[2rem] flex gap-2 border border-[var(--oz-border)]">
-                  <button onClick={() => setTopUpType('AUTOMATIC')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'AUTOMATIC' ? 'bg-[var(--oz-surface)] text-[#FF7A00] shadow-sm' : 'text-[var(--oz-text-sec)]'}`}><Zap size={11} /> Imedya</button>
-                  <button onClick={() => setTopUpType('MANUAL')} className={`flex-1 py-4 rounded-[1.5rem] font-black text-[10px] uppercase italic tracking-widest transition-all flex items-center justify-center gap-1.5 ${topUpType === 'MANUAL' ? 'bg-[#0F121E] text-white shadow-lg' : 'text-[var(--oz-text-sec)]'}`}><Clock size={11} /> 15-30 minit</button>
-                </div>
-              ) : (
-                <div className="bg-[var(--oz-surface)] p-4 rounded-[2rem] flex items-center justify-center border border-[var(--oz-border)]">
-                  <span className="font-black text-[10px] uppercase italic tracking-widest text-[var(--oz-text)]">Manuel (2H)</span>
-                </div>
-              )}
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">TOPUP</h2>
             </div>
-            <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            <div className="space-y-6">
-              <div className="bg-[var(--oz-surface)] p-8 rounded-[2.5rem] border border-[var(--oz-border)] relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-5"><PlusCircle size={60}/></div>
-                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-[0.2em]">{topupIsIntl ? 'Montan an USD' : 'Montan an HTG'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-[var(--oz-text)]" placeholder="0" type="number" min="0" value={topUpAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }} />
-                {topUpAmount && (() => {
-                  const isMccAuto = selectedMethod === 'moncash' && topUpType === 'AUTOMATIC';
-                  const isMccManual = selectedMethod === 'moncash' && topUpType === 'MANUAL';
-                  const feeRate = isMccAuto ? 0.089 : 0.06;
-                  const feeAmount = Math.round(topupHTG * feeRate);
-                  const amountAfterFee = topupHTG - feeAmount;
-                  const feeLabel = isMccAuto
-                    ? '8.9% (6% OZAMAPAY + 2.9% MonCash)'
-                    : isMccManual
-                    ? '6% (OZAMAPAY sèlman)'
-                    : 'FRAIS OZAMAPAY (6.0%)';
-                  return (
-                    <div className="mt-4 pt-4 border-t border-[var(--oz-border)] animate-in fade-in space-y-2">
-                      {topupIsIntl && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Ekivalan HTG</span>
-                          <span className="text-[10px] font-black italic text-[var(--oz-text)]">${topUpAmount} USD = {topupHTG.toLocaleString()} HTG</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">{feeLabel}</span>
-                        <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">{feeAmount.toLocaleString()} HTG</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
-                        <span className="text-xs font-black italic text-[#FF7A00]">{amountAfterFee.toLocaleString()} HTG</span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
- 
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Chwazi Mwayen Peman</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {paymentMethods.map((m) => (
-                    <button key={m.id} onClick={() => {
-                      if (m.id === 'moncash') {
-                        setSelectedMethod(m.id);
-                        setTopUpType('AUTOMATIC');
-                        return;
-                      }
-                      setSelectedMethod(m.id);
-                      setTopUpType('MANUAL');
-                    }} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${selectedMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}>
-                      <div className="flex items-center gap-3">
-                        <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
-                        <span className="font-black italic uppercase text-[10px]">{m.label}</span>
-                      </div>
-                      {selectedMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
-                    </button>
-                  ))}
+            <div style={{ height: 'calc(100vh - 160px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
+            <div className="space-y-8">
+
+              {/* ── SECTION 1: MonCash Otomatik ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Landmark size={16} className="text-[#FF7A00]" />
+                  <h3 className="font-black italic uppercase text-sm tracking-wide" style={{ color: colors.textPrimary }}>MonCash Otomatik</h3>
                 </div>
-              </div>
- 
-              {topUpType === 'MANUAL' && selectedMethod && (
-                <div className="animate-in zoom-in duration-300 bg-[#0F121E] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                  <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-2 tracking-widest">Instruction Peman</p>
-                  <h4 className="text-xl font-black italic uppercase mb-1">Voye kòb la sou:</h4>
-                  <p className="text-[10px] font-bold text-white/40 uppercase mb-6">{paymentMethods.find(x => x.id === selectedMethod)?.name}</p>
-                  
-                  <div className="flex items-center justify-between bg-white/5 p-5 rounded-2xl border border-white/10 mb-6">
-                    <span className="font-black italic text-lg text-white truncate pr-4">
-                        {paymentMethods.find(x => x.id === selectedMethod)?.info}
-                    </span>
-                    <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-3 bg-[#FF7A00] rounded-2xl active:scale-90">
-                      <Copy size={16} />
+
+                <div className="bg-[var(--oz-surface)] p-6 rounded-3xl border border-[var(--oz-border)]">
+                  <label className="text-[9px] font-black uppercase opacity-40 mb-3 block tracking-[0.2em]">Montan an HTG</label>
+                  <input
+                    className="w-full bg-transparent font-black italic text-4xl outline-none text-[var(--oz-text)]"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    value={topUpAmount}
+                    onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
+                  />
+                  {topUpAmount && (() => {
+                    const feeAmount = Math.round(Number(topUpAmount) * 0.089);
+                    const amountAfterFee = Number(topUpAmount) - feeAmount;
+                    return (
+                      <div className="mt-4 pt-4 border-t border-[var(--oz-border)] space-y-2 animate-in fade-in">
+                        <div className="flex justify-between">
+                          <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Frè 8.9%</span>
+                          <span className="text-[10px] font-black italic text-[var(--oz-text-sec)]">{feeAmount.toLocaleString()} HTG</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
+                          <span className="text-xs font-black italic text-[#FF7A00]">{amountAfterFee.toLocaleString()} HTG</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {mccPaymentUrl ? (
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => { window.location.href = mccPaymentUrl; }}
+                      className="w-full py-6 rounded-3xl font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    >
+                      Peye via MonCash →
+                    </button>
+                    {mccPolling && (
+                      <p className="text-center text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest animate-pulse py-2">
+                        Ap verifye peman ou… 🔄
+                      </p>
+                    )}
+                    <button
+                      onClick={() => { setMccPaymentUrl(null); setMccPolling(false); if (mccPollRef.current) clearInterval(mccPollRef.current); }}
+                      className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-[var(--oz-text-sec)] hover:text-red-400 transition-all"
+                    >
+                      Anile
                     </button>
                   </div>
-                  
-                  {selectedMethod === 'usdt' && (
-                    <div className="space-y-3 mb-4">
-                      <div className="bg-red-500/20 border border-red-400/30 rounded-2xl p-4 flex items-start gap-3">
-                        <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
-                        <p className="text-red-300 font-black text-xs uppercase tracking-wide leading-relaxed">
-                          TRC20 sèlman — Pa itilize ERC20 oswa BEP20 — ou pral pèdi lajan ou!
-                        </p>
-                      </div>
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <p className="text-[#FF7A00] font-bold text-xs mb-2 flex items-center gap-2">
-                          <Info size={14} /> Enstriksyon
-                        </p>
-                        <p className="text-white/80 text-xs leading-relaxed">
-                          Voye USDT sou rezo TRC20 sèlman. Upload screenshot tranzaksyon an apre.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                ) : (
+                  <button
+                    onClick={() => { setSelectedMethod('moncash'); setTopUpType('AUTOMATIC'); handlePaymentLogic(); }}
+                    disabled={topupLoading || !topUpAmount}
+                    className="w-full py-6 rounded-3xl font-black uppercase italic tracking-widest shadow-xl text-xs text-white active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                    style={{ background: '#FF7A00' }}
+                  >
+                    {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'DEPOZE AK MONCASH'}
+                  </button>
+                )}
 
-                  {selectedMethod === 'moncash' && topUpType === 'MANUAL' && showMoncashGuide && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 relative">
+                <p className="text-[10px] text-[var(--oz-text-sec)] leading-relaxed text-center px-2">
+                  Sistèm otomatik — 8.9% frè aplike (6% OZAMAPAY + 2.9% MonCash), ou resevwa 91.1% nan depo a imedyatman apre peman konfime.
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[var(--oz-border)]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--oz-text-sec)]">oswa</span>
+                <div className="flex-1 h-px bg-[var(--oz-border)]" />
+              </div>
+
+              {/* ── SECTION 2: Depo Manyèl ── */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Upload size={16} className="text-[#FF7A00]" />
+                  <h3 className="font-black italic uppercase text-sm tracking-wide" style={{ color: colors.textPrimary }}>Depo Manyèl</h3>
+                </div>
+
+                <div className="bg-[var(--oz-surface)] p-6 rounded-3xl border border-[var(--oz-border)]">
+                  <label className="text-[9px] font-black uppercase opacity-40 mb-3 block tracking-[0.2em]">Montan an HTG</label>
+                  <input
+                    className="w-full bg-transparent font-black italic text-4xl outline-none text-[var(--oz-text)]"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    value={topUpAmount}
+                    onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">METÒD</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {paymentMethods.map((m) => (
                       <button
-                        onClick={() => setShowMoncashGuide(false)}
-                        className="absolute top-3 right-3 text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]"
+                        key={m.id}
+                        onClick={() => { setSelectedMethod(m.id); setTopUpType('MANUAL'); }}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${selectedMethod === m.id && topUpType === 'MANUAL' ? 'border-[#FF7A00] bg-[#FF7A00]/10' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}
                       >
-                        <X size={16} />
+                        <img src={`/${m.img}`} className="w-8 h-8 object-contain" alt="" />
+                        <span className="font-black italic uppercase text-[9px]">{m.label}</span>
                       </button>
-                      <p className="text-blue-700 font-bold text-sm mb-3 flex items-center gap-2">
-                        <Info size={16} /> Kijan pou w depoze manyèlman
-                      </p>
-                      <div className="space-y-2">
-                        {[
-                          "Ouvri aplikasyon MonCash ou a",
-                          `Voye egzak montan an sou: ${process.env.NEXT_PUBLIC_MONCASH_NUMBER || '+(509) 48-08-8715'}`,
-                          "Non: Ralph Olivier Greffin",
-                          "Fè yon screenshot reçu konfirmasyon MonCash la",
-                          "Retounen isit epi upload screenshot la",
-                          "Soumèt demann nan — ekip nou ap konfime nan 15-25 minit"
-                        ].map((step, i) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                              {i + 1}
-                            </div>
-                            <p className="text-blue-800 text-xs">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <button onClick={() => fileInputRef.current?.click()} className="w-full py-6 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center gap-2 hover:bg-white/5 transition-all mb-4">
-                    <Upload size={20} className="text-[#FF7A00]" />
-                    <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'Upload Screenshot Resi'}</span>
-                  </button>
+                    ))}
+                  </div>
                 </div>
-              )}
  
-              {mccPaymentUrl ? (
-                <div className="space-y-3 animate-in fade-in duration-300">
-                  <button
-                    onClick={() => { window.location.href = mccPaymentUrl; }}
-                    className="w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                  >
-                    Peye via MonCash →
-                  </button>
-                  {mccPolling && (
-                    <p className="text-center text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest animate-pulse py-2">
-                      Ap verifye peman ou… 🔄
-                    </p>
-                  )}
-                  <button
-                    onClick={() => {
-                      setMccPaymentUrl(null);
-                      setMccPolling(false);
-                      if (mccPollRef.current) clearInterval(mccPollRef.current);
-                    }}
-                    className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-[var(--oz-text-sec)] hover:text-red-400 transition-all"
-                  >
-                    Anile
-                  </button>
+                {topUpType === 'MANUAL' && selectedMethod && (
+                  <div className="animate-in fade-in duration-300 p-5 rounded-3xl border space-y-3" style={{ background: colors.surface, borderColor: colors.border }}>
+                    <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#FF7A00' }}>Voye kòb la sou</p>
+                    <div className="flex items-center justify-between p-4 rounded-2xl border" style={{ background: colors.background, borderColor: colors.border }}>
+                      <span className="font-black italic text-base truncate pr-4" style={{ color: colors.textPrimary }}>
+                        {paymentMethods.find(x => x.id === selectedMethod)?.info}
+                      </span>
+                      <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-2.5 bg-[#FF7A00] rounded-2xl active:scale-90 text-white">
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                    {selectedMethod === 'usdt' && (
+                      <div className="bg-red-500/10 border border-red-400/30 rounded-2xl p-3 flex items-start gap-2">
+                        <span className="text-red-400 text-sm">⚠️</span>
+                        <p className="text-red-400 font-black text-[10px] uppercase tracking-wide leading-relaxed">TRC20 sèlman — Pa itilize ERC20 oswa BEP20!</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Reference field */}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">REFERANS / KONT OU (OPSYONÈL)</label>
+                  <input
+                    className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
+                    style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+                    placeholder="Nimewo referans tranzaksyon an..."
+                    value={topupNote}
+                    onChange={(e) => setTopupNote(e.target.value)}
+                  />
                 </div>
-              ) : (
+
+                {/* Photo upload */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-5 rounded-2xl border-2 border-dashed flex flex-col items-center gap-2 hover:opacity-80 transition-all"
+                  style={{ borderColor: colors.border, color: colors.textSecondary }}
+                >
+                  <Upload size={20} className="text-[#FF7A00]" />
+                  <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'FOTO PRÈV PEMAN (OPSYONÈL)'}</span>
+                </button>
+
+                {/* Submit manual */}
                 <button
                   onClick={handlePaymentLogic}
                   disabled={topupLoading || !(topUpAmount && selectedMethod)}
-                  className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                    topUpAmount && selectedMethod && !topupLoading ? 'bg-[#FF7A00] text-white' : 'bg-[var(--oz-border)] text-[var(--oz-text-sec)]'
-                  }`}
+                  className="w-full py-5 rounded-3xl font-black uppercase italic tracking-widest text-xs text-white active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  style={{ background: '#FF7A00' }}
                 >
-                  {topupLoading ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Ap trete...
-                    </>
-                  ) : 'Confirm TopUp'}
+                  {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'SOUMÈT DEMANN'}
                 </button>
-              )}
+              </div>{/* end Section 2 */}
+
             </div>
             </div>{/* end scroll */}
           </div>
@@ -1798,45 +1818,41 @@ export default function Dashboard() {
               <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
                 <Banknote size={14} /> Back Home
               </button>
-              <h2 className="text-4xl font-black italic uppercase mb-1 tracking-tighter leading-none">Withdraw</h2>
-              <p className="text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest">Retire kòb ou rapidman</p>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">RETRÈ LAJAN</h2>
             </div>
             <div style={{ height: 'calc(100vh - 180px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
             <div className="space-y-6">
-              <div className="bg-[#0F121E] p-8 rounded-[2.5rem] text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10"><Banknote size={80}/></div>
-                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">{withdrawIsIntl ? 'Montan an USD' : 'Kòb pou retire (HTG)'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none text-white" placeholder="0" type="number" min="0" value={withdrawAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }} />
+              <div className="space-y-1 mb-2">
+                <h3 className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#FF7A00' }}>DEMAND RETRÈ</h3>
+              </div>
+              <div className="bg-[var(--oz-surface)] p-8 rounded-3xl border border-[var(--oz-border)] relative overflow-hidden">
+                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">{withdrawIsIntl ? 'Montan an USD' : 'MONTAN (HTG)'}</label>
+                <input className="w-full bg-transparent font-black italic text-5xl outline-none" style={{ color: colors.textPrimary }} placeholder="0" type="number" min="0" value={withdrawAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }} />
                 {withdrawAmount && (
-                  <div className="mt-4 pt-4 border-t border-white/5 animate-in fade-in space-y-2">
-                    {withdrawIsIntl && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase italic text-white/40">Ekivalan HTG</span>
-                        <span className="text-[10px] font-black italic text-white">${withdrawAmount} USD = {withdrawHTG.toLocaleString()} HTG</span>
-                      </div>
-                    )}
+                  <div className="mt-4 pt-4 border-t border-[var(--oz-border)] animate-in fade-in space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase italic text-white/40">Frais Ozama (2.0%)</span>
-                      <span className="text-[10px] font-black uppercase italic text-white/40">-{calculateFees(String(withdrawHTG)).fee} HTG</span>
+                      <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Frais Ozama (2.0%)</span>
+                      <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">-{calculateFees(String(withdrawAmount)).fee} HTG</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-black italic text-green-400">Total Debite</span>
-                      <span className="text-xs font-black italic text-green-400">{(withdrawHTG + Number(calculateFees(String(withdrawHTG)).fee)).toLocaleString()} HTG</span>
+                      <span className="text-xs font-black italic text-[#FF7A00]">Total Debite</span>
+                      <span className="text-xs font-black italic text-[#FF7A00]">{(Number(withdrawAmount) + Number(calculateFees(String(withdrawAmount)).fee)).toLocaleString()} HTG</span>
                     </div>
                   </div>
                 )}
               </div>
  
               <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Ki kote pou n voye kòb la?</label>
-                <div className="grid grid-cols-2 gap-3">
+                <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">METÒD</label>
+                <div className="grid grid-cols-3 gap-3">
                   {paymentMethods.map((m) => (
-                    <button key={m.id} onClick={() => setWithdrawMethod(m.id)} className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FFF9F5]' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}>
-                      <div className="flex items-center gap-3">
-                        <img src={`/${m.img}`} className="w-6 h-6 object-contain" alt="" />
-                        <span className="font-black italic uppercase text-[10px]">{m.label}</span>
-                      </div>
-                      {withdrawMethod === m.id && <CheckCircle2 size={14} className="text-[#FF7A00]" />}
+                    <button
+                      key={m.id}
+                      onClick={() => setWithdrawMethod(m.id)}
+                      className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FF7A00]/10' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}
+                    >
+                      <img src={`/${m.img}`} className="w-8 h-8 object-contain" alt="" />
+                      <span className="font-black italic uppercase text-[9px]">{m.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1845,11 +1861,14 @@ export default function Dashboard() {
               {withdrawMethod && (
                 <div className="animate-in slide-in-from-top duration-300 space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-4 tracking-widest">Enfòmasyon Kont ou ({withdrawMethod})</label>
-                    <input className="w-full p-8 bg-[var(--oz-surface)] rounded-[2rem] font-bold outline-none border border-[var(--oz-border)] focus:bg-[var(--oz-bg)]" 
-                           placeholder={withdrawMethod === 'bank' ? "Nimewo Kont & Non Bank..." : "Nimewo Telefòn oswa Tag..."} 
-                           value={withdrawAccountInfo} 
-                           onChange={(e) => setWithdrawAccountInfo(e.target.value)} />
+                    <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">ENFÒMASYON KONT PÈSONÈL (OPSYONÈL)</label>
+                    <input
+                      className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
+                      style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder={withdrawMethod === 'bank' ? "Nimewo Kont & Non Bank..." : "Nimewo Telefòn oswa Tag..."}
+                      value={withdrawAccountInfo}
+                      onChange={(e) => setWithdrawAccountInfo(e.target.value)}
+                    />
                   </div>
                   <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 flex gap-4">
                     <Info size={20} className="text-blue-500 shrink-0" />
@@ -1860,8 +1879,13 @@ export default function Dashboard() {
                 </div>
               )}
  
-              <button onClick={handleWithdraw} className={`w-full py-8 rounded-[2.5rem] font-black uppercase italic tracking-widest shadow-xl text-xs transition-all active:scale-95 ${withdrawAmount && withdrawMethod ? 'bg-[#0F121E] text-white' : 'bg-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}>
-                Confirm Withdrawal
+              <button
+                onClick={handleWithdraw}
+                disabled={!(withdrawAmount && withdrawMethod)}
+                className="w-full py-5 rounded-3xl font-black uppercase italic tracking-widest text-xs active:scale-95 transition-all disabled:opacity-40 border-2"
+                style={{ borderColor: colors.error, color: colors.error, background: 'transparent' }}
+              >
+                MANDE RETRÈ
               </button>
             </div>
             </div>{/* end scroll */}
@@ -2987,14 +3011,14 @@ export default function Dashboard() {
                             <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
                             <div className="flex gap-2 mt-2 flex-wrap">
                               {user?.kyc?.status === 'APPROVED' ? (
-                                <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ Verified</span>
+                                <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ VERIFYE</span>
                               ) : user?.kyc?.status === 'PENDING' ? (
                                 <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
                               ) : (
-                                <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Unverified</span>
+                                <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Pa Verifye</span>
                               )}
                               {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                                <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
+                                <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ AJAN</span>
                               )}
                             </div>
                           </>
@@ -3084,7 +3108,7 @@ export default function Dashboard() {
                     <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
                       <div className="bg-yellow-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
+                        <p className="font-bold text-sm text-[var(--oz-text)]">Tablo Ajan</p>
                         <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
                       </div>
                     </div>
@@ -3188,9 +3212,9 @@ export default function Dashboard() {
                 </div>
 
                 {/* LOGOUT */}
-                <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 active:bg-red-100 transition-all">
-                  <LogOut size={18} className="text-red-500" />
-                  <span className="text-red-500 font-black text-sm uppercase">Dekonekte</span>
+                <button onClick={signOut} className="w-full border-2 rounded-2xl p-4 flex items-center justify-center gap-3 active:opacity-70 transition-all" style={{ borderColor: colors.error, color: colors.error, background: 'transparent' }}>
+                  <LogOut size={18} />
+                  <span className="font-black text-sm uppercase">DEKONEKTE</span>
                 </button>
                 </div>{/* end lg:hidden */}
 
@@ -3342,7 +3366,7 @@ export default function Dashboard() {
                         <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
                           <div className="bg-yellow-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
                           <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[var(--oz-text)]">Aplikasyon Ajan</p>
+                            <p className="font-bold text-sm text-[var(--oz-text)]">Tablo Ajan</p>
                             <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
                           </div>
                         </div>
