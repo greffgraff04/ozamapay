@@ -938,7 +938,7 @@ export default function Dashboard() {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(v => !v)}
-              className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
+              className="w-10 h-10 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
             >
               <Bell size={20} className="text-[var(--oz-text)]" />
               {unreadCount > 0 && (
@@ -1033,27 +1033,27 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <>
           {/* ── Mobile layout (hidden on desktop) ── */}
-          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(460px + env(safe-area-inset-top))' }}>
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(430px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
-              <header className="px-4 pt-4 pb-4 flex justify-between items-center">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
+              <header className="px-4 pt-2 pb-2 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-base shadow-lg relative">
                      {displayName.substring(0, 2).toUpperCase()}
-                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                     <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h1 className="text-xl font-black tracking-tighter uppercase italic truncate max-w-[160px]">{displayName}</h1>
-                      <ShieldCheck size={16} className="text-[#FF7A00]" />
+                    <div className="flex items-center gap-1.5">
+                      <h1 className="text-[17px] font-black tracking-tighter uppercase italic truncate max-w-[160px] leading-tight">{displayName}</h1>
+                      <ShieldCheck size={14} className="text-[#FF7A00]" />
                     </div>
-                    <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+                    <p className="text-[#8E929B] text-[9px] font-bold italic uppercase leading-tight">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
                   </div>
                 </div>
                 <div className="relative">
                   <button
                     onClick={() => setShowNotifications(v => !v)}
-                    className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
+                    className="w-10 h-10 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
                   >
                     <Bell size={20} className="text-[var(--oz-text)]" />
                     {unreadCount > 0 && (
@@ -1138,14 +1138,14 @@ export default function Dashboard() {
                       <div className="flex-1">
                         <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
                         <p className="text-sm font-black text-white">
-                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
                         </p>
                       </div>
                       <div className="w-px h-8 bg-white/30 mx-3" />
                       <div className="flex-1">
                         <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
                         <p className="text-sm font-black text-white">
-                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
                         </p>
                       </div>
                     </div>
@@ -1237,7 +1237,7 @@ export default function Dashboard() {
                 <h3 className="font-black italic uppercase text-sm tracking-wide flex items-center gap-2">
                   <Activity size={14} className="text-[#FF7A00]" /> DÈNYE TRANZAKSYON
                 </h3>
-                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest">Wè Tout →</button>
+                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase tracking-widest">Wè Tout →</button>
               </div>
             </div>
 
@@ -1286,7 +1286,7 @@ export default function Dashboard() {
                   return (
                     <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
                           {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
                         </div>
                         <div>
@@ -1330,14 +1330,14 @@ export default function Dashboard() {
                       <div className="flex-1">
                         <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
                         <p className="text-sm font-black text-white">
-                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
                         </p>
                       </div>
                       <div className="w-px h-8 bg-white/30 mx-3" />
                       <div className="flex-1">
                         <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
                         <p className="text-sm font-black text-white">
-                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + (t.amount || 0), 0).toLocaleString()} HTG
+                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
                         </p>
                       </div>
                     </div>
@@ -1376,7 +1376,7 @@ export default function Dashboard() {
                   </h3>
                   <button
                     onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }}
-                    className="text-[#FF7A00] text-[10px] font-black uppercase italic tracking-widest hover:underline"
+                    className="text-[#FF7A00] text-[10px] font-black uppercase tracking-widest hover:underline"
                   >
                     Wè Tout →
                   </button>
@@ -1410,7 +1410,7 @@ export default function Dashboard() {
                       return (
                         <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
                               {isDebit ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
                             </div>
                             <div>
@@ -1509,7 +1509,7 @@ export default function Dashboard() {
                   return (
                     <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
                           {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
                         </div>
                         <div>
