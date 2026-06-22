@@ -5,7 +5,7 @@ import {
   UserX, UserCheck, CheckCircle2, XCircle, ChevronDown, LogOut,
   TrendingUp, DollarSign, Search, Filter, ArrowUpRight, Zap, Clock,
   Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail,
-  Users2, KeyRound, RotateCcw, Send, AlertTriangle, Trophy
+  Users2, KeyRound, RotateCcw, Send, AlertTriangle, Trophy, AlertCircle
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -725,16 +725,28 @@ export default function AdminDashboard() {
                         <p className="text-[9px] font-mono text-white/30 mt-0.5">Voye imel 5 000 HTG bay tout itilizatè aktif yo</p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleSendPromoMondiale}
-                      disabled={promoLoading}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#FF6B00] hover:bg-[#E05E00] disabled:opacity-50 disabled:cursor-not-allowed border border-[#FF6B00]/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition active:scale-[0.98]"
-                    >
-                      {promoLoading
-                        ? <><span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Voye...</>
-                        : <><Trophy size={12} /> Voye Imel Mondial</>
-                      }
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={handleSendKycReminder}
+                        disabled={kycReminderLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-transparent hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed border border-[#FF6B00]/40 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#FF6B00] transition active:scale-[0.98]"
+                      >
+                        {kycReminderLoading
+                          ? <><span className="w-3 h-3 border border-[#FF6B00] border-t-transparent rounded-full animate-spin" /> Voye...</>
+                          : <><AlertCircle size={12} /> Voye Rapèl KYC</>
+                        }
+                      </button>
+                      <button
+                        onClick={handleSendPromoMondiale}
+                        disabled={promoLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#FF6B00] hover:bg-[#E05E00] disabled:opacity-50 disabled:cursor-not-allowed border border-[#FF6B00]/50 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition active:scale-[0.98]"
+                      >
+                        {promoLoading
+                          ? <><span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> Voye...</>
+                          : <><Trophy size={12} /> Voye Imel Mondial</>
+                        }
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

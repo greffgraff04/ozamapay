@@ -119,7 +119,7 @@ export class AdminController {
   }
 
   @Post('send-kyc-reminder')
-  @UseGuards(CooGuard)
+  @UseGuards(JwtAuthGuard, MasterGuard)
   @HttpCode(HttpStatus.OK)
   async sendKycReminder() {
     return this.adminService.sendKycReminder();

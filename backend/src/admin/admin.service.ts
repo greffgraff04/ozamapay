@@ -767,20 +767,24 @@ export class AdminService {
   }
 
   async sendKycReminder(): Promise<{ sent: number }> {
-    const users = await this.prisma.user.findMany({
-      where: {
-        isSuspended: false,
-        OR: [
-          { kyc: null },
-          { kyc: { status: { not: 'APPROVED' } } },
-        ],
-      },
-      select: { email: true, name: true },
-    });
+    const [totalCount, verifiedCount, users] = await Promise.all([
+      this.prisma.user.count({ where: { isSuspended: false } }),
+      this.prisma.kyc.count({ where: { status: 'APPROVED' } }),
+      this.prisma.user.findMany({
+        where: {
+          isSuspended: false,
+          OR: [
+            { kyc: null },
+            { kyc: { status: { not: 'APPROVED' } } },
+          ],
+        },
+        select: { email: true, name: true },
+      }),
+    ]);
 
     let sent = 0;
     for (const user of users) {
-      await this.mailService.sendKycReminder(user.email, user.name || 'Kliyan');
+      await this.mailService.sendKycReminder(user.email, user.name || 'Kliyan', verifiedCount, totalCount);
       sent++;
     }
     return { sent };

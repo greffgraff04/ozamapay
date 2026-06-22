@@ -422,12 +422,12 @@ export class MailService {
     await this.send('contact@ozamapay.com', `Nouvel demann komèsan: ${businessName}`, htmlAdmin);
   }
 
-  async sendKycReminder(email: string, name: string): Promise<void> {
+  async sendKycReminder(email: string, name: string, verifiedCount: number, totalCount: number): Promise<void> {
     const html = `<!DOCTYPE html>
 <html lang="ht">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ayiti nan Mondial 2026</title></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ou prèske rive — OZAMAPAY</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
 
@@ -435,8 +435,8 @@ export class MailService {
         <tr>
           <td style="background:#0F121E;padding:28px 40px;">
             <span style="display:inline-block;padding:4px 12px;background:#FF7A00;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffffff;text-transform:uppercase;margin-bottom:14px;">OZAMAPAY</span>
-            <p style="margin:0;font-size:26px;font-weight:800;color:#ffffff;line-height:1.3;">Ayiti nan Mondial 2026 &#127469;&#127481;&#9917;</p>
-            <p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5;">Jodi a 11 Jen 2026 &mdash; yon jou istorik pou tout Ayisyen</p>
+            <p style="margin:0;font-size:26px;font-weight:800;color:#ffffff;line-height:1.3;">Ou pr&egrave;ske rive</p>
+            <p style="margin:10px 0 0;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5;"><strong style="color:#FF7A00;">${verifiedCount}</strong> moun deja verifye kont yo sou <strong style="color:#ffffff;">${totalCount}</strong> enskripsyon</p>
           </td>
         </tr>
 
@@ -444,33 +444,25 @@ export class MailService {
         <tr>
           <td style="padding:36px 40px 32px;background:#ffffff;">
 
-            <p style="margin:0 0 18px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
+            <p style="margin:0 0 16px;font-size:14px;color:#444444;line-height:1.7;">Bonjou ${name},</p>
+            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Kont ou deja kreye. Ou manke yon s&egrave;l etap &mdash; verifikasyon idantite (KYC). Sa se s&egrave;l bagay ki separe ou ak aks&egrave; konpl&egrave; nan OZAMAPAY.</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">Apre KYC, ou ka voye lajan, resevwa transfè, epi gen kat VISA ou gratis &mdash; jou a jou depi Ayiti.</p>
 
-            <!-- FIFA box -->
-            <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:24px;text-align:center;margin:0 0 24px;">
-              <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:2px;color:#FF7A00;text-transform:uppercase;">FIFA World Cup 2026</p>
-              <p style="margin:12px 0 8px;font-size:36px;font-weight:900;color:#ffffff;line-height:1;">&#127469;&#127481; 52 ans &#9917;</p>
-              <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.5px;">Gwoup C &mdash; Brezil &middot; Maw&ograve;k &middot; Ek&ograve;s</p>
-            </div>
-
-            <p style="margin:0 0 14px;font-size:14px;color:#444444;line-height:1.7;">Jodi a, Ayiti sou sèn mondyal la. Pou premye fwa nan 52 ans, drapo nou an flote nan yon Coupe du Monde. Se pa sèlman foutbòl — se yon mesaj bay tout lemond: Ayiti la, Ayiti fò, Ayiti kapab.</p>
-            <p style="margin:0 0 24px;font-size:14px;color:#444444;line-height:1.7;">OZAMAPAY se menm espri sa a nan finans. Pandan w ap selebre jodi a, fè yon pa pou endepandans finansye ou tou. Pase KYC ou epi kòmanse achte enlign, peye ak Apple Pay ak Google Pay — depi Ayiti.</p>
-
-            <!-- 4 feature cards -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+            <!-- 4 benefit cards -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
               <tr>
                 <td width="50%" style="padding:0 6px 12px 0;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">&#127822;</p>
-                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Apple Pay</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak iPhone ou</p>
+                    <p style="margin:0;font-size:22px;">&#128179;</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Kat VISA Gratis</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Kreye l gratis apre KYC</p>
                   </div>
                 </td>
                 <td width="50%" style="padding:0 0 12px 6px;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">&#129302;</p>
-                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Google Pay</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Peye ak Android ou</p>
+                    <p style="margin:0;font-size:22px;">&#128176;</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Retr&egrave; Disponib</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">MonCash, Natcash, USDT</p>
                   </div>
                 </td>
               </tr>
@@ -479,31 +471,58 @@ export class MailService {
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
                     <p style="margin:0;font-size:22px;">&#128722;</p>
                     <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Amazon / AliExpress</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Achte sou tout platfòm</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Achte enlign toupatou</p>
                   </div>
                 </td>
                 <td width="50%" style="padding:0 0 0 6px;">
                   <div style="background:#f9f9f9;border-radius:8px;padding:16px;text-align:center;">
-                    <p style="margin:0;font-size:22px;">&#127381;</p>
-                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Gratis kreye</p>
-                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Kat VISA san frè adisyonèl</p>
+                    <p style="margin:0;font-size:22px;">&#127873;</p>
+                    <p style="margin:6px 0 0;font-size:12px;font-weight:700;color:#0F121E;">Gift Cards &amp; Kredi</p>
+                    <p style="margin:4px 0 0;font-size:11px;color:#888888;">Netflix, Spotify, Xbox...</p>
                   </div>
                 </td>
               </tr>
             </table>
 
-            <!-- Quote -->
-            <div style="border-left:3px solid #FF7A00;padding:14px 18px;margin:0 0 28px;background:#fff8f0;border-radius:0 6px 6px 0;">
-              <p style="margin:0;font-size:13px;font-style:italic;color:#7c4700;line-height:1.7;">&ldquo;Menm jan Ayiti reprezante peyi nou sou s&egrave;n mondyal foutbòl la &mdash; OZAMAPAY reprezante Ayiti sou s&egrave;n finansye ent&egrave;nasyonal la.&rdquo;</p>
-            </div>
+            <!-- 3 steps -->
+            <p style="margin:0 0 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#888888;">3 etap senp pou konplete KYC ou</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-bottom:18px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">1</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;padding-bottom:18px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Foto ID nasyonal ou</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Paspò, CIN, oswa lisans kondwi &mdash; kl&egrave; ak konpl&egrave;.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="vertical-align:top;width:36px;padding-bottom:18px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">2</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;padding-bottom:18px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Selfie ak ID ou</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Yon foto ou kenbe ID ou akoste figi ou.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="vertical-align:top;width:36px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#FF7A00;font-size:14px;font-weight:900;color:#ffffff;text-align:center;line-height:32px;">3</div>
+                </td>
+                <td style="vertical-align:top;padding-left:12px;">
+                  <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.5;">Peye fr&egrave; verifikasyon ($25)</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:#888888;line-height:1.5;">Yon s&egrave;l fwa pou tout lavi kont ou. Gratis pou kreyasyon kat VISA apre sa.</p>
+                </td>
+              </tr>
+            </table>
 
             <!-- CTA -->
-            <a href="https://ozamapay.com/dashboard" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Pase KYC mwen jodi a &mdash; Jou Mondial la &#9917; &rarr;</a>
+            <a href="https://ozamapay.com/kyc" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">F&egrave; KYC mwen kounye a &rarr;</a>
 
-            <!-- Signature -->
-            <div style="margin-top:32px;padding-top:20px;border-top:0.5px solid #eeeeee;">
-              <p style="margin:0;font-size:13px;font-weight:700;color:#0F121E;">Ralph Olivier Greffin</p>
-              <p style="margin:4px 0 0;font-size:12px;color:#888888;">Fondatè &amp; CEO &mdash; OZAMAPAY</p>
+            <!-- Closing italic line -->
+            <div style="border-left:3px solid #FF7A00;padding:14px 18px;background:#fff8f0;border-radius:0 6px 6px 0;">
+              <p style="margin:0;font-size:13px;font-style:italic;color:#7c4700;line-height:1.7;">&ldquo;Plis pase ${verifiedCount} moun deja verifye kont yo &mdash; pa rete d&egrave;y&egrave;. Kont ou deja la, jis fini etap la.&rdquo;</p>
             </div>
 
           </td>
@@ -512,7 +531,7 @@ export class MailService {
         <!-- FOOTER -->
         <tr>
           <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
-            <p style="margin:0 0 6px;font-size:11px;color:#999999;text-align:center;line-height:1.6;">Pa janm pataje PIN ou ak pèsòn &mdash; menm ekip OZAMAPAY pa ka mande l.</p>
+            <p style="margin:0 0 6px;font-size:11px;color:#999999;text-align:center;line-height:1.6;">Pa janm pataje PIN ou ak p&egrave;s&ograve;n &mdash; menm ekip OZAMAPAY pa ka mande l.</p>
             <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
@@ -522,7 +541,7 @@ export class MailService {
   </table>
 </body>
 </html>`;
-    await this.send(email, 'Ayiti nan Mondial 2026 🇭🇹⚽ — OZAMAPAY', html);
+    await this.send(email, 'Ou prèske rive — fini KYC ou nan OZAMAPAY', html);
   }
 
   async sendAdminInvitation(email: string, role: string, invitationLink: string): Promise<void> {
