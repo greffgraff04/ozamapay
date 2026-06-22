@@ -51,6 +51,15 @@ const formatTimeAgo = (dateString: string) => {
   return `${Math.floor(diffInMonths / 12)}an`;
 };
  
+const formatTxDate = (iso: string) => {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${day} ${month}, ${hh}:${mm}`;
+};
+
 const signOut = async () => {
   localStorage.clear();
   document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -1038,14 +1047,14 @@ export default function Dashboard() {
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-2 pb-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-base shadow-lg relative">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-[18px] shadow-lg relative">
                      {displayName.substring(0, 2).toUpperCase()}
-                     <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                     <div className="absolute w-3 h-3 bg-green-500 border-2 border-white rounded-full" style={{ top: -3, right: -3 }}></div>
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h1 className="text-[17px] font-black tracking-tighter uppercase italic truncate max-w-[160px] leading-tight">{displayName}</h1>
-                      <ShieldCheck size={14} className="text-[#FF7A00]" />
+                      <h1 className="text-[16px] font-black tracking-tighter uppercase italic truncate max-w-[160px] leading-tight">{displayName}</h1>
+                      <ShieldCheck size={16} className="text-[#FF7A00]" />
                     </div>
                     <p className="text-[#8E929B] text-[9px] font-bold italic uppercase leading-tight">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
                   </div>
@@ -1053,11 +1062,11 @@ export default function Dashboard() {
                 <div className="relative">
                   <button
                     onClick={() => setShowNotifications(v => !v)}
-                    className="w-10 h-10 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
+                    className="w-11 h-11 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
                   >
                     <Bell size={20} className="text-[var(--oz-text)]" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1">
+                      <span className="absolute min-w-[18px] h-[18px] bg-[#FF7A00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1 border-2 border-[var(--oz-bg)]" style={{ top: -5, right: -5 }}>
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -1116,190 +1125,158 @@ export default function Dashboard() {
                 </div>
               </header>
               <div className="px-4 pb-4">
-              <div className="relative w-full overflow-hidden rounded-[32px] shadow-xl"
-                   style={{ background: '#FF7A00', aspectRatio: '1.8 / 1' }}>
-                <div className="h-full flex flex-col justify-between p-8 text-white">
-                  <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.4em]">BALANS AKTYÈL</p>
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-4">
-                      {(() => {
-                        const raw = Number(user.wallet?.balance || 0);
-                        const [whole, dec] = raw.toFixed(2).split('.');
-                        return (
-                          <h2 className="text-3xl font-black tracking-tighter italic leading-none">
-                            <span className="text-white/70">HTG</span>
-                            {' '}{Number(whole).toLocaleString('fr-FR')}
-                            <span className="text-lg font-bold">.{dec}</span>
-                          </h2>
-                        );
-                      })()}
+              <div className="relative w-full overflow-hidden rounded-3xl shadow-xl border border-white/[.15]"
+                   style={{ background: '#FF7A00' }}>
+                <div className="flex flex-col justify-between p-6 text-white">
+                  <p className="text-white/85 text-[10px] font-black uppercase tracking-[0.4em] mb-2">BALANS AKTYÈL</p>
+                  {(() => {
+                    const raw = Number(user.wallet?.balance || 0);
+                    const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const dotIdx = formatted.lastIndexOf('.');
+                    const whole = formatted.slice(0, dotIdx);
+                    const dec = formatted.slice(dotIdx);
+                    return (
+                      <p className="font-black italic text-[32px] tracking-[-0.5px] leading-tight mb-4">
+                        <span className="text-white">HTG </span>
+                        {whole}
+                        <span className="text-[17px] font-black">{dec}</span>
+                      </p>
+                    );
+                  })()}
+                  <div className="flex items-center border-t border-white/30 pt-4">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Antre</p>
+                      <p className="text-[13px] font-black text-white">
+                        +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-0">
-                      <div className="flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
-                        <p className="text-sm font-black text-white">
-                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
-                        </p>
-                      </div>
-                      <div className="w-px h-8 bg-white/30 mx-3" />
-                      <div className="flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
-                        <p className="text-sm font-black text-white">
-                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
-                        </p>
-                      </div>
+                    <div className="w-px h-8 bg-white/30 mx-4" />
+                    <div className="flex-1">
+                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Soti</p>
+                      <p className="text-[13px] font-black text-white/75">
+                        -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
  
               {/* QUICK ACTIONS */}
-              <div className="grid grid-cols-5 gap-2 mt-4">
+              <div className="flex flex-row gap-2 mt-4">
                 {[
-                  { id: 'SEND', icon: <Send size={20} />, action: () => setShowSendModal(true) },
+                  { id: 'VOYE', icon: <Send size={20} />, action: () => setShowSendModal(true) },
                   { id: 'TOPUP', icon: <PlusCircle size={20} />, action: () => setActiveTab('topup') },
-                  { id: 'RETRAIT', icon: <Banknote size={20} />, action: () => setActiveTab('withdraw') },
-                  { id: 'CARDS', icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
+                  { id: 'RETRÈ', icon: <Banknote size={20} />, action: () => setActiveTab('withdraw') },
+                  { id: 'KAT', icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
+                  <button key={item.id} onClick={item.action} className="flex-1 flex flex-col items-center gap-[6px] active:scale-95 transition-all">
                     <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
-                    <span className="text-[7px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                    <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>{item.id}</span>
                   </button>
                 ))}
-                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-2 active:scale-95 transition-all">
+                <button onClick={() => setShowQrModal(true)} className="flex-1 flex flex-col items-center gap-[6px] active:scale-95 transition-all">
                   <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                     <QrCode size={20} />
                   </div>
-                  <span className="text-[7px] font-black uppercase tracking-widest opacity-70">QR</span>
+                  <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>QR</span>
                 </button>
               </div>
 
               {/* QR MODAL */}
               {showQrModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowQrModal(false)}>
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                  <div className="relative bg-[var(--oz-surface)] rounded-3xl p-7 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <h3 className="font-black text-lg text-[var(--oz-text)] uppercase tracking-tight">Kòd QR Peman Ou</h3>
-                        <p className="text-[10px] text-[var(--oz-text-sec)] mt-0.5 font-bold">Lòt moun skane sa pou voye kòb ba ou</p>
-                      </div>
-                      <button onClick={() => setShowQrModal(false)} className="w-9 h-9 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition">
-                        <X size={16} />
-                      </button>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.78)' }} onClick={() => setShowQrModal(false)}>
+                  <div className="relative w-full max-w-[320px] rounded-3xl p-6 border shadow-2xl flex flex-col items-center" style={{ background: colors.surface, borderColor: colors.border }} onClick={e => e.stopPropagation()}>
+                    <h3 className="font-black italic text-[16px] uppercase tracking-[1px] mb-1 text-center" style={{ color: colors.textPrimary }}>Kòd QR Peman Ou</h3>
+                    <p className="font-medium text-[11px] text-center mb-6" style={{ color: colors.textSecondary }}>Lòt moun skane sa pou voye kòb ba ou</p>
+                    <div className="p-4 rounded-2xl border mb-4" style={{ background: colors.background, borderColor: colors.border }}>
+                      <QRCodeSVG
+                        id="qr-svg"
+                        value={`https://ozamapay.com/pay?to=${user?.email || ''}`}
+                        size={180}
+                        fgColor={colors.accent}
+                        bgColor={colors.background}
+                        level="M"
+                      />
                     </div>
-                    <div className="flex flex-col items-center gap-5">
-                      <div className="p-4 bg-[#FDF8F3] rounded-3xl border border-orange-100">
-                        <QRCodeSVG
-                          id="qr-svg"
-                          value={`https://ozamapay.com/pay?to=${user?.email || ''}&name=${encodeURIComponent(user?.name || displayName)}`}
-                          size={200}
-                          fgColor="#FF6B00"
-                          bgColor="#FDF8F3"
-                          level="M"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs font-black text-[var(--oz-text)]">{displayName}</p>
-                        <p className="text-[11px] text-[var(--oz-text-sec)] mt-0.5">{user?.email}</p>
-                      </div>
-                      <div className="flex gap-3 w-full">
-                        <button
-                          onClick={() => { navigator.share?.({ title: 'OzamaPay QR', text: `Voye kòb ba ${displayName} sou OzamaPay`, url: `https://ozamapay.com/pay?to=${user?.email}&name=${encodeURIComponent(user?.name || displayName)}` }).catch(() => {}); }}
-                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition"
-                        >
-                          <Share2 size={14} /> Pataje
-                        </button>
-                        <button
-                          onClick={() => {
-                            const svg = document.querySelector('#qr-svg') as SVGElement | null;
-                            if (!svg) return;
-                            const data = new XMLSerializer().serializeToString(svg);
-                            const a = document.createElement('a');
-                            a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data);
-                            a.download = 'ozamapay-qr.svg';
-                            a.click();
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[var(--oz-surface)] text-[var(--oz-text)] text-xs font-black uppercase tracking-wider hover:bg-[var(--oz-border)] transition"
-                        >
-                          <Download size={14} /> Download
-                        </button>
-                      </div>
-                    </div>
+                    <p className="font-black italic text-[14px] uppercase tracking-[1px] mb-1" style={{ color: colors.textPrimary }}>{displayName}</p>
+                    {user?.email && <p className="font-medium text-[12px] mb-6" style={{ color: colors.textSecondary }}>{user.email}</p>}
+                    <button
+                      onClick={() => setShowQrModal(false)}
+                      className="font-black italic uppercase text-[12px] text-white rounded-2xl active:scale-95 transition-all"
+                      style={{ background: colors.accent, paddingTop: 14, paddingBottom: 14, paddingLeft: 32, paddingRight: 32, letterSpacing: '2px' }}
+                    >
+                      FÈMEN
+                    </button>
                   </div>
                 </div>
               )}
               </div>
               {/* RECENT ACTIVITY header — pinned in fixed hero, never scrolls */}
-              <div className="flex justify-between items-end px-4 pt-2 pb-3">
-                <h3 className="font-black italic uppercase text-sm tracking-wide flex items-center gap-2">
-                  <Activity size={14} className="text-[#FF7A00]" /> DÈNYE TRANZAKSYON
-                </h3>
-                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[10px] font-black uppercase tracking-widest">Wè Tout →</button>
+              <div className="flex justify-between items-center px-4 pt-2 pb-2">
+                <div className="flex items-center gap-[6px]">
+                  <Activity size={14} className="text-[#FF7A00]" />
+                  <h3 className="font-black italic uppercase text-[13px] tracking-[1px]" style={{ color: colors.textPrimary }}>DÈNYE TRANZAKSYON</h3>
+                </div>
+                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }} className="text-[#FF7A00] text-[11px] font-black italic tracking-[0.5px]">Wè Tout →</button>
               </div>
             </div>
 
             <div style={{ height: 'calc(100vh - 460px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
  
-            <div className="space-y-3">
+            <div className="space-y-2">
               {transactions.length === 0 ? (
-                <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-[2.2rem] border border-[var(--oz-border)]">
-                  Pa gen okenn tranzaksyon pou kounye a.
+                <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
+                  Pa gen okenn tranzaksyon poko.
                 </p>
               ) : (
-                transactions.slice(0, 4).map((t: any, idx) => {
+                transactions.slice(0, 5).map((t: any, idx) => {
                   const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
                     t.type === 'PAYMENT' || t.type === 'CARD' ||
                     (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
-                  const amt = (t.amount || 0).toLocaleString();
-                  const serviceName = (() => {
-                    if (t.type === 'TOPUP') return 'Topup';
-                    if (t.type === 'TRANSFER') return 'Transfer';
-                    if (t.type === 'WITHDRAWAL') return 'Retrè';
-                    if (t.type === 'CARD') return 'Visa';
-                    if (t.type === 'PAYMENT') return 'Peman';
-                    return t.type || 'Tranzaksyon';
-                  })();
-                  const METHOD_DISPLAY: Record<string, string> = {
-                    MONCASHCONNECT: 'MonCash', MONCASH: 'MonCash', MonCash: 'MonCash',
-                    NATCASH: 'NatCash', ZELLE: 'Zelle', CASHAPP: 'CashApp',
-                    PAYPAL: 'PayPal', ADMIN: 'Admin', OZAMAPAY: 'OzamaPay',
+                  const TX_LABELS: Record<string, string> = {
+                    TRANSFER: 'Virement', PAYMENT: 'Peman', TOPUP: 'Rechajman',
+                    WITHDRAWAL: 'Retrè', CARD: 'Kat',
                   };
-                  const methodLabel = t.type === 'TOPUP' && t.method
-                    ? (METHOD_DISPLAY[t.method] || t.method)
-                    : null;
-                  const agentFirstName = t.agentName ? t.agentName.split(' ')[0] : null;
-                  const txTitle = `${serviceName} ${amt} HTG${methodLabel ? ` · ${methodLabel}` : ''}${agentFirstName ? ` · kay ${agentFirstName}` : ''}`;
-                  const statusBadge = (() => {
-                    switch (t.status) {
-                      case 'COMPLETED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-green-100 text-green-600">Konplète</span>;
-                      case 'PENDING': case 'PROCESSING': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">Atant</span>;
-                      case 'FAILED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-500">Echwe</span>;
-                      case 'REJECTED': case 'CANCELLED': return <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-[var(--oz-surface)] text-[var(--oz-text-sec)]">Rejte</span>;
-                      default: return null;
-                    }
-                  })();
+                  const txTitle = t.title ?? (TX_LABELS[t.type] || t.type || 'Tranzaksyon');
+                  const amtNum = Number(t.amount || 0);
+                  const amtDisplay = amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const statusColor = t.status === 'COMPLETED' ? colors.success
+                    : (t.status === 'PENDING' || t.status === 'PROCESSING') ? colors.accent
+                    : colors.error;
+                  const STATUS_TX: Record<string, string> = {
+                    COMPLETED: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
+                    FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
+                  };
 
                   return (
-                    <div key={idx} className="tx-item group flex items-center justify-between p-5 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all active:scale-[0.98]">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                          {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
+                    <div key={idx} className="tx-item flex items-center justify-between p-4 rounded-[28px] border border-[var(--oz-border)] gap-2 transition-all active:scale-[0.98]" style={{ background: colors.surface }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                             style={{ backgroundColor: isDebit ? (isDark ? '#2A0C0C' : '#FEE2E2') : (isDark ? '#0C2414' : '#DCFCE7') }}>
+                          {isDebit
+                            ? <ArrowUpCircle size={20} style={{ color: colors.error }} />
+                            : <ArrowDownCircle size={20} style={{ color: colors.success }} />}
                         </div>
-                        <div>
-                          <p className="font-black text-[11px] uppercase italic leading-snug tracking-tight text-[var(--oz-text)] max-w-[180px]">
+                        <div className="min-w-0">
+                          <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[3px] truncate" style={{ color: colors.textPrimary }}>
                             {txTitle}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[9px] text-[#8E929B] font-bold uppercase tracking-tighter">
-                              {t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}
-                            </span>
-                            {statusBadge}
-                          </div>
+                          <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>
+                            {t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}
+                          </p>
                         </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="font-black text-[13px]" style={{ color: isDebit ? colors.error : colors.success }}>
+                          {isDebit ? '-' : '+'}{amtDisplay}
+                        </span>
+                        <span className="font-black uppercase text-[9px] px-[6px] py-[2px] rounded-[6px] border"
+                              style={{ borderColor: statusColor, color: statusColor }}>
+                          {STATUS_TX[t.status] || t.status}
+                        </span>
                       </div>
                     </div>
                   );
@@ -1317,110 +1294,124 @@ export default function Dashboard() {
 
               {/* Balance card */}
               <div
-                className="relative w-full max-w-[420px] overflow-hidden rounded-[32px] shadow-xl"
-                style={{ background: '#FF7A00', aspectRatio: '1.6 / 1' }}
+                className="relative w-full max-w-[420px] overflow-hidden rounded-3xl shadow-xl border border-white/[.15]"
+                style={{ background: '#FF7A00' }}
               >
-                <div className="h-full flex flex-col justify-between p-6 text-white">
-                  <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.4em]">BALANS AKTYÈL</p>
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tighter italic mb-4">
-                      HTG {user.wallet?.balance?.toLocaleString() || '0'}
-                    </h2>
-                    <div className="flex items-center gap-0">
-                      <div className="flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">ANTRE</p>
-                        <p className="text-sm font-black text-white">
-                          +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
-                        </p>
-                      </div>
-                      <div className="w-px h-8 bg-white/30 mx-3" />
-                      <div className="flex-1">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-white/60 mb-0.5">SOTI</p>
-                        <p className="text-sm font-black text-white">
-                          -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} HTG
-                        </p>
-                      </div>
+                <div className="flex flex-col justify-between p-6 text-white">
+                  <p className="text-white/85 text-[10px] font-black uppercase tracking-[0.4em] mb-2">BALANS AKTYÈL</p>
+                  {(() => {
+                    const raw = Number(user.wallet?.balance || 0);
+                    const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const dotIdx = formatted.lastIndexOf('.');
+                    const whole = formatted.slice(0, dotIdx);
+                    const dec = formatted.slice(dotIdx);
+                    return (
+                      <p className="font-black italic text-[32px] tracking-[-0.5px] leading-tight mb-4">
+                        <span className="text-white">HTG </span>{whole}<span className="text-[17px] font-black">{dec}</span>
+                      </p>
+                    );
+                  })()}
+                  <div className="flex items-center border-t border-white/30 pt-4">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Antre</p>
+                      <p className="text-[13px] font-black text-white">
+                        +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="w-px h-8 bg-white/30 mx-4" />
+                    <div className="flex-1">
+                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Soti</p>
+                      <p className="text-[13px] font-black text-white/75">
+                        -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Quick actions */}
-              <div className="flex flex-row gap-4">
+              <div className="flex flex-row gap-2">
                 {[
-                  { id: 'SEND',    icon: <Send size={18} />,       action: () => setShowSendModal(true) },
-                  { id: 'TOPUP',   icon: <PlusCircle size={18} />, action: () => setActiveTab('topup') },
-                  { id: 'RETRAIT', icon: <Banknote size={18} />,   action: () => setActiveTab('withdraw') },
-                  { id: 'CARDS',   icon: <CreditCard size={18} />, action: () => setActiveTab('cards') },
+                  { id: 'VOYE',  icon: <Send size={20} />,       action: () => setShowSendModal(true) },
+                  { id: 'TOPUP', icon: <PlusCircle size={20} />, action: () => setActiveTab('topup') },
+                  { id: 'RETRÈ', icon: <Banknote size={20} />,   action: () => setActiveTab('withdraw') },
+                  { id: 'KAT',   icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-[6px] hover:scale-105 transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
                       {item.icon}
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest opacity-70">{item.id}</span>
+                    <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>{item.id}</span>
                   </button>
                 ))}
-                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-1.5 hover:scale-105 transition-all">
+                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-[6px] hover:scale-105 transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
-                    <QrCode size={18} />
+                    <QrCode size={20} />
                   </div>
-                  <span className="text-[8px] font-black uppercase tracking-widest opacity-70">QR</span>
+                  <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>QR</span>
                 </button>
               </div>
 
               {/* Recent activity */}
               <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-black italic uppercase text-sm tracking-tight flex items-center gap-2">
-                    <Activity size={14} className="text-[#FF7A00]" /> DÈNYE TRANZAKSYON
-                  </h3>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-[6px]">
+                    <Activity size={14} className="text-[#FF7A00]" />
+                    <h3 className="font-black italic uppercase text-[13px] tracking-[1px]" style={{ color: colors.textPrimary }}>DÈNYE TRANZAKSYON</h3>
+                  </div>
                   <button
                     onClick={() => { if (typeof window !== 'undefined') window.location.href = '/dashboard/transactions'; }}
-                    className="text-[#FF7A00] text-[10px] font-black uppercase tracking-widest hover:underline"
+                    className="text-[11px] font-black italic tracking-[0.5px] hover:underline"
+                    style={{ color: colors.accent }}
                   >
                     Wè Tout →
                   </button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {transactions.length === 0 ? (
-                    <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)]">
-                      Pa gen okenn tranzaksyon pou kounye a.
+                    <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
+                      Pa gen okenn tranzaksyon poko.
                     </p>
                   ) : (
                     transactions.slice(0, 5).map((t: any, idx: number) => {
                       const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
                         t.type === 'PAYMENT' || t.type === 'CARD' ||
                         (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
-                      const amt = (t.amount || 0).toLocaleString();
-                      const METHOD_DISPLAY_D: Record<string, string> = {
-                        MONCASHCONNECT: 'MonCash', MONCASH: 'MonCash', MonCash: 'MonCash',
-                        NATCASH: 'NatCash', ZELLE: 'Zelle', CASHAPP: 'CashApp', PAYPAL: 'PayPal', ADMIN: 'Admin',
+                      const TX_LABELS_D: Record<string, string> = {
+                        TRANSFER: 'Virement', PAYMENT: 'Peman', TOPUP: 'Rechajman', WITHDRAWAL: 'Retrè', CARD: 'Kat',
                       };
-                      const serviceNameD = (() => {
-                        if (t.type === 'TOPUP') return 'Topup';
-                        if (t.type === 'TRANSFER') return 'Transfer';
-                        if (t.type === 'WITHDRAWAL') return 'Retrè';
-                        if (t.type === 'CARD') return 'Visa';
-                        if (t.type === 'PAYMENT') return 'Peman';
-                        return t.type || 'Tranzaksyon';
-                      })();
-                      const methodLabelD = t.type === 'TOPUP' && t.method
-                        ? (METHOD_DISPLAY_D[t.method] || t.method) : null;
-                      const txTitleD = `${serviceNameD} ${amt} HTG${methodLabelD ? ` · ${methodLabelD}` : ''}`;
+                      const txTitleD = t.title ?? (TX_LABELS_D[t.type] || t.type || 'Tranzaksyon');
+                      const amtNum = Number(t.amount || 0);
+                      const amtDisplay = amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      const statusColor = t.status === 'COMPLETED' ? colors.success
+                        : (t.status === 'PENDING' || t.status === 'PROCESSING') ? colors.accent : colors.error;
+                      const STATUS_TX_D: Record<string, string> = {
+                        COMPLETED: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
+                        FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
+                      };
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-[var(--oz-surface)] rounded-[28px] border border-[var(--oz-border)] hover:border-[#FF7A00]/20 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                              {isDebit ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+                        <div key={idx} className="flex items-center justify-between p-4 rounded-[28px] border border-[var(--oz-border)] gap-2 transition-all" style={{ background: colors.surface }}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                 style={{ backgroundColor: isDebit ? (isDark ? '#2A0C0C' : '#FEE2E2') : (isDark ? '#0C2414' : '#DCFCE7') }}>
+                              {isDebit
+                                ? <ArrowUpCircle size={20} style={{ color: colors.error }} />
+                                : <ArrowDownCircle size={20} style={{ color: colors.success }} />}
                             </div>
-                            <div>
-                              <p className="font-black text-[11px] uppercase italic tracking-tight text-[var(--oz-text)]">{txTitleD}</p>
-                              <p className="text-[10px] text-[var(--oz-text-sec)] mt-0.5">{t.createdAt ? formatTimeAgo(t.createdAt) : 'Kounye a'}</p>
+                            <div className="min-w-0">
+                              <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[3px] truncate" style={{ color: colors.textPrimary }}>{txTitleD}</p>
+                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
                             </div>
                           </div>
-                          <span className={`text-xs font-black tabular-nums ${isDebit ? 'text-red-500' : 'text-green-600'}`}>
-                            {isDebit ? '−' : '+'}{amt} HTG
-                          </span>
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <span className="font-black text-[13px]" style={{ color: isDebit ? colors.error : colors.success }}>
+                              {isDebit ? '-' : '+'}{amtDisplay}
+                            </span>
+                            <span className="font-black uppercase text-[9px] px-[6px] py-[2px] rounded-[6px] border"
+                                  style={{ borderColor: statusColor, color: statusColor }}>
+                              {STATUS_TX_D[t.status] || t.status}
+                            </span>
+                          </div>
                         </div>
                       );
                     })
@@ -1543,30 +1534,26 @@ export default function Dashboard() {
   <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={() => setShowSendModal(false)}>
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
     <div
-      className="relative w-full max-w-lg rounded-t-[32px] shadow-2xl animate-in slide-in-from-bottom duration-300"
-      style={{ background: colors.background }}
+      className="relative w-full max-w-lg rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 border-t border-[var(--oz-border)]"
+      style={{ background: colors.surface }}
       onClick={e => e.stopPropagation()}
     >
-      {/* Handle bar */}
-      <div className="flex justify-center pt-3 pb-1">
-        <div className="w-10 h-1 rounded-full bg-[var(--oz-border)]" />
-      </div>
-      <div className="px-6 pt-3 pb-10">
+      <div className="px-6 pt-6 pb-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black italic uppercase tracking-tighter" style={{ color: colors.textPrimary }}>VOYE LAJAN</h2>
-          <button onClick={() => setShowSendModal(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ background: colors.surface, color: colors.textSecondary }}>
-            <X size={16} />
+          <h2 className="text-[16px] font-black italic uppercase tracking-[1px]" style={{ color: colors.textPrimary }}>Voye Lajan</h2>
+          <button onClick={() => setShowSendModal(false)} className="w-8 h-8 rounded-xl flex items-center justify-center border" style={{ background: colors.background, color: colors.textSecondary, borderColor: colors.border }}>
+            <X size={15} />
           </button>
         </div>
 
         <div className="space-y-4">
           {/* RECIPIENT */}
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-black uppercase tracking-widest ml-1" style={{ color: colors.textSecondary }}>EMAIL DESTINATÈ</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>EMAIL DESTINATÈ</label>
             <input
-              className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
-              style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+              className="w-full px-4 py-[14px] rounded-xl font-medium outline-none border text-[14px]"
+              style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
               placeholder="example@ozamapay.com"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
@@ -1574,14 +1561,14 @@ export default function Dashboard() {
           </div>
 
           {/* AMOUNT */}
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-black uppercase tracking-widest ml-1 flex items-center gap-2" style={{ color: colors.textSecondary }}>
-              MONTAN (HTG)
-              <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-500 font-black text-[8px]">FRÈ: 0%</span>
-            </label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] font-black uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>MONTAN (HTG)</label>
+              <span className="px-[6px] py-[2px] rounded-[4px] font-black text-[9px]" style={{ background: 'rgba(34,197,94,0.15)', color: colors.success }}>FRÈ: 0%</span>
+            </div>
             <input
-              className="w-full px-5 py-4 rounded-2xl font-black italic text-3xl outline-none border"
-              style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+              className="w-full px-4 py-[14px] rounded-xl font-medium text-[14px] outline-none border"
+              style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
               placeholder="0.00"
               type="number"
               min="0"
@@ -1591,15 +1578,15 @@ export default function Dashboard() {
           </div>
 
           {/* PIN */}
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-black uppercase tracking-widest ml-1" style={{ color: colors.textSecondary }}>KÒD PIN SEKIRITE</label>
-            <div className="relative">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>KÒD PIN SEKIRITE</label>
+            <div className="flex items-center gap-2">
               <input
                 type={showPin ? 'text' : 'password'}
                 inputMode="numeric"
                 maxLength={4}
-                className="w-full px-5 py-4 pr-14 rounded-2xl font-black text-2xl outline-none border tracking-[10px]"
-                style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
+                className="flex-1 px-4 py-[14px] rounded-xl font-medium text-[14px] outline-none border tracking-[6px]"
+                style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
                 placeholder="••••"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
@@ -1607,8 +1594,8 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setShowPin(p => !p)}
-                className="absolute right-4 top-1/2 -translate-y-1/2"
-                style={{ color: colors.textSecondary }}
+                className="w-[50px] h-[50px] rounded-xl flex items-center justify-center border flex-shrink-0"
+                style={{ background: colors.background, borderColor: colors.border, color: colors.textSecondary }}
               >
                 {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -1618,10 +1605,10 @@ export default function Dashboard() {
           {/* SUBMIT */}
           <button
             onClick={() => { handleSendMoney(recipient, amount, pin); setShowSendModal(false); }}
-            className="w-full py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-xl active:scale-95 transition-all text-xs text-white mt-2"
-            style={{ background: '#FF7A00' }}
+            className="w-full py-4 rounded-2xl font-black uppercase italic tracking-[1.5px] shadow-xl active:scale-95 transition-all text-[13px] text-white mt-2"
+            style={{ background: colors.accent }}
           >
-            KONFIME TRANSFÈ
+            Konfime Transfè
           </button>
         </div>
       </div>
