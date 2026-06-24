@@ -1,54 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePwaInstall } from '../hooks/usePwaInstall';
 
 const DISMISSED_KEY = 'pwa_install_dismissed';
 
 export default function PWAInstallBanner() {
-  const [androidPrompt, setAndroidPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showIOS, setShowIOS] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const { deferredPrompt, isIOS, isStandalone, trigger } = usePwaInstall();
+  const [dismissed, setDismissed] = useState(false);
+  const [ready, setReady] = useState(false);
 
+  // Read localStorage only on client to avoid hydration mismatch
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (localStorage.getItem(DISMISSED_KEY)) return;
-    // Already installed (running in standalone)
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
-
-    if (isIOS && isSafari) {
-      setShowIOS(true);
-      setVisible(true);
-      return;
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setAndroidPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    setDismissed(!!localStorage.getItem(DISMISSED_KEY));
+    setReady(true);
   }, []);
 
   const dismiss = () => {
     localStorage.setItem(DISMISSED_KEY, '1');
-    setVisible(false);
+    setDismissed(true);
   };
 
   const install = async () => {
-    if (!androidPrompt) return;
-    await androidPrompt.prompt();
-    const { outcome } = await androidPrompt.userChoice;
-    if (outcome === 'accepted') setVisible(false);
+    await trigger();
+    setDismissed(true);
   };
+
+  const visible = ready && !dismissed && !isStandalone && (isIOS || !!deferredPrompt);
 
   if (!visible) return null;
 
@@ -69,7 +47,7 @@ export default function PWAInstallBanner() {
         <button onClick={dismiss} aria-label="Ferme" className="text-white/40 hover:text-white/70 text-lg leading-none mt-0.5">✕</button>
       </div>
 
-      {showIOS ? (
+      {isIOS ? (
         <p className="text-white/70 text-sm leading-snug">
           Pou enstale: tape <span className="text-white font-medium">⬆️ (Pataje)</span> → <span className="text-white font-medium">&ldquo;Ajoute sou Ekran Akèy&rdquo;</span>
         </p>

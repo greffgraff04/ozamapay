@@ -4,6 +4,7 @@ import { motion, Variants } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
+import InstallButton from '../InstallButton';
 
 export default function Hero() {
   const stats = [
@@ -121,6 +122,8 @@ export default function Hero() {
 
                 <span>Watch Demo</span>
               </button>
+
+              <InstallButton />
 
             </motion.div>
 
