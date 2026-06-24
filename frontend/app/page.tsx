@@ -15,6 +15,7 @@ import Testimonials from './components/sections/Testimonials';
 import WhyOzamapay from './components/sections/WhyOzamapay';
 import FAQ from './components/sections/FAQ';
 import FinalCTA from './components/sections/FinalCTA';
+import PWAInstallBanner from './components/PWAInstallBanner';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
 
@@ -137,6 +138,7 @@ export default function HomePage() {
 
   return (
     <main className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <PWAInstallBanner />
 
       {/* Invisible Easter-egg trigger wrapping the header logo area */}
       <div onClick={handleLogoClick}>

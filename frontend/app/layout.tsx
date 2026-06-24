@@ -1,5 +1,6 @@
 import { Space_Grotesk } from 'next/font/google';
 import "./globals.css";
+import ServiceWorkerRegister from './components/ServiceWorkerRegister';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -11,7 +12,7 @@ export const metadata = {
   title: "OZAMAPAY - Fintech Haiti",
   description: "Financial operating system for Haiti and the diaspora. Fast, secure, and borderless payments.",
   manifest: '/manifest.json',
-  themeColor: '#FF6B00',
+  themeColor: '#FF7A00',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -19,7 +20,7 @@ export const metadata = {
   },
   icons: {
     icon: '/faveiconozamapay.png',
-    apple: '/faveiconozamapay.png',
+    apple: '/icons/apple-touch-icon.png',
     shortcut: '/faveiconozamapay.png',
   },
   openGraph: {
@@ -38,25 +39,15 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={spaceGrotesk.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/faveiconozamapay.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="OZAMAPAY" />
-        <meta name="theme-color" content="#FF6B00" />
+        <meta name="theme-color" content="#FF7A00" />
       </head>
       <body className="antialiased font-space-grotesk bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
         {children}
-        <script dangerouslySetInnerHTML={{ __html: `
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js').then(function(reg) {
-        console.log('SW registered');
-      }).catch(function(err) {
-        console.log('SW error:', err);
-      });
-    });
-  }
-`}} />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
