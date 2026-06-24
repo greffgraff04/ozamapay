@@ -4,35 +4,40 @@ import { useState } from 'react';
 import { Download, X, Share } from 'lucide-react';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 
-type ModalType = 'ios' | 'unsupported' | null;
+type ModalType = 'ios' | 'pending' | 'unsupported' | null;
 
 export default function InstallButton({ className }: { className?: string }) {
-  const { deferredPrompt, isIOS, isStandalone, trigger } = usePwaInstall();
+  const { deferredPrompt, isIOS, isChromiumBased, isStandalone, trigger } = usePwaInstall();
   const [modal, setModal] = useState<ModalType>(null);
 
   if (isStandalone) return null;
 
   const handleClick = async () => {
     if (deferredPrompt) {
+      // Best case: Chrome/Edge already fired beforeinstallprompt — use native dialog
       await trigger();
     } else if (isIOS) {
       setModal('ios');
+    } else if (isChromiumBased) {
+      // Event hasn't fired yet (engagement heuristic not met) — guide via browser menu
+      setModal('pending');
     } else {
+      // Firefox, in-app browsers, old browsers — genuinely no install support
       setModal('unsupported');
     }
   };
 
+  // Match Watch Demo button exactly: same padding, font, height — only color differs
+  const defaultClass =
+    'group px-10 py-5 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl font-bold text-xl transition-all flex items-center justify-center space-x-3 text-orange-400';
+
   return (
     <>
-      <button
-        onClick={handleClick}
-        className={className ?? 'group px-10 py-5 bg-orange-500/10 border border-orange-500/40 hover:bg-orange-500/20 hover:border-orange-500 rounded-xl font-bold text-xl transition-all flex items-center justify-center space-x-3 text-orange-400'}
-      >
+      <button onClick={handleClick} className={className ?? defaultClass}>
         <Download className="w-6 h-6" />
         <span>Telechaje App</span>
       </button>
 
-      {/* Modal backdrop */}
       {modal && (
         <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
@@ -43,6 +48,7 @@ export default function InstallButton({ className }: { className?: string }) {
             className="w-full max-w-sm rounded-2xl bg-[#161929] border border-white/10 p-6 flex flex-col gap-4"
             onClick={e => e.stopPropagation()}
           >
+            {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -57,7 +63,8 @@ export default function InstallButton({ className }: { className?: string }) {
               </button>
             </div>
 
-            {modal === 'ios' ? (
+            {/* iOS instructions */}
+            {modal === 'ios' && (
               <>
                 <p className="text-white font-semibold">Enstale sou iPhone / iPad</p>
                 <ol className="flex flex-col gap-3">
@@ -82,7 +89,26 @@ export default function InstallButton({ className }: { className?: string }) {
                   </li>
                 </ol>
               </>
-            ) : (
+            )}
+
+            {/* Chrome/Edge — prompt not yet available, guide via browser menu */}
+            {modal === 'pending' && (
+              <>
+                <p className="text-white font-semibold">Enstale via meni navigatè a</p>
+                <p className="text-white/70 text-sm leading-snug">
+                  Ou ka enstale app la nan meni navigatè a: klike sou{' '}
+                  <span className="text-white font-medium">⋮ (3 pwen)</span> anwo adwat →{' '}
+                  <span className="text-white font-medium">&ldquo;Installer l&rsquo;application&rdquo;</span>{' '}
+                  oswa <span className="text-white font-medium">&ldquo;Add to Home screen&rdquo;</span>.
+                </p>
+                <p className="text-white/40 text-xs leading-snug">
+                  Si ou pa wè opsyon sa a, eseye retounen sou paj la nan kèk minit epi klike ankò.
+                </p>
+              </>
+            )}
+
+            {/* Truly unsupported browser */}
+            {modal === 'unsupported' && (
               <>
                 <p className="text-white font-semibold">Navigatè pa sipòte enstale</p>
                 <p className="text-white/70 text-sm leading-snug">
