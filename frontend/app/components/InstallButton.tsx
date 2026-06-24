@@ -29,12 +29,12 @@ export default function InstallButton({ className }: { className?: string }) {
 
   // Match Watch Demo button exactly: same padding, font, height — only color differs
   const defaultClass =
-    'group px-10 py-5 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl font-bold text-xl transition-all flex items-center justify-center space-x-3 text-orange-400';
+    'group px-5 py-3 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl font-semibold text-sm transition-all flex items-center justify-center space-x-2 text-orange-400 whitespace-nowrap';
 
   return (
     <>
       <button onClick={handleClick} className={className ?? defaultClass}>
-        <Download className="w-6 h-6" />
+        <Download className="w-4 h-4" />
         <span>Telechaje App</span>
       </button>
 

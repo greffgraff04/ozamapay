@@ -105,20 +105,20 @@ export default function Hero() {
             {/* Buttons */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-5 pt-4"
+              className="flex flex-col sm:flex-row gap-3 pt-4"
             >
 
               <Link
                 href="/register"
-                className="group px-10 py-5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl font-bold text-xl hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] transition-all hover:scale-105 flex items-center justify-center space-x-3 text-white"
+                className="group px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl font-semibold text-sm hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all hover:scale-105 flex items-center justify-center space-x-2 text-white whitespace-nowrap"
               >
                 <span>Create Free Account</span>
 
-                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
 
-              <button className="group px-10 py-5 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold text-xl transition-all flex items-center justify-center space-x-3 text-white">
-                <Play className="w-6 h-6 fill-white" />
+              <button className="group px-5 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-semibold text-sm transition-all flex items-center justify-center space-x-2 text-white whitespace-nowrap">
+                <Play className="w-4 h-4 fill-white" />
 
                 <span>Watch Demo</span>
               </button>
