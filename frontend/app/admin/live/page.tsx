@@ -129,6 +129,15 @@ export default function LiveActivityPage() {
     // no-op because state.initialised is still false at that point).
     globeRef.current.pointOfView({ altitude: 2.5 }, 0);
 
+    // Lower the renderer pixel ratio from the library default of
+    // Math.min(2, devicePixelRatio) down to 1.5 max. THREE.js setPixelRatio()
+    // internally calls setSize() which immediately resizes the canvas buffer,
+    // preventing the "Canvas area exceeds the maximum limit" warning that fires
+    // when canvas.width × canvas.height > 268,435,456 on high-DPI displays.
+    globeRef.current.renderer().setPixelRatio(
+      Math.min(window.devicePixelRatio, 1.5),
+    );
+
     const ctrl = globeRef.current.controls();
     ctrl.autoRotate      = true;
     ctrl.autoRotateSpeed = 0.4;
