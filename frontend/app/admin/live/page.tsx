@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Globe, Users, UserCheck, UserPlus, LogIn,
@@ -94,9 +94,10 @@ export default function LiveActivityPage() {
   const [globeH,       setGlobeH]      = useState(500);
   const [lastPoll,     setLastPoll]    = useState<Date | null>(null);
 
-  const globeRef    = useRef<any>(null);
-  const containerRef= useRef<HTMLDivElement>(null);
-  const prevRefsRef = useRef<Set<string>>(new Set());
+  const globeRef     = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevRefsRef  = useRef<Set<string>>(new Set());
+  const globeReadyRef= useRef(false);
 
   // ── auth ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,11 +122,24 @@ export default function LiveActivityPage() {
 
   // ── globe auto-rotate after ready ──────────────────────────────────────
   const onGlobeReady = useCallback(() => {
-    if (!globeRef.current) return;
+    if (!globeRef.current || globeReadyRef.current) return;
+    globeReadyRef.current = true;
+
+    // Pin the camera to a fixed altitude once — altitude 2.5× globe radius
+    globeRef.current.pointOfView({ altitude: 2.5 }, 0);
+
     const ctrl = globeRef.current.controls();
     ctrl.autoRotate      = true;
     ctrl.autoRotateSpeed = 0.4;
     ctrl.enableZoom      = false;
+    ctrl.enablePan       = false;
+
+    // Hard-lock the camera distance so neither user input nor any internal
+    // library pointOfView() call can change the zoom level.
+    const camDist = (globeRef.current.camera() as any).position.length();
+    ctrl.minDistance = camDist;
+    ctrl.maxDistance = camDist;
+    ctrl.update();
   }, []);
 
   // ── data polling — every 7 seconds ─────────────────────────────────────
@@ -173,19 +187,36 @@ export default function LiveActivityPage() {
   const signingUp    = visitors.filter((v) => v.status === 'SIGNING_UP').length;
   const authenticated= visitors.filter((v) => v.status === 'AUTHENTICATED').length;
 
-  // ── globe data ──────────────────────────────────────────────────────────
-  const geoVisitors = visitors.filter((v) => v.lat != null && v.lon != null);
-  const pointsData  = geoVisitors.map((v) => ({
-    lat:   v.lat!,
-    lng:   v.lon!,
-    color: STATUS_COLOR[v.status] ?? '#9CA3AF',
-    label: `${v.city ?? 'Enkoni'} · ${STATUS_LABEL[v.status]} · ${v.page}`,
-  }));
-  const ringsData = geoVisitors.map((v) => ({
-    lat:   v.lat!,
-    lng:   v.lon!,
-    color: STATUS_COLOR[v.status] ?? '#9CA3AF',
-  }));
+  // ── globe data — memoized so the 1s ticker never recreates these arrays ─
+  // Without useMemo, every setNow() tick causes new array references, which
+  // makes three-globe/react-globe.gl create new Three.js geometry objects
+  // every second without disposing old ones (memory leak).
+  const geoVisitors = useMemo(
+    () => visitors.filter((v) => v.lat != null && v.lon != null),
+    [visitors],
+  );
+  const pointsData = useMemo(
+    () => geoVisitors.map((v) => ({
+      lat:   v.lat!,
+      lng:   v.lon!,
+      color: STATUS_COLOR[v.status] ?? '#9CA3AF',
+      label: `${v.city ?? 'Enkoni'} · ${STATUS_LABEL[v.status]} · ${v.page}`,
+    })),
+    [geoVisitors],
+  );
+  const ringsData = useMemo(
+    () => geoVisitors.map((v) => ({
+      lat:   v.lat!,
+      lng:   v.lon!,
+      color: STATUS_COLOR[v.status] ?? '#9CA3AF',
+    })),
+    [geoVisitors],
+  );
+  const ringColorFn = useCallback(
+    (d: any) => (t: number) =>
+      `${d.color}${Math.round((1 - t) * 255).toString(16).padStart(2, '0')}`,
+    [],
+  );
 
   // ── loading / unauth states ─────────────────────────────────────────────
   if (!mounted) return (
@@ -284,7 +315,7 @@ export default function LiveActivityPage() {
                 ringsData={ringsData}
                 ringLat="lat"
                 ringLng="lng"
-                ringColor={(d: any) => (t: number) => `${d.color}${Math.round((1 - t) * 255).toString(16).padStart(2, '0')}`}
+                ringColor={ringColorFn}
                 ringMaxRadius={4}
                 ringPropagationSpeed={2}
                 ringRepeatPeriod={900}
