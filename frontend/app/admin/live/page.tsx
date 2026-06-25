@@ -97,7 +97,6 @@ export default function LiveActivityPage() {
   const globeRef     = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevRefsRef  = useRef<Set<string>>(new Set());
-  const globeReadyRef= useRef(false);
 
   // ── auth ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -122,10 +121,12 @@ export default function LiveActivityPage() {
 
   // ── globe auto-rotate after ready ──────────────────────────────────────
   const onGlobeReady = useCallback(() => {
-    if (!globeRef.current || globeReadyRef.current) return;
-    globeReadyRef.current = true;
+    if (!globeRef.current) return;
 
-    // Pin the camera to a fixed altitude once — altitude 2.5× globe radius
+    // Move camera to target altitude. Must happen before the minDistance lock
+    // so OrbitControls clamps to the right radius, not the library's init
+    // default of z=1000 (the library's own pointOfView call in its init is a
+    // no-op because state.initialised is still false at that point).
     globeRef.current.pointOfView({ altitude: 2.5 }, 0);
 
     const ctrl = globeRef.current.controls();
@@ -134,11 +135,16 @@ export default function LiveActivityPage() {
     ctrl.enableZoom      = false;
     ctrl.enablePan       = false;
 
-    // Hard-lock the camera distance so neither user input nor any internal
-    // library pointOfView() call can change the zoom level.
-    const camDist = (globeRef.current.camera() as any).position.length();
-    ctrl.minDistance = camDist;
-    ctrl.maxDistance = camDist;
+    // Diagnostic: confirm what distance the camera is at after pointOfView()
+    const rawDist = (globeRef.current.camera() as any).position.length();
+    console.log('[Globe] onGlobeReady — camera distance after pointOfView:', rawDist, '(locking to 350)');
+
+    // Hard-coded lock: globe radius = 100 THREE.js units; altitude 2.5 →
+    // distance = 100 × (1 + 2.5) = 350. Never compute this from camera
+    // state — the camera may still be settling if pointOfView() had any async
+    // component, causing us to accidentally lock onto the wrong radius.
+    ctrl.minDistance = 350;
+    ctrl.maxDistance = 350;
     ctrl.update();
   }, []);
 
