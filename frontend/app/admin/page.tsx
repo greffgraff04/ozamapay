@@ -545,6 +545,13 @@ export default function AdminDashboard() {
               {activeTab === item.id && <div className="absolute right-0 top-3 bottom-3 w-0.5 bg-[#FF6B00] rounded-l-full"></div>}
             </button>
           ))}
+          <div className="pt-2 mt-2 border-t border-white/[0.03]">
+            <a href="/admin/live"
+              className="flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-150 text-green-400/60 hover:text-green-400 hover:bg-green-400/[0.04] group">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />
+              {sidebarOpen && <span className="text-xs font-bold tracking-wide uppercase">Vue Live</span>}
+            </a>
+          </div>
         </nav>
 
         {sidebarOpen && (
