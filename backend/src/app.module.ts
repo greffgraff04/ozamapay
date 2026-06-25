@@ -21,6 +21,7 @@ import { MerchantModule } from './merchant/merchant.module';
 import { GiftCardsModule } from './giftcards/giftcards.module';
 import { ReloadlyAuthModule } from './reloadly/reloadly-auth.module';
 import { AirtimeModule } from './airtime/airtime.module';
+import { TrackingModule } from './tracking/tracking.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AirtimeModule } from './airtime/airtime.module';
     GiftCardsModule,
     ReloadlyAuthModule,
     AirtimeModule,
+    TrackingModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

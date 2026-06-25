@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { TrackingService } from '../tracking/tracking.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
 import { MasterGuard } from './master.guard';
@@ -9,7 +10,15 @@ import { AgentAccessGuard } from './agent-access.guard';
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly trackingService: TrackingService,
+  ) {}
+
+  @Get('live-activity')
+  async getLiveActivity() {
+    return this.trackingService.getLiveActivity();
+  }
 
   @Get('dashboard-stats')
   async getDashboardStats() {

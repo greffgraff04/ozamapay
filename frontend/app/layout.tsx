@@ -1,6 +1,7 @@
 import { Space_Grotesk } from 'next/font/google';
 import "./globals.css";
 import ServiceWorkerRegister from './components/ServiceWorkerRegister';
+import VisitorTracker from './components/VisitorTracker';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body className="antialiased font-space-grotesk bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
         {children}
         <ServiceWorkerRegister />
+        <VisitorTracker />
       </body>
     </html>
   );

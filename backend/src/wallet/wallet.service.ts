@@ -7,6 +7,7 @@ import {
 
 import { Prisma, TransactionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { TrackingService } from '../tracking/tracking.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,7 +25,10 @@ const isInternational = (method: string) => INTERNATIONAL_METHODS.includes(metho
 
 @Injectable()
 export class WalletService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private trackingService: TrackingService,
+  ) {}
 
   // ======================================================
   // HELPERS
@@ -314,7 +318,7 @@ export class WalletService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const currentWallet = await tx.wallet.findUnique({ where: { userId: senderId } });
       if (!currentWallet || Number(currentWallet.balance) < totalDebit) {
         throw new BadRequestException('Balans ensifizan');
@@ -377,6 +381,16 @@ export class WalletService {
         transaction,
       };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    this.trackingService.pushRecentTransfer({
+      reference: result.transaction.reference,
+      amount: Number(result.transaction.amount),
+      senderLabel: this.trackingService.maskName(sender.name),
+      receiverLabel: this.trackingService.maskName(recipient.name),
+      createdAt: Date.now(),
+    });
+
+    return result;
   }
 
   // ======================================================
