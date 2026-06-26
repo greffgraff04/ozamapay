@@ -1,15 +1,14 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import UserSecurityCard from "./UserSecurityCard"; // Ajiste chemen an si w mete l nan yon lòt katab
 import {
-  Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark,
+  Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, ChevronLeft,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
-  ArrowDown, ArrowUp, ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, LogOut, Settings,
+  ArrowDown, ArrowUp, ArrowDownCircle, ArrowUpCircle, Bell, Wallet2, Settings,
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
-  Sun, Moon
+  Sun, Moon, ChevronDown
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -31,6 +30,15 @@ const PAYMENT_INFO = {
   cashapp: { acc: "$Pascoue93", name: "Ralph Olivier Greffin" },
   usdt: { acc: "TBVM2M4UgjF4aWfseHVDuW1ZTKc7dTTWbi", name: "TRC20 Network" },
   natcash: { label: 'MonCash / NatCash', value: 'À konfigire - Kontakte sipò nou', note: 'HTG Transfer' }
+};
+
+const FINANCE_ACCOUNTS: Record<string, { label: string; info: string; warning?: string }> = {
+  wise:    { label: 'Email Wise',     info: 'contact@ozamapay.com' },
+  meru:    { label: 'Email Meru',     info: 'oliou04@gmail.com' },
+  zelle:   { label: 'Nimewo Zelle',   info: '786 868 6782' },
+  cashapp: { label: 'CashApp Tag',    info: '$Pascoue93' },
+  usdt:    { label: 'Adrès TRC20',    info: 'TBVM2M4UgjF4aWfseHVDuW1ZTKc7dTTWbi', warning: '⚠️ Sèlman rezo TRC20!' },
+  natcash: { label: 'Nimewo NatCash', info: '1920222' },
 };
  
 const formatTimeAgo = (dateString: string) => {
@@ -182,12 +190,22 @@ export default function Dashboard() {
   const [atPhone, setAtPhone] = useState('');
   const [atLoading, setAtLoading] = useState(false);
   const [atResult, setAtResult] = useState<any>(null);
+  const [atOrders, setAtOrders] = useState<any[]>([]);
+  const [atOrdersLoading, setAtOrdersLoading] = useState(false);
+  // Gift card buy modal
+  const [gcSelectedProduct, setGcSelectedProduct] = useState<any>(null);
+  const [gcBuyAmount, setGcBuyAmount] = useState('');
+  // Profile PIN form
+  const [profilePinValue, setProfilePinValue] = useState('');
+  const [profilePinVisible, setProfilePinVisible] = useState(false);
+  const [profilePinLoading, setProfilePinLoading] = useState(false);
 
  const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
 
   const { colors, isDark, toggleTheme } = useTheme();
+  const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
 
   const fetchSecretDetails = async () => {
     if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
@@ -302,6 +320,34 @@ export default function Dashboard() {
       showToast('Erè rezo', 'error');
     } finally {
       setEditProfileLoading(false);
+    }
+  };
+
+  const handleSavePin = async () => {
+    if (profilePinValue.length < 4 || profilePinValue.length > 6) {
+      showToast('PIN dwe gen 4 a 6 chif.', 'error');
+      return;
+    }
+    setProfilePinLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${backendUrl}/user/change-pin`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPin: profilePinValue }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('PIN mete ajou ak siksè.', 'success');
+        setProfilePinValue('');
+        setUser((prev: any) => prev ? { ...prev, transactionPin: '****' } : prev);
+      } else {
+        showToast(data.message || 'Chanjman PIN echwe.', 'error');
+      }
+    } catch {
+      showToast('Erè rezo', 'error');
+    } finally {
+      setProfilePinLoading(false);
     }
   };
 
@@ -498,15 +544,23 @@ export default function Dashboard() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (gcSection !== 'airtime' || atOperators.length > 0 || atOpLoading) return;
+    if (gcSection !== 'airtime') return;
     const token = localStorage.getItem('token');
     if (!token) return;
-    setAtOpLoading(true);
-    fetch(`${backendUrl}/airtime/operators`, { headers: { Authorization: `Bearer ${token}` } })
+    if (atOperators.length === 0 && !atOpLoading) {
+      setAtOpLoading(true);
+      fetch(`${backendUrl}/airtime/operators`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(ops => setAtOperators(Array.isArray(ops) ? ops : []))
+        .catch(() => {})
+        .finally(() => setAtOpLoading(false));
+    }
+    setAtOrdersLoading(true);
+    fetch(`${backendUrl}/airtime/orders`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
-      .then(ops => setAtOperators(Array.isArray(ops) ? ops : []))
+      .then(orders => setAtOrders(Array.isArray(orders) ? orders : []))
       .catch(() => {})
-      .finally(() => setAtOpLoading(false));
+      .finally(() => setAtOrdersLoading(false));
   }, [gcSection]);
 
   useEffect(() => {
@@ -810,7 +864,7 @@ export default function Dashboard() {
   };
  
   if (loading || !user || !minLoadDone) return (
-    <div className="min-h-screen bg-[var(--oz-bg)] flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: 'radial-gradient(130% 80% at 50% -10%, #1c1322 0%, #0a0c14 55%)' }}>
       <img src="/logoicon.png" alt="OzamaPay" className="w-44 h-44 object-contain animate-pulse" />
       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
     </div>
@@ -819,7 +873,10 @@ export default function Dashboard() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'Itilizatè';
  
   return (
-    <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-28 lg:pb-0 lg:pl-64" style={{ backgroundColor: colors.background, color: colors.textPrimary }}>
+    <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-32 lg:pb-0 lg:pl-64" style={{ background: 'radial-gradient(130% 80% at 50% -10%, #1c1322 0%, #0a0c14 55%)', color: '#fff' }}>
+      {/* atmosphere orbs */}
+      <div aria-hidden style={{ position: 'fixed', top: -60, left: '50%', transform: 'translateX(-50%)', width: 420, height: 340, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 68%)', filter: 'blur(24px)', pointerEvents: 'none', zIndex: 0 }} />
+      <div aria-hidden style={{ position: 'fixed', bottom: 60, right: -60, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(120,90,255,.14),transparent 70%)', filter: 'blur(24px)', animation: 'floatA 14s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
       
       {/* TOAST NOTIFICATION */}
       {toast && (
@@ -1047,26 +1104,30 @@ export default function Dashboard() {
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-2 pb-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-[52px] h-[52px] rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-[18px] shadow-lg relative">
-                     {displayName.substring(0, 2).toUpperCase()}
-                     <div className="absolute w-3 h-3 bg-green-500 border-2 border-white rounded-full" style={{ top: -3, right: -3 }}></div>
+                  {/* gradient-ring avatar */}
+                  <div style={{ position: 'relative', width: 46, height: 46, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#FF7A00,#ff9d4d)', flexShrink: 0 }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#14161f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15 }}>
+                      {displayName.substring(0, 2).toUpperCase()}
+                    </div>
+                    <span className="oz-dotPulse" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#22C55E', border: '2px solid #0A0C14' }} />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h1 className="text-[16px] font-black tracking-tighter uppercase italic truncate max-w-[160px] leading-tight">{displayName}</h1>
-                      <ShieldCheck size={16} className="text-[#FF7A00]" />
+                      <ShieldCheck size={14} className="text-[#FF7A00]" />
                     </div>
-                    <p className="text-[#8E929B] text-[9px] font-bold italic uppercase leading-tight">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', fontWeight: 600, letterSpacing: '.04em' }}>Bonjou · <span className="text-[#FF7A00]">OzamaPay</span></p>
                   </div>
                 </div>
                 <div className="relative">
                   <button
                     onClick={() => setShowNotifications(v => !v)}
-                    className="w-11 h-11 rounded-xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
+                    className="active:scale-90 transition-all relative"
+                    style={{ width: 42, height: 42, borderRadius: 14, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Bell size={20} className="text-[var(--oz-text)]" />
+                    <Bell size={19} color="#fff" />
                     {unreadCount > 0 && (
-                      <span className="absolute min-w-[18px] h-[18px] bg-[#FF7A00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1 border-2 border-[var(--oz-bg)]" style={{ top: -5, right: -5 }}>
+                      <span className="absolute min-w-[18px] h-[18px] bg-[#FF7A00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1" style={{ top: -4, right: -4 }}>
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -1125,62 +1186,92 @@ export default function Dashboard() {
                 </div>
               </header>
               <div className="px-4 pb-4">
-              <div className="relative w-full overflow-hidden rounded-3xl shadow-xl border border-white/[.15]"
-                   style={{ background: '#FF7A00' }}>
-                <div className="flex flex-col justify-between p-6 text-white">
-                  <p className="text-white/85 text-[10px] font-black uppercase tracking-[0.4em] mb-2">BALANS AKTYÈL</p>
-                  {(() => {
-                    const raw = Number(user.wallet?.balance || 0);
-                    const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    const dotIdx = formatted.lastIndexOf('.');
-                    const whole = formatted.slice(0, dotIdx);
-                    const dec = formatted.slice(dotIdx);
-                    return (
-                      <p className="font-black italic text-[32px] tracking-[-0.5px] leading-tight mb-4">
-                        <span className="text-white">HTG </span>
-                        {whole}
-                        <span className="text-[17px] font-black">{dec}</span>
-                      </p>
-                    );
-                  })()}
-                  <div className="flex items-center border-t border-white/30 pt-4">
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Antre</p>
-                      <p className="text-[13px] font-black text-white">
-                        +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+              {/* BALANCE CARD — glass + glow + sparkline */}
+              <div className="relative w-full overflow-hidden oz-glass-strong" style={{ borderRadius: 30, padding: 22 }}>
+                {/* orange glow blob */}
+                <div aria-hidden style={{ position: 'absolute', top: -30, right: -10, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 70%)', pointerEvents: 'none' }} />
+                {/* label row */}
+                <div className="flex justify-between items-center">
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)' }}>BALANS DISPONIB</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(34,197,94,.14)', padding: '4px 9px', borderRadius: 20 }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5h-9M19 5v9" stroke="#22C55E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#22C55E' }}>Aktif</span>
+                  </span>
+                </div>
+                {/* balance number */}
+                {(() => {
+                  const raw = Number(user.wallet?.balance || 0);
+                  const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const dotIdx = formatted.lastIndexOf('.');
+                  const whole = formatted.slice(0, dotIdx);
+                  const dec = formatted.slice(dotIdx);
+                  return (
+                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 38, color: '#fff', letterSpacing: '-0.02em', marginTop: 8 }}>
+                      {whole}<span style={{ fontSize: 19, color: 'rgba(255,255,255,.55)' }}>{dec} <span style={{ fontSize: 13, letterSpacing: 0 }}>HTG</span></span>
+                    </p>
+                  );
+                })()}
+                {/* sparkline */}
+                <svg width="100%" height="56" viewBox="0 0 320 56" preserveAspectRatio="none" style={{ display: 'block', marginTop: 10 }}>
+                  <defs>
+                    <linearGradient id="spk-m" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="#FF7A00" stopOpacity=".38" />
+                      <stop offset="1" stopColor="#FF7A00" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12 L320 56 L0 56 Z" fill="url(#spk-m)" />
+                  <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12" fill="none" stroke="#FF7A00" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="600" strokeDashoffset="600" style={{ animation: 'dash 1.4s ease-out .2s forwards' }} />
+                </svg>
+                {/* Antre / Soti mini chips */}
+                <div className="flex gap-[10px] mt-[6px]">
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '10px 12px' }}>
+                    <div className="flex items-center gap-[6px]">
+                      <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(34,197,94,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ArrowDownCircle size={11} color="#22C55E" />
+                      </div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>ANTRE</span>
                     </div>
-                    <div className="w-px h-8 bg-white/30 mx-4" />
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Soti</p>
-                      <p className="text-[13px] font-black text-white/75">
-                        -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#fff', marginTop: 4 }}>
+                      +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '10px 12px' }}>
+                    <div className="flex items-center gap-[6px]">
+                      <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(239,68,68,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ArrowUpCircle size={11} color="#EF4444" />
+                      </div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>SOTI</span>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: '#fff', marginTop: 4 }}>
+                      -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
                 </div>
               </div>
- 
+
               {/* QUICK ACTIONS */}
               <div className="flex flex-row gap-2 mt-4">
                 {[
-                  { id: 'VOYE', icon: <Send size={20} />, action: () => setShowSendModal(true) },
-                  { id: 'TOPUP', icon: <PlusCircle size={20} />, action: () => setActiveTab('topup') },
-                  { id: 'RETRÈ', icon: <Banknote size={20} />, action: () => setActiveTab('withdraw') },
-                  { id: 'KAT', icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
+                  { id: 'VOYE',  icon: <Send size={19} />,       action: () => setShowSendModal(true), primary: true },
+                  { id: 'TOPUP', icon: <PlusCircle size={19} />, action: () => setActiveTab('topup') },
+                  { id: 'RETRÈ', icon: <Banknote size={19} />,   action: () => setActiveTab('withdraw') },
+                  { id: 'KAT',   icon: <CreditCard size={19} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={item.action} className="flex-1 flex flex-col items-center gap-[6px] active:scale-95 transition-all">
-                    <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={item.action} className="flex-1 flex flex-col items-center gap-[7px] active:scale-95 transition-all">
+                    <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
+                      ? { width: 52, height: 52, borderRadius: 18, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
+                      : { width: 52, height: 52, borderRadius: 18, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }
+                    }>
                       {item.icon}
                     </div>
-                    <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>{item.id}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>{item.id}</span>
                   </button>
                 ))}
-                <button onClick={() => setShowQrModal(true)} className="flex-1 flex flex-col items-center gap-[6px] active:scale-95 transition-all">
-                  <div className="w-full aspect-square rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
-                    <QrCode size={20} />
+                <button onClick={() => setShowQrModal(true)} className="flex-1 flex flex-col items-center gap-[7px] active:scale-95 transition-all">
+                  <div style={{ width: 52, height: 52, borderRadius: 18, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                    <QrCode size={19} />
                   </div>
-                  <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>QR</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>QR</span>
                 </button>
               </div>
 
@@ -1252,29 +1343,29 @@ export default function Dashboard() {
                   };
 
                   return (
-                    <div key={idx} className="tx-item flex items-center justify-between p-4 rounded-[28px] border border-[var(--oz-border)] gap-2 transition-all active:scale-[0.98]" style={{ background: colors.surface }}>
+                    <div key={idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                             style={{ backgroundColor: isDebit ? (isDark ? '#2A0C0C' : '#FEE2E2') : (isDark ? '#0C2414' : '#DCFCE7') }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                             style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
                           {isDebit
-                            ? <ArrowUpCircle size={20} style={{ color: colors.error }} />
-                            : <ArrowDownCircle size={20} style={{ color: colors.success }} />}
+                            ? <ArrowUpCircle size={18} color="#EF4444" />
+                            : <ArrowDownCircle size={18} color="#22C55E" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[3px] truncate" style={{ color: colors.textPrimary }}>
+                          <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate text-white">
                             {txTitle}
                           </p>
-                          <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>
+                          <p className="font-medium text-[10px]" style={{ color: 'rgba(255,255,255,.45)' }}>
                             {t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}
                           </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        <span className="font-black text-[13px]" style={{ color: isDebit ? colors.error : colors.success }}>
+                        <span className="font-black text-[13px]" style={{ color: isDebit ? '#EF4444' : '#22C55E' }}>
                           {isDebit ? '-' : '+'}{amtDisplay}
                         </span>
-                        <span className="font-black uppercase text-[9px] px-[6px] py-[2px] rounded-[6px] border"
-                              style={{ borderColor: statusColor, color: statusColor }}>
+                        <span className="font-black uppercase text-[8px] px-[6px] py-[2px] rounded-full"
+                              style={{ background: `${statusColor}22`, color: statusColor }}>
                           {STATUS_TX[t.status] || t.status}
                         </span>
                       </div>
@@ -1292,63 +1383,87 @@ export default function Dashboard() {
             {/* LEFT COLUMN — balance + actions + activity */}
             <div className="flex flex-col gap-8">
 
-              {/* Balance card */}
-              <div
-                className="relative w-full max-w-[420px] overflow-hidden rounded-3xl shadow-xl border border-white/[.15]"
-                style={{ background: '#FF7A00' }}
-              >
-                <div className="flex flex-col justify-between p-6 text-white">
-                  <p className="text-white/85 text-[10px] font-black uppercase tracking-[0.4em] mb-2">BALANS AKTYÈL</p>
-                  {(() => {
-                    const raw = Number(user.wallet?.balance || 0);
-                    const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    const dotIdx = formatted.lastIndexOf('.');
-                    const whole = formatted.slice(0, dotIdx);
-                    const dec = formatted.slice(dotIdx);
-                    return (
-                      <p className="font-black italic text-[32px] tracking-[-0.5px] leading-tight mb-4">
-                        <span className="text-white">HTG </span>{whole}<span className="text-[17px] font-black">{dec}</span>
-                      </p>
-                    );
-                  })()}
-                  <div className="flex items-center border-t border-white/30 pt-4">
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Antre</p>
-                      <p className="text-[13px] font-black text-white">
-                        +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+              {/* Balance card — glass + glow + sparkline (desktop) */}
+              <div className="relative overflow-hidden oz-glass-strong" style={{ borderRadius: 30, padding: 26, maxWidth: 420 }}>
+                <div aria-hidden style={{ position: 'absolute', top: -30, right: -10, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 70%)', pointerEvents: 'none' }} />
+                <div className="flex justify-between items-center">
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)' }}>BALANS DISPONIB</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(34,197,94,.14)', padding: '4px 10px', borderRadius: 20 }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5h-9M19 5v9" stroke="#22C55E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#22C55E' }}>Aktif</span>
+                  </span>
+                </div>
+                {(() => {
+                  const raw = Number(user.wallet?.balance || 0);
+                  const formatted = raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const dotIdx = formatted.lastIndexOf('.');
+                  const whole = formatted.slice(0, dotIdx);
+                  const dec = formatted.slice(dotIdx);
+                  return (
+                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 42, color: '#fff', letterSpacing: '-0.02em', marginTop: 10 }}>
+                      {whole}<span style={{ fontSize: 21, color: 'rgba(255,255,255,.55)' }}>{dec} <span style={{ fontSize: 14, letterSpacing: 0 }}>HTG</span></span>
+                    </p>
+                  );
+                })()}
+                <svg width="100%" height="64" viewBox="0 0 320 64" preserveAspectRatio="none" style={{ display: 'block', marginTop: 12 }}>
+                  <defs>
+                    <linearGradient id="spk-d" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="#FF7A00" stopOpacity=".38" />
+                      <stop offset="1" stopColor="#FF7A00" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0 46 C30 42 48 26 76 30 S122 12 150 22 S206 44 236 20 S294 8 320 16 L320 64 L0 64 Z" fill="url(#spk-d)" />
+                  <path d="M0 46 C30 42 48 26 76 30 S122 12 150 22 S206 44 236 20 S294 8 320 16" fill="none" stroke="#FF7A00" strokeWidth="2.4" strokeLinecap="round" strokeDasharray="600" strokeDashoffset="600" style={{ animation: 'dash 1.4s ease-out .2s forwards' }} />
+                </svg>
+                <div className="flex gap-[10px] mt-[8px]">
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '11px 14px' }}>
+                    <div className="flex items-center gap-[6px]">
+                      <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(34,197,94,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ArrowDownCircle size={12} color="#22C55E" />
+                      </div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>ANTRE</span>
                     </div>
-                    <div className="w-px h-8 bg-white/30 mx-4" />
-                    <div className="flex-1">
-                      <p className="text-[10px] font-medium uppercase text-white/80 tracking-[0.5px] mb-0.5">Soti</p>
-                      <p className="text-[13px] font-black text-white/75">
-                        -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginTop: 5 }}>
+                      +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '11px 14px' }}>
+                    <div className="flex items-center gap-[6px]">
+                      <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(239,68,68,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ArrowUpCircle size={12} color="#EF4444" />
+                      </div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>SOTI</span>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginTop: 5 }}>
+                      -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Quick actions */}
-              <div className="flex flex-row gap-2">
+              {/* Quick actions (desktop) */}
+              <div className="flex flex-row gap-3">
                 {[
-                  { id: 'VOYE',  icon: <Send size={20} />,       action: () => setShowSendModal(true) },
+                  { id: 'VOYE',  icon: <Send size={20} />,       action: () => setShowSendModal(true), primary: true },
                   { id: 'TOPUP', icon: <PlusCircle size={20} />, action: () => setActiveTab('topup') },
                   { id: 'RETRÈ', icon: <Banknote size={20} />,   action: () => setActiveTab('withdraw') },
                   { id: 'KAT',   icon: <CreditCard size={20} />, action: () => setActiveTab('cards') },
                 ].map((item) => (
-                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-[6px] hover:scale-105 transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                  <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-[7px] hover:scale-105 transition-all">
+                    <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
+                      ? { width: 56, height: 56, borderRadius: 19, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
+                      : { width: 56, height: 56, borderRadius: 19, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }
+                    }>
                       {item.icon}
                     </div>
-                    <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>{item.id}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>{item.id}</span>
                   </button>
                 ))}
-                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-[6px] hover:scale-105 transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-[var(--oz-surface)] text-[#FF7A00] flex items-center justify-center border border-[var(--oz-border)] shadow-sm hover:bg-[#FF7A00] hover:text-white transition-colors">
+                <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-[7px] hover:scale-105 transition-all">
+                  <div style={{ width: 56, height: 56, borderRadius: 19, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                     <QrCode size={20} />
                   </div>
-                  <span className="text-[7px] font-black italic uppercase tracking-[1.5px]" style={{ color: colors.textSecondary }}>QR</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>QR</span>
                 </button>
               </div>
 
@@ -1390,25 +1505,25 @@ export default function Dashboard() {
                         FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
                       };
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 rounded-[28px] border border-[var(--oz-border)] gap-2 transition-all" style={{ background: colors.surface }}>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                                 style={{ backgroundColor: isDebit ? (isDark ? '#2A0C0C' : '#FEE2E2') : (isDark ? '#0C2414' : '#DCFCE7') }}>
+                        <div key={idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', backdropFilter: 'blur(20px)', borderRadius: 20 }}>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                                 style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
                               {isDebit
-                                ? <ArrowUpCircle size={20} style={{ color: colors.error }} />
-                                : <ArrowDownCircle size={20} style={{ color: colors.success }} />}
+                                ? <ArrowUpCircle size={18} color="#EF4444" />
+                                : <ArrowDownCircle size={18} color="#22C55E" />}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[3px] truncate" style={{ color: colors.textPrimary }}>{txTitleD}</p>
-                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
+                              <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate text-white">{txTitleD}</p>
+                              <p className="font-medium text-[10px]" style={{ color: 'rgba(255,255,255,.45)' }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                            <span className="font-black text-[13px]" style={{ color: isDebit ? colors.error : colors.success }}>
+                            <span className="font-black text-[13px]" style={{ color: isDebit ? '#EF4444' : '#22C55E' }}>
                               {isDebit ? '-' : '+'}{amtDisplay}
                             </span>
-                            <span className="font-black uppercase text-[9px] px-[6px] py-[2px] rounded-[6px] border"
-                                  style={{ borderColor: statusColor, color: statusColor }}>
+                            <span className="font-black uppercase text-[8px] px-[6px] py-[2px] rounded-full"
+                                  style={{ background: `${statusColor}22`, color: statusColor }}>
                               {STATUS_TX_D[t.status] || t.status}
                             </span>
                           </div>
@@ -1432,46 +1547,49 @@ export default function Dashboard() {
               {/* Virtual Card */}
               <button
                 onClick={() => setActiveTab('cards')}
-                className="group relative overflow-hidden rounded-3xl bg-[#0F121E] p-6 text-left hover:bg-[#1a1f2e] transition-all border border-white/5"
+                className="group relative overflow-hidden p-6 text-left transition-all oz-glass"
+                style={{ borderRadius: 28, boxShadow: '0 12px 36px -16px rgba(0,0,0,.6)' }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
-                    <CreditCard size={20} className="text-[#FF7A00]" />
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CreditCard size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
                 </div>
                 <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Kat Vityèl NFC</h3>
-                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
               </button>
 
               {/* Gift Cards */}
               <button
                 onClick={() => setActiveTab('giftcards')}
-                className="group relative overflow-hidden rounded-3xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all shadow-lg"
+                className="group relative overflow-hidden p-6 text-left transition-all oz-glass"
+                style={{ borderRadius: 28, boxShadow: '0 12px 36px -16px rgba(0,0,0,.6)' }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
-                    <ShoppingCart size={20} className="text-[#FF7A00]" />
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ShoppingCart size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
                 </div>
-                <h3 className="text-[var(--oz-text)] font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
-                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
+                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
               </button>
 
               {/* Finance services */}
               <button
                 onClick={() => setActiveTab('finance')}
-                className="group relative overflow-hidden rounded-3xl bg-[var(--oz-surface)] border border-[var(--oz-border)] p-6 text-left hover:border-[#FF7A00]/30 hover:bg-[var(--oz-surface)] transition-all shadow-lg"
+                className="group relative overflow-hidden p-6 text-left transition-all oz-glass"
+                style={{ borderRadius: 28, boxShadow: '0 12px 36px -16px rgba(0,0,0,.6)' }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-2xl bg-[#FF7A00]/10 flex items-center justify-center">
-                    <Landmark size={20} className="text-[#FF7A00]" />
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Landmark size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="text-[var(--oz-text-sec)] group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
                 </div>
-                <h3 className="text-[var(--oz-text)] font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
-                <p className="text-[var(--oz-text-sec)] text-[11px] leading-relaxed">Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
+                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
               </button>
             </div>
 
@@ -1534,8 +1652,8 @@ export default function Dashboard() {
   <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={() => setShowSendModal(false)}>
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
     <div
-      className="relative w-full max-w-lg rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 border-t border-[var(--oz-border)]"
-      style={{ background: colors.surface }}
+      className="relative w-full max-w-lg rounded-t-3xl shadow-2xl oz-slideUp"
+      style={{ background: 'rgba(14,16,26,.92)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
       onClick={e => e.stopPropagation()}
     >
       <div className="px-6 pt-6 pb-10">
@@ -1617,457 +1735,586 @@ export default function Dashboard() {
 )}
         {/* --- TOPUP SECTION --- */}
         {activeTab === 'topup' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(112px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                <PlusCircle size={14} /> Back Home
-              </button>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">TOPUP</h2>
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+              <div className="flex items-center gap-2 px-6 pt-6 pb-4">
+                <button onClick={() => setActiveTab('home')} className="w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 active:scale-90 transition-all" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <ChevronLeft size={20} style={{ color: colors.textPrimary }} />
+                </button>
+                <h2 className="font-black italic uppercase text-[16px] tracking-[1.5px]" style={{ color: colors.textPrimary }}>Topup</h2>
+              </div>
             </div>
-            <div style={{ height: 'calc(100vh - 160px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            <div className="space-y-8">
+            <div style={{ height: 'calc(100vh - 80px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-6 pb-14">
+            <div>
 
-              {/* ── SECTION 1: MonCash Otomatik ── */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Landmark size={16} className="text-[#FF7A00]" />
-                  <h3 className="font-black italic uppercase text-sm tracking-wide" style={{ color: colors.textPrimary }}>MonCash Otomatik</h3>
+              {/* ── MonCash Otomatik ── */}
+              <div className="mb-6">
+                <div className="flex items-center gap-[6px] mb-2">
+                  <Landmark size={16} style={{ color: colors.accent }} />
+                  <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>MonCash Otomatik</h3>
                 </div>
-
-                <div className="bg-[var(--oz-surface)] p-6 rounded-3xl border border-[var(--oz-border)]">
-                  <label className="text-[9px] font-black uppercase opacity-40 mb-3 block tracking-[0.2em]">Montan an HTG</label>
-                  <input
-                    className="w-full bg-transparent font-black italic text-4xl outline-none text-[var(--oz-text)]"
-                    placeholder="0"
-                    type="number"
-                    min="0"
-                    value={topUpAmount}
-                    onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
-                  />
-                  {topUpAmount && (() => {
+                <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Montan (HTG)</label>
+                    <input
+                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
+                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder="Egzanp: 1000"
+                      type="number"
+                      min="0"
+                      value={topUpAmount}
+                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
+                    />
+                  </div>
+                  {topUpAmount && Number(topUpAmount) > 0 && (() => {
                     const feeAmount = Math.round(Number(topUpAmount) * 0.089);
                     const amountAfterFee = Number(topUpAmount) - feeAmount;
                     return (
-                      <div className="mt-4 pt-4 border-t border-[var(--oz-border)] space-y-2 animate-in fade-in">
+                      <div className="pt-2 border-t space-y-1 animate-in fade-in mb-2" style={{ borderColor: colors.border }}>
                         <div className="flex justify-between">
-                          <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Frè 8.9%</span>
-                          <span className="text-[10px] font-black italic text-[var(--oz-text-sec)]">{feeAmount.toLocaleString()} HTG</span>
+                          <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>Frè 8.9%</span>
+                          <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>{feeAmount.toLocaleString()} HTG</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs font-black italic text-[#FF7A00]">Wap Resevwa</span>
-                          <span className="text-xs font-black italic text-[#FF7A00]">{amountAfterFee.toLocaleString()} HTG</span>
+                          <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>Wap Resevwa</span>
+                          <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>{amountAfterFee.toLocaleString()} HTG</span>
                         </div>
                       </div>
                     );
                   })()}
-                </div>
-
-                {mccPaymentUrl ? (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => { window.location.href = mccPaymentUrl; }}
-                      className="w-full py-6 rounded-3xl font-black uppercase italic tracking-widest shadow-xl text-xs bg-[#FF7A00] text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-                    >
-                      Peye via MonCash →
-                    </button>
-                    {mccPolling && (
-                      <p className="text-center text-[10px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest animate-pulse py-2">
-                        Ap verifye peman ou… 🔄
-                      </p>
-                    )}
-                    <button
-                      onClick={() => { setMccPaymentUrl(null); setMccPolling(false); if (mccPollRef.current) clearInterval(mccPollRef.current); }}
-                      className="w-full py-3 text-[10px] font-black uppercase italic tracking-widest text-[var(--oz-text-sec)] hover:text-red-400 transition-all"
-                    >
-                      Anile
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setSelectedMethod('moncash'); setTopUpType('AUTOMATIC'); handlePaymentLogic(); }}
-                    disabled={topupLoading || !topUpAmount}
-                    className="w-full py-6 rounded-3xl font-black uppercase italic tracking-widest shadow-xl text-xs text-white active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                    style={{ background: '#FF7A00' }}
-                  >
-                    {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'DEPOZE AK MONCASH'}
-                  </button>
-                )}
-
-                <p className="text-[10px] text-[var(--oz-text-sec)] leading-relaxed text-center px-2">
-                  Sistèm otomatik — 8.9% frè aplike (6% OZAMAPAY + 2.9% MonCash), ou resevwa 91.1% nan depo a imedyatman apre peman konfime.
-                </p>
-              </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-[var(--oz-border)]" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--oz-text-sec)]">oswa</span>
-                <div className="flex-1 h-px bg-[var(--oz-border)]" />
-              </div>
-
-              {/* ── SECTION 2: Depo Manyèl ── */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Upload size={16} className="text-[#FF7A00]" />
-                  <h3 className="font-black italic uppercase text-sm tracking-wide" style={{ color: colors.textPrimary }}>Depo Manyèl</h3>
-                </div>
-
-                <div className="bg-[var(--oz-surface)] p-6 rounded-3xl border border-[var(--oz-border)]">
-                  <label className="text-[9px] font-black uppercase opacity-40 mb-3 block tracking-[0.2em]">Montan an HTG</label>
-                  <input
-                    className="w-full bg-transparent font-black italic text-4xl outline-none text-[var(--oz-text)]"
-                    placeholder="0"
-                    type="number"
-                    min="0"
-                    value={topUpAmount}
-                    onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">METÒD</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {paymentMethods.map((m) => (
+                  {mccPaymentUrl ? (
+                    <div className="flex flex-col gap-2">
                       <button
-                        key={m.id}
-                        onClick={() => { setSelectedMethod(m.id); setTopUpType('MANUAL'); }}
-                        className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${selectedMethod === m.id && topUpType === 'MANUAL' ? 'border-[#FF7A00] bg-[#FF7A00]/10' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}
+                        onClick={() => { window.location.href = mccPaymentUrl; }}
+                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all"
+                        style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
                       >
-                        <img src={`/${m.img}`} className="w-8 h-8 object-contain" alt="" />
-                        <span className="font-black italic uppercase text-[9px]">{m.label}</span>
+                        Peye via MonCash →
                       </button>
-                    ))}
-                  </div>
-                </div>
- 
-                {topUpType === 'MANUAL' && selectedMethod && (
-                  <div className="animate-in fade-in duration-300 p-5 rounded-3xl border space-y-3" style={{ background: colors.surface, borderColor: colors.border }}>
-                    <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#FF7A00' }}>Voye kòb la sou</p>
-                    <div className="flex items-center justify-between p-4 rounded-2xl border" style={{ background: colors.background, borderColor: colors.border }}>
-                      <span className="font-black italic text-base truncate pr-4" style={{ color: colors.textPrimary }}>
-                        {paymentMethods.find(x => x.id === selectedMethod)?.info}
-                      </span>
-                      <button onClick={() => copyToClipboard(paymentMethods.find(x => x.id === selectedMethod)?.info || '')} className="p-2.5 bg-[#FF7A00] rounded-2xl active:scale-90 text-white">
-                        <Copy size={14} />
+                      {mccPolling && (
+                        <p className="font-medium italic text-[11px] text-center animate-pulse" style={{ color: colors.textSecondary }}>Ap verifye peman ou… 🔄</p>
+                      )}
+                      <button
+                        onClick={() => { setMccPaymentUrl(null); setMccPolling(false); if (mccPollRef.current) clearInterval(mccPollRef.current); }}
+                        className="font-medium italic text-[11px] text-center py-1 hover:opacity-70 transition-all"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        Anile
                       </button>
                     </div>
-                    {selectedMethod === 'usdt' && (
-                      <div className="bg-red-500/10 border border-red-400/30 rounded-2xl p-3 flex items-start gap-2">
-                        <span className="text-red-400 text-sm">⚠️</span>
-                        <p className="text-red-400 font-black text-[10px] uppercase tracking-wide leading-relaxed">TRC20 sèlman — Pa itilize ERC20 oswa BEP20!</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Reference field */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">REFERANS / KONT OU (OPSYONÈL)</label>
-                  <input
-                    className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
-                    style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
-                    placeholder="Nimewo referans tranzaksyon an..."
-                    value={topupNote}
-                    onChange={(e) => setTopupNote(e.target.value)}
-                  />
+                  ) : (
+                    <button
+                      onClick={() => { setSelectedMethod('moncash'); setTopUpType('AUTOMATIC'); handlePaymentLogic(); }}
+                      disabled={topupLoading || !topUpAmount || Number(topUpAmount) <= 0}
+                      className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
+                    >
+                      {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'Depoze ak MonCash'}
+                    </button>
+                  )}
+                  <p className="font-medium italic text-[11px] text-center mt-2" style={{ color: colors.textSecondary }}>
+                    Sistèm otomatik — 8.9% frè aplike (6% OZAMAPAY + 2.9% MonCash), ou resevwa 91.1% nan depo a imedyatman apre peman konfime.
+                  </p>
                 </div>
+              </div>
 
-                {/* Photo upload */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-5 rounded-2xl border-2 border-dashed flex flex-col items-center gap-2 hover:opacity-80 transition-all"
-                  style={{ borderColor: colors.border, color: colors.textSecondary }}
-                >
-                  <Upload size={20} className="text-[#FF7A00]" />
-                  <span className="text-[9px] font-black uppercase italic">{receipt ? receipt.name : 'FOTO PRÈV PEMAN (OPSYONÈL)'}</span>
-                </button>
-
-                {/* Submit manual */}
-                <button
-                  onClick={handlePaymentLogic}
-                  disabled={topupLoading || !(topUpAmount && selectedMethod)}
-                  className="w-full py-5 rounded-3xl font-black uppercase italic tracking-widest text-xs text-white active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                  style={{ background: '#FF7A00' }}
-                >
-                  {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'SOUMÈT DEMANN'}
-                </button>
-              </div>{/* end Section 2 */}
+              {/* ── Depo Manyèl ── */}
+              <div className="mb-6">
+                <div className="flex items-center gap-[6px] mb-2">
+                  <Upload size={16} style={{ color: colors.accent }} />
+                  <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>Depo Manyèl</h3>
+                </div>
+                <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Montan (HTG)</label>
+                    <input
+                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
+                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder="Egzanp: 2000"
+                      type="number"
+                      min="0"
+                      value={topUpAmount}
+                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setTopUpAmount(val); }}
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-2 block" style={{ color: colors.textSecondary }}>Metòd</label>
+                    <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {paymentMethods.map((m) => {
+                        const isSel = selectedMethod === m.id && topUpType === 'MANUAL';
+                        return (
+                          <button
+                            key={m.id}
+                            onClick={() => { setSelectedMethod(m.id); setTopUpType('MANUAL'); }}
+                            className="flex-shrink-0 flex flex-col items-center gap-[6px] rounded-xl py-[10px] px-[6px] transition-colors active:scale-95"
+                            style={{
+                              width: 76,
+                              background: isSel ? 'rgba(255,122,0,0.08)' : colors.background,
+                              border: `1.5px solid ${isSel ? colors.accent : colors.border}`,
+                            }}
+                          >
+                            <img src={`/${m.img}`} className="w-10 h-10 object-contain" alt={m.label} />
+                            <span className="font-black text-[9px] uppercase tracking-[0.5px] text-center leading-tight"
+                              style={{ color: isSel ? colors.accent : colors.textSecondary }}>
+                              {m.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {topUpType === 'MANUAL' && selectedMethod && (() => {
+                    const method = paymentMethods.find(x => x.id === selectedMethod);
+                    if (!method) return null;
+                    return (
+                      <div className="flex items-center gap-2 rounded-xl border px-2 py-2 mb-1" style={{ background: colors.background, borderColor: colors.border, marginTop: 4 }}>
+                        <p className="flex-1 font-medium text-[11px] leading-4" style={{ color: colors.textSecondary }}>
+                          Voye lajan sou:{' '}
+                          <span className="font-black" style={{ color: colors.accent }}>{method.info}</span>
+                        </p>
+                        <button
+                          onClick={() => copyToClipboard(method.info)}
+                          className="flex items-center gap-1 rounded-xl border px-2 py-[5px] flex-shrink-0 active:scale-90 transition-all"
+                          style={{ background: 'rgba(255,122,0,0.1)', borderColor: 'rgba(255,122,0,0.25)' }}
+                        >
+                          <Copy size={12} style={{ color: colors.accent }} />
+                          <span className="font-black text-[10px] tracking-[0.5px]" style={{ color: colors.accent }}>Kopye</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
+                  {selectedMethod === 'usdt' && topUpType === 'MANUAL' && (
+                    <div className="rounded-xl border px-3 py-2 flex items-start gap-2 mb-1" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                      <span className="text-[13px] flex-shrink-0">⚠️</span>
+                      <p className="font-black text-[9px] uppercase tracking-wide leading-relaxed" style={{ color: colors.error }}>TRC20 sèlman — Pa itilize ERC20 oswa BEP20!</p>
+                    </div>
+                  )}
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Referans / Kont Ou (opsyonèl)</label>
+                    <input
+                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
+                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder="Nimewo kont/telefòn ou"
+                      value={topupNote}
+                      onChange={(e) => setTopupNote(e.target.value)}
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-2 block" style={{ color: colors.textSecondary }}>Foto Prèv Peman (Opsyonèl)</label>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center gap-2 rounded-xl px-4 py-[14px] active:scale-95 transition-all"
+                      style={{
+                        background: receipt ? 'rgba(34,197,94,0.06)' : colors.background,
+                        border: `1.5px ${receipt ? 'solid' : 'dashed'} ${receipt ? colors.success : colors.border}`,
+                      }}
+                    >
+                      {receipt ? (
+                        <>
+                          <CheckCircle2 size={20} style={{ color: colors.success }} />
+                          <span className="font-medium text-[12px] flex-1 truncate text-left" style={{ color: colors.success }}>{receipt.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={20} style={{ color: colors.textSecondary }} />
+                          <span className="font-medium text-[12px]" style={{ color: colors.textSecondary }}>Chwazi Screenshot la</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <button
+                    onClick={handlePaymentLogic}
+                    disabled={topupLoading || !(topUpAmount && selectedMethod && topUpType === 'MANUAL')}
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
+                  >
+                    {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'Soumèt Depo'}
+                  </button>
+                  <p className="font-medium italic text-[11px] text-center mt-2" style={{ color: colors.textSecondary }}>
+                    Depo manyèl bezwen apwobasyon yon ajan OZAMAPAY.
+                  </p>
+                </div>
+              </div>
 
             </div>
-            </div>{/* end scroll */}
+            </div>
           </div>
         )}
 
         {/* --- WITHDRAW SECTION --- */}
         {activeTab === 'withdraw' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(92px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                <Banknote size={14} /> Back Home
-              </button>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">RETRÈ LAJAN</h2>
-            </div>
-            <div style={{ height: 'calc(100vh - 180px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            <div className="space-y-6">
-              <div className="space-y-1 mb-2">
-                <h3 className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#FF7A00' }}>DEMAND RETRÈ</h3>
+          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+              <div className="flex items-center gap-2 px-6 pt-6 pb-4">
+                <button onClick={() => setActiveTab('home')} className="w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 active:scale-90 transition-all" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <ChevronLeft size={20} style={{ color: colors.textPrimary }} />
+                </button>
+                <h2 className="font-black italic uppercase text-[16px] tracking-[1.5px]" style={{ color: colors.textPrimary }}>Retrè Lajan</h2>
               </div>
-              <div className="bg-[var(--oz-surface)] p-8 rounded-3xl border border-[var(--oz-border)] relative overflow-hidden">
-                <label className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 block tracking-[0.2em]">{withdrawIsIntl ? 'Montan an USD' : 'MONTAN (HTG)'}</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none" style={{ color: colors.textPrimary }} placeholder="0" type="number" min="0" value={withdrawAmount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }} />
-                {withdrawAmount && (
-                  <div className="mt-4 pt-4 border-t border-[var(--oz-border)] animate-in fade-in space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">Frais Ozama (2.0%)</span>
-                      <span className="text-[10px] font-black uppercase italic text-[var(--oz-text-sec)]">-{calculateFees(String(withdrawAmount)).fee} HTG</span>
+            </div>
+            <div style={{ height: 'calc(100vh - 80px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-6 pb-14">
+              <div className="mb-6">
+                <div className="flex items-center gap-[6px] mb-2">
+                  <Banknote size={16} style={{ color: colors.accent }} />
+                  <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>Demand Retrè</h3>
+                </div>
+                <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>{withdrawIsIntl ? 'Montan (USD)' : 'Montan (HTG)'}</label>
+                    <input
+                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
+                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder="Egzanp: 500"
+                      type="number"
+                      min="0"
+                      value={withdrawAmount}
+                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }}
+                    />
+                  </div>
+                  {withdrawAmount && Number(withdrawAmount) > 0 && (
+                    <div className="pt-2 border-t space-y-1 animate-in fade-in mb-2" style={{ borderColor: colors.border }}>
+                      <div className="flex justify-between">
+                        <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>Frais Ozama (2.0%)</span>
+                        <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>-{calculateFees(String(withdrawAmount)).fee} HTG</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>Total Debite</span>
+                        <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>{(Number(withdrawAmount) + Number(calculateFees(String(withdrawAmount)).fee)).toLocaleString()} HTG</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-black italic text-[#FF7A00]">Total Debite</span>
-                      <span className="text-xs font-black italic text-[#FF7A00]">{(Number(withdrawAmount) + Number(calculateFees(String(withdrawAmount)).fee)).toLocaleString()} HTG</span>
+                  )}
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-2 block" style={{ color: colors.textSecondary }}>Metòd</label>
+                    <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {paymentMethods.map((m) => {
+                        const isSel = withdrawMethod === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            onClick={() => setWithdrawMethod(m.id)}
+                            className="flex-shrink-0 flex flex-col items-center gap-[6px] rounded-xl py-[10px] px-[6px] transition-colors active:scale-95"
+                            style={{
+                              width: 76,
+                              background: isSel ? 'rgba(255,122,0,0.08)' : colors.background,
+                              border: `1.5px solid ${isSel ? colors.accent : colors.border}`,
+                            }}
+                          >
+                            <img src={`/${m.img}`} className="w-10 h-10 object-contain" alt={m.label} />
+                            <span className="font-black text-[9px] uppercase tracking-[0.5px] text-center leading-tight"
+                              style={{ color: isSel ? colors.accent : colors.textSecondary }}>
+                              {m.label}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-              </div>
- 
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">METÒD</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {paymentMethods.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setWithdrawMethod(m.id)}
-                      className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${withdrawMethod === m.id ? 'border-[#FF7A00] bg-[#FF7A00]/10' : 'border-[var(--oz-border)] bg-[var(--oz-surface)]'}`}
-                    >
-                      <img src={`/${m.img}`} className="w-8 h-8 object-contain" alt="" />
-                      <span className="font-black italic uppercase text-[9px]">{m.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
- 
-              {withdrawMethod && (
-                <div className="animate-in slide-in-from-top duration-300 space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase opacity-40 ml-1 tracking-widest">ENFÒMASYON KONT PÈSONÈL (OPSYONÈL)</label>
+                  {withdrawMethod && (() => {
+                    const method = paymentMethods.find(x => x.id === withdrawMethod);
+                    if (!method) return null;
+                    return (
+                      <div className="flex items-center gap-2 rounded-xl border px-2 py-2 mb-1" style={{ background: colors.background, borderColor: colors.border, marginTop: 4 }}>
+                        <p className="flex-1 font-medium text-[11px] leading-4" style={{ color: colors.textSecondary }}>
+                          Voye lajan sou:{' '}
+                          <span className="font-black" style={{ color: colors.accent }}>{method.info}</span>
+                        </p>
+                        <button
+                          onClick={() => copyToClipboard(method.info)}
+                          className="flex items-center gap-1 rounded-xl border px-2 py-[5px] flex-shrink-0 active:scale-90 transition-all"
+                          style={{ background: 'rgba(255,122,0,0.1)', borderColor: 'rgba(255,122,0,0.25)' }}
+                        >
+                          <Copy size={12} style={{ color: colors.accent }} />
+                          <span className="font-black text-[10px] tracking-[0.5px]" style={{ color: colors.accent }}>Kopye</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
+                  <div className="mb-2">
+                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Enfòmasyon Kont Pèsonèl (opsyonèl)</label>
                     <input
-                      className="w-full px-5 py-4 rounded-2xl font-bold outline-none border text-sm"
-                      style={{ background: colors.surface, borderColor: colors.border, color: colors.textPrimary }}
-                      placeholder={withdrawMethod === 'bank' ? "Nimewo Kont & Non Bank..." : "Nimewo Telefòn oswa Tag..."}
+                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
+                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                      placeholder={withdrawMethod === 'bank' ? 'Nimewo Kont & Non Bank...' : 'Nimewo Telefòn oswa Tag...'}
                       value={withdrawAccountInfo}
                       onChange={(e) => setWithdrawAccountInfo(e.target.value)}
                     />
                   </div>
-                  <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 flex gap-4">
-                    <Info size={20} className="text-blue-500 shrink-0" />
-                    <p className="text-[9px] font-bold text-blue-700 uppercase leading-relaxed">
-                      Pwosesis retrè a ka pran ant 30 minit a 2 è tan pou l konfime. Tanpri asire enfòmasyon yo kòrèk.
-                    </p>
-                  </div>
+                  <button
+                    onClick={handleWithdraw}
+                    disabled={!(withdrawAmount && withdrawMethod)}
+                    className="w-full rounded-xl font-black italic uppercase text-[11px] tracking-[1.5px] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center mt-1"
+                    style={{ background: 'transparent', border: `1px solid ${colors.error}`, color: colors.error, paddingTop: 12, paddingBottom: 12, paddingLeft: 20, paddingRight: 20 }}
+                  >
+                    Mande Retrè
+                  </button>
                 </div>
-              )}
- 
-              <button
-                onClick={handleWithdraw}
-                disabled={!(withdrawAmount && withdrawMethod)}
-                className="w-full py-5 rounded-3xl font-black uppercase italic tracking-widest text-xs active:scale-95 transition-all disabled:opacity-40 border-2"
-                style={{ borderColor: colors.error, color: colors.error, background: 'transparent' }}
-              >
-                MANDE RETRÈ
-              </button>
+              </div>
             </div>
-            </div>{/* end scroll */}
           </div>
         )}
 
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-              <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                <Landmark size={14} /> Back Home
-              </button>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter leading-none">Ozama<br/>Exchange</h2>
+          <div className="animate-in slide-in-from-right duration-500 px-4" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
+              <p className="font-black italic uppercase" style={{ color: colors.textPrimary, fontSize: 24, letterSpacing: 1.5, marginTop: 16, marginBottom: 16 }}>Ozama Exchange</p>
             </div>
             <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            <div className="grid gap-4">
-              {[
-                { id: 'wise', name: 'Wise', desc: 'USD Transfer', img: 'wise.png' },
-                { id: 'meru', name: 'Meru', desc: 'USD Transfer', img: 'meru.png' },
-                { id: 'zelle', name: 'Zelle', desc: 'USD Transfer', img: 'zelle.png' },
-                { id: 'cashapp', name: 'CashApp', desc: 'USD Transfer', img: 'cashapp.png' },
-                { id: 'natcash', name: 'Natcash', desc: 'HTG Transfer', img: 'natcash.png' },
-                { id: 'usdt', name: 'USDT ONLY', desc: 'TRC20 Network', img: 'usdt.png' },
-                { id: 'gaming', name: 'Gaming Topup', desc: 'Diamonds & Coins', img: 'gaming.png' }
-              ].map(item => (
-                <button key={item.id} onClick={() => setSelectedFinanceService(item)} className="p-8 bg-[var(--oz-surface)] rounded-[2.5rem] border border-[var(--oz-border)] flex items-center justify-between group active:scale-95 transition-all hover:bg-[var(--oz-surface)] hover:shadow-xl">
-                  <div className="flex items-center gap-6 text-left">
-                    <div className="w-14 h-14 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[#FF7A00] shadow-sm p-3">
-                       <img src={`/${item.img}`} alt="" className="w-full h-full object-contain" />
+              <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 12, lineHeight: '18px', marginBottom: 24 }}>
+                Echanj lajan ak Wise, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
+              </p>
+              <div className="flex flex-col" style={{ gap: 8 }}>
+                {[
+                  { id: 'wise',    name: 'Wise',         desc: 'USD Transfer',     img: 'wise.png' },
+                  { id: 'meru',    name: 'Meru',         desc: 'USD Transfer',     img: 'meru.png' },
+                  { id: 'zelle',   name: 'Zelle',        desc: 'USD Transfer',     img: 'zelle.png' },
+                  { id: 'cashapp', name: 'CashApp',      desc: 'USD Transfer',     img: 'cashapp.png' },
+                  { id: 'natcash', name: 'Natcash',      desc: 'HTG Transfer',     img: 'natcash.png' },
+                  { id: 'usdt',    name: 'USDT ONLY',    desc: 'TRC20 Network',    img: 'usdt.png' },
+                  { id: 'gaming',  name: 'Gaming Topup', desc: 'Diamonds & Coins', img: 'gaming.png' },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setSelectedFinanceService(item); setFinanceType('BUY'); setFinanceDetails({ email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' }); setFinanceReceipt(null); }}
+                    className="flex items-center justify-between active:scale-95 transition-all"
+                    style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 16, border: `1px solid ${colors.border}`, gap: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
+                  >
+                    <div className="flex items-center flex-1" style={{ gap: 16 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: colors.background, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${colors.border}`, flexShrink: 0 }}>
+                        <img src={`/${item.img}`} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                      </div>
+                      <div>
+                        <p className="font-black italic uppercase" style={{ color: colors.textPrimary, fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
+                        <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 12 }}>{item.desc}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-black italic uppercase text-sm">{item.name}</h4>
-                      <p className="text-[9px] font-bold text-[var(--oz-text-sec)] uppercase mt-1 tracking-widest">{item.desc}</p>
-                    </div>
-                  </div>
-                  <ChevronRight size={20} className="text-[#FF7A00] group-hover:translate-x-1 transition-transform" />
-                </button>
-              ))}
+                    <ChevronRight size={18} style={{ color: colors.textSecondary, flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
             </div>
-            </div>{/* end scroll */}
           </div>
         )}
  
         {/* --- SERVICE DETAIL --- */}
-        {activeTab === 'finance' && selectedFinanceService && (
-          <div className="animate-in zoom-in duration-500" style={{ paddingTop: 'calc(132px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-              <button onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                <ChevronRight size={14} className="rotate-180" /> Back to Services
-              </button>
-              <div className="flex items-center gap-4 mb-3">
-                <img src={`/${selectedFinanceService.img}`} className="w-10 h-10 object-contain" alt="" />
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter">{selectedFinanceService.name}</h2>
-              </div>
-              <div className="bg-[var(--oz-surface)] p-2 rounded-3xl flex gap-2">
-                <button onClick={() => setFinanceType('BUY')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'BUY' ? 'bg-[#0F121E] text-white' : 'text-[var(--oz-text-sec)]'}`}>Buy / Deposit</button>
-                <button onClick={() => setFinanceType('SELL')} className={`flex-1 py-4 rounded-2xl font-black italic uppercase text-[10px] tracking-widest transition-all ${financeType === 'SELL' ? 'bg-[#0F121E] text-white' : 'text-[var(--oz-text-sec)]'}`}>Sell / Cashout</button>
-              </div>
-            </div>
-            <div style={{ height: 'calc(100vh - 220px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-            {financeType === 'BUY' && (
-              <div className="mb-8 space-y-3">
-                <div className="bg-[#0F121E] p-8 text-white rounded-3xl shadow-xl border-l-4 border-[#FF7A00]">
-                  <p className="text-[9px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest italic">Info Peman Benefisyè</p>
-                  <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-bold text-white/40 uppercase mb-1">
-                      {selectedFinanceService.id === 'bank' ? 'Capital Bank USD' : selectedFinanceService.id === 'usdt' ? 'TRC20 — Tron Network' : selectedFinanceService.name}
-                    </p>
-                    {selectedFinanceService.id === 'usdt' ? (
-                      <div className="flex items-start gap-3 mb-2">
-                        <p className="font-black italic text-sm tracking-tight break-all flex-1">{PAYMENT_INFO.usdt.acc}</p>
-                        <button onClick={() => copyToClipboard(PAYMENT_INFO.usdt.acc)} className="flex-shrink-0 p-2 bg-[#FF7A00] rounded-2xl active:scale-90 transition-transform">
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="font-black italic text-xl tracking-tight mb-2 break-all">
-                        {selectedFinanceService.id === 'bank' && PAYMENT_INFO.bank_usd.acc}
-                        {selectedFinanceService.id === 'wise' && PAYMENT_INFO.wise.acc}
-                        {selectedFinanceService.id === 'meru' && PAYMENT_INFO.meru.acc}
-                        {selectedFinanceService.id === 'zelle' && PAYMENT_INFO.zelle.acc}
-                        {selectedFinanceService.id === 'cashapp' && PAYMENT_INFO.cashapp.acc}
-                      </p>
-                    )}
-                    <p className="text-[10px] font-black uppercase text-[#FF7A00]">
-                      {selectedFinanceService.id === 'usdt' ? 'OZAMAPAY' : PAYMENT_INFO.zelle.name}
-                    </p>
+        {(() => {
+          if (activeTab !== 'finance' || !selectedFinanceService) return null;
+          const svcId = selectedFinanceService.id;
+          const isGaming = svcId === 'gaming';
+          const isUsdt = svcId === 'usdt';
+          const finAcct = FINANCE_ACCOUNTS[svcId];
+          const amountLabel = isUsdt ? 'Montan (USDT)' : 'Montan (USD)';
+          const finSubmitDisabled = financeLoading
+            || !(parseFloat(financeDetails.amount) > 0)
+            || (!isGaming && !financeDetails.email.trim())
+            || (isGaming && (!financeDetails.gamePack || !financeDetails.gameId.trim()))
+            || (financeType === 'BUY' && !financeReceipt);
+          return (
+            <div className="animate-in zoom-in duration-500" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
+              {/* Fixed detail header */}
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+                {/* Row: back link + logo box + service name */}
+                <div className="flex items-center mb-4" style={{ gap: 8 }}>
+                  <button
+                    onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }}
+                    className="flex items-center active:scale-90 transition-all"
+                    style={{ gap: 4 }}
+                  >
+                    <ChevronLeft size={16} style={{ color: colors.textSecondary }} />
+                    <span className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 0.5 }}>Tounen Sèvis</span>
+                  </button>
+                  <div style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: colors.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${colors.border}`, marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
+                    <img src={`/${selectedFinanceService.img}`} alt="" style={{ width: 26, height: 26, objectFit: 'contain' }} />
                   </div>
+                  <p className="font-black italic uppercase flex-1" style={{ color: colors.textPrimary, fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
                 </div>
+                {/* BUY / SELL segmented control */}
+                <div className="flex" style={{ backgroundColor: colors.background, borderRadius: 12, padding: 4, border: `1px solid ${colors.border}` }}>
+                  <button
+                    onClick={() => setFinanceType('BUY')}
+                    className="flex-1 flex items-center justify-center transition-all"
+                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, backgroundColor: financeType === 'BUY' ? colors.accent : 'transparent' }}
+                  >
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'BUY' ? '#FFFFFF' : colors.textSecondary }}>Achte / Depoze</span>
+                  </button>
+                  <button
+                    onClick={() => setFinanceType('SELL')}
+                    className="flex-1 flex items-center justify-center transition-all"
+                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, backgroundColor: financeType === 'SELL' ? colors.accent : 'transparent' }}
+                  >
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'SELL' ? '#FFFFFF' : colors.textSecondary }}>Vann / Retire</span>
+                  </button>
+                </div>
+              </div>
 
-                {selectedFinanceService.id === 'usdt' && (
-                  <div className="bg-red-600/20 border border-red-500/40 rounded-3xl p-5 flex items-start gap-3">
-                    <span className="text-red-400 text-lg leading-none mt-0.5 flex-shrink-0">⚠️</span>
-                    <p className="text-red-300 font-black text-xs uppercase tracking-wide leading-relaxed">
-                      ATENANSYON: Voye TRC20 SÈLMAN. Si ou itilize ERC20, BEP20, oswa nenpòt lòt rezo — lajan ou ap pèdi pou toutan. OZAMAPAY pap responsab.
-                    </p>
+              {/* Scrollable form */}
+              <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto' }} className="pb-24 px-4">
+                {/* Account info card — BUY only */}
+                {financeType === 'BUY' && finAcct && (
+                  <div style={{ backgroundColor: colors.background, borderRadius: 24, padding: 16, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
+                    <p className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 9, letterSpacing: 2, marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</p>
+                    <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>{finAcct.label}</p>
+                    <div className="flex items-center" style={{ gap: 8 }}>
+                      <p className="font-black flex-1" style={{ color: colors.accent, fontSize: 13, wordBreak: 'break-all' }}>{finAcct.info}</p>
+                      <button
+                        onClick={() => copyToClipboard(finAcct.info)}
+                        className="flex items-center active:scale-90 transition-all flex-shrink-0"
+                        style={{ gap: 4, paddingLeft: 10, paddingRight: 10, paddingTop: 6, paddingBottom: 6, borderRadius: 12, backgroundColor: 'rgba(255,122,0,0.1)', border: '1px solid rgba(255,122,0,0.25)' }}
+                      >
+                        <Copy size={12} style={{ color: colors.accent }} />
+                        <span className="font-black" style={{ color: colors.accent, fontSize: 10, letterSpacing: 0.5 }}>Kopye</span>
+                      </button>
+                    </div>
+                    {finAcct.warning && (
+                      <p className="font-black" style={{ color: '#EF4444', fontSize: 11, marginTop: 8 }}>{finAcct.warning}</p>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            <div className="space-y-5">
-              {selectedFinanceService.id === 'gaming' && (
-                <div className="space-y-4">
-                  <select value={financeDetails.gamePack} onChange={(e) => setFinanceDetails({...financeDetails, gamePack: e.target.value})} className="w-full p-6 bg-[var(--oz-surface)] rounded-2xl font-black uppercase italic text-xs border border-[var(--oz-border)] outline-none focus:border-[#FF7A00]">
-                    <option value="">CHWAZI JWÈT LA</option>
-                    <option value="FREE FIRE (Diamonds)">FREE FIRE (Diamonds)</option>
-                    <option value="PUBG MOBILE (UC)">PUBG MOBILE (UC)</option>
-                    <option value="CALL OF DUTY (CP)">CALL OF DUTY (CP)</option>
-                  </select>
-                  <input value={financeDetails.gameId} onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})} className="w-full p-6 bg-[var(--oz-surface)] rounded-2xl font-bold uppercase text-xs border border-[var(--oz-border)] outline-none" placeholder="METE PLAYER ID OU LA..." />
+                {/* Amount field */}
+                <div style={{ marginBottom: 16 }}>
+                  <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>{amountLabel}</p>
+                  <input
+                    className="w-full outline-none font-medium"
+                    style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                    placeholder="0.00"
+                    type="number"
+                    min="0"
+                    value={financeDetails.amount}
+                    onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setFinanceDetails({...financeDetails, amount: val}); }}
+                  />
                 </div>
-              )}
- 
-              <div className="bg-[var(--oz-surface)] p-8 rounded-3xl border border-[var(--oz-border)]">
-                <label className="text-[9px] font-black uppercase opacity-40 mb-4 block tracking-widest">Montan ({selectedFinanceService.id === 'usdt' ? 'USDT' : 'USD'})</label>
-                <input className="w-full bg-transparent font-black italic text-5xl outline-none" placeholder="0.00" type="number" min="0" value={financeDetails.amount} onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setFinanceDetails({...financeDetails, amount: val}); }} />
-                <div className="mt-4 pt-4 border-t border-[var(--oz-border)] flex justify-between">
-                    <span className="text-[10px] font-black italic uppercase text-[var(--oz-text-sec)]">Frais Echanj: 6%</span>
-                    <span className="text-[10px] font-black italic uppercase text-[#FF7A00]">Rate: 1 USD = {exchangeRate} HTG</span>
-                </div>
-              </div>
-              
-              {selectedFinanceService.id !== 'gaming' && (
-                <input
-                  className="w-full p-5 bg-[var(--oz-surface)] rounded-2xl font-bold outline-none border border-[var(--oz-border)] text-sm placeholder:text-xs placeholder:text-[var(--oz-text-sec)]"
-                  placeholder={selectedFinanceService.id === 'usdt' ? 'Adrès TRC20 Wallet ou (pou resevwa USDT)' : 'Email oswa Username Sèvis la...'}
-                  onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
-                />
-              )}
 
-              {(financeType === 'BUY' || financeType === 'SELL') && (
-                <div className="p-8 bg-orange-50/30 border border-orange-100 rounded-3xl">
-                    <p className="text-[10px] font-black uppercase text-[#FF7A00] mb-4 tracking-widest">
-                      {financeType === 'BUY' ? 'Etap Final: Upload Prèv Peman' : 'Upload Screenshot Tranzaksyon USDT'}
-                    </p>
-                    <button onClick={() => financeFileInputRef.current?.click()} className="w-full p-10 rounded-2xl border-2 border-dashed border-orange-200 bg-[var(--oz-surface)] flex flex-col items-center gap-2 hover:bg-orange-50 transition-all">
-                        <Upload size={24} className="text-[#FF7A00]" />
-                        <span className="text-[9px] font-black uppercase italic text-[var(--oz-text-sec)]">{financeReceipt ? financeReceipt.name : 'Chwazi Screenshot la'}</span>
-                    </button>
+                {/* Fee row */}
+                <div className="flex justify-between" style={{ marginBottom: 16, paddingLeft: 2, paddingRight: 2 }}>
+                  <span className="font-medium italic" style={{ color: colors.textSecondary, fontSize: 11 }}>
+                    Frè Echanj: <span className="font-black" style={{ color: colors.accent }}>6%</span>
+                  </span>
+                  <span className="font-medium italic" style={{ color: colors.textSecondary, fontSize: 11 }}>
+                    To: <span className="font-black" style={{ color: colors.accent }}>1 USD = {exchangeRate} HTG</span>
+                  </span>
                 </div>
-              )}
-              
-              <button
-                onClick={handleFinanceSubmit}
-                disabled={financeLoading}
-                className="w-full bg-[#0F121E] text-white py-8 rounded-3xl font-black uppercase italic tracking-[0.3em] shadow-xl text-xs active:scale-95 transition-all hover:bg-[#FF7A00] disabled:opacity-50 flex items-center justify-center gap-3"
-              >
-                {financeLoading ? (
+
+                {/* Gaming chips + Player ID — or Email/Account field */}
+                {isGaming ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Voye demann...
+                    <div style={{ marginBottom: 16 }}>
+                      <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>Chwazi Jwèt</p>
+                      <div className="flex flex-wrap" style={{ gap: 8 }}>
+                        {['Free Fire', 'PUBG Mobile', 'Call of Duty'].map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setFinanceDetails({...financeDetails, gamePack: g})}
+                            className="active:scale-95 transition-all"
+                            style={{ paddingLeft: 14, paddingRight: 14, paddingTop: 8, paddingBottom: 8, borderRadius: 12, backgroundColor: financeDetails.gamePack === g ? colors.accent : colors.background, border: `1.5px solid ${financeDetails.gamePack === g ? colors.accent : colors.border}` }}
+                          >
+                            <span className="font-black" style={{ color: financeDetails.gamePack === g ? '#FFFFFF' : colors.textSecondary, fontSize: 12 }}>{g}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>Player ID</p>
+                      <input
+                        className="w-full outline-none font-medium"
+                        style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                        value={financeDetails.gameId}
+                        onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})}
+                        placeholder="ID jwè ou (egz: 123456789)"
+                        inputMode="numeric"
+                      />
+                    </div>
                   </>
                 ) : (
-                  `Execute ${selectedFinanceService.name} Order`
+                  <div style={{ marginBottom: 16 }}>
+                    <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
+                      {isUsdt ? 'Adrès TRC20 Ou' : 'Email / Kont Ou'}
+                    </p>
+                    <input
+                      className="w-full outline-none font-medium"
+                      style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                      value={financeDetails.email}
+                      onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
+                      placeholder={isUsdt ? 'Adrès TRC20 pou resevwa' : 'email@exemple.com'}
+                      type={isUsdt ? 'text' : 'email'}
+                      autoComplete="off"
+                    />
+                  </div>
                 )}
-              </button>
-            </div>
-            </div>{/* end scroll */}
-          </div>
-        )}
 
+                {/* Upload box */}
+                <div style={{ marginBottom: 16 }}>
+                  <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
+                    {financeType === 'SELL' ? 'Screenshot Tranzaksyon (opsyonèl)' : 'Screenshot Prèv Peman (obligatwa)'}
+                  </p>
+                  <button
+                    onClick={() => financeFileInputRef.current?.click()}
+                    className="w-full flex flex-col items-center active:scale-95 transition-all"
+                    style={{ borderRadius: 12, border: `1.5px ${financeReceipt ? 'solid' : 'dashed'} ${financeReceipt ? colors.success : colors.border}`, padding: 24, gap: 8, backgroundColor: financeReceipt ? 'rgba(34,197,94,0.06)' : colors.background }}
+                  >
+                    {financeReceipt ? (
+                      <>
+                        <CheckCircle2 size={28} style={{ color: colors.success }} />
+                        <span className="font-medium" style={{ color: colors.success, fontSize: 11, textAlign: 'center' }}>{financeReceipt.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={28} style={{ color: colors.textSecondary }} />
+                        <span className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 0.5, textAlign: 'center' }}>Chwazi Screenshot la</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Submit button */}
+                <button
+                  onClick={handleFinanceSubmit}
+                  disabled={finSubmitDisabled}
+                  className="w-full flex items-center justify-center active:scale-95 transition-all"
+                  style={{ backgroundColor: colors.accent, borderRadius: 16, paddingTop: 16, paddingBottom: 16, marginTop: 8, boxShadow: '0 10px 15px rgba(0,0,0,0.15)', opacity: finSubmitDisabled ? 0.45 : 1 }}
+                >
+                  {financeLoading
+                    ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <span className="font-black italic uppercase" style={{ color: '#FFFFFF', fontSize: 13, letterSpacing: 1.5 }}>Egzekite Lòd {selectedFinanceService.name}</span>
+                  }
+                </button>
+              </div>
+            </div>
+          );
+        })()}
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="animate-in fade-in duration-700">
             {!virtualCard?.cardId ? (
-              /* ===== CREATION FORM ===== */
-              <div className="px-4 pt-6 lg:max-w-[700px] lg:mx-auto lg:py-10">
-                {/* Card preview placeholder */}
-                <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{aspectRatio: '1.586'}}>
+              /* ===== NO CARD — CREATION FORM ===== */
+              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
+                {/* Card image: borderRadius 0 per spec */}
+                <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                 </div>
-
-                {/* Creation form */}
-                <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] shadow-sm p-5 mb-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="font-bold text-[var(--oz-text)]">KREYE KAT VISA</p>
-                    <span className="bg-[#b8e832] text-[#0F121E] text-xs font-black px-3 py-1 rounded-full">GRATIS</span>
+                {/* Create form */}
+                <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="font-bold text-[14px]" style={{ color: colors.textPrimary }}>KREYE KAT VISA</p>
+                    <span className="font-bold text-[10px] px-[10px] py-[3px] rounded-full" style={{ background: '#B8E832', color: '#000000' }}>GRATIS</span>
                   </div>
-                  <p className="text-orange-500 text-sm font-medium mb-4">
+                  <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: colors.accent }}>
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
-                  <p className="text-xs text-[var(--oz-text-sec)] uppercase tracking-wider mb-2">Depo Inisyal (Min. $3 USD)</p>
-                  <div className="flex items-center justify-between w-full border border-[var(--oz-border)] rounded-2xl px-4 py-3 mb-4">
-                    <span className="text-[var(--oz-text-sec)] mr-2">$</span>
+                  <p className="font-bold text-[9px] uppercase tracking-[1px] mb-[6px]" style={{ color: colors.textSecondary }}>Depo Inisyal (Min. $3 USD)</p>
+                  <div className="flex items-center w-full border rounded-2xl px-4 py-[12px] mb-4" style={{ borderColor: colors.border, background: colors.background }}>
+                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: colors.textSecondary }}>$</span>
                     <input
                       type="number"
                       min="3"
                       value={cardCreateAmount}
                       onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                      className="flex-1 outline-none text-[var(--oz-text)] font-bold text-lg"
+                      className="flex-1 outline-none font-bold text-[18px]"
+                      style={{ background: 'transparent', color: colors.textPrimary }}
                       placeholder="3"
                     />
-                    <span className="text-[var(--oz-text-sec)] text-sm ml-2">USD</span>
+                    <span className="font-medium text-[13px]" style={{ color: colors.textSecondary }}>USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -2094,634 +2341,491 @@ export default function Dashboard() {
                         alert('Sèvè a pa ka jwenn requete a.');
                       }
                     }}
-                    className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl tracking-wider flex items-center justify-center gap-2"
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
+                    style={{ background: colors.accent }}
                   >
-                    <Zap size={16} /> KREYE KAT GRATIS
+                    <Zap size={16} color="#FFFFFF" /> KREYE KAT GRATIS
                   </button>
                 </div>
               </div>
             ) : virtualCard?.status === 'TERMINATED' ? (
-              /* ===== CARD TERMINATED ===== */
-              <div className="px-4 pt-6 lg:max-w-[700px] lg:mx-auto lg:py-10 animate-in fade-in duration-500">
-                <div className="relative w-full rounded-3xl overflow-hidden mb-6" style={{ aspectRatio: '1.586' }}>
-                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover opacity-40 grayscale" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-3xl">
-                    <span className="bg-red-500 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full">DEZAKTIVE</span>
+              /* ===== TERMINATED CARD ===== */
+              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 animate-in fade-in duration-500">
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
+                {/* Card image: dim + terminated overlay */}
+                <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
+                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
+                  <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <span className="font-bold text-[11px] uppercase tracking-[2px] text-white px-4 py-2 rounded-full" style={{ background: '#EF4444' }}>DEZAKTIVE</span>
                   </div>
                 </div>
-                <div className="bg-[var(--oz-surface)] rounded-3xl border border-red-100 shadow-sm p-6 mb-4">
-                  <div className="flex items-start gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                      <X size={20} className="text-red-500" />
+                {/* Terminated info card */}
+                <div className="rounded-[24px] border p-6 mb-4" style={{ background: colors.surface, borderColor: colors.error + '66' }}>
+                  <div className="flex items-start gap-2 mb-6">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
+                      <X size={20} style={{ color: colors.error }} />
                     </div>
                     <div>
-                      <p className="text-[var(--oz-text)] font-black text-sm mb-1">Kat Dezaktive</p>
-                      <p className="text-[var(--oz-text-sec)] text-sm leading-relaxed">
+                      <p className="font-bold text-[13px] mb-1" style={{ color: colors.textPrimary }}>Kat Dezaktive</p>
+                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: colors.textSecondary }}>
                         Kat ou a te dezaktive. Kreye yon nouvo kat Visa gratis kounye a.
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setVirtualCard(null)}
-                    className="w-full py-4 bg-[#FF7A00] text-white font-black rounded-2xl tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
+                    style={{ background: colors.accent }}
                   >
-                    <Zap size={16} /> KREYE NOUVO KAT
+                    <Zap size={16} color="#FFFFFF" /> KREYE NOUVO KAT
                   </button>
                 </div>
               </div>
             ) : (
-              /* ===== CARD DISPLAY ===== */
+              /* ===== ACTIVE / FROZEN CARD ===== */
               <>
-                {/* Mobile layout */}
-                <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(56vw + 48px + env(safe-area-inset-top))' }}>
+                {/* ── MOBILE LAYOUT ── */}
+                <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(63vw + 248px + env(safe-area-inset-top))' }}>
 
-                {/* FIXED CARD */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+                  {/* FIXED TOP SECTION */}
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+                    {/* Page title */}
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0" style={{ color: colors.textPrimary }}>Kat Visa</p>
 
-                  {/* Card image */}
-                  <div className="px-4 pt-12">
-                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1.586' }}>
-                    <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
-                      <div></div>
-                      <div>
-                        <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
-                        <button
-                          onClick={() => {
-                            const num = showCardDetails && virtualCard?.cardNumber
-                              ? virtualCard.cardNumber
-                              : virtualCard?.cardId;
-                            navigator.clipboard.writeText(num || '');
-                            alert('Nimewo kopye!');
-                          }}
-                          className="flex items-center gap-2 group"
-                        >
-                          <p className="text-white font-bold text-base tracking-wider drop-shadow">
-                            {showCardDetails && virtualCard?.cardNumber
-                              ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
-                              : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
-                            }
-                          </p>
-                          <Copy size={12} className="text-white/50 group-hover:text-white" />
-                        </button>
-                      </div>
-                      <div className="flex justify-between items-end">
+                    {/* Card image: marginHorizontal 20, borderRadius 0 */}
+                    <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
+                      <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" style={virtualCard?.status === 'FROZEN' ? { filter: 'grayscale(0.4)' } : {}} />
+                      {/* Overlay: paddingHorizontal 20, paddingVertical 18 */}
+                      <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
+                        <div />
+                        {/* Card number */}
                         <div>
-                          <p className="text-white/60 text-[10px] mb-0.5">Cardholder</p>
-                          <p className="text-white font-bold text-sm leading-tight">
-                            {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
-                          </p>
-                          <p className="text-white/60 text-[10px] mt-1.5 mb-0.5">Expires</p>
-                          <p className="text-white font-bold text-sm">
-                            {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
-                          </p>
-                        </div>
-                        <p className="text-white/30 font-black text-lg tracking-widest">VISA</p>
-                      </div>
-                    </div>
-                  </div>
-                  </div>{/* end px-4 pt-12 wrapper */}
-
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '-24px',
-                    left: 0,
-                    right: 0,
-                    height: '24px',
-                    background: 'linear-gradient(to bottom, white, transparent)',
-                    zIndex: 41,
-                    pointerEvents: 'none'
-                  }}></div>
-                </div>
-
-                {/* SCROLLABLE CONTENT */}
-                <div style={{ height: 'calc(100vh - 56vw - 48px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 px-4">
-
-                  {/* 5 ACTION BUTTONS */}
-                  <div className="flex justify-between items-center mt-4 pb-3">
-                    {[
-                      { icon: <Eye size={22} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
-                      { icon: <Zap size={22} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
-                      { icon: <Copy size={22} className="text-orange-500" />, label: 'KOPYE', action: 'copy' },
-                      { icon: <Lock size={22} className="text-orange-500" />, label: 'BLOKE', action: 'freeze' },
-                    ].map((btn) => (
-                      <button
-                        key={btn.action}
-                        onClick={async () => {
-                          if (btn.action === 'copy') {
-                            const num = showCardDetails && virtualCard?.cardNumber
-                              ? virtualCard.cardNumber
-                              : virtualCard?.cardId;
-                            navigator.clipboard.writeText(num || '');
-                            alert('Nimewo kopye!');
-                            return;
-                          }
-                          if (btn.action === 'recharge') { setShowRechargeModal(true); return; }
-                          if (btn.action === 'info') {
-                            if (showCardDetails) { setShowCardDetails(false); return; }
-                            fetchSecretDetails();
-                            return;
-                          }
-                          if (btn.action === 'freeze') {
-                            try {
-                              const token = localStorage.getItem('token');
-                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                              const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                              const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                setVirtualCard((prev: any) => ({
-                                  ...prev,
-                                  status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
-                                }));
-                                alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!');
-                              } else { alert(data.message || 'Erè'); }
-                            } catch { alert('Erè koneksyon'); }
-                            return;
-                          }
-                          if (btn.action === 'history') {
-                            alert('ISTORIK ap vini byento!');
-                            return;
-                          }
-                        }}
-                        className="flex flex-col items-center gap-2"
-                      >
-                        <div className={`w-14 h-14 rounded-[1.4rem] flex items-center justify-center border-2 transition-all ${
-                          (btn.action === 'info' && showCardDetails) || (btn.action === 'freeze' && virtualCard?.status === 'FROZEN')
-                            ? 'bg-orange-500 border-orange-500'
-                            : 'bg-orange-50 border-orange-100'
-                        }`}>
-                          {btn.action === 'info' && secretDetailsLoading
-                            ? <div className="w-5 h-5 border-2 border-orange-300 border-t-white rounded-full animate-spin" />
-                            : btn.action === 'info' && showCardDetails
-                            ? <EyeOff size={22} className="text-white" />
-                            : btn.action === 'freeze' && virtualCard?.status === 'FROZEN'
-                            ? <Unlock size={22} className="text-white" />
-                            : btn.icon
-                          }
-                        </div>
-                        <p className="text-[9px] font-black uppercase tracking-wider text-[var(--oz-text)]">{btn.label}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* BALANCE */}
-                  <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 mb-3">
-                    <div>
-                      <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
-                      <p className="text-[var(--oz-text)] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-[var(--oz-text-sec)]">USD</span></p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
-                      <Wallet2 size={22} className="text-white" />
-                    </div>
-                  </div>
-
-                  {/* CARD DETAILS — shown only when showCardDetails is true */}
-                  {showCardDetails && (
-                    <div className="bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl shadow-sm p-4 mb-3">
-                      <div className="flex justify-between items-center mb-3">
-                        <p className="text-[var(--oz-text)] font-black text-sm">Detay Kat</p>
-                        <button onClick={() => setShowCardDetails(false)} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]">
-                          <EyeOff size={18} />
-                        </button>
-                      </div>
-
-                      {secretDetailsLoading ? (
-                        <div className="flex flex-col gap-2.5 animate-pulse">
-                          <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
-                          <div className="flex gap-2.5">
-                            <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
-                            <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
-                          </div>
-                          <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
-                        </div>
-                      ) : secretDetailsFailed ? (
-                        <div className="flex flex-col items-center gap-3 py-4">
-                          <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
+                          <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
                           <button
-                            onClick={fetchSecretDetails}
-                            className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-2xl active:scale-95 transition-all"
+                            onClick={() => { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); }}
+                            className="flex items-center gap-[6px]"
                           >
-                            Eseye Ankò
+                            <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
+                              {showCardDetails && virtualCard?.cardNumber
+                                ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
+                                : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`}
+                            </p>
+                            <Copy size={12} color="rgba(255,255,255,0.5)" />
                           </button>
                         </div>
-                      ) : (
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
-
-                          {/* Nimewo konplè - full width */}
-                          <div style={{gridColumn: '1 / -1', background: 'var(--oz-surface)'}} className="rounded-2xl p-3">
-                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
-                            <div className="flex items-center justify-between gap-2">
-                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
-                                {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
-                              </p>
-                              <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
-                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
-                              </button>
-                            </div>
+                        {/* Bottom row: cardholder + VISA */}
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="font-medium text-[10px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Cardholder</p>
+                            <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}</p>
+                            <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
+                            <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
                           </div>
-
-                          {/* CVV */}
-                          <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
-                            <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
-                          </div>
-
-                          {/* Ekspire */}
-                          <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
-                            <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
-                          </div>
-
-                          {/* Nom sou kat - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
-                            <div className="flex items-center justify-between gap-2">
-                              <p style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} className="text-[var(--oz-text)] font-bold text-sm">
-                                {virtualCard?.cardName || '————'}
-                              </p>
-                              <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
-                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Billing Address - full width */}
-                          <div style={{gridColumn: '1 / -1'}} className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                            <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
-                            {[
-                              { label: 'Street', value: CARD_BILLING.street },
-                              { label: 'City',   value: CARD_BILLING.city },
-                              { label: 'State',  value: CARD_BILLING.state },
-                              { label: 'ZIP',    value: CARD_BILLING.zip },
-                              { label: 'Country',value: CARD_BILLING.country },
-                            ].map(({ label, value }) => (
-                              <div key={label} className="flex items-center justify-between py-1.5 border-b border-[var(--oz-border)] last:border-0">
-                                <div>
-                                  <span className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider">{label}: </span>
-                                  <span className="text-[var(--oz-text)] font-bold text-xs">{value}</span>
-                                </div>
-                                <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
-                                  <Copy size={11} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-
+                          <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>VISA</p>
+                        </div>
+                      </div>
+                      {/* Frozen dimmer */}
+                      {virtualCard?.status === 'FROZEN' && (
+                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                          <Lock size={28} color="rgba(255,255,255,0.6)" />
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {/* BILLING ADDRESS — always visible */}
-                  <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4 mb-3">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-2xl bg-orange-500 flex items-center justify-center">
-                        <Landmark size={14} className="text-white" />
+                    {/* Action buttons + balance */}
+                    <div className="px-5">
+                      {/* Action row */}
+                      <div className="flex justify-between items-center mb-4">
+                        {[
+                          { key: 'info',     label: 'WÈ INFO',  isActive: showCardDetails },
+                          { key: 'recharge', label: 'RECHARGE', isActive: false },
+                          { key: 'copy',     label: 'KOPYE',    isActive: false },
+                          { key: 'freeze',   label: 'BLOKE',    isActive: virtualCard?.status === 'FROZEN' },
+                        ].map((btn) => (
+                          <button
+                            key={btn.key}
+                            onClick={async () => {
+                              if (btn.key === 'copy') { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); return; }
+                              if (btn.key === 'recharge') { setShowRechargeModal(true); return; }
+                              if (btn.key === 'info') { if (showCardDetails) { setShowCardDetails(false); return; } fetchSecretDetails(); return; }
+                              if (btn.key === 'freeze') {
+                                try {
+                                  const token = localStorage.getItem('token');
+                                  const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                                  const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                                  const data = await res.json();
+                                  if (res.ok) { setVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
+                                  else { alert(data.message || 'Erè'); }
+                                } catch { alert('Erè koneksyon'); }
+                              }
+                            }}
+                            className="flex flex-col items-center gap-[6px] flex-1"
+                          >
+                            <div
+                              className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
+                              style={{ borderWidth: '1.5px', borderStyle: 'solid', background: btn.isActive ? colors.accent : colors.surface, borderColor: btn.isActive ? colors.accent : colors.border }}
+                            >
+                              {btn.key === 'info' && secretDetailsLoading
+                                ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: btn.isActive ? 'rgba(255,255,255,0.4)' : colors.accent, borderTopColor: 'transparent' }} />
+                                : btn.key === 'info' && showCardDetails
+                                ? <EyeOff size={22} color="#FFFFFF" />
+                                : btn.key === 'info'
+                                ? <Eye size={22} style={{ color: colors.accent }} />
+                                : btn.key === 'recharge'
+                                ? <Zap size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                : btn.key === 'copy'
+                                ? <Copy size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                : btn.key === 'freeze' && btn.isActive
+                                ? <Unlock size={22} color="#FFFFFF" />
+                                : <Lock size={22} style={{ color: colors.accent }} />
+                              }
+                            </div>
+                            <p className="font-bold text-[8px] uppercase tracking-[1px]" style={{ color: colors.textPrimary }}>{btn.label}</p>
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
-                    </div>
-                    {[
-                      { label: 'Street',  value: CARD_BILLING.street },
-                      { label: 'City',    value: CARD_BILLING.city },
-                      { label: 'State',   value: CARD_BILLING.state },
-                      { label: 'ZIP',     value: CARD_BILLING.zip },
-                      { label: 'Country', value: CARD_BILLING.country },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between py-2.5 border-b border-[var(--oz-border)] last:border-0">
+                      {/* Balance card */}
+                      <div className="flex items-center justify-between rounded-[24px] border px-6 py-4 mb-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
                         <div>
-                          <p className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
-                          <p className="text-[var(--oz-text)] font-bold text-sm">{value}</p>
+                          <p className="font-bold italic uppercase text-[9px] tracking-[1.5px] mb-1" style={{ color: colors.accent }}>Balans Kat</p>
+                          <p>
+                            <span className="font-bold text-[28px]" style={{ color: colors.textPrimary }}>${Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                            <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}> USD</span>
+                          </p>
                         </div>
-                        <button
-                          onClick={() => copyToClipboard(value)}
-                          className="w-8 h-8 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center active:scale-90 transition-all hover:bg-orange-50"
-                        >
-                          <Copy size={13} className="text-[var(--oz-text-sec)]" />
-                        </button>
+                        <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: colors.accent }}>
+                          <Wallet2 size={22} color="#FFFFFF" />
+                        </div>
                       </div>
-                    ))}
-                    <div className="mt-3 p-3 bg-red-50 rounded-2xl border border-red-100">
-                      <p className="text-red-600 text-[10px] leading-relaxed font-bold">
-                        ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
-                      </p>
                     </div>
                   </div>
 
-                  {/* NFC BADGE */}
-                  <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center">
-                      <Smartphone size={18} className="text-white" />
+                  {/* SCROLLABLE SECTION: details + billing + NFC */}
+                  <div style={{ height: 'calc(100vh - 63vw - 248px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-5 pb-24">
+
+                    {/* Card details panel */}
+                    {showCardDetails && (
+                      <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                        <div className="flex justify-between items-center mb-4">
+                          <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Detay Kat</p>
+                          <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} style={{ color: colors.textSecondary }} /></button>
+                        </div>
+                        {secretDetailsLoading ? (
+                          <div className="flex flex-col gap-1 animate-pulse">
+                            <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                            <div className="flex gap-1">
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} />
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} />
+                            </div>
+                            <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                          </div>
+                        ) : secretDetailsFailed ? (
+                          <div className="flex flex-col items-center gap-3 py-4">
+                            <p className="font-medium text-[13px] text-center" style={{ color: colors.textSecondary }}>Echèk chajman detay kat</p>
+                            <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: colors.accent }}>Eseye Ankò</button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {/* Card number — full width */}
+                            <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
+                              <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nimewo Konplè</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                              </div>
+                            </div>
+                            {/* CVV + Ekspire */}
+                            <div className="flex gap-1">
+                              <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
+                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>CVV</p>
+                                <p className="font-bold text-[20px]" style={{ color: colors.textPrimary }}>{virtualCard?.cvv || '———'}</p>
+                              </div>
+                              <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
+                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Ekspire</p>
+                                <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{virtualCard?.expiryDate || '——/——'}</p>
+                              </div>
+                            </div>
+                            {/* Nom sou Kat — full width */}
+                            <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
+                              <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nom sou Kat</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardName || '————'}</p>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Billing address card */}
+                    <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: colors.accent }}>
+                          <Landmark size={14} color="#FFFFFF" />
+                        </div>
+                        <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Billing Address</p>
+                      </div>
+                      {([
+                        { label: 'Street',  value: CARD_BILLING.street },
+                        { label: 'City',    value: CARD_BILLING.city },
+                        { label: 'State',   value: CARD_BILLING.state },
+                        { label: 'ZIP',     value: CARD_BILLING.zip },
+                        { label: 'Country', value: CARD_BILLING.country },
+                      ] as const).map(({ label, value }, i, arr) => (
+                        <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                          <div>
+                            <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[2px]" style={{ color: colors.textSecondary }}>{label}</p>
+                            <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{value}</p>
+                          </div>
+                          <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: colors.background }}>
+                            <Copy size={13} style={{ color: colors.textSecondary }} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="rounded-[12px] border p-2 mt-2" style={{ background: colors.error + '18', borderColor: colors.error + '33' }}>
+                        <p className="font-bold text-[10px] leading-[15px]" style={{ color: colors.error }}>
+                          ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[var(--oz-text)] font-bold text-sm">Google Pay & Apple Pay</p>
-                      <p className="text-[var(--oz-text-sec)] text-xs">Kat ou a sipòte NFC contactless</p>
+
+                    {/* NFC badge */}
+                    <div className="rounded-[24px] border p-4 flex items-center gap-2 mb-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
+                      <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 36, height: 36, background: colors.accent }}>
+                        <Smartphone size={18} color="#FFFFFF" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>Google Pay & Apple Pay</p>
+                        <p className="font-medium text-[11px] mt-[2px]" style={{ color: colors.textSecondary }}>Kat ou a sipòte NFC contactless</p>
+                      </div>
+                      <div className="rounded-full border px-2 py-[3px]" style={{ background: accentMuted, borderColor: colors.accent + '55' }}>
+                        <p className="font-bold uppercase text-[9px] tracking-[1px]" style={{ color: colors.accent }}>AKTIF</p>
+                      </div>
                     </div>
-                    <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
+
                   </div>
+                </div>
 
-                </div>{/* end scrollable */}
-
-                </div>{/* end lg:hidden mobile */}
-
-                {/* ── DESKTOP CARDS ──────────────────────────────── */}
+                {/* ── DESKTOP LAYOUT ── */}
                 <div className="hidden lg:block animate-in fade-in duration-500">
                   <div className="max-w-[1400px] mx-auto px-8 py-10">
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
                     <div className="flex gap-10 items-start">
-
-                      {/* Left: card image + action buttons */}
+                      {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
-                        {/* Card */}
-                        <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: '1.586' }}>
+                        {/* Card image: borderRadius 0 */}
+                        <div className="relative overflow-hidden" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                           <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 px-6 py-5 flex flex-col justify-between">
+                          <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
                             <div />
                             <div>
-                              <p className="text-white/60 text-[10px] mb-0.5">Card Number</p>
-                              <button
-                                onClick={() => {
-                                  const num = showCardDetails && virtualCard?.cardNumber
-                                    ? virtualCard.cardNumber
-                                    : virtualCard?.cardId;
-                                  navigator.clipboard.writeText(num || '');
-                                  alert('Nimewo kopye!');
-                                }}
-                                className="flex items-center gap-2 group"
-                              >
-                                <p className="text-white font-bold text-base tracking-wider drop-shadow">
-                                  {showCardDetails && virtualCard?.cardNumber
-                                    ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
-                                    : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`
-                                  }
+                              <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
+                              <button onClick={() => { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); }} className="flex items-center gap-[6px]">
+                                <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
+                                  {showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim() : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`}
                                 </p>
-                                <Copy size={12} className="text-white/50 group-hover:text-white" />
+                                <Copy size={12} color="rgba(255,255,255,0.5)" />
                               </button>
                             </div>
                             <div className="flex justify-between items-end">
                               <div>
-                                <p className="text-white/60 text-[10px] mb-0.5">Cardholder</p>
-                                <p className="text-white font-bold text-sm leading-tight">
-                                  {showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}
-                                </p>
-                                <p className="text-white/60 text-[10px] mt-1.5 mb-0.5">Expires</p>
-                                <p className="text-white font-bold text-sm">
-                                  {showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}
-                                </p>
+                                <p className="font-medium text-[10px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Cardholder</p>
+                                <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}</p>
+                                <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
+                                <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
                               </div>
-                              <p className="text-white/30 font-black text-lg tracking-widest">VISA</p>
+                              <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>VISA</p>
                             </div>
                           </div>
                         </div>
-
                         {/* Action buttons */}
                         <div className="flex gap-3">
                           {[
-                            { icon: <Eye size={20} className="text-orange-500" />, label: 'WÈ INFO', action: 'info' },
-                            { icon: <Zap size={20} className="text-orange-500" />, label: 'RECHARGE', action: 'recharge' },
-                            { icon: <Copy size={20} className="text-orange-500" />, label: 'KOPYE', action: 'copy' },
-                            { icon: <Lock size={20} className="text-orange-500" />, label: 'BLOKE', action: 'freeze' },
+                            { key: 'info',     label: 'WÈ INFO',  isActive: showCardDetails },
+                            { key: 'recharge', label: 'RECHARGE', isActive: false },
+                            { key: 'copy',     label: 'KOPYE',    isActive: false },
+                            { key: 'freeze',   label: 'BLOKE',    isActive: virtualCard?.status === 'FROZEN' },
                           ].map((btn) => (
-                            <button
-                              key={btn.action}
-                              onClick={async () => {
-                                if (btn.action === 'copy') {
-                                  const num = showCardDetails && virtualCard?.cardNumber
-                                    ? virtualCard.cardNumber
-                                    : virtualCard?.cardId;
-                                  navigator.clipboard.writeText(num || '');
-                                  alert('Nimewo kopye!');
-                                  return;
-                                }
-                                if (btn.action === 'recharge') { setShowRechargeModal(true); return; }
-                                if (btn.action === 'info') {
-                                  if (showCardDetails) { setShowCardDetails(false); return; }
-                                  fetchSecretDetails();
-                                  return;
-                                }
-                                if (btn.action === 'freeze') {
-                                  try {
-                                    const token = localStorage.getItem('token');
-                                    const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
-                                    const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                                    const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, {
-                                      method: 'POST',
-                                      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                                    });
-                                    const data = await res.json();
-                                    if (res.ok) {
-                                      setVirtualCard((prev: any) => ({
-                                        ...prev,
-                                        status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE'
-                                      }));
-                                      alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!');
-                                    } else { alert(data.message || 'Erè'); }
-                                  } catch { alert('Erè koneksyon'); }
-                                  return;
-                                }
-                              }}
-                              className="flex flex-col items-center gap-1.5"
-                            >
-                              <div className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center border-2 transition-all ${
-                                (btn.action === 'info' && showCardDetails) || (btn.action === 'freeze' && virtualCard?.status === 'FROZEN')
-                                  ? 'bg-orange-500 border-orange-500'
-                                  : 'bg-orange-50 border-orange-100'
-                              }`}>
-                                {btn.action === 'info' && secretDetailsLoading
-                                  ? <div className="w-5 h-5 border-2 border-orange-300 border-t-white rounded-full animate-spin" />
-                                  : btn.action === 'info' && showCardDetails
-                                  ? <EyeOff size={20} className="text-white" />
-                                  : btn.action === 'freeze' && virtualCard?.status === 'FROZEN'
-                                  ? <Unlock size={20} className="text-white" />
-                                  : btn.icon
-                                }
+                            <button key={btn.key} onClick={async () => {
+                              if (btn.key === 'copy') { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); return; }
+                              if (btn.key === 'recharge') { setShowRechargeModal(true); return; }
+                              if (btn.key === 'info') { if (showCardDetails) { setShowCardDetails(false); return; } fetchSecretDetails(); return; }
+                              if (btn.key === 'freeze') {
+                                try {
+                                  const token = localStorage.getItem('token');
+                                  const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                                  const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
+                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                                  const data = await res.json();
+                                  if (res.ok) { setVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
+                                  else { alert(data.message || 'Erè'); }
+                                } catch { alert('Erè koneksyon'); }
+                              }
+                            }} className="flex flex-col items-center gap-[6px] flex-1">
+                              <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all" style={{ borderWidth: '1.5px', borderStyle: 'solid', background: btn.isActive ? colors.accent : colors.surface, borderColor: btn.isActive ? colors.accent : colors.border }}>
+                                {btn.key === 'info' && secretDetailsLoading ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: colors.accent, borderTopColor: 'transparent' }} />
+                                : btn.key === 'info' && showCardDetails ? <EyeOff size={22} color="#FFFFFF" />
+                                : btn.key === 'info' ? <Eye size={22} style={{ color: colors.accent }} />
+                                : btn.key === 'recharge' ? <Zap size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                : btn.key === 'copy' ? <Copy size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                : btn.key === 'freeze' && btn.isActive ? <Unlock size={22} color="#FFFFFF" />
+                                : <Lock size={22} style={{ color: colors.accent }} />}
                               </div>
-                              <p className="text-[9px] font-black uppercase tracking-wider text-[var(--oz-text)]">{btn.label}</p>
+                              <p className="font-bold text-[8px] uppercase tracking-[1px]" style={{ color: colors.textPrimary }}>{btn.label}</p>
                             </button>
                           ))}
                         </div>
                       </div>
-
-                      {/* Right: details */}
+                      {/* Right: balance + details + billing + NFC */}
                       <div className="flex-1 flex flex-col gap-4 min-w-0">
-
                         {/* Balance */}
-                        <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4">
+                        <div className="flex items-center justify-between rounded-[24px] border px-6 py-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
                           <div>
-                            <p className="text-orange-400 text-xs font-semibold uppercase tracking-widest mb-1">Balans Kat</p>
-                            <p className="text-[var(--oz-text)] text-3xl font-black">${Number(virtualCard?.balance || 0).toFixed(2)} <span className="text-base font-normal text-[var(--oz-text-sec)]">USD</span></p>
+                            <p className="font-bold italic uppercase text-[9px] tracking-[1.5px] mb-1" style={{ color: colors.accent }}>Balans Kat</p>
+                            <p>
+                              <span className="font-bold text-[28px]" style={{ color: colors.textPrimary }}>${Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                              <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}> USD</span>
+                            </p>
                           </div>
-                          <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center">
-                            <Wallet2 size={22} className="text-white" />
+                          <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: colors.accent }}>
+                            <Wallet2 size={22} color="#FFFFFF" />
                           </div>
                         </div>
-
-                        {/* Card details panel (conditional) */}
+                        {/* Details panel */}
                         {showCardDetails && (
-                          <div className="bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl shadow-sm p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <p className="text-[var(--oz-text)] font-black text-sm">Detay Kat</p>
-                              <button onClick={() => setShowCardDetails(false)} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]">
-                                <EyeOff size={18} />
-                              </button>
+                          <div className="rounded-[24px] border p-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                            <div className="flex justify-between items-center mb-4">
+                              <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Detay Kat</p>
+                              <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} style={{ color: colors.textSecondary }} /></button>
                             </div>
-
                             {secretDetailsLoading ? (
-                              <div className="flex flex-col gap-2.5 animate-pulse">
-                                <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
-                                <div className="flex gap-2.5">
-                                  <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
-                                  <div className="h-14 bg-[var(--oz-surface)] rounded-2xl flex-1" />
-                                </div>
-                                <div className="h-14 bg-[var(--oz-surface)] rounded-2xl w-full" />
+                              <div className="flex flex-col gap-1 animate-pulse">
+                                <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                                <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} /></div>
+                                <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
                               </div>
                             ) : secretDetailsFailed ? (
                               <div className="flex flex-col items-center gap-3 py-4">
-                                <p className="text-[var(--oz-text-sec)] text-sm text-center">Echèk chajman detay kat</p>
-                                <button
-                                  onClick={fetchSecretDetails}
-                                  className="px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-2xl active:scale-95 transition-all"
-                                >
-                                  Eseye Ankò
-                                </button>
+                                <p className="font-medium text-[13px] text-center" style={{ color: colors.textSecondary }}>Echèk chajman detay kat</p>
+                                <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: colors.accent }}>Eseye Ankò</button>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 gap-2.5">
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
-                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nimewo Konplè</p>
+                              <div className="flex flex-col gap-1">
+                                <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
+                                  <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nimewo Konplè</p>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[var(--oz-text)] font-bold text-sm truncate">
-                                      {virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}
-                                    </p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0">
-                                      <Copy size={13} className="text-[var(--oz-text-sec)]" />
-                                    </button>
+                                    <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
                                   </div>
                                 </div>
-                                <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">CVV</p>
-                                  <p className="text-[var(--oz-text)] font-bold text-xl">{virtualCard?.cvv || '———'}</p>
-                                </div>
-                                <div className="bg-[var(--oz-surface)] rounded-2xl p-3">
-                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Ekspire</p>
-                                  <p className="text-[var(--oz-text)] font-bold text-sm">{virtualCard?.expiryDate || '——/——'}</p>
-                                </div>
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
-                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-1">Nom sou Kat</p>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="text-[var(--oz-text)] font-bold text-sm truncate">
-                                      {virtualCard?.cardName || '————'}
-                                    </p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0">
-                                      <Copy size={13} className="text-[var(--oz-text-sec)]" />
-                                    </button>
+                                <div className="flex gap-1">
+                                  <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
+                                    <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>CVV</p>
+                                    <p className="font-bold text-[20px]" style={{ color: colors.textPrimary }}>{virtualCard?.cvv || '———'}</p>
+                                  </div>
+                                  <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
+                                    <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Ekspire</p>
+                                    <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{virtualCard?.expiryDate || '——/——'}</p>
                                   </div>
                                 </div>
-                                <div className="col-span-2 bg-[var(--oz-surface)] rounded-2xl p-3">
-                                  <p className="text-[var(--oz-text-sec)] text-[10px] uppercase tracking-wider mb-2">Billing Address</p>
-                                  {[
-                                    { label: 'Street', value: CARD_BILLING.street },
-                                    { label: 'City',   value: CARD_BILLING.city },
-                                    { label: 'State',  value: CARD_BILLING.state },
-                                    { label: 'ZIP',    value: CARD_BILLING.zip },
-                                    { label: 'Country',value: CARD_BILLING.country },
-                                  ].map(({ label, value }) => (
-                                    <div key={label} className="flex items-center justify-between py-1.5 border-b border-[var(--oz-border)] last:border-0">
-                                      <div>
-                                        <span className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider">{label}: </span>
-                                        <span className="text-[var(--oz-text)] font-bold text-xs">{value}</span>
-                                      </div>
-                                      <button onClick={() => copyToClipboard(value)} className="ml-2 flex-shrink-0 active:scale-90 transition-all">
-                                        <Copy size={11} className="text-[var(--oz-text-sec)] hover:text-[var(--oz-text-sec)]" />
-                                      </button>
-                                    </div>
-                                  ))}
+                                <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
+                                  <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nom sou Kat</p>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardName || '————'}</p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                                  </div>
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
-
-                        {/* Billing Address — always visible */}
-                        <div className="bg-[var(--oz-surface)] border border-orange-100 rounded-2xl shadow-sm p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 rounded-2xl bg-orange-500 flex items-center justify-center">
-                              <Landmark size={14} className="text-white" />
+                        {/* Billing address */}
+                        <div className="rounded-[24px] border p-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: colors.accent }}>
+                              <Landmark size={14} color="#FFFFFF" />
                             </div>
-                            <p className="text-[var(--oz-text)] font-black text-sm uppercase tracking-tight">Billing Address</p>
+                            <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Billing Address</p>
                           </div>
-                          {[
+                          {([
                             { label: 'Street',  value: CARD_BILLING.street },
                             { label: 'City',    value: CARD_BILLING.city },
                             { label: 'State',   value: CARD_BILLING.state },
                             { label: 'ZIP',     value: CARD_BILLING.zip },
                             { label: 'Country', value: CARD_BILLING.country },
-                          ].map(({ label, value }) => (
-                            <div key={label} className="flex items-center justify-between py-2.5 border-b border-[var(--oz-border)] last:border-0">
+                          ] as const).map(({ label, value }, i, arr) => (
+                            <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
                               <div>
-                                <p className="text-[var(--oz-text-sec)] text-[9px] uppercase tracking-wider mb-0.5">{label}</p>
-                                <p className="text-[var(--oz-text)] font-bold text-sm">{value}</p>
+                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[2px]" style={{ color: colors.textSecondary }}>{label}</p>
+                                <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{value}</p>
                               </div>
-                              <button
-                                onClick={() => copyToClipboard(value)}
-                                className="w-8 h-8 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center hover:bg-orange-50 transition-all"
-                              >
-                                <Copy size={13} className="text-[var(--oz-text-sec)]" />
+                              <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: colors.background }}>
+                                <Copy size={13} style={{ color: colors.textSecondary }} />
                               </button>
                             </div>
                           ))}
-                          <div className="mt-3 p-3 bg-red-50 rounded-2xl border border-red-100">
-                            <p className="text-red-600 text-[10px] leading-relaxed font-bold">
+                          <div className="rounded-[12px] border p-2 mt-2" style={{ background: colors.error + '18', borderColor: colors.error + '33' }}>
+                            <p className="font-bold text-[10px] leading-[15px]" style={{ color: colors.error }}>
                               ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
                             </p>
                           </div>
                         </div>
-
                         {/* NFC badge */}
-                        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center">
-                            <Smartphone size={18} className="text-white" />
+                        <div className="rounded-[24px] border p-4 flex items-center gap-2" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
+                          <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 36, height: 36, background: colors.accent }}>
+                            <Smartphone size={18} color="#FFFFFF" />
                           </div>
-                          <div>
-                            <p className="text-[var(--oz-text)] font-bold text-sm">Google Pay & Apple Pay</p>
-                            <p className="text-[var(--oz-text-sec)] text-xs">Kat ou a sipòte NFC contactless</p>
+                          <div className="flex-1">
+                            <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>Google Pay & Apple Pay</p>
+                            <p className="font-medium text-[11px] mt-[2px]" style={{ color: colors.textSecondary }}>Kat ou a sipòte NFC contactless</p>
                           </div>
-                          <span className="ml-auto text-orange-500 text-xs font-black bg-orange-100 px-2 py-1 rounded-full">AKTIF</span>
+                          <div className="rounded-full border px-2 py-[3px]" style={{ background: accentMuted, borderColor: colors.accent + '55' }}>
+                            <p className="font-bold uppercase text-[9px] tracking-[1px]" style={{ color: colors.accent }}>AKTIF</p>
+                          </div>
                         </div>
-
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* RECHARGE MODAL — fixed overlay, visible on all breakpoints */}
+                {/* RECHARGE MODAL */}
                 {showRechargeModal && (
-                  <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-[var(--oz-surface)] w-full rounded-t-3xl p-6 pb-28 shadow-2xl max-h-[90vh] overflow-y-auto">
-                      <div className="w-10 h-1 bg-[var(--oz-border)] rounded-full mx-auto mb-6"></div>
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-[var(--oz-text)] font-black text-lg">Recharge Kat</h3>
-                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }} className="text-[var(--oz-text-sec)]">
-                          <X size={20} />
-                        </button>
+                  <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                    <div className="w-full max-h-[90vh] overflow-y-auto" style={{ background: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 48 }}>
+                      {/* Handle */}
+                      <div className="mx-auto mb-6" style={{ width: 40, height: 4, background: colors.border, borderRadius: 2 }} />
+                      {/* Header */}
+                      <div className="flex justify-between items-center mb-4">
+                        <p className="font-bold italic uppercase text-[18px] tracking-[1px]" style={{ color: colors.textPrimary }}>Recharge Kat</p>
+                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} style={{ color: colors.textSecondary }} /></button>
                       </div>
-                      <p className="text-[var(--oz-text-sec)] text-sm mb-2">Balans aktyèl: <span className="text-orange-500 font-bold">${Number(virtualCard?.balance || 0).toFixed(2)} USD</span></p>
-                      <p className="text-[var(--oz-text-sec)] text-xs uppercase tracking-wider mb-2 mt-4">Montan (USD)</p>
-                      <div className="flex items-center border-2 border-[var(--oz-border)] rounded-2xl px-4 py-3 mb-3 focus-within:border-orange-400 transition-colors">
-                        <span className="text-orange-500 font-bold mr-2 text-lg">$</span>
+                      {/* Balance */}
+                      <p className="font-medium text-[13px] mb-4" style={{ color: colors.textSecondary }}>
+                        Balans aktyèl:{' '}
+                        <span className="font-bold" style={{ color: colors.accent }}>${Number(virtualCard?.balance || 0).toFixed(2)} USD</span>
+                      </p>
+                      {/* Input */}
+                      <p className="font-bold uppercase text-[9px] tracking-[1px] mb-[6px]" style={{ color: colors.textSecondary }}>Montan (USD)</p>
+                      <div className="flex items-center rounded-2xl mb-2 transition-colors" style={{ border: `2px solid ${colors.border}`, padding: '12px 16px' }}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = colors.accent)}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = colors.border)}
+                      >
+                        <span className="font-bold text-[20px] mr-[6px]" style={{ color: colors.accent }}>$</span>
                         <input
                           type="number"
                           min="1"
                           value={rechargeAmount}
                           onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setRechargeAmount(val); }}
-                          className="flex-1 outline-none text-[var(--oz-text)] font-bold text-xl"
+                          className="flex-1 outline-none font-bold text-[22px]"
+                          style={{ background: 'transparent', color: colors.textPrimary }}
                           placeholder="0.00"
                           autoFocus
                         />
-                        <span className="text-[var(--oz-text-sec)] text-sm">USD</span>
+                        <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}>USD</span>
                       </div>
+                      {/* Fee box */}
                       {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
                         const amt = Number(rechargeAmount);
                         const serviceFee = 1.90 + amt * 0.019;
@@ -2729,41 +2833,49 @@ export default function Dashboard() {
                         const totalUsd = amt + serviceFee + ozamapayFee;
                         const totalHtg = Math.ceil(totalUsd * exchangeRate);
                         return (
-                          <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3 mb-4">
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-[var(--oz-text-sec)] text-xs">Montan recharge</p>
-                              <p className="text-[var(--oz-text)] font-bold text-sm">${amt.toFixed(2)} USD</p>
-                            </div>
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-[var(--oz-text-sec)] text-xs">Frè Sèvis: $1.90 + 1.9%</p>
-                              <p className="text-orange-500 font-bold text-sm">+ ${serviceFee.toFixed(2)} USD</p>
-                            </div>
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-[var(--oz-text-sec)] text-xs">Frè OZAMAPAY: 2%</p>
-                              <p className="text-orange-500 font-bold text-sm">+ ${ozamapayFee.toFixed(2)} USD</p>
-                            </div>
-                            <div className="border-t border-orange-100 mt-2 pt-2 flex justify-between items-center mb-1">
-                              <p className="text-[var(--oz-text-sec)] text-xs font-semibold">Total USD</p>
-                              <p className="text-[var(--oz-text)] font-black text-sm">${totalUsd.toFixed(2)} USD</p>
+                          <div className="rounded-2xl border mb-4 flex flex-col" style={{ background: accentMuted, borderColor: colors.accent + '44', padding: 16, gap: 4 }}>
+                            <div className="flex justify-between items-center">
+                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Montan recharge</p>
+                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>${amt.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="text-[var(--oz-text-sec)] text-xs font-semibold">Total HTG</p>
-                              <p className="text-[var(--oz-text)] font-black text-base">{totalHtg.toLocaleString()} HTG</p>
+                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Frè Sèvis: $1.90 + 1.9%</p>
+                              <p className="font-bold text-[12px]" style={{ color: colors.accent }}>+${serviceFee.toFixed(2)} USD</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Frè OZAMAPAY: 2%</p>
+                              <p className="font-bold text-[12px]" style={{ color: colors.accent }}>+${ozamapayFee.toFixed(2)} USD</p>
+                            </div>
+                            <div style={{ height: 1, background: colors.border, marginTop: 4, marginBottom: 4 }} />
+                            <div className="flex justify-between items-center">
+                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>Total USD</p>
+                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>${totalUsd.toFixed(2)} USD</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>Total HTG</p>
+                              <p className="font-bold text-[16px]" style={{ color: colors.textPrimary }}>{totalHtg.toLocaleString()} HTG</p>
                             </div>
                           </div>
                         );
                       })()}
-                      <div className="grid grid-cols-3 gap-2 mb-6">
+                      {/* Quick amount chips */}
+                      <div className="flex gap-2 mb-6">
                         {['5', '10', '20'].map(amt => (
                           <button
                             key={amt}
                             onClick={() => setRechargeAmount(amt)}
-                            className={`py-2 rounded-2xl text-sm font-bold border-2 transition-colors ${rechargeAmount === amt ? 'border-orange-500 bg-orange-50 text-orange-500' : 'border-[var(--oz-border)] text-[var(--oz-text-sec)]'}`}
+                            className="flex-1 py-2 rounded-2xl font-bold text-[13px] border-2 transition-colors"
+                            style={{
+                              borderColor: rechargeAmount === amt ? colors.accent : colors.border,
+                              background: rechargeAmount === amt ? accentMuted : colors.surface,
+                              color: rechargeAmount === amt ? colors.accent : colors.textSecondary,
+                            }}
                           >
                             ${amt}
                           </button>
                         ))}
                       </div>
+                      {/* Submit button */}
                       <button
                         disabled={rechargeLoading || !rechargeAmount || Number(rechargeAmount) < 1}
                         onClick={async () => {
@@ -2777,27 +2889,15 @@ export default function Dashboard() {
                               body: JSON.stringify({ amount_usd: Number(rechargeAmount) })
                             });
                             const data = await res.json();
-                            if (res.ok) {
-                              setShowRechargeModal(false);
-                              setRechargeAmount('');
-                              fetchData();
-                            } else {
-                              alert(toErrorMsg(data.message, 'Erè recharge'));
-                            }
-                          } catch {
-                            alert('Erè koneksyon');
-                          } finally {
-                            setRechargeLoading(false);
-                          }
+                            if (res.ok) { setShowRechargeModal(false); setRechargeAmount(''); fetchData(); }
+                            else { alert(toErrorMsg(data.message, 'Erè recharge')); }
+                          } catch { alert('Erè koneksyon'); }
+                          finally { setRechargeLoading(false); }
                         }}
-                        className="w-full py-5 bg-[#FF7A00] text-white font-black rounded-2xl uppercase italic tracking-widest text-sm shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40 shadow-sm"
+                        style={{ background: colors.accent, paddingTop: 18, paddingBottom: 18 }}
                       >
-                        {rechargeLoading ? (
-                          <>
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Ap trete...
-                          </>
-                        ) : 'RECHARGE KAT →'}
+                        {rechargeLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'RECHARGE KAT →'}
                       </button>
                     </div>
                   </div>
@@ -2906,206 +3006,212 @@ export default function Dashboard() {
               </div>
             ) : (
               /* PROFILE VIEW */
-              <>
-                {/* Mobile layout */}
-                <div className="lg:hidden">
-                {/* HERO CARD — fixed under header */}
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'white' }}>
-                  {/* White safe-area zone — never inherits dark card color */}
-                  <div style={{ height: 'env(safe-area-inset-top)' }} />
-                  <div className="px-4 pt-4 pb-3">
-                  <div className="bg-[#0F121E] rounded-3xl p-6">
-                    <div className="flex items-center gap-4">
-                      {/* Avatar with camera overlay */}
-                      <div className="relative flex-shrink-0">
-                        {profilePhoto ? (
-                          <img
-                            src={profilePhoto}
-                            alt="Profile"
-                            className="w-20 h-20 rounded-full object-cover shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg">
-                            <span className="text-white text-2xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={() => profilePhotoInputRef.current?.click()}
-                          disabled={profilePhotoUploading}
-                          className="absolute bottom-0 right-0 w-7 h-7 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-md border-2 border-[#0F121E] hover:bg-[#e85f00] transition disabled:opacity-60"
-                        >
-                          {profilePhotoUploading
-                            ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            : <Camera size={12} className="text-white" />
-                          }
-                        </button>
-                        <input
-                          ref={profilePhotoInputRef}
-                          type="file"
-                          accept="image/*"
-                          hidden
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleProfilePhotoUpload(f);
-                          }}
-                        />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        {isEditingProfile ? (
-                          <div className="space-y-2">
-                            <input
-                              type="text"
-                              value={editName}
-                              onChange={e => setEditName(e.target.value)}
-                              placeholder="Non"
-                              className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
-                            />
-                            <input
-                              type="tel"
-                              value={editPhone}
-                              onChange={e => setEditPhone(e.target.value)}
-                              placeholder="Telefòn"
-                              className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition"
-                            />
-                            <div className="flex gap-2 pt-1">
-                              <button
-                                onClick={handleEditProfile}
-                                disabled={editProfileLoading}
-                                className="flex-1 py-1.5 rounded-2xl bg-[#FF6B00] text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50"
-                              >
-                                {editProfileLoading ? '...' : 'Sove'}
-                              </button>
-                              <button
-                                onClick={() => setIsEditingProfile(false)}
-                                className="flex-1 py-1.5 rounded-2xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider hover:bg-white/20 transition"
-                              >
-                                Anile
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-white font-black text-xl leading-tight">{displayName}</h3>
-                              <button
-                                onClick={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setIsEditingProfile(true); }}
-                                className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 hover:text-[#FF6B00] transition"
-                              >
-                                <Pencil size={11} />
-                              </button>
-                            </div>
-                            <p className="text-white/50 text-xs mt-1 truncate">{user?.email}</p>
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                              {user?.kyc?.status === 'APPROVED' ? (
-                                <span className="text-[9px] font-black uppercase bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">✓ VERIFYE</span>
-                              ) : user?.kyc?.status === 'PENDING' ? (
-                                <span className="text-[9px] font-black uppercase bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">⏳ Pending</span>
-                              ) : (
-                                <span className="text-[9px] font-black uppercase bg-white/10 text-white/50 px-2 py-0.5 rounded-full border border-white/10">Pa Verifye</span>
-                              )}
-                              {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                                <span className="text-[9px] font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full border border-[#FF6B00]/30">⚡ AJAN</span>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  </div>{/* end px-4 pt-4 pb-3 */}
-                </div>{/* end position:fixed */}
-
-                {/* Spacer so scrollable content clears the fixed hero */}
-                <div style={{ paddingTop: 'calc(168px + env(safe-area-inset-top))' }} />
-
-                {/* STATS ROW */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
-                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">Balans</p>
-                    <p className="text-sm font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
-                    <p className="text-[8px] text-[var(--oz-text-sec)] font-bold">HTG</p>
-                  </div>
-                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
-                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">KYC</p>
-                    <div className="flex justify-center">
-                      <BadgeCheck size={22} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'} />
-                    </div>
-                    <p className={`text-[8px] font-black uppercase mt-1 ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'}`}>
-                      {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
-                    </p>
-                  </div>
-                  <div className="bg-[var(--oz-surface)] rounded-2xl p-4 text-center border border-[var(--oz-border)]">
-                    <p className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] mb-1">Wòl</p>
-                    <div className="flex justify-center">
-                      {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                        <Briefcase size={22} className="text-[#FF6B00]" />
+              <div className="lg:max-w-[700px] lg:mx-auto">
+                {/* ── HERO CARD — always #0F121E, scrolls in-flow ── */}
+                <div className="bg-[#0F121E] rounded-2xl p-4 mt-4 mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      {profilePhoto ? (
+                        <img src={profilePhoto} alt="Profile" className="w-[72px] h-[72px] rounded-full object-cover" />
                       ) : (
-                        <User size={22} className="text-[var(--oz-text-sec)]" />
+                        <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center" style={{ backgroundColor: colors.accent }}>
+                          <span className="text-white font-black" style={{ fontSize: 26, letterSpacing: 1 }}>{displayName.substring(0, 1).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => profilePhotoInputRef.current?.click()}
+                        disabled={profilePhotoUploading}
+                        className="absolute flex items-center justify-center rounded-full transition disabled:opacity-60"
+                        style={{ width: 26, height: 26, bottom: -2, right: -2, backgroundColor: colors.accent, border: '2px solid #0F121E' }}
+                      >
+                        {profilePhotoUploading
+                          ? <div className="w-[10px] h-[10px] border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <Camera size={11} className="text-white" />
+                        }
+                      </button>
+                      <input ref={profilePhotoInputRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProfilePhotoUpload(f); }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {isEditingProfile ? (
+                        <div className="space-y-2">
+                          <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
+                            className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
+                          <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
+                            className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={handleEditProfile} disabled={editProfileLoading}
+                              className="flex-1 py-1.5 rounded-xl text-white text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50"
+                              style={{ backgroundColor: colors.accent }}>
+                              {editProfileLoading ? '...' : 'Sove'}
+                            </button>
+                            <button onClick={() => setIsEditingProfile(false)}
+                              className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider transition">
+                              Anile
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="text-white font-black italic uppercase leading-tight" style={{ fontSize: 17, letterSpacing: 0.5 }}>{displayName}</h3>
+                            <button
+                              onClick={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setIsEditingProfile(true); }}
+                              className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 hover:text-[#FF7A00] transition flex-shrink-0"
+                            >
+                              <Pencil size={10} />
+                            </button>
+                          </div>
+                          {user?.email && <p className="text-[11px] mt-[3px] truncate" style={{ color: 'rgba(255,255,255,0.45)' }}>{user.email}</p>}
+                          <div className="flex flex-row gap-1.5 mt-1.5 flex-wrap">
+                            {user?.kyc?.status === 'APPROVED' ? (
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.18)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', letterSpacing: 0.5 }}>✓ Verifye</span>
+                            ) : user?.kyc?.status === 'PENDING' ? (
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c', letterSpacing: 0.5 }}>⏳ Annatant</span>
+                            ) : (
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 }}>Pa Verifye</span>
+                            )}
+                            {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}44`, color: colors.accent, letterSpacing: 0.5 }}>⚡ Ajan</span>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
-                    <p className="text-[8px] font-black uppercase text-[var(--oz-text-sec)] mt-1">{user?.role || 'USER'}</p>
                   </div>
                 </div>
 
-                {/* MENU LIST */}
-                <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-4">
-                  <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                    <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
-                      <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
+                {/* ── STATS ROW ── */}
+                <div className="flex gap-3 mb-4">
+                  <div className="flex-1 rounded-2xl border p-3 text-center" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="font-black italic uppercase text-[8px] mb-1" style={{ color: colors.textSecondary, letterSpacing: 1 }}>Balans</p>
+                    <p className="font-black text-[13px]" style={{ color: colors.accent, letterSpacing: 0.5 }}>{(user?.wallet?.balance || 0).toLocaleString('fr-HT')}</p>
+                    <p className="text-[8px] mt-0.5" style={{ color: colors.textSecondary }}>HTG</p>
+                  </div>
+                  <div className="flex-1 rounded-2xl border p-3 text-center flex flex-col items-center" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="font-black italic uppercase text-[8px] mb-1" style={{ color: colors.textSecondary, letterSpacing: 1 }}>KYC</p>
+                    <BadgeCheck size={22} color={user?.kyc?.status === 'APPROVED' ? colors.success : user?.kyc?.status === 'PENDING' ? '#f97316' : colors.border} />
+                    <p className="font-black uppercase text-[8px] mt-0.5" style={{ letterSpacing: 0.5, color: user?.kyc?.status === 'APPROVED' ? colors.success : user?.kyc?.status === 'PENDING' ? '#f97316' : colors.textSecondary }}>
+                      {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
+                    </p>
+                  </div>
+                  <div className="flex-1 rounded-2xl border p-3 text-center flex flex-col items-center" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="font-black italic uppercase text-[8px] mb-1" style={{ color: colors.textSecondary, letterSpacing: 1 }}>Wòl</p>
+                    {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED')
+                      ? <Briefcase size={22} color={colors.accent} />
+                      : <User size={22} color={colors.textSecondary} />
+                    }
+                    <p className="font-black uppercase text-[8px] mt-0.5 truncate" style={{ letterSpacing: 0.5, color: colors.textSecondary }}>{user?.role ?? 'USER'}</p>
+                  </div>
+                </div>
+
+                {/* ── MENU CARD ── */}
+                <div className="rounded-2xl border overflow-hidden mb-4" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+
+                  {/* Row 1 — Security & PIN */}
+                  <button onClick={() => setShowSecurityCard(s => !s)}
+                    className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                    style={{ borderColor: colors.border }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }}>
+                      <Shield size={18} color={colors.accent} />
                     </div>
-                    <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
+                    <div className="flex-1 text-left">
+                      <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Sekirite &amp; PIN</p>
+                      <p className="text-[10px]" style={{ color: colors.textSecondary }}>Chanje PIN ou</p>
+                    </div>
+                    {showSecurityCard ? <ChevronDown size={16} color={colors.textSecondary} /> : <ChevronRight size={16} color={colors.textSecondary} />}
                   </button>
                   {showSecurityCard && (
-                    <div className="px-4 pb-4 border-b border-[var(--oz-border)]"><UserSecurityCard /></div>
+                    <div className="px-4 py-3 border-b" style={{ borderColor: colors.border }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-black italic uppercase text-[11px]" style={{ color: colors.textPrimary, letterSpacing: 1 }}>KÒD PIN Sekirite</p>
+                        <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{
+                          backgroundColor: user?.transactionPin ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: user?.transactionPin ? colors.success : colors.error,
+                          letterSpacing: 0.5,
+                        }}>{user?.transactionPin ? 'PIN Aktif' : 'San PIN'}</span>
+                      </div>
+                      <div className="flex items-center rounded-lg border mb-3" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                        <input
+                          type={profilePinVisible ? 'text' : 'password'}
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="••••"
+                          value={profilePinValue}
+                          onChange={e => setProfilePinValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="flex-1 bg-transparent outline-none font-black"
+                          style={{ paddingLeft: 16, paddingRight: 8, paddingTop: 12, paddingBottom: 12, color: colors.textPrimary, fontSize: 18, letterSpacing: 6 }}
+                        />
+                        <button onClick={() => setProfilePinVisible(v => !v)} className="transition-opacity" style={{ paddingLeft: 8, paddingRight: 12, paddingTop: 12, paddingBottom: 12 }}>
+                          {profilePinVisible ? <EyeOff size={18} color={colors.textSecondary} /> : <Eye size={18} color={colors.textSecondary} />}
+                        </button>
+                      </div>
+                      <button onClick={handleSavePin} disabled={profilePinLoading}
+                        className="w-full rounded-lg font-black uppercase disabled:opacity-50 transition-all active:scale-[0.98]"
+                        style={{ backgroundColor: colors.accent, paddingTop: 12, paddingBottom: 12, color: '#FFFFFF', fontSize: 10, letterSpacing: 1.5 }}>
+                        {profilePinLoading
+                          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                          : (user?.transactionPin ? 'Mete PIN lan Ajou' : 'Kreye PIN Sekirite Mwen')}
+                      </button>
+                    </div>
                   )}
 
-                  <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                    <div className={`p-2 rounded-2xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
-                      <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
+                  {/* Row 2 — KYC */}
+                  <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                    style={{ borderColor: colors.border }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={
+                      user?.kyc?.status === 'APPROVED'
+                        ? { backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
+                        : { backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }
+                    }>
+                      <BadgeCheck size={18} color={user?.kyc?.status === 'APPROVED' ? colors.success : '#f97316'} />
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[var(--oz-text)]">Verifikasyon KYC</p>
-                      <p className="text-xs text-[var(--oz-text-sec)]">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
+                      <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Verifikasyon KYC</p>
+                      <p className="text-[10px]" style={{ color: colors.textSecondary }}>
+                        {user?.kyc?.status === 'APPROVED' ? 'Verifye — Aksè Konplè' : user?.kyc?.status === 'PENDING' ? 'Anba revizyon...' : 'Pa Verifye'}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {user?.kyc?.status === 'APPROVED' ? (
-                        <span className="text-[8px] font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">✓ Done</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: colors.success }}>✓ Fèt</span>
                       ) : user?.kyc?.status === 'PENDING' ? (
-                        <span className="text-[8px] font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.15)', color: '#f97316' }}>Annatant</span>
                       ) : (
-                        <span className="text-[8px] font-black bg-[var(--oz-surface)] text-[var(--oz-text-sec)] px-2 py-0.5 rounded-full uppercase">$25</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: colors.background, color: colors.textSecondary }}>$25</span>
                       )}
-                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
+                      {user?.kyc?.status !== 'APPROVED' && <ChevronRight size={16} color={colors.textSecondary} />}
                     </div>
                   </button>
 
+                  {/* Row 3 — Agent */}
                   {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors">
-                      <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
-                      <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
-                        <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
+                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }}
+                      className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                      style={{ borderColor: colors.border }}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }}>
+                        <Briefcase size={18} color={colors.accent} />
                       </div>
-                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
+                      <div className="flex-1 text-left">
+                        <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Tablo Ajan</p>
+                        <p className="text-[10px]" style={{ color: colors.textSecondary }}>Jere kont ajan w lan</p>
+                      </div>
+                      <ChevronRight size={16} color={colors.textSecondary} />
                     </button>
                   ) : user?.agent?.status === 'PENDING' ? (
-                    <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
-                      <div className="bg-yellow-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
-                      <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[var(--oz-text)]">Tablo Ajan</p>
-                        <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
+                    <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: colors.border }}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                        <Briefcase size={18} color="#eab308" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Aplikasyon Ajan</p>
+                        <p className="text-[10px]" style={{ color: '#f97316' }}>⏳ Demand ou an ap tann apwobasyon admin</p>
                       </div>
                     </div>
                   ) : (
                     <button
                       onClick={async () => {
-                        if (user?.kyc?.status !== 'APPROVED') {
-                          showToast('Ou dwe gen KYC apwouve anvan ou ka vin yon Ajan.', 'error');
-                          return;
-                        }
+                        if (user?.kyc?.status !== 'APPROVED') { showToast('Ou dwe gen KYC apwouve anvan ou ka vin yon Ajan.', 'error'); return; }
                         const token = localStorage.getItem('token');
                         try {
                           const res = await fetch(`${backendUrl}/agents/apply`, {
@@ -3114,356 +3220,101 @@ export default function Dashboard() {
                             body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` }),
                           });
                           const data = await res.json();
-                          if (res.ok) {
-                            showToast('Aplikasyon w lan soumèt! Admin ap revize l. 🚀', 'success');
-                            fetchData();
-                          } else {
-                            showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
-                          }
-                        } catch {
-                          showToast('Erè rezo. Verifye koneksyon ou.', 'error');
-                        }
+                          if (res.ok) { showToast('Aplikasyon w lan soumèt! Admin ap revize l. 🚀', 'success'); fetchData(); }
+                          else showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
+                        } catch { showToast('Erè rezo. Verifye koneksyon ou.', 'error'); }
                       }}
-                      className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] active:bg-[var(--oz-surface)] transition-colors"
-                    >
-                      <div className="bg-orange-50 p-2 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
-                      <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
-                        <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
+                      className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                      style={{ borderColor: colors.border }}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }}>
+                        <Briefcase size={18} color={colors.accent} />
                       </div>
-                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
+                      <div className="flex-1 text-left">
+                        <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Vin yon Ajan</p>
+                        <p className="text-[10px]" style={{ color: colors.textSecondary }}>Aplike kounye a — Mande KYC Apwouve</p>
+                      </div>
+                      <ChevronRight size={16} color={colors.textSecondary} />
                     </button>
                   )}
 
-                  <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 active:bg-[var(--oz-surface)] transition-colors">
-                    <div className="bg-blue-50 p-2 rounded-2xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
-                      <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
+                  {/* Row 4 — Rates */}
+                  <button onClick={() => setShowRates(r => !r)}
+                    className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                    style={{ borderColor: colors.border }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                      <TrendingUp size={18} color="#3b82f6" />
                     </div>
-                    <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
+                    <div className="flex-1 text-left">
+                      <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Tarif &amp; Frè</p>
+                      <p className="text-[10px]" style={{ color: colors.textSecondary }}>BRH, P2P, Topup, Retrè</p>
+                    </div>
+                    {showRates ? <ChevronDown size={16} color={colors.textSecondary} /> : <ChevronRight size={16} color={colors.textSecondary} />}
                   </button>
                   {showRates && (
-                    <div className="px-5 pb-5 border-t border-[var(--oz-border)] space-y-2 pt-3">
+                    <div className="px-4 pb-2 border-b" style={{ borderColor: colors.border }}>
                       {[
-                        { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
-                        { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
-                        { label: 'Topup (Depo)', value: '6%', color: 'text-[var(--oz-text)]' },
-                        { label: 'Retrait', value: '2%', color: 'text-[var(--oz-text)]' },
+                        { label: 'Tarif BRH', value: `${exchangeRate} HTG`, green: true },
+                        { label: 'Transfè P2P', value: '0%', green: true },
+                        { label: 'Topup (Depo)', value: '6%', green: false },
+                        { label: 'Retrè', value: '2%', green: false },
                       ].map(r => (
-                        <div key={r.label} className="flex justify-between items-center py-1">
-                          <span className="text-xs font-bold text-[var(--oz-text-sec)] uppercase tracking-tight">{r.label}</span>
-                          <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
+                        <div key={r.label} className="flex justify-between items-center py-1.5 border-b last:border-0" style={{ borderColor: colors.border }}>
+                          <span className="font-black italic uppercase text-[10px]" style={{ color: colors.textSecondary, letterSpacing: 0.5 }}>{r.label}</span>
+                          <span className="font-black text-[11px]" style={{ color: r.green ? colors.success : colors.textPrimary }}>{r.value}</span>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {/* Row 5 — Theme (inside menu card) */}
+                  <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: colors.border }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.background, border: `1px solid ${colors.border}` }}>
+                      {isDark ? <Moon size={18} color={colors.accent} /> : <Sun size={18} color={colors.accent} />}
+                    </div>
+                    <p className="font-black italic uppercase text-[12px] flex-1" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Mòd Eskran</p>
+                    <button onClick={toggleTheme}
+                      className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0"
+                      style={{ backgroundColor: isDark ? colors.accent : colors.border }}>
+                      <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow transition-transform duration-200"
+                        style={{ backgroundColor: colors.surface, transform: isDark ? 'translateX(24px)' : 'translateX(0)' }} />
+                    </button>
+                  </div>
+
+                  {/* Row 6 — Biometric (web placeholder) */}
+                  <div className="flex items-center gap-3 px-4 py-4">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.background, border: `1px solid ${colors.border}` }}>
+                      <Shield size={18} color={colors.accent} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Biometri</p>
+                      <p className="text-[10px]" style={{ color: colors.textSecondary }}>Disponib sou aplikasyon mobil</p>
+                    </div>
+                  </div>
+
                 </div>
 
-                {/* SUPPORT */}
-                <button
-                  onClick={() => { window.location.href = '/support'; }}
-                  className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-3 active:bg-[var(--oz-surface)] transition-colors"
-                >
-                  <div className="bg-blue-50 p-2 rounded-2xl flex-shrink-0">
-                    <HelpCircle size={20} className="text-blue-500" />
+                {/* ── SUPPORT CARD ── */}
+                <button onClick={() => { window.location.href = '/support'; }}
+                  className="w-full rounded-2xl border flex items-center gap-3 px-4 py-4 mb-4 active:opacity-70 transition-all"
+                  style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                    <HelpCircle size={18} color="#3b82f6" />
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-bold text-sm text-[var(--oz-text)]">Sipò & Èd</p>
-                    <p className="text-xs text-[var(--oz-text-sec)]">Kontakte nou</p>
+                    <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Sipò &amp; Èd</p>
+                    <p className="text-[10px]" style={{ color: colors.textSecondary }}>Kontakte nou</p>
                   </div>
-                  <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
+                  <ChevronRight size={16} color={colors.textSecondary} />
                 </button>
 
-                {/* Theme toggle */}
-                <div className="flex items-center justify-between px-5 py-4 mb-3 rounded-2xl" style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: '#FF7A001A' }}>
-                      {isDark ? <Moon size={18} className="text-[#FF7A00]" /> : <Sun size={18} className="text-[#FF7A00]" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-black italic uppercase tracking-wide" style={{ color: colors.textPrimary }}>Mòd Eskran</p>
-                      <p className="text-[10px] font-bold" style={{ color: colors.textSecondary }}>{isDark ? 'Mòd Nwa' : 'Mòd Klè'}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={toggleTheme}
-                    className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none"
-                    style={{ backgroundColor: isDark ? '#FF7A00' : '#ECECEF' }}
-                  >
-                    <span
-                      className="absolute top-0.5 left-0.5 w-5 h-5 bg-[var(--oz-surface)] rounded-full shadow transition-transform duration-200"
-                      style={{ transform: isDark ? 'translateX(24px)' : 'translateX(0)' }}
-                    />
-                  </button>
-                </div>
-
-                {/* LOGOUT */}
-                <button onClick={signOut} className="w-full border-2 rounded-2xl p-4 flex items-center justify-center gap-3 active:opacity-70 transition-all" style={{ borderColor: colors.error, color: colors.error, background: 'transparent' }}>
-                  <LogOut size={18} />
-                  <span className="font-black text-sm uppercase">DEKONEKTE</span>
+                {/* ── LOGOUT ── */}
+                <button onClick={signOut}
+                  className="w-full rounded-xl active:opacity-70 transition-all"
+                  style={{ backgroundColor: 'transparent', border: `1px solid ${colors.error}`, paddingTop: 12, paddingBottom: 12, paddingLeft: 20, paddingRight: 20 }}>
+                  <span className="font-black italic uppercase text-[11px]" style={{ color: colors.error, letterSpacing: 1.5 }}>Dekonekte</span>
                 </button>
-                </div>{/* end lg:hidden */}
 
-                {/* ── DESKTOP PROFILE ──────────────────────────────── */}
-                <div className="hidden lg:block">
-                  <div className="max-w-[700px] mx-auto px-8 py-10">
-
-                    {/* Hero card — in-flow on desktop, not fixed */}
-                    <div className="bg-[#0F121E] rounded-2xl p-8 mb-8">
-                      <div className="flex items-center gap-6">
-                        <div className="relative flex-shrink-0">
-                          {profilePhoto ? (
-                            <img src={profilePhoto} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-lg" />
-                          ) : (
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#FF6B00] to-amber-400 flex items-center justify-center shadow-lg">
-                              <span className="text-white text-3xl font-black">{displayName.substring(0, 1).toUpperCase()}</span>
-                            </div>
-                          )}
-                          <button
-                            onClick={() => profilePhotoInputRef.current?.click()}
-                            disabled={profilePhotoUploading}
-                            className="absolute bottom-0 right-0 w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-md border-2 border-[#0F121E] hover:bg-[#e85f00] transition disabled:opacity-60"
-                          >
-                            {profilePhotoUploading
-                              ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              : <Camera size={14} className="text-white" />
-                            }
-                          </button>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {isEditingProfile ? (
-                            <div className="space-y-2">
-                              <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
-                                className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
-                              <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
-                                className="w-full px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-white text-sm font-bold placeholder:text-white/30 outline-none focus:border-[#FF6B00] transition" />
-                              <div className="flex gap-2 pt-1">
-                                <button onClick={handleEditProfile} disabled={editProfileLoading}
-                                  className="flex-1 py-2 rounded-2xl bg-[#FF6B00] text-white text-xs font-black uppercase tracking-wider hover:bg-[#e85f00] transition disabled:opacity-50">
-                                  {editProfileLoading ? '...' : 'Sove'}
-                                </button>
-                                <button onClick={() => setIsEditingProfile(false)}
-                                  className="flex-1 py-2 rounded-2xl bg-white/10 text-white/70 text-xs font-black uppercase tracking-wider hover:bg-white/20 transition">
-                                  Anile
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-3">
-                                <h3 className="text-white font-black text-2xl leading-tight">{displayName}</h3>
-                                <button
-                                  onClick={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setIsEditingProfile(true); }}
-                                  className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 hover:text-[#FF6B00] transition"
-                                >
-                                  <Pencil size={13} />
-                                </button>
-                              </div>
-                              <p className="text-white/50 text-sm mt-1">{user?.email}</p>
-                              <div className="flex gap-2 mt-3 flex-wrap">
-                                {user?.kyc?.status === 'APPROVED' ? (
-                                  <span className="text-xs font-black uppercase bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/30">✓ Verified</span>
-                                ) : user?.kyc?.status === 'PENDING' ? (
-                                  <span className="text-xs font-black uppercase bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full border border-orange-500/30">⏳ Pending</span>
-                                ) : (
-                                  <span className="text-xs font-black uppercase bg-white/10 text-white/50 px-3 py-1 rounded-full border border-white/10">Unverified</span>
-                                )}
-                                {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                                  <span className="text-xs font-black uppercase bg-[#FF6B00]/20 text-[#FF6B00] px-3 py-1 rounded-full border border-[#FF6B00]/30">⚡ Agent</span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stats — 3-col grid */}
-                    <div className="grid grid-cols-3 gap-6 mb-8">
-                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
-                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">Balans</p>
-                        <p className="text-xl font-black text-[#FF6B00] leading-tight">{(user?.wallet?.balance || 0).toLocaleString()}</p>
-                        <p className="text-xs text-[var(--oz-text-sec)] font-bold mt-1">HTG</p>
-                      </div>
-                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
-                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">KYC</p>
-                        <div className="flex justify-center mb-1">
-                          <BadgeCheck size={26} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'} />
-                        </div>
-                        <p className={`text-xs font-black uppercase ${user?.kyc?.status === 'APPROVED' ? 'text-green-500' : user?.kyc?.status === 'PENDING' ? 'text-orange-400' : 'text-[var(--oz-text-sec)]'}`}>
-                          {user?.kyc?.status === 'APPROVED' ? 'OK' : user?.kyc?.status === 'PENDING' ? 'Pandan' : 'Non'}
-                        </p>
-                      </div>
-                      <div className="bg-[var(--oz-surface)] rounded-2xl p-6 text-center border border-[var(--oz-border)]">
-                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)] mb-2">Wòl</p>
-                        <div className="flex justify-center mb-1">
-                          {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                            <Briefcase size={26} className="text-[#FF6B00]" />
-                          ) : (
-                            <User size={26} className="text-[var(--oz-text-sec)]" />
-                          )}
-                        </div>
-                        <p className="text-xs font-black uppercase text-[var(--oz-text-sec)]">{user?.role || 'USER'}</p>
-                      </div>
-                    </div>
-
-                    {/* Menu */}
-                    <div className="bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] overflow-hidden mb-6">
-                      <button onClick={() => setShowSecurityCard(s => !s)} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Shield size={20} className="text-[#FF6B00]" /></div>
-                        <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[var(--oz-text)]">Sekirite & PIN</p>
-                          <p className="text-xs text-[var(--oz-text-sec)]">Chanje PIN ou</p>
-                        </div>
-                        <ChevronRight size={18} className={`transition-transform ${showSecurityCard ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
-                      </button>
-                      {showSecurityCard && (
-                        <div className="px-4 pb-4 border-b border-[var(--oz-border)]"><UserSecurityCard /></div>
-                      )}
-                      <button onClick={() => { if (user?.kyc?.status !== 'APPROVED') setShowKycForm(true); }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className={`p-2.5 rounded-2xl flex-shrink-0 ${user?.kyc?.status === 'APPROVED' ? 'bg-green-50' : 'bg-orange-50'}`}>
-                          <BadgeCheck size={20} className={user?.kyc?.status === 'APPROVED' ? 'text-green-500' : 'text-orange-400'} />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[var(--oz-text)]">Verifikasyon KYC</p>
-                          <p className="text-xs text-[var(--oz-text-sec)]">{user?.kyc?.status === 'APPROVED' ? 'Verified — Full access' : user?.kyc?.status === 'PENDING' ? 'Under review...' : 'Non verifye'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {user?.kyc?.status === 'APPROVED' ? (
-                            <span className="text-xs font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full uppercase">✓ Done</span>
-                          ) : user?.kyc?.status === 'PENDING' ? (
-                            <span className="text-xs font-black bg-orange-100 text-orange-500 px-2 py-0.5 rounded-full uppercase">Pending</span>
-                          ) : (
-                            <span className="text-xs font-black bg-[var(--oz-surface)] text-[var(--oz-text-sec)] px-2 py-0.5 rounded-full uppercase">$25</span>
-                          )}
-                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
-                        </div>
-                      </button>
-                      {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') ? (
-                        <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/agent-dashboard'; }} className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors">
-                          <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
-                          <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[var(--oz-text)]">Agent Dashboard</p>
-                            <p className="text-xs text-[var(--oz-text-sec)]">Jere kont ajan w lan</p>
-                          </div>
-                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
-                        </button>
-                      ) : user?.agent?.status === 'PENDING' ? (
-                        <div className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)]">
-                          <div className="bg-yellow-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-yellow-500" /></div>
-                          <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[var(--oz-text)]">Tablo Ajan</p>
-                            <p className="text-xs text-yellow-600 font-semibold mt-0.5">⏳ Demann ou an ap tann apwobasyon admin</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={async () => {
-                            if (user?.kyc?.status !== 'APPROVED') {
-                              showToast('Ou dwe gen KYC apwouve anvan ou ka vin yon Ajan.', 'error');
-                              return;
-                            }
-                            const token = localStorage.getItem('token');
-                            try {
-                              const res = await fetch(`${backendUrl}/agents/apply`, {
-                                method: 'POST',
-                                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ businessName: `${user?.name || 'Ozama'} Agent` }),
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                showToast('Aplikasyon w lan soumèt! Admin ap revize l. 🚀', 'success');
-                                fetchData();
-                              } else {
-                                showToast(data.message || 'Erè pandan aplikasyon an.', 'error');
-                              }
-                            } catch {
-                              showToast('Erè rezo. Verifye koneksyon ou.', 'error');
-                            }
-                          }}
-                          className="w-full flex items-center gap-4 p-5 border-b border-[var(--oz-border)] hover:bg-[var(--oz-surface)] transition-colors"
-                        >
-                          <div className="bg-orange-50 p-2.5 rounded-2xl flex-shrink-0"><Briefcase size={20} className="text-[#FF6B00]" /></div>
-                          <div className="flex-1 text-left">
-                            <p className="font-bold text-sm text-[var(--oz-text)]">Vin yon Ajan</p>
-                            <p className="text-xs text-[var(--oz-text-sec)]">Aplike kounye a — Requis: KYC Apwouve</p>
-                          </div>
-                          <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
-                        </button>
-                      )}
-                      <button onClick={() => setShowRates(r => !r)} className="w-full flex items-center gap-4 p-5 hover:bg-[var(--oz-surface)] transition-colors">
-                        <div className="bg-blue-50 p-2.5 rounded-2xl flex-shrink-0"><TrendingUp size={20} className="text-blue-500" /></div>
-                        <div className="flex-1 text-left">
-                          <p className="font-bold text-sm text-[var(--oz-text)]">Taux & Frè</p>
-                          <p className="text-xs text-[var(--oz-text-sec)]">BRH, P2P, Topup, Retrait</p>
-                        </div>
-                        <ChevronRight size={18} className={`transition-transform ${showRates ? 'rotate-90' : ''} text-[var(--oz-text-sec)]`} />
-                      </button>
-                      {showRates && (
-                        <div className="px-5 pb-5 border-t border-[var(--oz-border)] space-y-2 pt-3">
-                          {[
-                            { label: 'Taux BRH', value: `${exchangeRate} HTG`, color: 'text-green-500' },
-                            { label: 'Transfè P2P', value: '0%', color: 'text-green-500' },
-                            { label: 'Topup (Depo)', value: '6%', color: 'text-[var(--oz-text)]' },
-                            { label: 'Retrait', value: '2%', color: 'text-[var(--oz-text)]' },
-                          ].map(r => (
-                            <div key={r.label} className="flex justify-between items-center py-1">
-                              <span className="text-xs font-bold text-[var(--oz-text-sec)] uppercase tracking-tight">{r.label}</span>
-                              <span className={`text-xs font-black ${r.color}`}>{r.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Support */}
-                    <button
-                      onClick={() => { window.location.href = '/support'; }}
-                      className="w-full bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-2xl p-4 flex items-center gap-4 mb-4 hover:bg-[var(--oz-surface)] transition-colors"
-                    >
-                      <div className="bg-blue-50 p-2.5 rounded-2xl flex-shrink-0">
-                        <HelpCircle size={20} className="text-blue-500" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-bold text-sm text-[var(--oz-text)]">Sipò & Èd</p>
-                        <p className="text-xs text-[var(--oz-text-sec)]">Kontakte nou</p>
-                      </div>
-                      <ChevronRight size={18} className="text-[var(--oz-text-sec)]" />
-                    </button>
-
-                    {/* Theme toggle */}
-                    <div className="flex items-center justify-between px-5 py-4 mb-4 rounded-2xl" style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}>
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: '#FF7A001A' }}>
-                          {isDark ? <Moon size={18} className="text-[#FF7A00]" /> : <Sun size={18} className="text-[#FF7A00]" />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-black italic uppercase tracking-wide" style={{ color: colors.textPrimary }}>Mòd Eskran</p>
-                          <p className="text-[10px] font-bold" style={{ color: colors.textSecondary }}>{isDark ? 'Mòd Nwa' : 'Mòd Klè'}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={toggleTheme}
-                        className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none"
-                        style={{ backgroundColor: isDark ? '#FF7A00' : '#ECECEF' }}
-                      >
-                        <span
-                          className="absolute top-0.5 left-0.5 w-5 h-5 bg-[var(--oz-surface)] rounded-full shadow transition-transform duration-200"
-                          style={{ transform: isDark ? 'translateX(24px)' : 'translateX(0)' }}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Logout */}
-                    <button onClick={signOut} className="w-full bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center justify-center gap-3 hover:bg-red-100 transition-all">
-                      <LogOut size={18} className="text-red-500" />
-                      <span className="text-red-500 font-black text-sm uppercase">Dekonekte</span>
-                    </button>
-
-                  </div>
-                </div>
-              </>
+              </div>
             )}
           </div>
         )}
@@ -3472,441 +3323,410 @@ export default function Dashboard() {
 
       {/* ── GIFT CARDS TAB ─────────────────────────────────────────────── */}
       {activeTab === 'giftcards' && (() => {
-        const BRANDS = [
-          { name: 'Netflix',     keywords: ['netflix'],     letter: 'N', accent: '#E50914', img: '/netflix.png' },
-          { name: 'Google Play', keywords: ['google play'], letter: 'G', accent: '#34A853', img: '/googleplay.png' },
-          { name: 'Spotify',     keywords: ['spotify'],     letter: 'S', accent: '#1DB954', img: '/spotify.png' },
-          { name: 'Uber',        keywords: ['uber'],        letter: 'U', accent: '#AAAAAA', img: '/uber.png' },
-          { name: 'Airbnb',      keywords: ['airbnb'],      letter: 'B', accent: '#FF5A5F', img: '/airbnb.png' },
-        ];
+        const gcIsRange = (p: any) =>
+          p.denominationType === 'RANGE' || (p.senderFaceValue == null && p.minSenderDenomination != null);
 
-        const brandProducts = (brand: typeof BRANDS[0]) =>
-          gcProducts.filter(p =>
-            brand.keywords.some(kw => p.productName?.toLowerCase().includes(kw))
-          );
+        const gcStatusColor = (s: string) =>
+          s === 'COMPLETED' ? '#22c55e' : (s === 'PROCESSING' || s === 'PENDING') ? '#FF7A00' : '#ef4444';
 
-        const selectedBrandObj = BRANDS.find(b => b.name === gcSelectedBrand) ?? null;
-        const denominations: number[] = selectedBrandObj
-          ? (brandProducts(selectedBrandObj)
-              .flatMap((p: any) => p.fixedRecipientDenominations ?? [])
-              .filter((v: number, i: number, a: number[]) => a.indexOf(v) === i && v >= 10)
-              .sort((a: number, b: number) => a - b))
-          : [];
+        const gcStatusLabel = (s: string) =>
+          ({ COMPLETED: 'Konplete', PROCESSING: 'Ap trete', PENDING: 'Annatant', FAILED: 'Echwe' } as any)[s] ?? s;
 
-        const selectedProduct = selectedBrandObj
-          ? brandProducts(selectedBrandObj).find((p: any) =>
-              (p.fixedRecipientDenominations ?? []).includes(gcSelectedDenom)
-            ) ?? brandProducts(selectedBrandObj)[0]
-          : null;
-
-        const htgPrice = gcSelectedDenom
-          ? Math.round(gcSelectedDenom * exchangeRate * 1.05 * 100) / 100
-          : null;
-
-        const handleOrder = async () => {
-          if (!selectedProduct || !gcSelectedDenom) return;
-          const token = localStorage.getItem('token');
-          if (!token) return;
+        const handleBuyGift = async () => {
+          if (!gcSelectedProduct) return;
+          const unitPrice = parseFloat(gcBuyAmount);
+          if (isNaN(unitPrice) || unitPrice <= 0) { showToast('Tanpri antre yon montan valid.', 'error'); return; }
           setGcOrderLoading(true);
           try {
+            const token = localStorage.getItem('token');
             const res = await fetch(`${backendUrl}/giftcards/order`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productId: selectedProduct.productId, unitPrice: gcSelectedDenom }),
+              body: JSON.stringify({ productId: gcSelectedProduct.productId, unitPrice }),
             });
             const data = await res.json();
             if (!res.ok) { showToast(data.message || 'Erè pandan kòmand lan', 'error'); return; }
             setGcOrderResult(data);
+            setGcSelectedProduct(null);
+            const t = localStorage.getItem('token');
+            if (t) fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${t}` } })
+              .then(r => r.json()).then(o => setGcOrders(Array.isArray(o) ? o : [])).catch(() => {});
             fetchData();
           } catch { showToast('Erè rezo', 'error'); }
           finally { setGcOrderLoading(false); }
         };
 
-        const digicelOp = atOperators.find((op: any) => op.name?.toLowerCase().includes('digicel'));
-        const natcomOp = atOperators.find((op: any) => op.name?.toLowerCase().includes('natcom') || op.name?.toLowerCase().includes('nattel'));
-        const AT_AMOUNTS = [50, 100, 200, 500, 1000];
-
-        const handleAirtimeOrder = async () => {
-          if (!atSelectedOp || !atAmount || !atPhone.trim()) return;
-          const token = localStorage.getItem('token');
-          if (!token) return;
+        const handleAirtimeTopup = async () => {
+          if (!atSelectedOp) return;
+          if (!atPhone.trim()) { showToast('Tanpri antre nimewo telefòn nan.', 'error'); return; }
+          const amtNum = parseFloat(String(atAmount));
+          if (isNaN(amtNum) || amtNum <= 0) { showToast('Tanpri antre yon montan valid.', 'error'); return; }
           setAtLoading(true);
           try {
+            const token = localStorage.getItem('token');
             const res = await fetch(`${backendUrl}/airtime/topup`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ operatorId: atSelectedOp.operatorId, amount: atAmount, phoneNumber: atPhone.trim() }),
+              body: JSON.stringify({ operatorId: atSelectedOp.operatorId, amount: amtNum, phoneNumber: atPhone.trim() }),
             });
             const data = await res.json();
             if (!res.ok) { showToast(data.message || 'Erè pandan rechaj la', 'error'); return; }
             setAtResult(data);
+            setAtSelectedOp(null);
+            const t = localStorage.getItem('token');
+            if (t) fetch(`${backendUrl}/airtime/orders`, { headers: { Authorization: `Bearer ${t}` } })
+              .then(r => r.json()).then(o => setAtOrders(Array.isArray(o) ? o : [])).catch(() => {});
             fetchData();
           } catch { showToast('Erè rezo', 'error'); }
           finally { setAtLoading(false); }
         };
 
         return (
-          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'calc(140px + env(safe-area-inset-top))', background: '#ffffff', minHeight: '100vh' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: '#ffffff', borderBottom: '1px solid #f0f0f0', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-              {gcSection === 'airtime' ? (
-                atResult ? (
-                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                    <ChevronRight size={14} className="rotate-180" /> Retounen
-                  </button>
-                ) : atSelectedOp ? (
-                  <button onClick={() => { setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                    <ChevronRight size={14} className="rotate-180" /> Retounen
-                  </button>
-                ) : (
-                  <button onClick={() => setGcSection('gifts')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                    <ChevronRight size={14} className="rotate-180" /> Gift Cards
-                  </button>
-                )
-              ) : gcOrderResult ? (
-                <button onClick={() => { setGcOrderResult(null); setGcSelectedBrand(null); setGcSelectedDenom(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                  <ChevronRight size={14} className="rotate-180" /> Retounen
-                </button>
-              ) : gcSelectedBrand ? (
-                <button onClick={() => { setGcSelectedBrand(null); setGcSelectedDenom(null); }} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                  <ChevronRight size={14} className="rotate-180" /> Retounen
-                </button>
-              ) : (
-                <button onClick={() => setActiveTab('home')} className="mb-3 text-[#FF7A00] font-black italic uppercase text-[10px] tracking-widest flex items-center gap-2">
-                  <ShoppingCart size={14} /> Back Home
-                </button>
-              )}
-              <div>
-                <p className="text-sm font-semibold tracking-widest uppercase whitespace-nowrap text-[var(--oz-text)]">
-                  {gcSection === 'airtime' ? 'Kredi' : 'Gift Cards'}
-                </p>
-                <div className="w-8 h-0.5 bg-[#FF7A00] mt-1.5 rounded-full" />
-              </div>
-              <div className="mt-2">
-                <div className="p-1 rounded-3xl flex gap-1" style={{ background: 'var(--oz-surface)' }}>
-                  <button onClick={() => setGcSection('gifts')} className={`flex-1 py-2.5 rounded-2xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'gifts' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
-                    <ShoppingCart size={11} />Gift Cards
-                  </button>
-                  <button onClick={() => setGcSection('airtime')} className={`flex-1 py-2.5 rounded-2xl font-semibold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-1.5 ${gcSection === 'airtime' ? 'bg-[#FF7A00] text-white shadow-sm' : 'text-[var(--oz-text-sec)]'}`}>
-                    <Phone size={11} />Kredi
-                  </button>
-                </div>
-              </div>
+          <div className="animate-in fade-in duration-300 py-2">
+
+            {/* Page title */}
+            <h1 className="font-black italic uppercase text-[24px] tracking-[0.06em] mt-6 mb-4" style={{ color: colors.textPrimary, letterSpacing: 1.5 }}>
+              Kado &amp; Kredi
+            </h1>
+
+            {/* Segmented control */}
+            <div className="flex rounded-xl p-[3px] mb-4 border" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+              <button
+                onClick={() => setGcSection('gifts')}
+                className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
+                style={gcSection === 'gifts' ? { backgroundColor: colors.accent, color: '#fff' } : { color: colors.textSecondary }}
+              >
+                Gift Cards
+              </button>
+              <button
+                onClick={() => setGcSection('airtime')}
+                className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
+                style={gcSection === 'airtime' ? { backgroundColor: colors.accent, color: '#fff' } : { color: colors.textSecondary }}
+              >
+                Airtime
+              </button>
             </div>
 
-            <div style={{ height: 'calc(100vh - 140px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-28">
-
-              {/* ORDER SUCCESS */}
-              {gcSection === 'gifts' && gcOrderResult && (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,122,0,0.12)' }}>
-                    <CheckCircle2 size={40} className="text-[#FF7A00]" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-black text-xl uppercase tracking-tight text-[var(--oz-text)]">{gcOrderResult.productName}</p>
-                    <p className="text-[var(--oz-text-sec)] text-sm mt-1">${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
-                  </div>
-                  {gcOrderResult.redeemCode ? (
-                    <div className="w-full rounded-3xl p-6 text-center" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
-                      <p className="text-xs text-[var(--oz-text-sec)] uppercase font-bold tracking-widest mb-3">Kòd Redeem ou a</p>
-                      <p className="font-black text-2xl tracking-widest text-[var(--oz-text)] break-all">{gcOrderResult.redeemCode}</p>
-                      <button
-                        onClick={() => copyToClipboard(gcOrderResult.redeemCode)}
-                        className="mt-4 flex items-center gap-2 mx-auto bg-[#FF7A00] text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
-                      >
-                        <Copy size={16} /> Kopye Kòd la
-                      </button>
+            {/* ── GIFT CARDS sub-tab ── */}
+            {gcSection === 'gifts' && (
+              <>
+                {/* Purchase result card */}
+                {gcOrderResult && (
+                  <div className="rounded-3xl border p-5 text-center mb-5" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(255,122,0,0.12)' }}>
+                      <CheckCircle2 size={28} className="text-[#FF7A00]" />
                     </div>
-                  ) : (
-                    <div className="rounded-3xl p-5 text-center w-full" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
-                      <p className="text-[#FF7A00] font-bold text-sm">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
-                    </div>
-                  )}
-                  <p className="text-xs text-[var(--oz-text-sec)]">Nouvo balans: <span className="font-black text-[var(--oz-text)]">{Number(gcOrderResult.newBalance).toFixed(2)} HTG</span></p>
-                </div>
-              )}
-
-              {/* DENOMINATION SELECTOR */}
-              {gcSection === 'gifts' && !gcOrderResult && gcSelectedBrand && selectedBrandObj && (
-                <div className="px-4 space-y-5">
-                  <div className="flex items-center gap-4 py-2">
-                    <div
-                      className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                      style={{ border: '1px solid var(--oz-border)' }}
-                    >
-                      {selectedBrandObj.img
-                        ? <img src={selectedBrandObj.img} alt={selectedBrandObj.name} className="w-full h-full object-cover" />
-                        : <span className="font-black text-base" style={{ color: selectedBrandObj.accent }}>{selectedBrandObj.letter}</span>
-                      }
-                    </div>
-                    <div>
-                      <p className="font-semibold text-base text-[var(--oz-text)]">{selectedBrandObj.name}</p>
-                      <p className="text-xs text-[#8E929B] mt-0.5">{denominations.length} valè disponib</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Chwazi Montan (USD)</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {denominations.length > 0 ? denominations.map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setGcSelectedDenom(d)}
-                          className="py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
-                          style={gcSelectedDenom === d
-                            ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: 'var(--oz-surface)', color: 'var(--oz-text)', border: '1px solid var(--oz-border)' }}
-                        >
-                          ${d}
+                    <p className="font-black italic uppercase text-base tracking-tight" style={{ color: colors.textPrimary }}>{gcOrderResult.productName}</p>
+                    <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                    {gcOrderResult.redeemCode ? (
+                      <div className="mt-4 rounded-[6px] border px-4 py-3" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                        <p className="font-black text-[#FF7A00] text-xl tracking-[0.1em] break-all">{gcOrderResult.redeemCode}</p>
+                        <button onClick={() => copyToClipboard(gcOrderResult.redeemCode)} className="mt-3 flex items-center gap-2 mx-auto text-white bg-[#FF7A00] px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest">
+                          <Copy size={15} /> Kopye Kòd la
                         </button>
-                      )) : (
-                        <p className="col-span-3 text-[#8E929B] text-sm text-center py-4">Pa gen valè disponib pou mak sa a.</p>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <p className="text-[#FF7A00] font-bold text-sm mt-3">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
+                    )}
+                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: colors.textSecondary }}>Fèmen</button>
                   </div>
+                )}
 
-                  {gcSelectedDenom && htgPrice && (
-                    <div className="rounded-3xl p-4 space-y-2.5" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
-                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Pri USD</span><span className="font-bold text-[var(--oz-text)]">${gcSelectedDenom}</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Taux ({exchangeRate} HTG)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Frè OZAMAPAY (5%)</span><span className="font-bold text-[var(--oz-text)]">{(gcSelectedDenom * exchangeRate * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1" style={{ borderTop: '1px solid var(--oz-border)' }}>
-                        <span className="text-sm font-bold text-[var(--oz-text)]">Total HTG</span>
-                        <span className="font-black text-[#FF7A00]">{htgPrice.toFixed(2)} HTG</span>
+                {/* Products section title */}
+                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mb-3" style={{ color: colors.textPrimary }}>Pwodwi Disponib</p>
+
+                {gcLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : gcProducts.length === 0 ? (
+                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {gcProducts.map((p: any) => (
+                      <button
+                        key={p.productId}
+                        onClick={() => {
+                          setGcSelectedProduct(p);
+                          setGcBuyAmount(gcIsRange(p) ? String(p.minSenderDenomination ?? '') : String(p.senderFaceValue ?? ''));
+                        }}
+                        className="rounded-2xl border p-3 flex flex-col items-center active:scale-[0.97] transition-all shadow-sm"
+                        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                      >
+                        {p.logoUrls?.[0] ? (
+                          <img src={p.logoUrls[0]} alt={p.brand?.brandName ?? p.productName} className="w-full h-14 object-contain rounded-md mb-2" />
+                        ) : (
+                          <div className="w-full h-14 rounded-md mb-2" style={{ backgroundColor: colors.border }} />
+                        )}
+                        <p className="font-black italic uppercase text-[10px] tracking-[0.03em] text-center leading-tight mb-0.5 truncate w-full" style={{ color: colors.textPrimary }}>
+                          {p.brand?.brandName ?? p.productName}
+                        </p>
+                        <p className="font-black text-[12px] text-[#FF7A00]">
+                          {gcIsRange(p) ? `$${p.minSenderDenomination}–$${p.maxSenderDenomination}` : `$${p.senderFaceValue}`}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Gift card order history */}
+                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mt-6 mb-3" style={{ color: colors.textPrimary }}>Istorik Gift Cards</p>
+                {gcOrders.length === 0 ? (
+                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn achte poko.</p>
+                  </div>
+                ) : (
+                  gcOrders.map((o: any) => (
+                    <div key={o.id} className="rounded-3xl border p-4 mb-3 shadow-sm" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate" style={{ color: colors.textPrimary }}>{o.productName}</p>
+                        <span className="text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-[6px]" style={{ color: gcStatusColor(o.status), borderColor: gcStatusColor(o.status) }}>
+                          {gcStatusLabel(o.status)}
+                        </span>
                       </div>
-                    </div>
-                  )}
-
-                  <button
-                    disabled={!gcSelectedDenom || gcOrderLoading}
-                    onClick={handleOrder}
-                    className="w-full py-5 font-black uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: gcSelectedDenom ? '#FF7A00' : 'var(--oz-border)', color: gcSelectedDenom ? '#fff' : 'var(--oz-text-sec)' }}
-                  >
-                    {gcOrderLoading ? 'Pwosesis...' : `Achte — ${htgPrice ? htgPrice.toFixed(2) + ' HTG' : '—'}`}
-                  </button>
-                </div>
-              )}
-
-              {/* BRAND LIST */}
-              {gcSection === 'gifts' && !gcOrderResult && !gcSelectedBrand && (
-                <div className="px-4 space-y-5">
-                  {gcLoading ? (
-                    <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" /></div>
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Mak Disponib</p>
-                        <div className="space-y-2">
-                          {BRANDS.map(brand => {
-                            const prods = brandProducts(brand);
-                            if (prods.length === 0) return null;
-                            return (
-                              <button
-                                key={brand.name}
-                                onClick={() => { setGcSelectedBrand(brand.name); setGcSelectedDenom(null); setGcOrderResult(null); }}
-                                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl active:scale-[0.98] transition-all"
-                                style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
-                              >
-                                <div
-                                  className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                                >
-                                  {brand.img
-                                    ? <img src={brand.img} alt={brand.name} className="w-full h-full object-cover" />
-                                    : <span className="font-black text-base" style={{ color: brand.accent }}>{brand.letter}</span>
-                                  }
-                                </div>
-                                <div className="flex-1 text-left">
-                                  <p className="text-[var(--oz-text)] font-medium text-sm leading-none">{brand.name}</p>
-                                  <p className="text-[#8E929B] text-[10px] mt-1 font-medium uppercase tracking-wide">{prods.length} opsyon</p>
-                                </div>
-                                <ChevronRight size={16} className="text-[#FF7A00] flex-shrink-0" />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {gcOrders.length > 0 && (
-                        <div>
-                          <p className="text-[10px] font-bold text-[#8E929B] uppercase tracking-widest mb-3">Dènye Achats</p>
-                          <div className="space-y-2">
-                            {gcOrders.slice(0, 5).map((o: any) => (
-                              <div key={o.id} className="rounded-[28px] p-4 flex justify-between items-center" style={{ background: 'var(--oz-surface)', border: '1px solid var(--oz-border)' }}>
-                                <div>
-                                  <p className="font-semibold text-sm text-[var(--oz-text)]">{o.productName}</p>
-                                  <p className="text-xs text-[#8E929B] mt-0.5">${o.unitPrice} · {Number(o.htgPaid).toFixed(2)} HTG</p>
-                                </div>
-                                <div className="text-right">
-                                  {o.redeemCode && (
-                                    <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00]"><Copy size={16} /></button>
-                                  )}
-                                  <p className={`text-[10px] font-black uppercase mt-1 ${o.status === 'COMPLETED' ? 'text-green-400' : o.status === 'FAILED' ? 'text-red-400' : 'text-yellow-400'}`}>{o.status}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                        ${parseFloat(o.unitPrice).toFixed(2)} · {parseFloat(o.htgPaid).toFixed(2)} HTG
+                      </p>
+                      {o.redeemCode && (
+                        <div className="rounded-[6px] border px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                          <p className="font-black text-[#FF7A00] text-[14px] tracking-[0.1em]">{o.redeemCode}</p>
+                          <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00] ml-2"><Copy size={14} /></button>
                         </div>
                       )}
-                    </>
-                  )}
-                </div>
-              )}
+                      <p className="text-[10px] mt-1" style={{ color: colors.textSecondary }}>{formatTxDate(o.createdAt)}</p>
+                    </div>
+                  ))
+                )}
+              </>
+            )}
 
-              {/* ── AIRTIME (KREDI) SECTION ─────────────────────────────── */}
+            {/* ── AIRTIME sub-tab ── */}
+            {gcSection === 'airtime' && (
+              <>
+                {/* Airtime success card */}
+                {atResult && (
+                  <div className="rounded-3xl border p-5 text-center mb-5" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <div className="w-14 h-14 rounded-full bg-green-100 mx-auto mb-3 flex items-center justify-center">
+                      <CheckCircle2 size={28} className="text-green-500" />
+                    </div>
+                    <p className="font-black italic uppercase text-base" style={{ color: colors.textPrimary }}>Kredi Voye!</p>
+                    <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{atResult.operatorName}</p>
+                    <div className="mt-4 rounded-2xl border p-4" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                      <p className="text-xs uppercase font-bold tracking-widest mb-1" style={{ color: colors.textSecondary }}>Peye</p>
+                      <p className="font-black text-xl" style={{ color: colors.textPrimary }}>{Number(atResult.htgPaid).toFixed(2)} HTG</p>
+                    </div>
+                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: colors.textSecondary }}>Fèmen</button>
+                  </div>
+                )}
 
-              {/* AIRTIME SUCCESS */}
-              {gcSection === 'airtime' && atResult && (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
-                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle2 size={40} className="text-green-500" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-bold text-xl text-[var(--oz-text)]">Kredi Voye!</p>
-                    <p className="text-[var(--oz-text-sec)] text-sm mt-1">{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-[var(--oz-text-sec)] text-xs mt-1">{atResult.operatorName}</p>
-                  </div>
-                  <div className="w-full rounded-3xl p-5 text-center bg-[var(--oz-surface)] border border-[var(--oz-border)]">
-                    <p className="text-xs text-[var(--oz-text-sec)] uppercase font-semibold tracking-widest mb-1">Peye</p>
-                    <p className="font-bold text-2xl text-[var(--oz-text)]">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
-                    <p className="text-xs text-[var(--oz-text-sec)] mt-3">Nouvo balans: <span className="font-semibold text-[var(--oz-text)]">{Number(atResult.newBalance).toFixed(2)} HTG</span></p>
-                  </div>
-                  <button onClick={() => { setAtResult(null); setAtSelectedOp(null); setAtAmount(null); setAtPhone(''); }} className="w-full py-4 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm active:scale-95 transition-all bg-[#FF7A00]">
-                    Rechaj Ankò
-                  </button>
-                </div>
-              )}
+                {/* Operators section title */}
+                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mb-3" style={{ color: colors.textPrimary }}>Operatè</p>
 
-              {/* AIRTIME — AMOUNT + PHONE */}
-              {gcSection === 'airtime' && !atResult && atSelectedOp && (
-                <div className="px-4 space-y-5">
-                  <div className="flex items-center gap-4 py-2">
-                    <div
-                      className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                {atOpLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : atOperators.length === 0 ? (
+                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                  </div>
+                ) : (
+                  atOperators.map((op: any) => (
+                    <button
+                      key={op.operatorId}
+                      onClick={() => {
+                        setAtSelectedOp(op);
+                        setAtAmount(op.denominationType === 'FIXED' && op.localFixedAmounts?.length ? op.localFixedAmounts[0] : (op.minAmount ?? null));
+                        setAtPhone('');
+                      }}
+                      className="w-full flex items-center rounded-3xl border p-4 mb-3 shadow-sm active:scale-[0.98] transition-all"
+                      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
                     >
-                      <img
-                        src={atSelectedOp.name?.toLowerCase().includes('digicel') ? '/digicel.png' : '/natcom.png'}
-                        alt={atSelectedOp.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-base text-[var(--oz-text)]">{atSelectedOp.name}</p>
-                      <p className="text-xs text-[var(--oz-text-sec)] mt-0.5">Ayiti · HTG</p>
-                    </div>
-                  </div>
+                      {op.logoUrls?.[0] ? (
+                        <img src={op.logoUrls[0]} alt={op.name} className="w-11 h-11 rounded-lg object-contain mr-4 flex-shrink-0" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                      )}
+                      <div className="flex-1 text-left">
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] mb-0.5" style={{ color: colors.textPrimary }}>{op.name}</p>
+                        <p className="text-[11px]" style={{ color: colors.textSecondary }}>
+                          {op.denominationType === 'FIXED' && op.localFixedAmounts?.length
+                            ? op.localFixedAmounts.map((a: number) => `${a} HTG`).join(' · ')
+                            : `${op.minAmount ?? 0}–${op.maxAmount ?? '?'} HTG`}
+                        </p>
+                      </div>
+                      <span className="text-[22px] ml-3" style={{ color: colors.textSecondary }}>›</span>
+                    </button>
+                  ))
+                )}
 
-                  <div>
-                    <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Montan (HTG)</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {AT_AMOUNTS.map(amt => (
+                {/* Airtime order history */}
+                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mt-6 mb-3" style={{ color: colors.textPrimary }}>Istorik Airtime</p>
+                {atOrdersLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="w-6 h-6 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : atOrders.length === 0 ? (
+                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn achte poko.</p>
+                  </div>
+                ) : (
+                  atOrders.map((o: any) => (
+                    <div key={o.id} className="rounded-3xl border p-4 mb-3 shadow-sm" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate" style={{ color: colors.textPrimary }}>{o.operatorName}</p>
+                        <span className="text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-[6px]" style={{ color: gcStatusColor(o.status), borderColor: gcStatusColor(o.status) }}>
+                          {gcStatusLabel(o.status)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                        {parseFloat(o.amount).toFixed(2)} HTG → {o.phoneNumber}
+                      </p>
+                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                        Debite: {parseFloat(o.htgPaid).toFixed(2)} HTG
+                      </p>
+                      <p className="text-[10px] mt-1" style={{ color: colors.textSecondary }}>{formatTxDate(o.createdAt)}</p>
+                    </div>
+                  ))
+                )}
+              </>
+            )}
+
+            {/* ── GIFT CARD BUY MODAL ── */}
+            {gcSelectedProduct && (
+              <div
+                className="fixed inset-0 z-[60] flex items-end"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
+                onClick={() => !gcOrderLoading && setGcSelectedProduct(null)}
+              >
+                <div
+                  className="w-full rounded-t-3xl p-6 pb-8 border-t"
+                  style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-6 text-center" style={{ color: colors.textPrimary }}>
+                    {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
+                  </p>
+                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Montan ($USD)</p>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none"
+                    style={{
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                      opacity: !gcIsRange(gcSelectedProduct) ? 0.6 : 1,
+                    }}
+                    value={gcBuyAmount}
+                    onChange={e => setGcBuyAmount(e.target.value)}
+                    readOnly={!gcIsRange(gcSelectedProduct)}
+                  />
+                  {gcIsRange(gcSelectedProduct) && (
+                    <p className="text-[11px] mt-1" style={{ color: colors.textSecondary }}>
+                      Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleBuyGift}
+                    disabled={gcOrderLoading}
+                    className="w-full py-4 bg-[#FF7A00] text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40"
+                  >
+                    {gcOrderLoading ? 'Pwosesis...' : 'Achte'}
+                  </button>
+                  <button
+                    onClick={() => { if (!gcOrderLoading) setGcSelectedProduct(null); }}
+                    disabled={gcOrderLoading}
+                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 border disabled:opacity-40"
+                    style={{ backgroundColor: 'transparent', color: colors.textSecondary, borderColor: colors.border }}
+                  >
+                    Anile
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── AIRTIME TOPUP MODAL ── */}
+            {atSelectedOp && (
+              <div
+                className="fixed inset-0 z-[60] flex items-end"
+                style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
+                onClick={() => !atLoading && setAtSelectedOp(null)}
+              >
+                <div
+                  className="w-full rounded-t-3xl p-6 pb-8 border-t"
+                  style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-6 text-center" style={{ color: colors.textPrimary }}>
+                    {atSelectedOp.name}
+                  </p>
+
+                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Nimewo Telefòn</p>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="ex: 36001234"
+                    value={atPhone}
+                    onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none placeholder:text-[var(--oz-text-sec)]"
+                    style={{ backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                  />
+
+                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Montan (HTG)</p>
+                  {atSelectedOp.denominationType === 'FIXED' && atSelectedOp.localFixedAmounts?.length > 0 ? (
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      {atSelectedOp.localFixedAmounts.map((a: number) => (
                         <button
-                          key={amt}
-                          onClick={() => setAtAmount(amt)}
-                          className="py-4 rounded-2xl font-semibold text-sm transition-all active:scale-95"
-                          style={atAmount === amt
-                            ? { background: '#FF7A00', color: '#fff', border: '1px solid #FF7A00' }
-                            : { background: 'var(--oz-surface)', color: 'var(--oz-text)', border: '1px solid var(--oz-border)' }}
+                          key={a}
+                          onClick={() => setAtAmount(a)}
+                          className="border rounded-lg px-4 py-2 text-[13px] transition-all"
+                          style={atAmount === a
+                            ? { borderColor: '#FF7A00', backgroundColor: accentMuted, color: '#FF7A00' }
+                            : { borderColor: colors.border, backgroundColor: colors.background, color: colors.textSecondary }}
                         >
-                          {amt}
+                          {a} HTG
                         </button>
                       ))}
                     </div>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Nimewo Telefòn</p>
-                    <div className="flex items-center gap-2 rounded-2xl px-4 py-4 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
-                      <span className="font-semibold text-[#FF7A00]">+509</span>
+                  ) : (
+                    <>
                       <input
-                        type="tel"
-                        inputMode="numeric"
-                        placeholder="4X XX XXXX"
-                        value={atPhone}
-                        onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                        className="flex-1 bg-transparent font-semibold text-[var(--oz-text)] outline-none placeholder:text-[var(--oz-text-sec)] tracking-widest"
+                        type="number"
+                        inputMode="decimal"
+                        value={atAmount ?? ''}
+                        onChange={e => setAtAmount(parseFloat(e.target.value) || null)}
+                        className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none"
+                        style={{ backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }}
                       />
-                    </div>
-                  </div>
-
-                  {atAmount && (
-                    <div className="rounded-2xl p-4 space-y-2.5 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
-                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Rechaj</span><span className="font-semibold text-[var(--oz-text)]">{atAmount} HTG</span></div>
-                      <div className="flex justify-between"><span className="text-sm text-[var(--oz-text-sec)]">Frè OZAMAPAY (5%)</span><span className="font-semibold text-[var(--oz-text)]">{(atAmount * 0.05).toFixed(2)} HTG</span></div>
-                      <div className="flex justify-between pt-2.5 mt-1 border-t border-[var(--oz-border)]">
-                        <span className="text-sm font-semibold text-[var(--oz-text)]">Total</span>
-                        <span className="font-semibold text-[#FF7A00]">{(atAmount * 1.05).toFixed(2)} HTG</span>
-                      </div>
-                    </div>
+                      <p className="text-[11px] mt-1" style={{ color: colors.textSecondary }}>
+                        Min {atSelectedOp.minAmount} — Max {atSelectedOp.maxAmount} HTG
+                      </p>
+                    </>
                   )}
 
                   <button
-                    disabled={!atAmount || atPhone.trim().length < 8 || atLoading}
-                    onClick={handleAirtimeOrder}
-                    className="w-full py-5 text-white font-semibold uppercase rounded-3xl tracking-widest text-sm disabled:opacity-40 active:scale-95 transition-all"
-                    style={{ background: atAmount && atPhone.trim().length >= 8 ? '#FF7A00' : 'var(--oz-border)', color: atAmount && atPhone.trim().length >= 8 ? '#fff' : 'var(--oz-text-sec)' }}
+                    onClick={handleAirtimeTopup}
+                    disabled={atLoading}
+                    className="w-full py-4 bg-[#FF7A00] text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40"
                   >
-                    {atLoading ? 'Pwosesis...' : `Voye Kredi — ${atAmount ? (atAmount * 1.05).toFixed(2) + ' HTG' : '—'}`}
+                    {atLoading ? 'Pwosesis...' : 'Achte Kredi'}
+                  </button>
+                  <button
+                    onClick={() => { if (!atLoading) setAtSelectedOp(null); }}
+                    disabled={atLoading}
+                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 border disabled:opacity-40"
+                    style={{ backgroundColor: 'transparent', color: colors.textSecondary, borderColor: colors.border }}
+                  >
+                    Anile
                   </button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* AIRTIME — OPERATOR SELECTION */}
-              {gcSection === 'airtime' && !atResult && !atSelectedOp && (
-                <div className="px-4 space-y-5">
-                  {atOpLoading ? (
-                    <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" /></div>
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-[10px] font-semibold text-[var(--oz-text-sec)] uppercase tracking-widest mb-3">Chwazi Operatè</p>
-                        <div className="space-y-2">
-                          {digicelOp && (
-                            <button
-                              onClick={() => setAtSelectedOp(digicelOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
-                              style={{ border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
-                            >
-                              <div className="w-10 h-10 rounded-2xl flex-shrink-0 overflow-hidden">
-                                <img src="/digicel.png" alt="Digicel" className="w-full h-full object-cover" />
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className="text-[var(--oz-text)] font-medium text-sm">Digicel</p>
-                                <p className="text-[var(--oz-text-sec)] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
-                              </div>
-                              <ChevronRight size={16} className="text-[#FF7A00]" />
-                            </button>
-                          )}
-                          {natcomOp && (
-                            <button
-                              onClick={() => setAtSelectedOp(natcomOp)}
-                              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[var(--oz-surface)] active:scale-[0.98] transition-all"
-                              style={{ border: '1px solid var(--oz-border)', borderLeftWidth: '2px', borderLeftColor: '#FF7A00' }}
-                            >
-                              <div className="w-10 h-10 rounded-2xl flex-shrink-0 overflow-hidden">
-                                <img src="/natcom.png" alt="Natcom" className="w-full h-full object-cover" />
-                              </div>
-                              <div className="flex-1 text-left">
-                                <p className="text-[var(--oz-text)] font-medium text-sm">Natcom</p>
-                                <p className="text-[var(--oz-text-sec)] text-[10px] mt-0.5 uppercase tracking-wide">Ayiti</p>
-                              </div>
-                              <ChevronRight size={16} className="text-[#FF7A00]" />
-                            </button>
-                          )}
-                          {!digicelOp && !natcomOp && (
-                            <p className="text-center text-[var(--oz-text-sec)] text-sm py-10">Pa gen operatè disponib pou kounye a.</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl p-4 bg-[var(--oz-surface)] border border-[var(--oz-border)]">
-                        <p className="text-[10px] text-[var(--oz-text-sec)] font-semibold uppercase tracking-widest mb-1">Nòt</p>
-                        <p className="text-xs text-[var(--oz-text-sec)]">Rechaj yo rele nan 5 segonn. Frè 5% OZAMAPAY. Montan an HTG.</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-            </div>
           </div>
         );
       })()}
@@ -3965,24 +3785,50 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* BOTTOM NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 backdrop-blur-xl h-24 flex items-center justify-around px-4 z-50 lg:hidden" style={{ backgroundColor: colors.surface + 'CC', borderTop: `1px solid ${colors.border}` }}>
+      {/* BOTTOM NAVIGATION — floating pill */}
+      <nav
+        className="fixed z-50 lg:hidden flex items-center justify-around"
+        style={{
+          bottom: 'calc(14px + env(safe-area-inset-bottom))',
+          left: 14, right: 14,
+          height: 70,
+          background: 'rgba(14,16,26,.80)',
+          backdropFilter: 'blur(26px)',
+          WebkitBackdropFilter: 'blur(26px)',
+          borderRadius: 26,
+          border: '1px solid rgba(255,255,255,.07)',
+          boxShadow: '0 8px 32px rgba(0,0,0,.45)',
+        }}
+      >
         {[
-          { id: 'home',       icon: <Home size={22} />,         label: 'HOME' },
-          { id: 'finance',    icon: <Landmark size={22} />,     label: 'FINANCE' },
-          { id: 'cards',      icon: <CreditCard size={22} />,   label: 'CARDS' },
-          { id: 'giftcards',  icon: <ShoppingCart size={22} />, label: 'GIFTS' },
-          { id: 'profile',    icon: <User size={22} />,         label: 'PROFILE' },
-        ].map((item) => (
-          <button
-            key={item.id}
-            onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
-            className={`w-12 h-14 flex flex-col items-center justify-center transition-all ${activeTab === item.id ? 'text-[#FF7A00] scale-110' : 'text-[#8E929B] opacity-30 hover:opacity-100'}`}
-          >
-            {item.icon}
-            <span className="text-[7px] font-black uppercase mt-1 tracking-widest">{item.label}</span>
-          </button>
-        ))}
+          { id: 'home',      icon: <Home size={20} />,         label: 'HOME' },
+          { id: 'finance',   icon: <Landmark size={20} />,     label: 'FINANCE' },
+          { id: 'cards',     icon: <CreditCard size={20} />,   label: 'CARDS' },
+          { id: 'giftcards', icon: <ShoppingCart size={20} />, label: 'GIFTS' },
+          { id: 'profile',   icon: <User size={20} />,         label: 'PROFILE' },
+        ].map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => { setActiveTab(item.id); setSelectedFinanceService(null); setShowKycForm(false); }}
+              className="flex flex-col items-center justify-center transition-all active:scale-90"
+              style={{ flex: 1, height: '100%', gap: 3 }}
+            >
+              {isActive ? (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'rgba(255,122,0,.15)', borderRadius: 16, padding: '6px 14px' }}>
+                  <span style={{ color: '#FF7A00' }}>{item.icon}</span>
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>{item.label}</span>
+                </span>
+              ) : (
+                <>
+                  <span style={{ color: 'rgba(255,255,255,.35)' }}>{item.icon}</span>
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(255,255,255,.35)', textTransform: 'uppercase' }}>{item.label}</span>
+                </>
+              )}
+            </button>
+          );
+        })}
       </nav>
       
       <input type="file" ref={fileInputRef} hidden onChange={(e) => setReceipt(e.target.files?.[0] || null)} />

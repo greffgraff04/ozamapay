@@ -18,3 +18,58 @@
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ── Glassmorphism v2 design system ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes balIn {
+  0%   { opacity: 0; transform: translateY(10px) scale(.96); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  100% { transform: translateX(260%)  skewX(-18deg); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: none; }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 10px 30px -8px rgba(255,122,0,.55); }
+  50%     { box-shadow: 0 16px 44px -6px rgba(255,122,0,.9);  }
+}
+@keyframes dotPulse {
+  0%,100% { box-shadow: 0 0 0 0   rgba(34,197,94,.6); }
+  70%     { box-shadow: 0 0 0 7px rgba(34,197,94,0);  }
+}
+@keyframes dash {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes floatA {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(20px,28px); }
+}
+
+.oz-glowPulse { animation: glowPulse 2s ease-in-out infinite; }
+.oz-dotPulse  { animation: dotPulse  2s infinite; }
+.oz-fadeUp    { animation: fadeUp  .42s cubic-bezier(.2,.7,.2,1) both; }
+.oz-balIn     { animation: balIn   .55s cubic-bezier(.2,.8,.2,1) both; }
+.oz-shimmer   { animation: shimmer 2.4s ease-in-out infinite; }
+.oz-slideUp   { animation: slideUp .32s cubic-bezier(.2,.7,.2,1) both; }
+
+/* glass card base */
+.oz-glass {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.09);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+.oz-glass-strong {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 48px -24px rgba(0,0,0,.7);
+}
