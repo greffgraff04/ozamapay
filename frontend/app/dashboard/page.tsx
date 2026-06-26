@@ -3420,26 +3420,30 @@ export default function Dashboard() {
         };
 
         return (
-          <div className="animate-in fade-in duration-300 py-2">
+          <div className="oz-fadeUp py-2">
 
             {/* Page title */}
-            <h1 className="font-black italic uppercase text-[24px] tracking-[0.06em] mt-6 mb-4" style={{ color: colors.textPrimary, letterSpacing: 1.5 }}>
+            <h1 className="font-black italic uppercase text-[24px] mt-6 mb-4 text-white" style={{ letterSpacing: 1.5 }}>
               Kado &amp; Kredi
             </h1>
 
             {/* Segmented control */}
-            <div className="flex rounded-xl p-[3px] mb-4 border" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+            <div className="flex rounded-xl p-[3px] mb-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
               <button
                 onClick={() => setGcSection('gifts')}
                 className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
-                style={gcSection === 'gifts' ? { backgroundColor: colors.accent, color: '#fff' } : { color: colors.textSecondary }}
+                style={gcSection === 'gifts'
+                  ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
+                  : { color: 'rgba(255,255,255,.45)' }}
               >
                 Gift Cards
               </button>
               <button
                 onClick={() => setGcSection('airtime')}
                 className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
-                style={gcSection === 'airtime' ? { backgroundColor: colors.accent, color: '#fff' } : { color: colors.textSecondary }}
+                style={gcSection === 'airtime'
+                  ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
+                  : { color: 'rgba(255,255,255,.45)' }}
               >
                 Airtime
               </button>
@@ -3450,36 +3454,36 @@ export default function Dashboard() {
               <>
                 {/* Purchase result card */}
                 {gcOrderResult && (
-                  <div className="rounded-3xl border p-5 text-center mb-5" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(255,122,0,0.12)' }}>
-                      <CheckCircle2 size={28} className="text-[#FF7A00]" />
+                  <div className="oz-glass-strong rounded-3xl p-5 text-center mb-5">
+                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(255,122,0,.14)' }}>
+                      <CheckCircle2 size={28} color="#FF7A00" />
                     </div>
-                    <p className="font-black italic uppercase text-base tracking-tight" style={{ color: colors.textPrimary }}>{gcOrderResult.productName}</p>
-                    <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                    <p className="font-black italic uppercase text-base tracking-tight text-white">{gcOrderResult.productName}</p>
+                    <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,.5)' }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
                     {gcOrderResult.redeemCode ? (
-                      <div className="mt-4 rounded-[6px] border px-4 py-3" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                      <div className="mt-4 rounded-[12px] px-4 py-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
                         <p className="font-black text-[#FF7A00] text-xl tracking-[0.1em] break-all">{gcOrderResult.redeemCode}</p>
-                        <button onClick={() => copyToClipboard(gcOrderResult.redeemCode)} className="mt-3 flex items-center gap-2 mx-auto text-white bg-[#FF7A00] px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest">
+                        <button onClick={() => copyToClipboard(gcOrderResult.redeemCode)} className="mt-3 flex items-center gap-2 mx-auto text-white px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                           <Copy size={15} /> Kopye Kòd la
                         </button>
                       </div>
                     ) : (
-                      <p className="text-[#FF7A00] font-bold text-sm mt-3">Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
+                      <p className="font-bold text-sm mt-3" style={{ color: '#FF7A00' }}>Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
                     )}
-                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: colors.textSecondary }}>Fèmen</button>
+                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: 'rgba(255,255,255,.4)' }}>Fèmen</button>
                   </div>
                 )}
 
                 {/* Products section title */}
-                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mb-3" style={{ color: colors.textPrimary }}>Pwodwi Disponib</p>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Pwodwi Disponib</span>
 
                 {gcLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : gcProducts.length === 0 ? (
-                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
+                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn pwodwi disponib kounye a.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -3490,18 +3494,17 @@ export default function Dashboard() {
                           setGcSelectedProduct(p);
                           setGcBuyAmount(gcIsRange(p) ? String(p.minSenderDenomination ?? '') : String(p.senderFaceValue ?? ''));
                         }}
-                        className="rounded-2xl border p-3 flex flex-col items-center active:scale-[0.97] transition-all shadow-sm"
-                        style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                        className="oz-glass rounded-2xl p-3 flex flex-col items-center active:scale-[0.97] transition-all"
                       >
                         {p.logoUrls?.[0] ? (
                           <img src={p.logoUrls[0]} alt={p.brand?.brandName ?? p.productName} className="w-full h-14 object-contain rounded-md mb-2" />
                         ) : (
-                          <div className="w-full h-14 rounded-md mb-2" style={{ backgroundColor: colors.border }} />
+                          <div className="w-full h-14 rounded-md mb-2" style={{ background: 'rgba(255,255,255,.07)' }} />
                         )}
-                        <p className="font-black italic uppercase text-[10px] tracking-[0.03em] text-center leading-tight mb-0.5 truncate w-full" style={{ color: colors.textPrimary }}>
+                        <p className="font-black italic uppercase text-[10px] tracking-[0.03em] text-center leading-tight mb-0.5 truncate w-full text-white">
                           {p.brand?.brandName ?? p.productName}
                         </p>
-                        <p className="font-black text-[12px] text-[#FF7A00]">
+                        <p className="font-black text-[12px]" style={{ color: '#FF7A00' }}>
                           {gcIsRange(p) ? `$${p.minSenderDenomination}–$${p.maxSenderDenomination}` : `$${p.senderFaceValue}`}
                         </p>
                       </button>
@@ -3510,30 +3513,31 @@ export default function Dashboard() {
                 )}
 
                 {/* Gift card order history */}
-                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mt-6 mb-3" style={{ color: colors.textPrimary }}>Istorik Gift Cards</p>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Gift Cards</span>
                 {gcOrders.length === 0 ? (
-                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn achte poko.</p>
+                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
+                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn achte poko.</p>
                   </div>
                 ) : (
                   gcOrders.map((o: any) => (
-                    <div key={o.id} className="rounded-3xl border p-4 mb-3 shadow-sm" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <div key={o.id} className="oz-glass rounded-3xl p-4 mb-3">
                       <div className="flex justify-between items-center mb-1">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate" style={{ color: colors.textPrimary }}>{o.productName}</p>
-                        <span className="text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-[6px]" style={{ color: gcStatusColor(o.status), borderColor: gcStatusColor(o.status) }}>
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate text-white">{o.productName}</p>
+                        <span className="text-[9px] font-black uppercase rounded-full px-2 py-0.5"
+                          style={{ background: `${gcStatusColor(o.status)}22`, color: gcStatusColor(o.status) }}>
                           {gcStatusLabel(o.status)}
                         </span>
                       </div>
-                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
                         ${parseFloat(o.unitPrice).toFixed(2)} · {parseFloat(o.htgPaid).toFixed(2)} HTG
                       </p>
                       {o.redeemCode && (
-                        <div className="rounded-[6px] border px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
+                        <div className="rounded-[10px] px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
                           <p className="font-black text-[#FF7A00] text-[14px] tracking-[0.1em]">{o.redeemCode}</p>
                           <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00] ml-2"><Copy size={14} /></button>
                         </div>
                       )}
-                      <p className="text-[10px] mt-1" style={{ color: colors.textSecondary }}>{formatTxDate(o.createdAt)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,.35)' }}>{formatTxDate(o.createdAt)}</p>
                     </div>
                   ))
                 )}
@@ -3545,31 +3549,31 @@ export default function Dashboard() {
               <>
                 {/* Airtime success card */}
                 {atResult && (
-                  <div className="rounded-3xl border p-5 text-center mb-5" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <div className="w-14 h-14 rounded-full bg-green-100 mx-auto mb-3 flex items-center justify-center">
-                      <CheckCircle2 size={28} className="text-green-500" />
+                  <div className="oz-glass-strong rounded-3xl p-5 text-center mb-5">
+                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(34,197,94,.14)' }}>
+                      <CheckCircle2 size={28} color="#22C55E" />
                     </div>
-                    <p className="font-black italic uppercase text-base" style={{ color: colors.textPrimary }}>Kredi Voye!</p>
-                    <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{atResult.operatorName}</p>
-                    <div className="mt-4 rounded-2xl border p-4" style={{ backgroundColor: colors.background, borderColor: colors.border }}>
-                      <p className="text-xs uppercase font-bold tracking-widest mb-1" style={{ color: colors.textSecondary }}>Peye</p>
-                      <p className="font-black text-xl" style={{ color: colors.textPrimary }}>{Number(atResult.htgPaid).toFixed(2)} HTG</p>
+                    <p className="font-black italic uppercase text-base text-white">Kredi Voye!</p>
+                    <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,.5)' }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,.4)' }}>{atResult.operatorName}</p>
+                    <div className="mt-4 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 4 }}>Peye</span>
+                      <p className="font-black text-xl text-white">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
                     </div>
-                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: colors.textSecondary }}>Fèmen</button>
+                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: 'rgba(255,255,255,.4)' }}>Fèmen</button>
                   </div>
                 )}
 
                 {/* Operators section title */}
-                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mb-3" style={{ color: colors.textPrimary }}>Operatè</p>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Operatè</span>
 
                 {atOpLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : atOperators.length === 0 ? (
-                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
+                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn pwodwi disponib kounye a.</p>
                   </div>
                 ) : (
                   atOperators.map((op: any) => (
@@ -3580,53 +3584,53 @@ export default function Dashboard() {
                         setAtAmount(op.denominationType === 'FIXED' && op.localFixedAmounts?.length ? op.localFixedAmounts[0] : (op.minAmount ?? null));
                         setAtPhone('');
                       }}
-                      className="w-full flex items-center rounded-3xl border p-4 mb-3 shadow-sm active:scale-[0.98] transition-all"
-                      style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                      className="oz-glass w-full flex items-center rounded-3xl p-4 mb-3 active:scale-[0.98] transition-all"
                     >
                       {op.logoUrls?.[0] ? (
                         <img src={op.logoUrls[0]} alt={op.name} className="w-11 h-11 rounded-lg object-contain mr-4 flex-shrink-0" />
                       ) : (
-                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ background: 'rgba(255,255,255,.08)' }} />
                       )}
                       <div className="flex-1 text-left">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] mb-0.5" style={{ color: colors.textPrimary }}>{op.name}</p>
-                        <p className="text-[11px]" style={{ color: colors.textSecondary }}>
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] mb-0.5 text-white">{op.name}</p>
+                        <p className="text-[11px]" style={{ color: 'rgba(255,255,255,.45)' }}>
                           {op.denominationType === 'FIXED' && op.localFixedAmounts?.length
                             ? op.localFixedAmounts.map((a: number) => `${a} HTG`).join(' · ')
                             : `${op.minAmount ?? 0}–${op.maxAmount ?? '?'} HTG`}
                         </p>
                       </div>
-                      <span className="text-[22px] ml-3" style={{ color: colors.textSecondary }}>›</span>
+                      <span className="text-[22px] ml-3" style={{ color: 'rgba(255,255,255,.3)' }}>›</span>
                     </button>
                   ))
                 )}
 
                 {/* Airtime order history */}
-                <p className="font-black italic uppercase text-[13px] tracking-[0.04em] mt-6 mb-3" style={{ color: colors.textPrimary }}>Istorik Airtime</p>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Airtime</span>
                 {atOrdersLoading ? (
                   <div className="flex justify-center py-4">
                     <div className="w-6 h-6 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : atOrders.length === 0 ? (
-                  <div className="rounded-2xl border p-6 text-center mb-3" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
-                    <p className="italic text-[13px]" style={{ color: colors.textSecondary }}>Pa gen okenn achte poko.</p>
+                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
+                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn achte poko.</p>
                   </div>
                 ) : (
                   atOrders.map((o: any) => (
-                    <div key={o.id} className="rounded-3xl border p-4 mb-3 shadow-sm" style={{ backgroundColor: colors.surface, borderColor: colors.border }}>
+                    <div key={o.id} className="oz-glass rounded-3xl p-4 mb-3">
                       <div className="flex justify-between items-center mb-1">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate" style={{ color: colors.textPrimary }}>{o.operatorName}</p>
-                        <span className="text-[9px] font-black uppercase border px-1.5 py-0.5 rounded-[6px]" style={{ color: gcStatusColor(o.status), borderColor: gcStatusColor(o.status) }}>
+                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate text-white">{o.operatorName}</p>
+                        <span className="text-[9px] font-black uppercase rounded-full px-2 py-0.5"
+                          style={{ background: `${gcStatusColor(o.status)}22`, color: gcStatusColor(o.status) }}>
                           {gcStatusLabel(o.status)}
                         </span>
                       </div>
-                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
                         {parseFloat(o.amount).toFixed(2)} HTG → {o.phoneNumber}
                       </p>
-                      <p className="text-[11px] mb-1" style={{ color: colors.textSecondary }}>
+                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
                         Debite: {parseFloat(o.htgPaid).toFixed(2)} HTG
                       </p>
-                      <p className="text-[10px] mt-1" style={{ color: colors.textSecondary }}>{formatTxDate(o.createdAt)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,.35)' }}>{formatTxDate(o.createdAt)}</p>
                     </div>
                   ))
                 )}
@@ -3637,26 +3641,26 @@ export default function Dashboard() {
             {gcSelectedProduct && (
               <div
                 className="fixed inset-0 z-[60] flex items-end"
-                style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
+                style={{ background: 'rgba(0,0,0,0.65)' }}
                 onClick={() => !gcOrderLoading && setGcSelectedProduct(null)}
               >
                 <div
-                  className="w-full rounded-t-3xl p-6 pb-8 border-t"
-                  style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                  className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
+                  style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-6 text-center" style={{ color: colors.textPrimary }}>
+                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
+                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
                     {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
                   </p>
-                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Montan ($USD)</p>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none"
+                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white"
                     style={{
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.textPrimary,
+                      background: 'rgba(255,255,255,.05)',
+                      border: '1px solid rgba(255,255,255,.09)',
                       opacity: !gcIsRange(gcSelectedProduct) ? 0.6 : 1,
                     }}
                     value={gcBuyAmount}
@@ -3664,22 +3668,23 @@ export default function Dashboard() {
                     readOnly={!gcIsRange(gcSelectedProduct)}
                   />
                   {gcIsRange(gcSelectedProduct) && (
-                    <p className="text-[11px] mt-1" style={{ color: colors.textSecondary }}>
+                    <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,.4)' }}>
                       Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
                     </p>
                   )}
                   <button
                     onClick={handleBuyGift}
                     disabled={gcOrderLoading}
-                    className="w-full py-4 bg-[#FF7A00] text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40"
+                    className="w-full py-4 text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40 oz-glowPulse"
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
                     {gcOrderLoading ? 'Pwosesis...' : 'Achte'}
                   </button>
                   <button
                     onClick={() => { if (!gcOrderLoading) setGcSelectedProduct(null); }}
                     disabled={gcOrderLoading}
-                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 border disabled:opacity-40"
-                    style={{ backgroundColor: 'transparent', color: colors.textSecondary, borderColor: colors.border }}
+                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
+                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
                   >
                     Anile
                   </button>
@@ -3691,40 +3696,41 @@ export default function Dashboard() {
             {atSelectedOp && (
               <div
                 className="fixed inset-0 z-[60] flex items-end"
-                style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
+                style={{ background: 'rgba(0,0,0,0.65)' }}
                 onClick={() => !atLoading && setAtSelectedOp(null)}
               >
                 <div
-                  className="w-full rounded-t-3xl p-6 pb-8 border-t"
-                  style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+                  className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
+                  style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-6 text-center" style={{ color: colors.textPrimary }}>
+                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
+                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
                     {atSelectedOp.name}
                   </p>
 
-                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Nimewo Telefòn</p>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 12 }}>Nimewo Telefòn</span>
                   <input
                     type="tel"
                     inputMode="numeric"
                     placeholder="ex: 36001234"
                     value={atPhone}
                     onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none placeholder:text-[var(--oz-text-sec)]"
-                    style={{ backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white placeholder:text-white/30"
+                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
                   />
 
-                  <p className="font-black italic uppercase text-[10px] tracking-[0.06em] mb-1 mt-3" style={{ color: colors.textSecondary }}>Montan (HTG)</p>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 14 }}>Montan (HTG)</span>
                   {atSelectedOp.denominationType === 'FIXED' && atSelectedOp.localFixedAmounts?.length > 0 ? (
-                    <div className="flex flex-wrap gap-3 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1">
                       {atSelectedOp.localFixedAmounts.map((a: number) => (
                         <button
                           key={a}
                           onClick={() => setAtAmount(a)}
-                          className="border rounded-lg px-4 py-2 text-[13px] transition-all"
+                          className="rounded-xl px-4 py-2 text-[13px] font-bold transition-all active:scale-95"
                           style={atAmount === a
-                            ? { borderColor: '#FF7A00', backgroundColor: accentMuted, color: '#FF7A00' }
-                            : { borderColor: colors.border, backgroundColor: colors.background, color: colors.textSecondary }}
+                            ? { background: 'rgba(255,122,0,.15)', border: '1.5px solid rgba(255,122,0,.5)', color: '#FF7A00' }
+                            : { background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
                         >
                           {a} HTG
                         </button>
@@ -3737,10 +3743,10 @@ export default function Dashboard() {
                         inputMode="decimal"
                         value={atAmount ?? ''}
                         onChange={e => setAtAmount(parseFloat(e.target.value) || null)}
-                        className="w-full border rounded-xl px-4 py-[13px] text-[15px] outline-none"
-                        style={{ backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }}
+                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white"
+                        style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
                       />
-                      <p className="text-[11px] mt-1" style={{ color: colors.textSecondary }}>
+                      <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,.4)' }}>
                         Min {atSelectedOp.minAmount} — Max {atSelectedOp.maxAmount} HTG
                       </p>
                     </>
@@ -3749,15 +3755,16 @@ export default function Dashboard() {
                   <button
                     onClick={handleAirtimeTopup}
                     disabled={atLoading}
-                    className="w-full py-4 bg-[#FF7A00] text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40"
+                    className="w-full py-4 text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40 oz-glowPulse"
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
                     {atLoading ? 'Pwosesis...' : 'Achte Kredi'}
                   </button>
                   <button
                     onClick={() => { if (!atLoading) setAtSelectedOp(null); }}
                     disabled={atLoading}
-                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 border disabled:opacity-40"
-                    style={{ backgroundColor: 'transparent', color: colors.textSecondary, borderColor: colors.border }}
+                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
+                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
                   >
                     Anile
                   </button>
