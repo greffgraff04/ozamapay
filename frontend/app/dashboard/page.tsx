@@ -1943,112 +1943,155 @@ export default function Dashboard() {
 
         {/* --- WITHDRAW SECTION --- */}
         {activeTab === 'withdraw' && (
-          <div className="animate-in slide-in-from-bottom duration-500" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
-              <div className="flex items-center gap-2 px-6 pt-6 pb-4">
-                <button onClick={() => setActiveTab('home')} className="w-10 h-10 rounded-xl flex items-center justify-center border flex-shrink-0 active:scale-90 transition-all" style={{ background: colors.surface, borderColor: colors.border }}>
-                  <ChevronLeft size={20} style={{ color: colors.textPrimary }} />
+          <div className="oz-fadeUp" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}>
+            {/* fixed header */}
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }}>
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="flex items-center justify-center flex-shrink-0 active:scale-90 transition-all"
+                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(12px)' }}
+                >
+                  <ChevronLeft size={18} color="#fff" />
                 </button>
-                <h2 className="font-black italic uppercase text-[16px] tracking-[1.5px]" style={{ color: colors.textPrimary }}>Retrè Lajan</h2>
+                <h2 style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', fontSize: 18 }}>Retrè Lajan</h2>
               </div>
             </div>
-            <div style={{ height: 'calc(100vh - 80px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-6 pb-14">
-              <div className="mb-6">
-                <div className="flex items-center gap-[6px] mb-2">
-                  <Banknote size={16} style={{ color: colors.accent }} />
-                  <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>Demand Retrè</h3>
+
+            {/* scrollable body */}
+            <div style={{ height: 'calc(100vh - 80px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-5 pb-20 space-y-4">
+
+              {/* main form glass card */}
+              <div className="oz-glass-strong" style={{ borderRadius: 26, padding: 20 }}>
+
+                {/* section label */}
+                <div className="flex items-center gap-2 mb-4">
+                  <Banknote size={15} color="#FF7A00" />
+                  <span style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', fontSize: 15 }}>Demand Retrè</span>
                 </div>
-                <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
-                  <div className="mb-2">
-                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>{withdrawIsIntl ? 'Montan (USD)' : 'Montan (HTG)'}</label>
-                    <input
-                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
-                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
-                      placeholder="Egzanp: 500"
-                      type="number"
-                      min="0"
-                      value={withdrawAmount}
-                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }}
-                    />
-                  </div>
-                  {withdrawAmount && Number(withdrawAmount) > 0 && (
-                    <div className="pt-2 border-t space-y-1 animate-in fade-in mb-2" style={{ borderColor: colors.border }}>
-                      <div className="flex justify-between">
-                        <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>Frais Ozama (2.0%)</span>
-                        <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>-{calculateFees(String(withdrawAmount)).fee} HTG</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>Total Debite</span>
-                        <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>{(Number(withdrawAmount) + Number(calculateFees(String(withdrawAmount)).fee)).toLocaleString()} HTG</span>
-                      </div>
+
+                {/* amount label */}
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>
+                  {withdrawIsIntl ? 'Montan (USD)' : 'Montan (HTG)'}
+                </span>
+                <input
+                  className="w-full outline-none text-[15px] text-white"
+                  style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 14, padding: '13px 16px' }}
+                  placeholder="0.00"
+                  type="number"
+                  min="0"
+                  value={withdrawAmount}
+                  onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setWithdrawAmount(val); }}
+                />
+
+                {/* fee breakdown */}
+                {withdrawAmount && Number(withdrawAmount) > 0 && (
+                  <div className="mt-3 rounded-[14px] p-3 space-y-1" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
+                    <div className="flex justify-between items-center">
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)' }}>Frais Ozama (2.0%)</span>
+                      <span style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.55)' }}>-{calculateFees(String(withdrawAmount)).fee} HTG</span>
                     </div>
-                  )}
-                  <div className="mb-2">
-                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-2 block" style={{ color: colors.textSecondary }}>Metòd</label>
-                    <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-                      {paymentMethods.map((m) => {
-                        const isSel = withdrawMethod === m.id;
-                        return (
-                          <button
-                            key={m.id}
-                            onClick={() => setWithdrawMethod(m.id)}
-                            className="flex-shrink-0 flex flex-col items-center gap-[6px] rounded-xl py-[10px] px-[6px] transition-colors active:scale-95"
-                            style={{
-                              width: 76,
-                              background: isSel ? 'rgba(255,122,0,0.08)' : colors.background,
-                              border: `1.5px solid ${isSel ? colors.accent : colors.border}`,
-                            }}
-                          >
-                            <img src={`/${m.img}`} className="w-10 h-10 object-contain" alt={m.label} />
-                            <span className="font-black text-[9px] uppercase tracking-[0.5px] text-center leading-tight"
-                              style={{ color: isSel ? colors.accent : colors.textSecondary }}>
-                              {m.label}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="flex justify-between items-center">
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00' }}>Total Debite</span>
+                      <span style={{ fontWeight: 700, fontSize: 12, color: '#FF7A00' }}>{(Number(withdrawAmount) + Number(calculateFees(String(withdrawAmount)).fee)).toLocaleString()} HTG</span>
                     </div>
                   </div>
-                  {withdrawMethod && (() => {
-                    const method = paymentMethods.find(x => x.id === withdrawMethod);
-                    if (!method) return null;
+                )}
+
+                {/* method label */}
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 16, marginBottom: 10 }}>
+                  Metòd Retrè
+                </span>
+                {/* method picker */}
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                  {paymentMethods.map((m) => {
+                    const isSel = withdrawMethod === m.id;
                     return (
-                      <div className="flex items-center gap-2 rounded-xl border px-2 py-2 mb-1" style={{ background: colors.background, borderColor: colors.border, marginTop: 4 }}>
-                        <p className="flex-1 font-medium text-[11px] leading-4" style={{ color: colors.textSecondary }}>
-                          Voye lajan sou:{' '}
-                          <span className="font-black" style={{ color: colors.accent }}>{method.info}</span>
-                        </p>
-                        <button
-                          onClick={() => copyToClipboard(method.info)}
-                          className="flex items-center gap-1 rounded-xl border px-2 py-[5px] flex-shrink-0 active:scale-90 transition-all"
-                          style={{ background: 'rgba(255,122,0,0.1)', borderColor: 'rgba(255,122,0,0.25)' }}
-                        >
-                          <Copy size={12} style={{ color: colors.accent }} />
-                          <span className="font-black text-[10px] tracking-[0.5px]" style={{ color: colors.accent }}>Kopye</span>
-                        </button>
-                      </div>
+                      <button
+                        key={m.id}
+                        onClick={() => setWithdrawMethod(m.id)}
+                        className="flex-shrink-0 flex flex-col items-center gap-[6px] active:scale-95 transition-all"
+                        style={{
+                          width: 74,
+                          padding: '10px 6px',
+                          borderRadius: 16,
+                          background: isSel ? 'rgba(255,122,0,.12)' : 'rgba(255,255,255,.04)',
+                          border: `1.5px solid ${isSel ? 'rgba(255,122,0,.6)' : 'rgba(255,255,255,.08)'}`,
+                          backdropFilter: 'blur(12px)',
+                        }}
+                      >
+                        <img src={`/${m.img}`} className="w-9 h-9 object-contain" alt={m.label} />
+                        <span style={{ fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '.06em', textAlign: 'center', lineHeight: 1.3, color: isSel ? '#FF7A00' : 'rgba(255,255,255,.5)' }}>
+                          {m.label}
+                        </span>
+                      </button>
                     );
-                  })()}
-                  <div className="mb-2">
-                    <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Enfòmasyon Kont Pèsonèl (opsyonèl)</label>
-                    <input
-                      className="w-full rounded-xl border px-4 py-[13px] text-[15px] outline-none"
-                      style={{ background: colors.background, borderColor: colors.border, color: colors.textPrimary }}
-                      placeholder={withdrawMethod === 'bank' ? 'Nimewo Kont & Non Bank...' : 'Nimewo Telefòn oswa Tag...'}
-                      value={withdrawAccountInfo}
-                      onChange={(e) => setWithdrawAccountInfo(e.target.value)}
-                    />
-                  </div>
-                  <button
-                    onClick={handleWithdraw}
-                    disabled={!(withdrawAmount && withdrawMethod)}
-                    className="w-full rounded-xl font-black italic uppercase text-[11px] tracking-[1.5px] active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center mt-1"
-                    style={{ background: 'transparent', border: `1px solid ${colors.error}`, color: colors.error, paddingTop: 12, paddingBottom: 12, paddingLeft: 20, paddingRight: 20 }}
-                  >
-                    Mande Retrè
-                  </button>
+                  })}
                 </div>
+
+                {/* selected method info strip */}
+                {withdrawMethod && (() => {
+                  const method = paymentMethods.find(x => x.id === withdrawMethod);
+                  if (!method) return null;
+                  return (
+                    <div className="flex items-center gap-2 mt-3" style={{ background: 'rgba(255,122,0,.07)', border: '1px solid rgba(255,122,0,.2)', borderRadius: 14, padding: '10px 12px' }}>
+                      <p className="flex-1 text-[11px] leading-5" style={{ color: 'rgba(255,255,255,.6)' }}>
+                        Voye lajan sou:{' '}
+                        <span style={{ fontWeight: 700, color: '#FF7A00' }}>{method.info}</span>
+                      </p>
+                      <button
+                        onClick={() => copyToClipboard(method.info)}
+                        className="flex items-center gap-1 active:scale-90 transition-all"
+                        style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.3)', borderRadius: 10, padding: '5px 9px' }}
+                      >
+                        <Copy size={11} color="#FF7A00" />
+                        <span style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.05em', color: '#FF7A00' }}>KOPYE</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                {/* account info input */}
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 16, marginBottom: 6 }}>
+                  Enfòmasyon Kont (opsyonèl)
+                </span>
+                <input
+                  className="w-full outline-none text-[14px] text-white"
+                  style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 14, padding: '13px 16px' }}
+                  placeholder={withdrawMethod === 'bank' ? 'Nimewo Kont & Non Bank...' : 'Nimewo Telefòn oswa Tag...'}
+                  value={withdrawAccountInfo}
+                  onChange={(e) => setWithdrawAccountInfo(e.target.value)}
+                />
+
+                {/* danger submit — glass with red border */}
+                <button
+                  onClick={handleWithdraw}
+                  disabled={!(withdrawAmount && withdrawMethod)}
+                  className="w-full font-black italic uppercase active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2 mt-5"
+                  style={{
+                    background: 'rgba(239,68,68,.08)',
+                    border: '1px solid rgba(239,68,68,.45)',
+                    borderRadius: 16,
+                    color: '#EF4444',
+                    fontSize: 12,
+                    letterSpacing: '.12em',
+                    padding: '14px 20px',
+                    backdropFilter: 'blur(12px)',
+                  }}
+                >
+                  <Banknote size={15} />
+                  Mande Retrè
+                </button>
               </div>
+
+              {/* info note */}
+              <div className="flex items-start gap-3" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 18, padding: '14px 16px' }}>
+                <Info size={15} color="rgba(255,255,255,.35)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', lineHeight: 1.6 }}>
+                  Demann retrè yo trete nan 1–3 jou ouvrab. Frais 2% aplike sou tout retrè.
+                </p>
+              </div>
+
             </div>
           </div>
         )}
