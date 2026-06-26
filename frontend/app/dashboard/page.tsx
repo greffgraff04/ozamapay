@@ -2327,37 +2327,37 @@ export default function Dashboard() {
         })()}
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
-          <div className="animate-in fade-in duration-700">
+          <div className="oz-fadeUp">
             {!virtualCard?.cardId ? (
               /* ===== NO CARD — CREATION FORM ===== */
               <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
                 {/* Card image: borderRadius 0 per spec */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                 </div>
                 {/* Create form */}
-                <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                <div className="oz-glass-strong mb-4" style={{ borderRadius: 24, padding: 16 }}>
                   <div className="flex justify-between items-center mb-2">
-                    <p className="font-bold text-[14px]" style={{ color: colors.textPrimary }}>KREYE KAT VISA</p>
+                    <p className="font-bold text-[14px] text-white">KREYE KAT VISA</p>
                     <span className="font-bold text-[10px] px-[10px] py-[3px] rounded-full" style={{ background: '#B8E832', color: '#000000' }}>GRATIS</span>
                   </div>
-                  <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: colors.accent }}>
+                  <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: '#FF7A00' }}>
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
-                  <p className="font-bold text-[9px] uppercase tracking-[1px] mb-[6px]" style={{ color: colors.textSecondary }}>Depo Inisyal (Min. $3 USD)</p>
-                  <div className="flex items-center w-full border rounded-2xl px-4 py-[12px] mb-4" style={{ borderColor: colors.border, background: colors.background }}>
-                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: colors.textSecondary }}>$</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
+                  <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
+                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: 'rgba(255,255,255,.5)' }}>$</span>
                     <input
                       type="number"
                       min="3"
                       value={cardCreateAmount}
                       onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                      className="flex-1 outline-none font-bold text-[18px]"
-                      style={{ background: 'transparent', color: colors.textPrimary }}
+                      className="flex-1 outline-none font-bold text-[18px] text-white"
+                      style={{ background: 'transparent' }}
                       placeholder="3"
                     />
-                    <span className="font-medium text-[13px]" style={{ color: colors.textSecondary }}>USD</span>
+                    <span className="font-medium text-[13px]" style={{ color: 'rgba(255,255,255,.5)' }}>USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -2384,8 +2384,8 @@ export default function Dashboard() {
                         alert('Sèvè a pa ka jwenn requete a.');
                       }
                     }}
-                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
-                    style={{ background: colors.accent }}
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all oz-glowPulse"
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
                     <Zap size={16} color="#FFFFFF" /> KREYE KAT GRATIS
                   </button>
@@ -2393,8 +2393,8 @@ export default function Dashboard() {
               </div>
             ) : virtualCard?.status === 'TERMINATED' ? (
               /* ===== TERMINATED CARD ===== */
-              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 animate-in fade-in duration-500">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
+              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
                 {/* Card image: dim + terminated overlay */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
@@ -2403,22 +2403,22 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {/* Terminated info card */}
-                <div className="rounded-[24px] border p-6 mb-4" style={{ background: colors.surface, borderColor: colors.error + '66' }}>
-                  <div className="flex items-start gap-2 mb-6">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.12)' }}>
-                      <X size={20} style={{ color: colors.error }} />
+                <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
+                  <div className="flex items-start gap-3 mb-6">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,.12)' }}>
+                      <X size={20} color="#EF4444" />
                     </div>
                     <div>
-                      <p className="font-bold text-[13px] mb-1" style={{ color: colors.textPrimary }}>Kat Dezaktive</p>
-                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: colors.textSecondary }}>
+                      <p className="font-bold text-[13px] mb-1 text-white">Kat Dezaktive</p>
+                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: 'rgba(255,255,255,.5)' }}>
                         Kat ou a te dezaktive. Kreye yon nouvo kat Visa gratis kounye a.
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setVirtualCard(null)}
-                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
-                    style={{ background: colors.accent }}
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all oz-glowPulse"
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
                     <Zap size={16} color="#FFFFFF" /> KREYE NOUVO KAT
                   </button>
@@ -2431,9 +2431,9 @@ export default function Dashboard() {
                 <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(63vw + 248px + env(safe-area-inset-top))' }}>
 
                   {/* FIXED TOP SECTION */}
-                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.90)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
                     {/* Page title */}
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0" style={{ color: colors.textPrimary }}>Kat Visa</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Visa</p>
 
                     {/* Card image: marginHorizontal 20, borderRadius 0 */}
                     <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
@@ -2507,37 +2507,39 @@ export default function Dashboard() {
                           >
                             <div
                               className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
-                              style={{ borderWidth: '1.5px', borderStyle: 'solid', background: btn.isActive ? colors.accent : colors.surface, borderColor: btn.isActive ? colors.accent : colors.border }}
+                              style={btn.isActive
+                                ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
+                                : { background: 'rgba(255,255,255,.06)', border: '1.5px solid rgba(255,255,255,.1)', backdropFilter: 'blur(12px)' }}
                             >
                               {btn.key === 'info' && secretDetailsLoading
-                                ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: btn.isActive ? 'rgba(255,255,255,0.4)' : colors.accent, borderTopColor: 'transparent' }} />
+                                ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: btn.isActive ? 'rgba(255,255,255,0.4)' : '#FF7A00', borderTopColor: 'transparent' }} />
                                 : btn.key === 'info' && showCardDetails
                                 ? <EyeOff size={22} color="#FFFFFF" />
                                 : btn.key === 'info'
-                                ? <Eye size={22} style={{ color: colors.accent }} />
+                                ? <Eye size={22} color="#FF7A00" />
                                 : btn.key === 'recharge'
-                                ? <Zap size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                ? <Zap size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
                                 : btn.key === 'copy'
-                                ? <Copy size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                ? <Copy size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
                                 : btn.key === 'freeze' && btn.isActive
                                 ? <Unlock size={22} color="#FFFFFF" />
-                                : <Lock size={22} style={{ color: colors.accent }} />
+                                : <Lock size={22} color="#FF7A00" />
                               }
                             </div>
-                            <p className="font-bold text-[8px] uppercase tracking-[1px]" style={{ color: colors.textPrimary }}>{btn.label}</p>
+                            <p className="font-bold text-[8px] uppercase tracking-[1px] text-white">{btn.label}</p>
                           </button>
                         ))}
                       </div>
                       {/* Balance card */}
-                      <div className="flex items-center justify-between rounded-[24px] border px-6 py-4 mb-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
+                      <div className="flex items-center justify-between rounded-[24px] px-6 py-4 mb-4" style={{ background: 'rgba(255,122,0,.1)', border: '1px solid rgba(255,122,0,.25)', backdropFilter: 'blur(16px)' }}>
                         <div>
-                          <p className="font-bold italic uppercase text-[9px] tracking-[1.5px] mb-1" style={{ color: colors.accent }}>Balans Kat</p>
+                          <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                           <p>
-                            <span className="font-bold text-[28px]" style={{ color: colors.textPrimary }}>${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                            <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}> USD</span>
+                            <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                            <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.5)' }}> USD</span>
                           </p>
                         </div>
-                        <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: colors.accent }}>
+                        <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                           <Wallet2 size={22} color="#FFFFFF" />
                         </div>
                       </div>
@@ -2549,52 +2551,49 @@ export default function Dashboard() {
 
                     {/* Card details panel */}
                     {showCardDetails && (
-                      <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                      <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 16 }}>
                         <div className="flex justify-between items-center mb-4">
-                          <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Detay Kat</p>
-                          <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} style={{ color: colors.textSecondary }} /></button>
+                          <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Detay Kat</p>
+                          <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color="rgba(255,255,255,.4)" /></button>
                         </div>
                         {secretDetailsLoading ? (
                           <div className="flex flex-col gap-1 animate-pulse">
-                            <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                            <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
                             <div className="flex gap-1">
-                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} />
-                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} />
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} />
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} />
                             </div>
-                            <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                            <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
                           </div>
                         ) : secretDetailsFailed ? (
                           <div className="flex flex-col items-center gap-3 py-4">
-                            <p className="font-medium text-[13px] text-center" style={{ color: colors.textSecondary }}>Echèk chajman detay kat</p>
-                            <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: colors.accent }}>Eseye Ankò</button>
+                            <p className="font-medium text-[13px] text-center" style={{ color: 'rgba(255,255,255,.5)' }}>Echèk chajman detay kat</p>
+                            <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            {/* Card number — full width */}
-                            <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
-                              <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nimewo Konplè</p>
+                            <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                               <div className="flex items-center justify-between gap-2">
-                                <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                                <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
                               </div>
                             </div>
-                            {/* CVV + Ekspire */}
                             <div className="flex gap-1">
-                              <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
-                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>CVV</p>
-                                <p className="font-bold text-[20px]" style={{ color: colors.textPrimary }}>{virtualCard?.cvv || '———'}</p>
+                              <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>CVV</span>
+                                <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
                               </div>
-                              <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
-                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Ekspire</p>
-                                <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{virtualCard?.expiryDate || '——/——'}</p>
+                              <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Ekspire</span>
+                                <p className="font-bold text-[13px] text-white">{virtualCard?.expiryDate || '——/——'}</p>
                               </div>
                             </div>
-                            {/* Nom sou Kat — full width */}
-                            <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
-                              <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nom sou Kat</p>
+                            <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                               <div className="flex items-center justify-between gap-2">
-                                <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardName || '————'}</p>
-                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                                <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
                               </div>
                             </div>
                           </div>
@@ -2603,12 +2602,12 @@ export default function Dashboard() {
                     )}
 
                     {/* Billing address card */}
-                    <div className="rounded-[24px] border p-4 mb-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                    <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 16 }}>
                       <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: colors.accent }}>
+                        <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                           <Landmark size={14} color="#FFFFFF" />
                         </div>
-                        <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Billing Address</p>
+                        <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Billing Address</p>
                       </div>
                       {([
                         { label: 'Street',  value: CARD_BILLING.street },
@@ -2617,44 +2616,42 @@ export default function Dashboard() {
                         { label: 'ZIP',     value: CARD_BILLING.zip },
                         { label: 'Country', value: CARD_BILLING.country },
                       ] as const).map(({ label, value }, i, arr) => (
-                        <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                        <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
                           <div>
-                            <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[2px]" style={{ color: colors.textSecondary }}>{label}</p>
-                            <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{value}</p>
+                            <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 2 }}>{label}</span>
+                            <p className="font-bold text-[13px] text-white">{value}</p>
                           </div>
-                          <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: colors.background }}>
-                            <Copy size={13} style={{ color: colors.textSecondary }} />
+                          <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: 'rgba(255,255,255,.05)' }}>
+                            <Copy size={13} color="rgba(255,255,255,.4)" />
                           </button>
                         </div>
                       ))}
-                      <div className="rounded-[12px] border p-2 mt-2" style={{ background: colors.error + '18', borderColor: colors.error + '33' }}>
-                        <p className="font-bold text-[10px] leading-[15px]" style={{ color: colors.error }}>
+                      <div className="rounded-[12px] p-2 mt-2" style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)' }}>
+                        <p className="font-bold text-[10px] leading-[15px]" style={{ color: '#EF4444' }}>
                           ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
                         </p>
                       </div>
                     </div>
 
                     {/* NFC badge */}
-                    <div className="rounded-[24px] border p-4 flex items-center gap-2 mb-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
-                      <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 36, height: 36, background: colors.accent }}>
+                    <div className="oz-glass flex items-center gap-3 mb-4" style={{ borderRadius: 24, padding: 16, borderColor: 'rgba(255,122,0,.2)' }}>
+                      <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                         <Smartphone size={18} color="#FFFFFF" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>Google Pay & Apple Pay</p>
-                        <p className="font-medium text-[11px] mt-[2px]" style={{ color: colors.textSecondary }}>Kat ou a sipòte NFC contactless</p>
+                        <p className="font-bold text-[13px] text-white">Google Pay & Apple Pay</p>
+                        <p className="font-medium text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,.5)' }}>Kat ou a sipòte NFC contactless</p>
                       </div>
-                      <div className="rounded-full border px-2 py-[3px]" style={{ background: accentMuted, borderColor: colors.accent + '55' }}>
-                        <p className="font-bold uppercase text-[9px] tracking-[1px]" style={{ color: colors.accent }}>AKTIF</p>
-                      </div>
+                      <span style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.35)', borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 9, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>AKTIF</span>
                     </div>
 
                   </div>
                 </div>
 
                 {/* ── DESKTOP LAYOUT ── */}
-                <div className="hidden lg:block animate-in fade-in duration-500">
+                <div className="hidden lg:block oz-fadeUp">
                   <div className="max-w-[1400px] mx-auto px-8 py-10">
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6" style={{ color: colors.textPrimary }}>Kat Visa</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6 text-white">Kat Visa</p>
                     <div className="flex gap-10 items-start">
                       {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
@@ -2707,16 +2704,19 @@ export default function Dashboard() {
                                 } catch { alert('Erè koneksyon'); }
                               }
                             }} className="flex flex-col items-center gap-[6px] flex-1">
-                              <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all" style={{ borderWidth: '1.5px', borderStyle: 'solid', background: btn.isActive ? colors.accent : colors.surface, borderColor: btn.isActive ? colors.accent : colors.border }}>
-                                {btn.key === 'info' && secretDetailsLoading ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: colors.accent, borderTopColor: 'transparent' }} />
+                              <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
+                                style={btn.isActive
+                                  ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
+                                  : { background: 'rgba(255,255,255,.06)', border: '1.5px solid rgba(255,255,255,.1)', backdropFilter: 'blur(12px)' }}>
+                                {btn.key === 'info' && secretDetailsLoading ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#FF7A00', borderTopColor: 'transparent' }} />
                                 : btn.key === 'info' && showCardDetails ? <EyeOff size={22} color="#FFFFFF" />
-                                : btn.key === 'info' ? <Eye size={22} style={{ color: colors.accent }} />
-                                : btn.key === 'recharge' ? <Zap size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
-                                : btn.key === 'copy' ? <Copy size={22} style={{ color: btn.isActive ? '#FFFFFF' : colors.accent }} />
+                                : btn.key === 'info' ? <Eye size={22} color="#FF7A00" />
+                                : btn.key === 'recharge' ? <Zap size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
+                                : btn.key === 'copy' ? <Copy size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
                                 : btn.key === 'freeze' && btn.isActive ? <Unlock size={22} color="#FFFFFF" />
-                                : <Lock size={22} style={{ color: colors.accent }} />}
+                                : <Lock size={22} color="#FF7A00" />}
                               </div>
-                              <p className="font-bold text-[8px] uppercase tracking-[1px]" style={{ color: colors.textPrimary }}>{btn.label}</p>
+                              <p className="font-bold text-[8px] uppercase tracking-[1px] text-white">{btn.label}</p>
                             </button>
                           ))}
                         </div>
@@ -2724,60 +2724,60 @@ export default function Dashboard() {
                       {/* Right: balance + details + billing + NFC */}
                       <div className="flex-1 flex flex-col gap-4 min-w-0">
                         {/* Balance */}
-                        <div className="flex items-center justify-between rounded-[24px] border px-6 py-4" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
+                        <div className="flex items-center justify-between rounded-[24px] px-6 py-4" style={{ background: 'rgba(255,122,0,.1)', border: '1px solid rgba(255,122,0,.25)', backdropFilter: 'blur(16px)' }}>
                           <div>
-                            <p className="font-bold italic uppercase text-[9px] tracking-[1.5px] mb-1" style={{ color: colors.accent }}>Balans Kat</p>
+                            <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                             <p>
-                              <span className="font-bold text-[28px]" style={{ color: colors.textPrimary }}>${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                              <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}> USD</span>
+                              <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                              <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.5)' }}> USD</span>
                             </p>
                           </div>
-                          <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: colors.accent }}>
+                          <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                             <Wallet2 size={22} color="#FFFFFF" />
                           </div>
                         </div>
                         {/* Details panel */}
                         {showCardDetails && (
-                          <div className="rounded-[24px] border p-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                          <div className="oz-glass" style={{ borderRadius: 24, padding: 16 }}>
                             <div className="flex justify-between items-center mb-4">
-                              <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Detay Kat</p>
-                              <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} style={{ color: colors.textSecondary }} /></button>
+                              <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Detay Kat</p>
+                              <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color="rgba(255,255,255,.4)" /></button>
                             </div>
                             {secretDetailsLoading ? (
                               <div className="flex flex-col gap-1 animate-pulse">
-                                <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
-                                <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: colors.border }} /></div>
-                                <div className="h-[52px] rounded-[12px]" style={{ background: colors.border }} />
+                                <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
+                                <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /></div>
+                                <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
                               </div>
                             ) : secretDetailsFailed ? (
                               <div className="flex flex-col items-center gap-3 py-4">
-                                <p className="font-medium text-[13px] text-center" style={{ color: colors.textSecondary }}>Echèk chajman detay kat</p>
-                                <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: colors.accent }}>Eseye Ankò</button>
+                                <p className="font-medium text-[13px] text-center" style={{ color: 'rgba(255,255,255,.5)' }}>Echèk chajman detay kat</p>
+                                <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
                               </div>
                             ) : (
                               <div className="flex flex-col gap-1">
-                                <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
-                                  <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nimewo Konplè</p>
+                                <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                                    <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
-                                  <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
-                                    <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>CVV</p>
-                                    <p className="font-bold text-[20px]" style={{ color: colors.textPrimary }}>{virtualCard?.cvv || '———'}</p>
+                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>CVV</span>
+                                    <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
                                   </div>
-                                  <div className="rounded-[12px] p-2 flex-1" style={{ background: colors.background }}>
-                                    <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Ekspire</p>
-                                    <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{virtualCard?.expiryDate || '——/——'}</p>
+                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Ekspire</span>
+                                    <p className="font-bold text-[13px] text-white">{virtualCard?.expiryDate || '——/——'}</p>
                                   </div>
                                 </div>
-                                <div className="rounded-[12px] p-2" style={{ background: colors.background }}>
-                                  <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[3px]" style={{ color: colors.textSecondary }}>Nom sou Kat</p>
+                                <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                                   <div className="flex items-center justify-between gap-2">
-                                    <p className="font-bold text-[13px] truncate" style={{ color: colors.textPrimary }}>{virtualCard?.cardName || '————'}</p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} style={{ color: colors.textSecondary }} /></button>
+                                    <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
                                   </div>
                                 </div>
                               </div>
@@ -2785,12 +2785,12 @@ export default function Dashboard() {
                           </div>
                         )}
                         {/* Billing address */}
-                        <div className="rounded-[24px] border p-4 shadow-sm" style={{ background: colors.surface, borderColor: colors.border }}>
+                        <div className="oz-glass" style={{ borderRadius: 24, padding: 16 }}>
                           <div className="flex items-center gap-2 mb-4">
-                            <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: colors.accent }}>
+                            <div className="flex items-center justify-center rounded-[12px]" style={{ width: 36, height: 36, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                               <Landmark size={14} color="#FFFFFF" />
                             </div>
-                            <p className="font-bold italic uppercase text-[12px] tracking-[1px]" style={{ color: colors.textPrimary }}>Billing Address</p>
+                            <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Billing Address</p>
                           </div>
                           {([
                             { label: 'Street',  value: CARD_BILLING.street },
@@ -2799,34 +2799,32 @@ export default function Dashboard() {
                             { label: 'ZIP',     value: CARD_BILLING.zip },
                             { label: 'Country', value: CARD_BILLING.country },
                           ] as const).map(({ label, value }, i, arr) => (
-                            <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                            <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
                               <div>
-                                <p className="font-medium uppercase text-[9px] tracking-[0.5px] mb-[2px]" style={{ color: colors.textSecondary }}>{label}</p>
-                                <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>{value}</p>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 2 }}>{label}</span>
+                                <p className="font-bold text-[13px] text-white">{value}</p>
                               </div>
-                              <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: colors.background }}>
-                                <Copy size={13} style={{ color: colors.textSecondary }} />
+                              <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: 'rgba(255,255,255,.05)' }}>
+                                <Copy size={13} color="rgba(255,255,255,.4)" />
                               </button>
                             </div>
                           ))}
-                          <div className="rounded-[12px] border p-2 mt-2" style={{ background: colors.error + '18', borderColor: colors.error + '33' }}>
-                            <p className="font-bold text-[10px] leading-[15px]" style={{ color: colors.error }}>
+                          <div className="rounded-[12px] p-2 mt-2" style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)' }}>
+                            <p className="font-bold text-[10px] leading-[15px]" style={{ color: '#EF4444' }}>
                               ⚠️ Itilize SÈLMAN adrès sa a lè yon sit mande billing address ou. Si ou mete yon lòt adrès, tranzaksyon ou ka rejte.
                             </p>
                           </div>
                         </div>
                         {/* NFC badge */}
-                        <div className="rounded-[24px] border p-4 flex items-center gap-2" style={{ background: accentMuted, borderColor: colors.accent + '44' }}>
-                          <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 36, height: 36, background: colors.accent }}>
+                        <div className="oz-glass flex items-center gap-3" style={{ borderRadius: 24, padding: 16, borderColor: 'rgba(255,122,0,.2)' }}>
+                          <div className="flex items-center justify-center rounded-[12px] flex-shrink-0" style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                             <Smartphone size={18} color="#FFFFFF" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-bold text-[13px]" style={{ color: colors.textPrimary }}>Google Pay & Apple Pay</p>
-                            <p className="font-medium text-[11px] mt-[2px]" style={{ color: colors.textSecondary }}>Kat ou a sipòte NFC contactless</p>
+                            <p className="font-bold text-[13px] text-white">Google Pay & Apple Pay</p>
+                            <p className="font-medium text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,.5)' }}>Kat ou a sipòte NFC contactless</p>
                           </div>
-                          <div className="rounded-full border px-2 py-[3px]" style={{ background: accentMuted, borderColor: colors.accent + '55' }}>
-                            <p className="font-bold uppercase text-[9px] tracking-[1px]" style={{ color: colors.accent }}>AKTIF</p>
-                          </div>
+                          <span style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.35)', borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 9, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>AKTIF</span>
                         </div>
                       </div>
                     </div>
@@ -2835,38 +2833,35 @@ export default function Dashboard() {
 
                 {/* RECHARGE MODAL */}
                 {showRechargeModal && (
-                  <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
-                    <div className="w-full max-h-[90vh] overflow-y-auto" style={{ background: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 48 }}>
+                  <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+                    <div className="w-full max-h-[90vh] overflow-y-auto oz-slideUp" style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 48 }}>
                       {/* Handle */}
-                      <div className="mx-auto mb-6" style={{ width: 40, height: 4, background: colors.border, borderRadius: 2 }} />
+                      <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
                       {/* Header */}
                       <div className="flex justify-between items-center mb-4">
-                        <p className="font-bold italic uppercase text-[18px] tracking-[1px]" style={{ color: colors.textPrimary }}>Recharge Kat</p>
-                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} style={{ color: colors.textSecondary }} /></button>
+                        <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">Recharge Kat</p>
+                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color="rgba(255,255,255,.5)" /></button>
                       </div>
                       {/* Balance */}
-                      <p className="font-medium text-[13px] mb-4" style={{ color: colors.textSecondary }}>
+                      <p className="font-medium text-[13px] mb-4" style={{ color: 'rgba(255,255,255,.5)' }}>
                         Balans aktyèl:{' '}
-                        <span className="font-bold" style={{ color: colors.accent }}>${Number(virtualCard?.balance || 0).toFixed(2)} USD</span>
+                        <span className="font-bold" style={{ color: '#FF7A00' }}>${Number(virtualCard?.balance || 0).toFixed(2)} USD</span>
                       </p>
-                      {/* Input */}
-                      <p className="font-bold uppercase text-[9px] tracking-[1px] mb-[6px]" style={{ color: colors.textSecondary }}>Montan (USD)</p>
-                      <div className="flex items-center rounded-2xl mb-2 transition-colors" style={{ border: `2px solid ${colors.border}`, padding: '12px 16px' }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = colors.accent)}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = colors.border)}
-                      >
-                        <span className="font-bold text-[20px] mr-[6px]" style={{ color: colors.accent }}>$</span>
+                      {/* Input label */}
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>Montan (USD)</span>
+                      <div className="flex items-center rounded-2xl mb-2" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', padding: '12px 16px' }}>
+                        <span className="font-bold text-[20px] mr-[6px]" style={{ color: '#FF7A00' }}>$</span>
                         <input
                           type="number"
                           min="1"
                           value={rechargeAmount}
                           onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setRechargeAmount(val); }}
-                          className="flex-1 outline-none font-bold text-[22px]"
-                          style={{ background: 'transparent', color: colors.textPrimary }}
+                          className="flex-1 outline-none font-bold text-[22px] text-white"
+                          style={{ background: 'transparent' }}
                           placeholder="0.00"
                           autoFocus
                         />
-                        <span className="font-medium text-[14px]" style={{ color: colors.textSecondary }}>USD</span>
+                        <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.4)' }}>USD</span>
                       </div>
                       {/* Fee box */}
                       {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
@@ -2876,42 +2871,42 @@ export default function Dashboard() {
                         const totalUsd = amt + serviceFee + ozamapayFee;
                         const totalHtg = Math.ceil(totalUsd * exchangeRate);
                         return (
-                          <div className="rounded-2xl border mb-4 flex flex-col" style={{ background: accentMuted, borderColor: colors.accent + '44', padding: 16, gap: 4 }}>
+                          <div className="rounded-2xl mb-4 flex flex-col" style={{ background: 'rgba(255,122,0,.08)', border: '1px solid rgba(255,122,0,.2)', padding: 14, gap: 5 }}>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Montan recharge</p>
-                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>${amt.toFixed(2)} USD</p>
+                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Montan recharge</p>
+                              <p className="font-bold text-[12px] text-white">${amt.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Frè Sèvis: $1.90 + 1.9%</p>
-                              <p className="font-bold text-[12px]" style={{ color: colors.accent }}>+${serviceFee.toFixed(2)} USD</p>
+                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Frè Sèvis: $1.90 + 1.9%</p>
+                              <p className="font-bold text-[12px]" style={{ color: '#FF7A00' }}>+${serviceFee.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Frè OZAMAPAY: 2%</p>
-                              <p className="font-bold text-[12px]" style={{ color: colors.accent }}>+${ozamapayFee.toFixed(2)} USD</p>
+                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Frè OZAMAPAY: 2%</p>
+                              <p className="font-bold text-[12px]" style={{ color: '#FF7A00' }}>+${ozamapayFee.toFixed(2)} USD</p>
                             </div>
-                            <div style={{ height: 1, background: colors.border, marginTop: 4, marginBottom: 4 }} />
+                            <div style={{ height: 1, background: 'rgba(255,255,255,.08)', margin: '2px 0' }} />
                             <div className="flex justify-between items-center">
-                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>Total USD</p>
-                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>${totalUsd.toFixed(2)} USD</p>
+                              <p className="font-bold text-[12px] text-white">Total USD</p>
+                              <p className="font-bold text-[12px] text-white">${totalUsd.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="font-bold text-[12px]" style={{ color: colors.textPrimary }}>Total HTG</p>
-                              <p className="font-bold text-[16px]" style={{ color: colors.textPrimary }}>{totalHtg.toLocaleString()} HTG</p>
+                              <p className="font-bold text-[12px] text-white">Total HTG</p>
+                              <p className="font-bold text-[16px] text-white">{totalHtg.toLocaleString()} HTG</p>
                             </div>
                           </div>
                         );
                       })()}
                       {/* Quick amount chips */}
-                      <div className="flex gap-2 mb-6">
+                      <div className="flex gap-2 mb-5">
                         {['5', '10', '20'].map(amt => (
                           <button
                             key={amt}
                             onClick={() => setRechargeAmount(amt)}
-                            className="flex-1 py-2 rounded-2xl font-bold text-[13px] border-2 transition-colors"
+                            className="flex-1 py-2 rounded-2xl font-bold text-[13px] transition-all active:scale-95"
                             style={{
-                              borderColor: rechargeAmount === amt ? colors.accent : colors.border,
-                              background: rechargeAmount === amt ? accentMuted : colors.surface,
-                              color: rechargeAmount === amt ? colors.accent : colors.textSecondary,
+                              background: rechargeAmount === amt ? 'rgba(255,122,0,.15)' : 'rgba(255,255,255,.05)',
+                              border: `1.5px solid ${rechargeAmount === amt ? 'rgba(255,122,0,.5)' : 'rgba(255,255,255,.09)'}`,
+                              color: rechargeAmount === amt ? '#FF7A00' : 'rgba(255,255,255,.5)',
                             }}
                           >
                             ${amt}
@@ -2937,8 +2932,8 @@ export default function Dashboard() {
                           } catch { alert('Erè koneksyon'); }
                           finally { setRechargeLoading(false); }
                         }}
-                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-40 shadow-sm"
-                        style={{ background: colors.accent, paddingTop: 18, paddingBottom: 18 }}
+                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-30 oz-glowPulse"
+                        style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', paddingTop: 18, paddingBottom: 18 }}
                       >
                         {rechargeLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'RECHARGE KAT →'}
                       </button>
