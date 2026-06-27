@@ -2202,10 +2202,10 @@ export default function Dashboard() {
         })()}
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
-          <div className="oz-fadeUp" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="oz-fadeUp px-5 lg:px-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {!virtualCard?.cardId ? (
               /* ===== NO CARD — CREATION FORM ===== */
-              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
+              <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
                 {/* Card image: borderRadius 0 per spec */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
@@ -2268,7 +2268,7 @@ export default function Dashboard() {
               </div>
             ) : virtualCard?.status === 'TERMINATED' ? (
               /* ===== TERMINATED CARD ===== */
-              <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
+              <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
                 {/* Card image: dim + terminated overlay */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
@@ -2422,7 +2422,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* SCROLLABLE SECTION: details + billing + NFC */}
-                  <div style={{ height: 'calc(100vh - 63vw - 248px - env(safe-area-inset-top))', overflowY: 'auto' }} className="px-5 pb-24">
+                  <div style={{ height: 'calc(100vh - 63vw - 248px - env(safe-area-inset-top))', overflowY: 'auto' }} className="pb-24">
 
                     {/* Card details panel */}
                     {showCardDetails && (
