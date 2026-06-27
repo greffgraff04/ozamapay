@@ -1945,16 +1945,16 @@ export default function Dashboard() {
         {activeTab === 'withdraw' && (
           <div className="oz-fadeUp" style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}>
             {/* fixed header */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: `1px solid ${glass.borderSubtle}`, paddingTop: 'env(safe-area-inset-top)' }}>
               <div className="flex items-center gap-3 px-5 pt-5 pb-4">
                 <button
                   onClick={() => setActiveTab('home')}
                   className="flex items-center justify-center flex-shrink-0 active:scale-90 transition-all"
-                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(12px)' }}
+                  style={{ width: 38, height: 38, borderRadius: 12, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(12px)' }}
                 >
-                  <ChevronLeft size={18} color="#fff" />
+                  <ChevronLeft size={18} color={colors.textPrimary} />
                 </button>
-                <h2 style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', fontSize: 18 }}>Retrè Lajan</h2>
+                <h2 style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: colors.textPrimary, fontSize: 18 }}>Retrè Lajan</h2>
               </div>
             </div>
 
@@ -1967,16 +1967,16 @@ export default function Dashboard() {
                 {/* section label */}
                 <div className="flex items-center gap-2 mb-4">
                   <Banknote size={15} color="#FF7A00" />
-                  <span style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: '#fff', fontSize: 15 }}>Demand Retrè</span>
+                  <span style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: colors.textPrimary, fontSize: 15 }}>Demand Retrè</span>
                 </div>
 
                 {/* amount label */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 6 }}>
                   {withdrawIsIntl ? 'Montan (USD)' : 'Montan (HTG)'}
                 </span>
                 <input
-                  className="w-full outline-none text-[15px] text-white"
-                  style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 14, padding: '13px 16px' }}
+                  className="w-full outline-none text-[15px]"
+                  style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, borderRadius: 14, padding: '13px 16px', color: colors.textPrimary }}
                   placeholder="0.00"
                   type="number"
                   min="0"
@@ -1986,10 +1986,10 @@ export default function Dashboard() {
 
                 {/* fee breakdown */}
                 {withdrawAmount && Number(withdrawAmount) > 0 && (
-                  <div className="mt-3 rounded-[14px] p-3 space-y-1" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
+                  <div className="mt-3 rounded-[14px] p-3 space-y-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                     <div className="flex justify-between items-center">
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)' }}>Frais Ozama (2.0%)</span>
-                      <span style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.55)' }}>-{calculateFees(String(withdrawAmount)).fee} HTG</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer }}>Frais Ozama (2.0%)</span>
+                      <span style={{ fontWeight: 700, fontSize: 11, color: glass.textDim }}>-{calculateFees(String(withdrawAmount)).fee} HTG</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00' }}>Total Debite</span>
@@ -1999,7 +1999,7 @@ export default function Dashboard() {
                 )}
 
                 {/* method label */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 16, marginBottom: 10 }}>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 16, marginBottom: 10 }}>
                   Metòd Retrè
                 </span>
                 {/* method picker */}
@@ -2015,8 +2015,8 @@ export default function Dashboard() {
                           width: 74,
                           padding: '10px 6px',
                           borderRadius: 16,
-                          background: isSel ? 'rgba(255,122,0,.12)' : 'rgba(255,255,255,.04)',
-                          border: `1.5px solid ${isSel ? 'rgba(255,122,0,.6)' : 'rgba(255,255,255,.08)'}`,
+                          background: isSel ? 'rgba(255,122,0,.12)' : glass.bg,
+                          border: `1.5px solid ${isSel ? 'rgba(255,122,0,.6)' : glass.borderSubtle}`,
                           backdropFilter: 'blur(12px)',
                         }}
                       >
@@ -2052,12 +2052,12 @@ export default function Dashboard() {
                 })()}
 
                 {/* account info input */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 16, marginBottom: 6 }}>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 16, marginBottom: 6 }}>
                   Enfòmasyon Kont (opsyonèl)
                 </span>
                 <input
-                  className="w-full outline-none text-[14px] text-white"
-                  style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 14, padding: '13px 16px' }}
+                  className="w-full outline-none text-[14px]"
+                  style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, borderRadius: 14, padding: '13px 16px', color: colors.textPrimary }}
                   placeholder={withdrawMethod === 'bank' ? 'Nimewo Kont & Non Bank...' : 'Nimewo Telefòn oswa Tag...'}
                   value={withdrawAccountInfo}
                   onChange={(e) => setWithdrawAccountInfo(e.target.value)}
@@ -2085,9 +2085,9 @@ export default function Dashboard() {
               </div>
 
               {/* info note */}
-              <div className="flex items-start gap-3" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 18, padding: '14px 16px' }}>
-                <Info size={15} color="rgba(255,255,255,.35)" style={{ flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', lineHeight: 1.6 }}>
+              <div className="flex items-start gap-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 18, padding: '14px 16px' }}>
+                <Info size={15} color={glass.textDimmer} style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: 11, color: glass.textDimmer, lineHeight: 1.6 }}>
                   Demann retrè yo trete nan 1–3 jou ouvrab. Frais 2% aplike sou tout retrè.
                 </p>
               </div>
