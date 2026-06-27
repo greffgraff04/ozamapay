@@ -992,7 +992,7 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <>
           {/* ── Mobile layout (hidden on desktop) ── */}
-          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(415px + env(safe-area-inset-top))' }}>
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(366px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-2 pb-2 flex justify-between items-center">
@@ -1115,31 +1115,6 @@ export default function Dashboard() {
                   <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12 L320 56 L0 56 Z" fill="url(#spk-m)" />
                   <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12" fill="none" stroke="#FF7A00" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="600" strokeDashoffset="600" style={{ animation: 'dash 1.4s ease-out .2s forwards' }} />
                 </svg>
-                {/* Antre / Soti mini chips */}
-                <div className="flex gap-[10px] mt-[4px]">
-                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '6px 10px' }}>
-                    <div className="flex items-center gap-[6px]">
-                      <div style={{ width: 18, height: 18, borderRadius: 5, background: 'rgba(34,197,94,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ArrowDownCircle size={10} color="#22C55E" />
-                      </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>ANTRE</span>
-                    </div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: colors.textPrimary, marginTop: 2 }}>
-                      +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '6px 10px' }}>
-                    <div className="flex items-center gap-[6px]">
-                      <div style={{ width: 18, height: 18, borderRadius: 5, background: 'rgba(239,68,68,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ArrowUpCircle size={10} color="#EF4444" />
-                      </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>SOTI</span>
-                    </div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: colors.textPrimary, marginTop: 2 }}>
-                      -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* QUICK ACTIONS */}
@@ -1207,7 +1182,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ height: 'calc(100vh - 445px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
+            <div style={{ height: 'calc(100vh - 396px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
  
             <div className="space-y-2">
               {transactions.length === 0 ? (
