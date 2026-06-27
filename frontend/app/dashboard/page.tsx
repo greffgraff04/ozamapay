@@ -204,7 +204,7 @@ export default function Dashboard() {
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
 
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, glass, isDark, toggleTheme } = useTheme();
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
 
   const fetchSecretDetails = async () => {
@@ -864,7 +864,7 @@ export default function Dashboard() {
   };
  
   if (loading || !user || !minLoadDone) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: 'radial-gradient(130% 80% at 50% -10%, #1c1322 0%, #0a0c14 55%)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: glass.pageGradient }}>
       <img src="/logoicon.png" alt="OzamaPay" className="w-44 h-44 object-contain animate-pulse" />
       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
     </div>
@@ -873,7 +873,7 @@ export default function Dashboard() {
   const displayName = user?.name || user?.email?.split('@')[0] || 'Itilizatè';
  
   return (
-    <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-32 lg:pb-0 lg:pl-64" style={{ background: 'radial-gradient(130% 80% at 50% -10%, #1c1322 0%, #0a0c14 55%)', color: '#fff' }}>
+    <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-32 lg:pb-0 lg:pl-64" style={{ background: glass.pageGradient }}>
       {/* atmosphere orbs */}
       <div aria-hidden style={{ position: 'fixed', top: -60, left: '50%', transform: 'translateX(-50%)', width: 420, height: 340, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 68%)', filter: 'blur(24px)', pointerEvents: 'none', zIndex: 0 }} />
       <div aria-hidden style={{ position: 'fixed', bottom: 60, right: -60, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(120,90,255,.14),transparent 70%)', filter: 'blur(24px)', animation: 'floatA 14s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
@@ -1101,29 +1101,29 @@ export default function Dashboard() {
           {/* ── Mobile layout (hidden on desktop) ── */}
           <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(430px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-2 pb-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   {/* gradient-ring avatar */}
                   <div style={{ position: 'relative', width: 46, height: 46, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#FF7A00,#ff9d4d)', flexShrink: 0 }}>
-                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#14161f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15 }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: glass.innerDark, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary, fontWeight: 700, fontSize: 15 }}>
                       {displayName.substring(0, 2).toUpperCase()}
                     </div>
-                    <span className="oz-dotPulse" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#22C55E', border: '2px solid #0A0C14' }} />
+                    <span className="oz-dotPulse" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#22C55E', border: `2px solid ${glass.innerDark}` }} />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h1 className="text-[16px] font-black tracking-tighter uppercase italic truncate max-w-[160px] leading-tight">{displayName}</h1>
                       <ShieldCheck size={14} className="text-[#FF7A00]" />
                     </div>
-                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', fontWeight: 600, letterSpacing: '.04em' }}>Bonjou · <span className="text-[#FF7A00]">OzamaPay</span></p>
+                    <p style={{ fontSize: 10, color: glass.textDimmer, fontWeight: 600, letterSpacing: '.04em' }}>Bonjou · <span className="text-[#FF7A00]">OzamaPay</span></p>
                   </div>
                 </div>
                 <div className="relative">
                   <button
                     onClick={() => setShowNotifications(v => !v)}
                     className="active:scale-90 transition-all relative"
-                    style={{ width: 42, height: 42, borderRadius: 14, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 42, height: 42, borderRadius: 14, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Bell size={19} color="#fff" />
                     {unreadCount > 0 && (
@@ -1192,7 +1192,7 @@ export default function Dashboard() {
                 <div aria-hidden style={{ position: 'absolute', top: -30, right: -10, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 70%)', pointerEvents: 'none' }} />
                 {/* label row */}
                 <div className="flex justify-between items-center">
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)' }}>BALANS DISPONIB</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim }}>BALANS DISPONIB</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(34,197,94,.14)', padding: '4px 9px', borderRadius: 20 }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5h-9M19 5v9" stroke="#22C55E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#22C55E' }}>Aktif</span>
@@ -1206,8 +1206,8 @@ export default function Dashboard() {
                   const whole = formatted.slice(0, dotIdx);
                   const dec = formatted.slice(dotIdx);
                   return (
-                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 38, color: '#fff', letterSpacing: '-0.02em', marginTop: 8 }}>
-                      {whole}<span style={{ fontSize: 19, color: 'rgba(255,255,255,.55)' }}>{dec} <span style={{ fontSize: 13, letterSpacing: 0 }}>HTG</span></span>
+                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 38, color: colors.textPrimary, letterSpacing: '-0.02em', marginTop: 8 }}>
+                      {whole}<span style={{ fontSize: 19, color: glass.textDim }}>{dec} <span style={{ fontSize: 13, letterSpacing: 0 }}>HTG</span></span>
                     </p>
                   );
                 })()}
@@ -1224,25 +1224,25 @@ export default function Dashboard() {
                 </svg>
                 {/* Antre / Soti mini chips */}
                 <div className="flex gap-[10px] mt-[6px]">
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '10px 12px' }}>
+                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '10px 12px' }}>
                     <div className="flex items-center gap-[6px]">
                       <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(34,197,94,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ArrowDownCircle size={11} color="#22C55E" />
                       </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>ANTRE</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>ANTRE</span>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#fff', marginTop: 4 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary, marginTop: 4 }}>
                       +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '10px 12px' }}>
+                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '10px 12px' }}>
                     <div className="flex items-center gap-[6px]">
                       <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(239,68,68,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ArrowUpCircle size={11} color="#EF4444" />
                       </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>SOTI</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>SOTI</span>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#fff', marginTop: 4 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary, marginTop: 4 }}>
                       -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
@@ -1260,18 +1260,18 @@ export default function Dashboard() {
                   <button key={item.id} onClick={item.action} className="flex-1 flex flex-col items-center gap-[7px] active:scale-95 transition-all">
                     <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
                       ? { width: 52, height: 52, borderRadius: 18, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
-                      : { width: 52, height: 52, borderRadius: 18, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }
+                      : { width: 52, height: 52, borderRadius: 18, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }
                     }>
                       {item.icon}
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>{item.id}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: glass.textDim }}>{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex-1 flex flex-col items-center gap-[7px] active:scale-95 transition-all">
-                  <div style={{ width: 52, height: 52, borderRadius: 18, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 18, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }}>
                     <QrCode size={19} />
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>QR</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: glass.textDim }}>QR</span>
                 </button>
               </div>
 
@@ -1343,7 +1343,7 @@ export default function Dashboard() {
                   };
 
                   return (
-                    <div key={idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', backdropFilter: 'blur(20px)', borderRadius: 20 }}>
+                    <div key={idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                              style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
@@ -1352,10 +1352,10 @@ export default function Dashboard() {
                             : <ArrowDownCircle size={18} color="#22C55E" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate text-white">
+                          <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate" style={{ color: colors.textPrimary }}>
                             {txTitle}
                           </p>
-                          <p className="font-medium text-[10px]" style={{ color: 'rgba(255,255,255,.45)' }}>
+                          <p className="font-medium text-[10px]" style={{ color: glass.textDimmer }}>
                             {t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}
                           </p>
                         </div>
@@ -1387,7 +1387,7 @@ export default function Dashboard() {
               <div className="relative overflow-hidden oz-glass-strong" style={{ borderRadius: 30, padding: 26, maxWidth: 420 }}>
                 <div aria-hidden style={{ position: 'absolute', top: -30, right: -10, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 70%)', pointerEvents: 'none' }} />
                 <div className="flex justify-between items-center">
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)' }}>BALANS DISPONIB</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim }}>BALANS DISPONIB</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(34,197,94,.14)', padding: '4px 10px', borderRadius: 20 }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5h-9M19 5v9" stroke="#22C55E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#22C55E' }}>Aktif</span>
@@ -1416,25 +1416,25 @@ export default function Dashboard() {
                   <path d="M0 46 C30 42 48 26 76 30 S122 12 150 22 S206 44 236 20 S294 8 320 16" fill="none" stroke="#FF7A00" strokeWidth="2.4" strokeLinecap="round" strokeDasharray="600" strokeDashoffset="600" style={{ animation: 'dash 1.4s ease-out .2s forwards' }} />
                 </svg>
                 <div className="flex gap-[10px] mt-[8px]">
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '11px 14px' }}>
+                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '11px 14px' }}>
                     <div className="flex items-center gap-[6px]">
                       <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(34,197,94,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ArrowDownCircle size={12} color="#22C55E" />
                       </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>ANTRE</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>ANTRE</span>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginTop: 5 }}>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary, marginTop: 5 }}>
                       +{transactions.filter((t: any) => t.type === 'TOPUP' || (t.type === 'TRANSFER' && t.receiverWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '11px 14px' }}>
+                  <div style={{ flex: 1, background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 14, padding: '11px 14px' }}>
                     <div className="flex items-center gap-[6px]">
                       <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(239,68,68,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ArrowUpCircle size={12} color="#EF4444" />
                       </div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)' }}>SOTI</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim }}>SOTI</span>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginTop: 5 }}>
+                    <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary, marginTop: 5 }}>
                       -{transactions.filter((t: any) => t.type === 'WITHDRAWAL' || (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email)).reduce((s: number, t: any) => s + Number(t.amount || 0), 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
@@ -1452,18 +1452,18 @@ export default function Dashboard() {
                   <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-[7px] hover:scale-105 transition-all">
                     <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
                       ? { width: 56, height: 56, borderRadius: 19, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
-                      : { width: 56, height: 56, borderRadius: 19, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }
+                      : { width: 56, height: 56, borderRadius: 19, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }
                     }>
                       {item.icon}
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>{item.id}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: glass.textDim }}>{item.id}</span>
                   </button>
                 ))}
                 <button onClick={() => setShowQrModal(true)} className="flex flex-col items-center gap-[7px] hover:scale-105 transition-all">
-                  <div style={{ width: 56, height: 56, borderRadius: 19, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 19, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }}>
                     <QrCode size={20} />
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: 'rgba(255,255,255,.6)' }}>QR</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' as const, color: glass.textDim }}>QR</span>
                 </button>
               </div>
 
@@ -1505,7 +1505,7 @@ export default function Dashboard() {
                         FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
                       };
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', backdropFilter: 'blur(20px)', borderRadius: 20 }}>
+                        <div key={idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                                  style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
@@ -1514,8 +1514,8 @@ export default function Dashboard() {
                                 : <ArrowDownCircle size={18} color="#22C55E" />}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate text-white">{txTitleD}</p>
-                              <p className="font-medium text-[10px]" style={{ color: 'rgba(255,255,255,.45)' }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
+                              <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate" style={{ color: colors.textPrimary }}>{txTitleD}</p>
+                              <p className="font-medium text-[10px]" style={{ color: glass.textDimmer }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -1554,10 +1554,10 @@ export default function Dashboard() {
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CreditCard size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: glass.textDimmer }} />
                 </div>
-                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Kat Vityèl NFC</h3>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
+                <h3 className="font-black uppercase italic text-sm tracking-tight mb-1" style={{ color: colors.textPrimary }}>Kat Vityèl NFC</h3>
+                <p className="text-[11px] leading-relaxed" style={{ color: glass.textDim }}>Peye toupatou nan lemond avèk kat vityèl OZAMAPAY ou. Konpatib Google Pay ak Apple Pay.</p>
               </button>
 
               {/* Gift Cards */}
@@ -1570,10 +1570,10 @@ export default function Dashboard() {
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ShoppingCart size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: glass.textDimmer }} />
                 </div>
-                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Gift Cards</h3>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
+                <h3 className="font-black uppercase italic text-sm tracking-tight mb-1" style={{ color: colors.textPrimary }}>Gift Cards</h3>
+                <p className="text-[11px] leading-relaxed" style={{ color: glass.textDim }}>Achte Amazon, Apple, Google Play ak plis ankò dirèkteman ak balans OZAMAPAY ou.</p>
               </button>
 
               {/* Finance services */}
@@ -1586,10 +1586,10 @@ export default function Dashboard() {
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,122,0,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Landmark size={20} color="#FF7A00" />
                   </div>
-                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: 'rgba(255,255,255,.4)' }} />
+                  <ChevronRight size={16} className="group-hover:text-[#FF7A00] group-hover:translate-x-1 transition-all mt-1" style={{ color: glass.textDimmer }} />
                 </div>
-                <h3 className="text-white font-black uppercase italic text-sm tracking-tight mb-1">Sèvis Finansye</h3>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,.5)' }}>Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
+                <h3 className="font-black uppercase italic text-sm tracking-tight mb-1" style={{ color: colors.textPrimary }}>Sèvis Finansye</h3>
+                <p className="text-[11px] leading-relaxed" style={{ color: glass.textDim }}>Recharge MonCash, voye kòb Ayiti ak plis lòt sèvis finansye pou ou ak fanmi ou.</p>
               </button>
             </div>
 
@@ -1653,7 +1653,7 @@ export default function Dashboard() {
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
     <div
       className="relative w-full max-w-lg rounded-t-3xl shadow-2xl oz-slideUp"
-      style={{ background: 'rgba(14,16,26,.92)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
+      style={{ background: glass.sheetBg, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)' }}
       onClick={e => e.stopPropagation()}
     >
       <div className="px-6 pt-6 pb-10">
@@ -3844,11 +3844,11 @@ export default function Dashboard() {
           bottom: 'calc(14px + env(safe-area-inset-bottom))',
           left: 14, right: 14,
           height: 70,
-          background: 'rgba(14,16,26,.80)',
+          background: glass.sheetBg,
           backdropFilter: 'blur(26px)',
           WebkitBackdropFilter: 'blur(26px)',
           borderRadius: 26,
-          border: '1px solid rgba(255,255,255,.07)',
+          border: `1px solid ${glass.borderSubtle}`,
           boxShadow: '0 8px 32px rgba(0,0,0,.45)',
         }}
       >
@@ -3874,8 +3874,8 @@ export default function Dashboard() {
                 </span>
               ) : (
                 <>
-                  <span style={{ color: 'rgba(255,255,255,.35)' }}>{item.icon}</span>
-                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(255,255,255,.35)', textTransform: 'uppercase' }}>{item.label}</span>
+                  <span style={{ color: glass.textDimmer }}>{item.icon}</span>
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: glass.textDimmer, textTransform: 'uppercase' }}>{item.label}</span>
                 </>
               )}
             </button>
