@@ -864,9 +864,121 @@ export default function Dashboard() {
   };
  
   if (loading || !user || !minLoadDone) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: glass.pageGradient }}>
-      <img src="/logoicon.png" alt="OzamaPay" className="w-44 h-44 object-contain animate-pulse" />
-      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">LOADING...</span>
+    <div className="font-space-grotesk" style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden',
+      background: 'radial-gradient(130% 80% at 50% -8%, #1c1322 0%, #0a0c14 56%)',
+    }}>
+
+      {/* Ambient orb — orange top-center */}
+      <div aria-hidden style={{
+        position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
+        width: 480, height: 380, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,122,0,.18), transparent 68%)',
+        filter: 'blur(40px)', pointerEvents: 'none',
+        animation: 'floatA 12s ease-in-out infinite',
+      }} />
+      {/* Ambient orb — purple bottom-right */}
+      <div aria-hidden style={{
+        position: 'absolute', bottom: 0, right: -80,
+        width: 340, height: 340, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(120,60,255,.14), transparent 70%)',
+        filter: 'blur(36px)', pointerEvents: 'none',
+        animation: 'floatB 15s ease-in-out infinite',
+      }} />
+
+      {/* Logo mark + pulse rings */}
+      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Ring 1 */}
+        <div aria-hidden style={{
+          position: 'absolute', top: -20, right: -20, bottom: -20, left: -20,
+          borderRadius: 'clamp(52px, 7.5vw, 62px)',
+          border: '1.5px solid rgba(255,122,0,.5)',
+          pointerEvents: 'none',
+          animation: 'splashRing 2.4s ease-out infinite',
+        }} />
+        {/* Ring 2 */}
+        <div aria-hidden style={{
+          position: 'absolute', top: -20, right: -20, bottom: -20, left: -20,
+          borderRadius: 'clamp(52px, 7.5vw, 62px)',
+          border: '1.5px solid rgba(255,122,0,.5)',
+          pointerEvents: 'none',
+          animation: 'splashRing 2.4s ease-out 1.2s infinite',
+        }} />
+
+        {/* Logo box */}
+        <div style={{
+          width: 'clamp(108px, 22vw, 140px)', height: 'clamp(108px, 22vw, 140px)',
+          borderRadius: 'clamp(32px, 5vw, 42px)',
+          background: 'linear-gradient(140deg, #FF8a1a, #FF6B00)',
+          boxShadow: '0 22px 50px -14px rgba(255,107,0,.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', overflow: 'hidden',
+          animation: 'splashBreath 2.6s ease-in-out infinite',
+        }}>
+          {/* Diagonal shine sweep */}
+          <div aria-hidden style={{
+            position: 'absolute', top: '-10%', left: 0,
+            width: '38%', height: '120%', pointerEvents: 'none',
+            background: 'linear-gradient(105deg, transparent, rgba(255,255,255,.28) 50%, transparent)',
+            animation: 'splashShine 2.8s linear infinite',
+          }} />
+          {/* Card / wallet icon */}
+          <svg width="54" height="40" viewBox="0 0 54 40" fill="none" aria-hidden>
+            <rect x="2" y="2" width="50" height="36" rx="8" stroke="white" strokeWidth="2.5" />
+            <line x1="2" y1="14" x2="52" y2="14" stroke="white" strokeWidth="2.5" />
+            <rect x="8" y="21" width="14" height="8" rx="2.5" fill="white" fillOpacity="0.8" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Wordmark */}
+      <div style={{ marginTop: 32, textAlign: 'center', animation: 'fadeUp 0.6s 0.3s both' }}>
+        <p style={{ margin: 0, fontSize: 'clamp(22px, 5.5vw, 28px)', fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'white', lineHeight: 1 }}>
+          OZAMA<span style={{ color: '#FF7A00' }}>PAY</span>
+        </p>
+        <p style={{ margin: '8px 0 0', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.25em', color: 'rgba(255,255,255,.45)', fontWeight: 500 }}>
+          Bankè dijital Ayiti a
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        marginTop: 28, animation: 'fadeUp 0.6s 0.5s both',
+        width: 'clamp(230px, 55vw, 320px)', height: 6,
+        borderRadius: 99, background: 'rgba(255,255,255,.09)', overflow: 'hidden',
+      }}>
+        <div style={{
+          width: '6%', height: '100%', borderRadius: 99,
+          background: 'linear-gradient(90deg, #FF7A00, #ff9d4d)',
+          boxShadow: '0 0 12px 2px rgba(255,122,0,.5)',
+          animation: 'splashBar 2.7s cubic-bezier(.4,0,.2,1) infinite',
+        }} />
+      </div>
+
+      {/* Bounce dots + label */}
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'fadeUp 0.6s 0.65s both' }}>
+        <div style={{ display: 'flex', gap: 7 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF7A00', animation: `splashDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,.38)', fontWeight: 600 }}>
+          N ap prepare kont ou…
+        </span>
+      </div>
+
+      {/* Footer — security badge */}
+      <div style={{ position: 'absolute', bottom: 'max(28px, env(safe-area-inset-bottom))', left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, animation: 'fadeUp 0.6s 0.8s both' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <polyline points="9 12 11 14 15 10" />
+        </svg>
+        <span style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,.30)', fontWeight: 600 }}>
+          Sekirize · chifre bout-a-bout
+        </span>
+      </div>
     </div>
   );
  
