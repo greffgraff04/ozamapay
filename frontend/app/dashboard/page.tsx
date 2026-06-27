@@ -2098,15 +2098,16 @@ export default function Dashboard() {
 
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
-          <div className="animate-in slide-in-from-right duration-500 px-4" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
-              <p className="font-black italic uppercase" style={{ color: colors.textPrimary, fontSize: 24, letterSpacing: 1.5, marginTop: 16, marginBottom: 16 }}>Ozama Exchange</p>
+          <div className="oz-fadeUp px-4" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
+            {/* fixed header */}
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
+              <p className="font-black italic uppercase text-white" style={{ fontSize: 24, letterSpacing: 1.5, marginTop: 16, marginBottom: 16 }}>Ozama Exchange</p>
             </div>
             <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-              <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 12, lineHeight: '18px', marginBottom: 24 }}>
+              <p className="font-medium" style={{ color: 'rgba(255,255,255,.45)', fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
                 Echanj lajan ak Wise, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
-              <div className="flex flex-col" style={{ gap: 8 }}>
+              <div className="flex flex-col" style={{ gap: 10 }}>
                 {[
                   { id: 'wise',    name: 'Wise',         desc: 'USD Transfer',     img: 'wise.png' },
                   { id: 'meru',    name: 'Meru',         desc: 'USD Transfer',     img: 'meru.png' },
@@ -2119,19 +2120,19 @@ export default function Dashboard() {
                   <button
                     key={item.id}
                     onClick={() => { setSelectedFinanceService(item); setFinanceType('BUY'); setFinanceDetails({ email: '', tag: '', amount: '', currency: 'USD', gameId: '', gamePack: '' }); setFinanceReceipt(null); }}
-                    className="flex items-center justify-between active:scale-95 transition-all"
-                    style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 16, border: `1px solid ${colors.border}`, gap: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
+                    className="oz-glass flex items-center justify-between active:scale-95 transition-all"
+                    style={{ borderRadius: 24, padding: 16, gap: 16 }}
                   >
-                    <div className="flex items-center flex-1" style={{ gap: 16 }}>
-                      <div style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: colors.background, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${colors.border}`, flexShrink: 0 }}>
-                        <img src={`/${item.img}`} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                    <div className="flex items-center flex-1" style={{ gap: 14 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.08)', flexShrink: 0 }}>
+                        <img src={`/${item.img}`} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
                       </div>
                       <div>
-                        <p className="font-black italic uppercase" style={{ color: colors.textPrimary, fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
-                        <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 12 }}>{item.desc}</p>
+                        <p className="font-black italic uppercase text-white" style={{ fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
+                        <p className="font-medium" style={{ color: 'rgba(255,255,255,.45)', fontSize: 12 }}>{item.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight size={18} style={{ color: colors.textSecondary, flexShrink: 0 }} />
+                    <ChevronRight size={18} style={{ color: 'rgba(255,255,255,.3)', flexShrink: 0 }} />
                   </button>
                 ))}
               </div>
@@ -2153,59 +2154,60 @@ export default function Dashboard() {
             || (isGaming && (!financeDetails.gamePack || !financeDetails.gameId.trim()))
             || (financeType === 'BUY' && !financeReceipt);
           return (
-            <div className="animate-in zoom-in duration-500" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
+            <div className="oz-fadeUp" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
               {/* Fixed detail header */}
-              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: colors.background, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
-                {/* Row: back link + logo box + service name */}
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+                {/* Back + logo + name */}
                 <div className="flex items-center mb-4" style={{ gap: 8 }}>
                   <button
                     onClick={() => { setSelectedFinanceService(null); setFinanceReceipt(null); }}
                     className="flex items-center active:scale-90 transition-all"
                     style={{ gap: 4 }}
                   >
-                    <ChevronLeft size={16} style={{ color: colors.textSecondary }} />
-                    <span className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 0.5 }}>Tounen Sèvis</span>
+                    <ChevronLeft size={16} color="rgba(255,255,255,.5)" />
+                    <span className="font-black italic uppercase" style={{ color: 'rgba(255,255,255,.5)', fontSize: 11, letterSpacing: 0.5 }}>Tounen Sèvis</span>
                   </button>
-                  <div style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: colors.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${colors.border}`, marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
-                    <img src={`/${selectedFinanceService.img}`} alt="" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                  <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.1)', marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
+                    <img src={`/${selectedFinanceService.img}`} alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} />
                   </div>
-                  <p className="font-black italic uppercase flex-1" style={{ color: colors.textPrimary, fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
+                  <p className="font-black italic uppercase flex-1 text-white" style={{ fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
                 </div>
                 {/* BUY / SELL segmented control */}
-                <div className="flex" style={{ backgroundColor: colors.background, borderRadius: 12, padding: 4, border: `1px solid ${colors.border}` }}>
+                <div className="flex" style={{ background: 'rgba(255,255,255,.05)', borderRadius: 12, padding: 4, border: '1px solid rgba(255,255,255,.09)' }}>
                   <button
                     onClick={() => setFinanceType('BUY')}
                     className="flex-1 flex items-center justify-center transition-all"
-                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, backgroundColor: financeType === 'BUY' ? colors.accent : 'transparent' }}
+                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, background: financeType === 'BUY' ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : 'transparent' }}
                   >
-                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'BUY' ? '#FFFFFF' : colors.textSecondary }}>Achte / Depoze</span>
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'BUY' ? '#fff' : 'rgba(255,255,255,.45)' }}>Achte / Depoze</span>
                   </button>
                   <button
                     onClick={() => setFinanceType('SELL')}
                     className="flex-1 flex items-center justify-center transition-all"
-                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, backgroundColor: financeType === 'SELL' ? colors.accent : 'transparent' }}
+                    style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, background: financeType === 'SELL' ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : 'transparent' }}
                   >
-                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'SELL' ? '#FFFFFF' : colors.textSecondary }}>Vann / Retire</span>
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'SELL' ? '#fff' : 'rgba(255,255,255,.45)' }}>Vann / Retire</span>
                   </button>
                 </div>
               </div>
 
               {/* Scrollable form */}
-              <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto' }} className="pb-24 px-4">
+              <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto' }} className="pb-24 px-4 space-y-4">
+
                 {/* Account info card — BUY only */}
                 {financeType === 'BUY' && finAcct && (
-                  <div style={{ backgroundColor: colors.background, borderRadius: 24, padding: 16, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
-                    <p className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 9, letterSpacing: 2, marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</p>
-                    <p className="font-medium" style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>{finAcct.label}</p>
-                    <div className="flex items-center" style={{ gap: 8 }}>
-                      <p className="font-black flex-1" style={{ color: colors.accent, fontSize: 13, wordBreak: 'break-all' }}>{finAcct.info}</p>
+                  <div style={{ background: 'rgba(255,122,0,.07)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,122,0,.2)' }}>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</span>
+                    <p className="font-medium" style={{ color: 'rgba(255,255,255,.55)', fontSize: 11, marginBottom: 6 }}>{finAcct.label}</p>
+                    <div className="flex items-center" style={{ gap: 10 }}>
+                      <p className="font-black flex-1" style={{ color: '#FF7A00', fontSize: 13, wordBreak: 'break-all' }}>{finAcct.info}</p>
                       <button
                         onClick={() => copyToClipboard(finAcct.info)}
                         className="flex items-center active:scale-90 transition-all flex-shrink-0"
-                        style={{ gap: 4, paddingLeft: 10, paddingRight: 10, paddingTop: 6, paddingBottom: 6, borderRadius: 12, backgroundColor: 'rgba(255,122,0,0.1)', border: '1px solid rgba(255,122,0,0.25)' }}
+                        style={{ gap: 4, paddingLeft: 10, paddingRight: 10, paddingTop: 6, paddingBottom: 6, borderRadius: 12, background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.3)' }}
                       >
-                        <Copy size={12} style={{ color: colors.accent }} />
-                        <span className="font-black" style={{ color: colors.accent, fontSize: 10, letterSpacing: 0.5 }}>Kopye</span>
+                        <Copy size={12} color="#FF7A00" />
+                        <span className="font-black" style={{ color: '#FF7A00', fontSize: 10, letterSpacing: 0.5 }}>Kopye</span>
                       </button>
                     </div>
                     {finAcct.warning && (
@@ -2215,11 +2217,11 @@ export default function Dashboard() {
                 )}
 
                 {/* Amount field */}
-                <div style={{ marginBottom: 16 }}>
-                  <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>{amountLabel}</p>
+                <div>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>{amountLabel}</span>
                   <input
-                    className="w-full outline-none font-medium"
-                    style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                    className="w-full outline-none font-medium text-white"
+                    style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 15 }}
                     placeholder="0.00"
                     type="number"
                     min="0"
@@ -2229,38 +2231,40 @@ export default function Dashboard() {
                 </div>
 
                 {/* Fee row */}
-                <div className="flex justify-between" style={{ marginBottom: 16, paddingLeft: 2, paddingRight: 2 }}>
-                  <span className="font-medium italic" style={{ color: colors.textSecondary, fontSize: 11 }}>
-                    Frè Echanj: <span className="font-black" style={{ color: colors.accent }}>6%</span>
+                <div className="flex justify-between" style={{ paddingLeft: 2, paddingRight: 2 }}>
+                  <span className="font-medium italic" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>
+                    Frè Echanj: <span className="font-black" style={{ color: '#FF7A00' }}>6%</span>
                   </span>
-                  <span className="font-medium italic" style={{ color: colors.textSecondary, fontSize: 11 }}>
-                    To: <span className="font-black" style={{ color: colors.accent }}>1 USD = {exchangeRate} HTG</span>
+                  <span className="font-medium italic" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>
+                    To: <span className="font-black" style={{ color: '#FF7A00' }}>1 USD = {exchangeRate} HTG</span>
                   </span>
                 </div>
 
                 {/* Gaming chips + Player ID — or Email/Account field */}
                 {isGaming ? (
                   <>
-                    <div style={{ marginBottom: 16 }}>
-                      <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>Chwazi Jwèt</p>
+                    <div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Chwazi Jwèt</span>
                       <div className="flex flex-wrap" style={{ gap: 8 }}>
                         {['Free Fire', 'PUBG Mobile', 'Call of Duty'].map(g => (
                           <button
                             key={g}
                             onClick={() => setFinanceDetails({...financeDetails, gamePack: g})}
                             className="active:scale-95 transition-all"
-                            style={{ paddingLeft: 14, paddingRight: 14, paddingTop: 8, paddingBottom: 8, borderRadius: 12, backgroundColor: financeDetails.gamePack === g ? colors.accent : colors.background, border: `1.5px solid ${financeDetails.gamePack === g ? colors.accent : colors.border}` }}
+                            style={financeDetails.gamePack === g
+                              ? { paddingLeft: 14, paddingRight: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 14, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
+                              : { paddingLeft: 14, paddingRight: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 14, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
                           >
-                            <span className="font-black" style={{ color: financeDetails.gamePack === g ? '#FFFFFF' : colors.textSecondary, fontSize: 12 }}>{g}</span>
+                            <span className="font-black" style={{ color: financeDetails.gamePack === g ? '#fff' : 'rgba(255,255,255,.55)', fontSize: 12 }}>{g}</span>
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div style={{ marginBottom: 16 }}>
-                      <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>Player ID</p>
+                    <div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>Player ID</span>
                       <input
-                        className="w-full outline-none font-medium"
-                        style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                        className="w-full outline-none font-medium text-white"
+                        style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14 }}
                         value={financeDetails.gameId}
                         onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})}
                         placeholder="ID jwè ou (egz: 123456789)"
@@ -2269,13 +2273,13 @@ export default function Dashboard() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ marginBottom: 16 }}>
-                    <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
+                  <div>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>
                       {isUsdt ? 'Adrès TRC20 Ou' : 'Email / Kont Ou'}
-                    </p>
+                    </span>
                     <input
-                      className="w-full outline-none font-medium"
-                      style={{ backgroundColor: colors.background, borderRadius: 12, border: `1px solid ${colors.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, color: colors.textPrimary, fontSize: 14 }}
+                      className="w-full outline-none font-medium text-white"
+                      style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14 }}
                       value={financeDetails.email}
                       onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
                       placeholder={isUsdt ? 'Adrès TRC20 pou resevwa' : 'email@exemple.com'}
@@ -2286,24 +2290,26 @@ export default function Dashboard() {
                 )}
 
                 {/* Upload box */}
-                <div style={{ marginBottom: 16 }}>
-                  <p className="font-black uppercase" style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
+                <div>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>
                     {financeType === 'SELL' ? 'Screenshot Tranzaksyon (opsyonèl)' : 'Screenshot Prèv Peman (obligatwa)'}
-                  </p>
+                  </span>
                   <button
                     onClick={() => financeFileInputRef.current?.click()}
                     className="w-full flex flex-col items-center active:scale-95 transition-all"
-                    style={{ borderRadius: 12, border: `1.5px ${financeReceipt ? 'solid' : 'dashed'} ${financeReceipt ? colors.success : colors.border}`, padding: 24, gap: 8, backgroundColor: financeReceipt ? 'rgba(34,197,94,0.06)' : colors.background }}
+                    style={financeReceipt
+                      ? { borderRadius: 16, border: '1.5px solid rgba(34,197,94,.5)', padding: 24, gap: 8, background: 'rgba(34,197,94,.07)' }
+                      : { borderRadius: 16, border: '1.5px dashed rgba(255,255,255,.2)', padding: 24, gap: 8, background: 'rgba(255,255,255,.03)' }}
                   >
                     {financeReceipt ? (
                       <>
-                        <CheckCircle2 size={28} style={{ color: colors.success }} />
-                        <span className="font-medium" style={{ color: colors.success, fontSize: 11, textAlign: 'center' }}>{financeReceipt.name}</span>
+                        <CheckCircle2 size={28} color="#22C55E" />
+                        <span className="font-medium" style={{ color: '#22C55E', fontSize: 11, textAlign: 'center' }}>{financeReceipt.name}</span>
                       </>
                     ) : (
                       <>
-                        <Upload size={28} style={{ color: colors.textSecondary }} />
-                        <span className="font-black italic uppercase" style={{ color: colors.textSecondary, fontSize: 11, letterSpacing: 0.5, textAlign: 'center' }}>Chwazi Screenshot la</span>
+                        <Upload size={28} color="rgba(255,255,255,.35)" />
+                        <span className="font-black italic uppercase" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11, letterSpacing: 0.5, textAlign: 'center' }}>Chwazi Screenshot la</span>
                       </>
                     )}
                   </button>
@@ -2313,14 +2319,15 @@ export default function Dashboard() {
                 <button
                   onClick={handleFinanceSubmit}
                   disabled={finSubmitDisabled}
-                  className="w-full flex items-center justify-center active:scale-95 transition-all"
-                  style={{ backgroundColor: colors.accent, borderRadius: 16, paddingTop: 16, paddingBottom: 16, marginTop: 8, boxShadow: '0 10px 15px rgba(0,0,0,0.15)', opacity: finSubmitDisabled ? 0.45 : 1 }}
+                  className={`w-full flex items-center justify-center active:scale-95 transition-all${finSubmitDisabled ? '' : ' oz-glowPulse'}`}
+                  style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', borderRadius: 18, paddingTop: 18, paddingBottom: 18, marginTop: 4, opacity: finSubmitDisabled ? 0.35 : 1 }}
                 >
                   {financeLoading
                     ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    : <span className="font-black italic uppercase" style={{ color: '#FFFFFF', fontSize: 13, letterSpacing: 1.5 }}>Egzekite Lòd {selectedFinanceService.name}</span>
+                    : <span className="font-black italic uppercase text-white" style={{ fontSize: 13, letterSpacing: 1.5 }}>Egzekite Lòd {selectedFinanceService.name}</span>
                   }
                 </button>
+
               </div>
             </div>
           );
