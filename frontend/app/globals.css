@@ -59,17 +59,17 @@
 .oz-shimmer   { animation: shimmer 2.4s ease-in-out infinite; }
 .oz-slideUp   { animation: slideUp .32s cubic-bezier(.2,.7,.2,1) both; }
 
-/* glass card base */
+/* glass card base — values injected as CSS vars by ThemeProvider */
 .oz-glass {
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.09);
+  background: var(--oz-glass-bg);
+  border: 1px solid var(--oz-glass-border);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
 }
 .oz-glass-strong {
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.1);
+  background: var(--oz-glass-bg-str);
+  border: 1px solid var(--oz-glass-border);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 24px 48px -24px rgba(0,0,0,.7);
+  box-shadow: var(--oz-glass-shadow);
 }
