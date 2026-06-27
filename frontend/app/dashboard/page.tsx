@@ -2352,19 +2352,19 @@ export default function Dashboard() {
                   <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: '#FF7A00' }}>
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
-                  <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
-                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: 'rgba(255,255,255,.5)' }}>$</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
+                  <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
+                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
                     <input
                       type="number"
                       min="3"
                       value={cardCreateAmount}
                       onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                      className="flex-1 outline-none font-bold text-[18px] text-white"
-                      style={{ background: 'transparent' }}
+                      className="flex-1 outline-none font-bold text-[18px]"
+                      style={{ background: 'transparent', color: colors.textPrimary }}
                       placeholder="3"
                     />
-                    <span className="font-medium text-[13px]" style={{ color: 'rgba(255,255,255,.5)' }}>USD</span>
+                    <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
                   </div>
                   <button
                     onClick={async () => {
@@ -2417,7 +2417,7 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="font-bold text-[13px] mb-1 text-white">Kat Dezaktive</p>
-                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: 'rgba(255,255,255,.5)' }}>
+                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: glass.textDim }}>
                         Kat ou a te dezaktive. Kreye yon nouvo kat Visa gratis kounye a.
                       </p>
                     </div>
@@ -2438,7 +2438,7 @@ export default function Dashboard() {
                 <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(63vw + 248px + env(safe-area-inset-top))' }}>
 
                   {/* FIXED TOP SECTION */}
-                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.90)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
+                  <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
                     {/* Page title */}
                     <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Visa</p>
 
@@ -2543,7 +2543,7 @@ export default function Dashboard() {
                           <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                           <p>
                             <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                            <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.5)' }}> USD</span>
+                            <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> USD</span>
                           </p>
                         </div>
                         <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
@@ -2565,21 +2565,21 @@ export default function Dashboard() {
                         </div>
                         {secretDetailsLoading ? (
                           <div className="flex flex-col gap-1 animate-pulse">
-                            <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
+                            <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
                             <div className="flex gap-1">
-                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} />
-                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} />
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: glass.bgStrong }} />
+                              <div className="h-[52px] rounded-[12px] flex-1" style={{ background: glass.bgStrong }} />
                             </div>
-                            <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
+                            <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
                           </div>
                         ) : secretDetailsFailed ? (
                           <div className="flex flex-col items-center gap-3 py-4">
-                            <p className="font-medium text-[13px] text-center" style={{ color: 'rgba(255,255,255,.5)' }}>Echèk chajman detay kat</p>
+                            <p className="font-medium text-[13px] text-center" style={{ color: glass.textDim }}>Echèk chajman detay kat</p>
                             <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                            <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                               <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
@@ -2587,16 +2587,16 @@ export default function Dashboard() {
                               </div>
                             </div>
                             <div className="flex gap-1">
-                              <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>CVV</span>
+                              <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
                                 <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
                               </div>
-                              <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Ekspire</span>
+                              <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Ekspire</span>
                                 <p className="font-bold text-[13px] text-white">{virtualCard?.expiryDate || '——/——'}</p>
                               </div>
                             </div>
-                            <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                            <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                               <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
@@ -2625,7 +2625,7 @@ export default function Dashboard() {
                       ] as const).map(({ label, value }, i, arr) => (
                         <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
                           <div>
-                            <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 2 }}>{label}</span>
+                            <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 2 }}>{label}</span>
                             <p className="font-bold text-[13px] text-white">{value}</p>
                           </div>
                           <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: 'rgba(255,255,255,.05)' }}>
@@ -2647,7 +2647,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1">
                         <p className="font-bold text-[13px] text-white">Google Pay & Apple Pay</p>
-                        <p className="font-medium text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,.5)' }}>Kat ou a sipòte NFC contactless</p>
+                        <p className="font-medium text-[11px] mt-[2px]" style={{ color: glass.textDim }}>Kat ou a sipòte NFC contactless</p>
                       </div>
                       <span style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.35)', borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 9, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>AKTIF</span>
                     </div>
@@ -2714,7 +2714,7 @@ export default function Dashboard() {
                               <div className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
                                 style={btn.isActive
                                   ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
-                                  : { background: 'rgba(255,255,255,.06)', border: '1.5px solid rgba(255,255,255,.1)', backdropFilter: 'blur(12px)' }}>
+                                  : { background: glass.bg, border: `1.5px solid ${glass.border}`, backdropFilter: 'blur(12px)' }}>
                                 {btn.key === 'info' && secretDetailsLoading ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#FF7A00', borderTopColor: 'transparent' }} />
                                 : btn.key === 'info' && showCardDetails ? <EyeOff size={22} color="#FFFFFF" />
                                 : btn.key === 'info' ? <Eye size={22} color="#FF7A00" />
@@ -2736,7 +2736,7 @@ export default function Dashboard() {
                             <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                             <p>
                               <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                              <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.5)' }}> USD</span>
+                              <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> USD</span>
                             </p>
                           </div>
                           <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
@@ -2752,36 +2752,36 @@ export default function Dashboard() {
                             </div>
                             {secretDetailsLoading ? (
                               <div className="flex flex-col gap-1 animate-pulse">
-                                <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
+                                <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
                                 <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /></div>
-                                <div className="h-[52px] rounded-[12px]" style={{ background: 'rgba(255,255,255,.07)' }} />
+                                <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
                               </div>
                             ) : secretDetailsFailed ? (
                               <div className="flex flex-col items-center gap-3 py-4">
-                                <p className="font-medium text-[13px] text-center" style={{ color: 'rgba(255,255,255,.5)' }}>Echèk chajman detay kat</p>
+                                <p className="font-medium text-[13px] text-center" style={{ color: glass.textDim }}>Echèk chajman detay kat</p>
                                 <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
                               </div>
                             ) : (
                               <div className="flex flex-col gap-1">
-                                <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
+                                <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
                                     <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
-                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>CVV</span>
+                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
                                     <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
                                   </div>
-                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Ekspire</span>
+                                  <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Ekspire</span>
                                     <p className="font-bold text-[13px] text-white">{virtualCard?.expiryDate || '——/——'}</p>
                                   </div>
                                 </div>
-                                <div className="rounded-[12px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
+                                <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
                                     <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
@@ -2806,12 +2806,12 @@ export default function Dashboard() {
                             { label: 'ZIP',     value: CARD_BILLING.zip },
                             { label: 'Country', value: CARD_BILLING.country },
                           ] as const).map(({ label, value }, i, arr) => (
-                            <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
+                            <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${glass.borderSubtle}` : 'none' }}>
                               <div>
-                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 2 }}>{label}</span>
+                                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 2 }}>{label}</span>
                                 <p className="font-bold text-[13px] text-white">{value}</p>
                               </div>
-                              <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: 'rgba(255,255,255,.05)' }}>
+                              <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: glass.inputBg }}>
                                 <Copy size={13} color="rgba(255,255,255,.4)" />
                               </button>
                             </div>
@@ -2829,7 +2829,7 @@ export default function Dashboard() {
                           </div>
                           <div className="flex-1">
                             <p className="font-bold text-[13px] text-white">Google Pay & Apple Pay</p>
-                            <p className="font-medium text-[11px] mt-[2px]" style={{ color: 'rgba(255,255,255,.5)' }}>Kat ou a sipòte NFC contactless</p>
+                            <p className="font-medium text-[11px] mt-[2px]" style={{ color: glass.textDim }}>Kat ou a sipòte NFC contactless</p>
                           </div>
                           <span style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.35)', borderRadius: 20, padding: '3px 9px', fontWeight: 700, fontSize: 9, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>AKTIF</span>
                         </div>
@@ -2841,34 +2841,34 @@ export default function Dashboard() {
                 {/* RECHARGE MODAL */}
                 {showRechargeModal && (
                   <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
-                    <div className="w-full max-h-[90vh] overflow-y-auto oz-slideUp" style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 48 }}>
+                    <div className="w-full max-h-[90vh] overflow-y-auto oz-slideUp" style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 48 }}>
                       {/* Handle */}
-                      <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
+                      <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
                       {/* Header */}
                       <div className="flex justify-between items-center mb-4">
                         <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">Recharge Kat</p>
                         <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color="rgba(255,255,255,.5)" /></button>
                       </div>
                       {/* Balance */}
-                      <p className="font-medium text-[13px] mb-4" style={{ color: 'rgba(255,255,255,.5)' }}>
+                      <p className="font-medium text-[13px] mb-4" style={{ color: glass.textDim }}>
                         Balans aktyèl:{' '}
                         <span className="font-bold" style={{ color: '#FF7A00' }}>${Number(virtualCard?.balance || 0).toFixed(2)} USD</span>
                       </p>
                       {/* Input label */}
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6 }}>Montan (USD)</span>
-                      <div className="flex items-center rounded-2xl mb-2" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', padding: '12px 16px' }}>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Montan (USD)</span>
+                      <div className="flex items-center rounded-2xl mb-2" style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, padding: '12px 16px' }}>
                         <span className="font-bold text-[20px] mr-[6px]" style={{ color: '#FF7A00' }}>$</span>
                         <input
                           type="number"
                           min="1"
                           value={rechargeAmount}
                           onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setRechargeAmount(val); }}
-                          className="flex-1 outline-none font-bold text-[22px] text-white"
-                          style={{ background: 'transparent' }}
+                          className="flex-1 outline-none font-bold text-[22px]"
+                          style={{ background: 'transparent', color: colors.textPrimary }}
                           placeholder="0.00"
                           autoFocus
                         />
-                        <span className="font-medium text-[14px]" style={{ color: 'rgba(255,255,255,.4)' }}>USD</span>
+                        <span className="font-medium text-[14px]" style={{ color: glass.textDimmer }}>USD</span>
                       </div>
                       {/* Fee box */}
                       {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
@@ -2880,18 +2880,18 @@ export default function Dashboard() {
                         return (
                           <div className="rounded-2xl mb-4 flex flex-col" style={{ background: 'rgba(255,122,0,.08)', border: '1px solid rgba(255,122,0,.2)', padding: 14, gap: 5 }}>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Montan recharge</p>
+                              <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Montan recharge</p>
                               <p className="font-bold text-[12px] text-white">${amt.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Frè Sèvis: $1.90 + 1.9%</p>
+                              <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Frè Sèvis: $1.90 + 1.9%</p>
                               <p className="font-bold text-[12px]" style={{ color: '#FF7A00' }}>+${serviceFee.toFixed(2)} USD</p>
                             </div>
                             <div className="flex justify-between items-center">
-                              <p className="font-medium text-[11px]" style={{ color: 'rgba(255,255,255,.5)' }}>Frè OZAMAPAY: 2%</p>
+                              <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Frè OZAMAPAY: 2%</p>
                               <p className="font-bold text-[12px]" style={{ color: '#FF7A00' }}>+${ozamapayFee.toFixed(2)} USD</p>
                             </div>
-                            <div style={{ height: 1, background: 'rgba(255,255,255,.08)', margin: '2px 0' }} />
+                            <div style={{ height: 1, background: glass.borderSubtle, margin: '2px 0' }} />
                             <div className="flex justify-between items-center">
                               <p className="font-bold text-[12px] text-white">Total USD</p>
                               <p className="font-bold text-[12px] text-white">${totalUsd.toFixed(2)} USD</p>
@@ -2911,9 +2911,9 @@ export default function Dashboard() {
                             onClick={() => setRechargeAmount(amt)}
                             className="flex-1 py-2 rounded-2xl font-bold text-[13px] transition-all active:scale-95"
                             style={{
-                              background: rechargeAmount === amt ? 'rgba(255,122,0,.15)' : 'rgba(255,255,255,.05)',
-                              border: `1.5px solid ${rechargeAmount === amt ? 'rgba(255,122,0,.5)' : 'rgba(255,255,255,.09)'}`,
-                              color: rechargeAmount === amt ? '#FF7A00' : 'rgba(255,255,255,.5)',
+                              background: rechargeAmount === amt ? 'rgba(255,122,0,.15)' : glass.bg,
+                              border: `1.5px solid ${rechargeAmount === amt ? 'rgba(255,122,0,.5)' : glass.border}`,
+                              color: rechargeAmount === amt ? '#FF7A00' : glass.textDim,
                             }}
                           >
                             ${amt}
