@@ -985,113 +985,6 @@ export default function Dashboard() {
         );
       })()}
 
-      {/* HEADER - non-home tabs only; home tab has it inside the fixed hero */}
-      {activeTab !== 'home' && (
-        <header className="px-4 pt-4 pb-4 flex justify-between items-center">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-[#0F121E] flex items-center justify-center text-[#FF7A00] font-black text-xl shadow-lg relative">
-               {displayName.substring(0, 2).toUpperCase()}
-               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tighter uppercase italic truncate max-w-[160px]">{displayName}</h1>
-                <ShieldCheck size={16} className="text-[#FF7A00]" />
-              </div>
-              <p className="text-[#8E929B] text-[10px] font-bold italic mt-1 uppercase">BYENVINI NAN WALLET OU : <span className="text-[#FF7A00]">OZAMAPAY</span></p>
-            </div>
-          </div>
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(v => !v)}
-              className="w-10 h-10 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center border border-[var(--oz-border)] active:scale-90 transition-all relative"
-            >
-              <Bell size={20} className="text-[var(--oz-text)]" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-[9px] font-black px-1">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Notification panel */}
-            {showNotifications && (
-              <>
-                {/* backdrop */}
-                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                <div className="absolute right-0 top-14 z-50 w-80 bg-[var(--oz-surface)] rounded-3xl shadow-2xl border border-[var(--oz-border)] overflow-hidden">
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--oz-border)]">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-[var(--oz-text)] uppercase tracking-wider">Notifikasyon</span>
-                      {unreadCount > 0 && (
-                        <span className="text-[9px] font-black bg-[#FF6B00] text-white px-2 py-0.5 rounded-full">{unreadCount}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={handleMarkAllRead}
-                          className="text-[9px] font-black text-[#FF6B00] uppercase tracking-wider hover:underline"
-                        >
-                          Li tout
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setShowNotifications(false)}
-                        className="w-7 h-7 rounded-2xl bg-[var(--oz-surface)] flex items-center justify-center text-[var(--oz-text-sec)] hover:bg-[var(--oz-surface)] transition"
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* List */}
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="py-12 flex flex-col items-center gap-3">
-                        <Bell size={28} className="text-gray-200" />
-                        <p className="text-xs text-[var(--oz-text-sec)] font-bold">Pa gen notifikasyon toujou</p>
-                      </div>
-                    ) : (
-                      notifications.map((n: any) => (
-                        <div
-                          key={n.id}
-                          className={`flex items-start gap-3 px-5 py-4 border-b border-[var(--oz-border)] last:border-0 ${n.isRead ? 'bg-[var(--oz-surface)]' : 'bg-[var(--oz-bg)]'}`}
-                        >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                            n.type === 'SUCCESS' ? 'bg-emerald-100' :
-                            n.type === 'ERROR'   ? 'bg-red-100' :
-                            n.type === 'WARNING' ? 'bg-yellow-100' :
-                            'bg-[#FF6B00]/10'
-                          }`}>
-                            <span className={`text-[10px] font-black ${
-                              n.type === 'SUCCESS' ? 'text-emerald-600' :
-                              n.type === 'ERROR'   ? 'text-red-500' :
-                              n.type === 'WARNING' ? 'text-yellow-600' :
-                              'text-[#FF6B00]'
-                            }`}>
-                              {n.type === 'SUCCESS' ? '✓' : n.type === 'ERROR' ? '✕' : n.type === 'WARNING' ? '!' : 'i'}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-[var(--oz-text)] leading-snug">{n.title}</p>
-                            <p className="text-[11px] text-[var(--oz-text-sec)] mt-0.5 leading-relaxed">{n.message}</p>
-                            <p className="text-[10px] text-[var(--oz-text-sec)] mt-1 font-bold">{timeAgo(n.createdAt)}</p>
-                          </div>
-                          {!n.isRead && (
-                            <div className="w-2 h-2 bg-[#FF6B00] rounded-full shrink-0 mt-1.5" />
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </header>
-      )}
  
       <div className="px-4 lg:px-8 lg:max-w-[1400px] lg:mx-auto lg:w-full">
 
@@ -1599,7 +1492,7 @@ export default function Dashboard() {
 
         {/* --- HISTORY SECTION --- */}
         {activeTab === 'history' && (
-          <div className="animate-in slide-in-from-right duration-500">
+          <div className="animate-in slide-in-from-right duration-500" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <button onClick={() => setActiveTab('home')} className="mb-8 text-[#FF7A00] font-black italic uppercase text-[10px] flex items-center gap-2">
               <ChevronRight size={14} className="rotate-180" /> Retounen
             </button>
@@ -2334,7 +2227,7 @@ export default function Dashboard() {
         })()}
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
-          <div className="oz-fadeUp">
+          <div className="oz-fadeUp" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {!virtualCard?.cardId ? (
               /* ===== NO CARD — CREATION FORM ===== */
               <div className="px-5 pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
@@ -2955,7 +2848,7 @@ export default function Dashboard() {
 
         {/* --- PROFILE SECTION --- */}
         {activeTab === 'profile' && (
-          <div className="animate-in slide-in-from-bottom duration-700 pb-8">
+          <div className="animate-in slide-in-from-bottom duration-700 pb-8" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {showKycForm ? (
               /* KYC FORM */
               <div className="animate-in zoom-in duration-300 lg:max-w-[700px] lg:mx-auto lg:py-10 lg:px-4">
@@ -3427,7 +3320,7 @@ export default function Dashboard() {
         };
 
         return (
-          <div className="oz-fadeUp py-2">
+          <div className="oz-fadeUp pb-2" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
             {/* Page title */}
             <h1 className="font-black italic uppercase text-[24px] mt-6 mb-4 text-white" style={{ letterSpacing: 1.5 }}>
