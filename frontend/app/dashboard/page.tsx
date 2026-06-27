@@ -1400,8 +1400,8 @@ export default function Dashboard() {
                   const whole = formatted.slice(0, dotIdx);
                   const dec = formatted.slice(dotIdx);
                   return (
-                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 42, color: '#fff', letterSpacing: '-0.02em', marginTop: 10 }}>
-                      {whole}<span style={{ fontSize: 21, color: 'rgba(255,255,255,.55)' }}>{dec} <span style={{ fontSize: 14, letterSpacing: 0 }}>HTG</span></span>
+                    <p className="oz-balIn" style={{ fontWeight: 700, fontSize: 42, color: colors.textPrimary, letterSpacing: '-0.02em', marginTop: 10 }}>
+                      {whole}<span style={{ fontSize: 21, color: glass.textDim }}>{dec} <span style={{ fontSize: 14, letterSpacing: 0 }}>HTG</span></span>
                     </p>
                   );
                 })()}
@@ -2021,7 +2021,7 @@ export default function Dashboard() {
                         }}
                       >
                         <img src={`/${m.img}`} className="w-9 h-9 object-contain" alt={m.label} />
-                        <span style={{ fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '.06em', textAlign: 'center', lineHeight: 1.3, color: isSel ? '#FF7A00' : 'rgba(255,255,255,.5)' }}>
+                        <span style={{ fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '.06em', textAlign: 'center', lineHeight: 1.3, color: isSel ? '#FF7A00' : glass.textDim }}>
                           {m.label}
                         </span>
                       </button>
@@ -2035,7 +2035,7 @@ export default function Dashboard() {
                   if (!method) return null;
                   return (
                     <div className="flex items-center gap-2 mt-3" style={{ background: 'rgba(255,122,0,.07)', border: '1px solid rgba(255,122,0,.2)', borderRadius: 14, padding: '10px 12px' }}>
-                      <p className="flex-1 text-[11px] leading-5" style={{ color: 'rgba(255,255,255,.6)' }}>
+                      <p className="flex-1 text-[11px] leading-5" style={{ color: glass.textDim }}>
                         Voye lajan sou:{' '}
                         <span style={{ fontWeight: 700, color: '#FF7A00' }}>{method.info}</span>
                       </p>
@@ -2100,11 +2100,11 @@ export default function Dashboard() {
         {activeTab === 'finance' && !selectedFinanceService && (
           <div className="oz-fadeUp px-4" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
             {/* fixed header */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: `1px solid ${glass.borderSubtle}`, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
               <p className="font-black italic uppercase text-white" style={{ fontSize: 24, letterSpacing: 1.5, marginTop: 16, marginBottom: 16 }}>Ozama Exchange</p>
             </div>
             <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
-              <p className="font-medium" style={{ color: 'rgba(255,255,255,.45)', fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
+              <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
                 Echanj lajan ak Wise, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
               <div className="flex flex-col" style={{ gap: 10 }}>
@@ -2124,15 +2124,15 @@ export default function Dashboard() {
                     style={{ borderRadius: 24, padding: 16, gap: 16 }}
                   >
                     <div className="flex items-center flex-1" style={{ gap: 14 }}>
-                      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.08)', flexShrink: 0 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 14, background: glass.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${glass.borderSubtle}`, flexShrink: 0 }}>
                         <img src={`/${item.img}`} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
                       </div>
                       <div>
                         <p className="font-black italic uppercase text-white" style={{ fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
-                        <p className="font-medium" style={{ color: 'rgba(255,255,255,.45)', fontSize: 12 }}>{item.desc}</p>
+                        <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12 }}>{item.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight size={18} style={{ color: 'rgba(255,255,255,.3)', flexShrink: 0 }} />
+                    <ChevronRight size={18} style={{ color: glass.textDimmer, flexShrink: 0 }} />
                   </button>
                 ))}
               </div>
@@ -2156,7 +2156,7 @@ export default function Dashboard() {
           return (
             <div className="oz-fadeUp" style={{ paddingTop: 'calc(152px + env(safe-area-inset-top))' }}>
               {/* Fixed detail header */}
-              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: 'rgba(10,12,20,.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,.06)', paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: `1px solid ${glass.borderSubtle}`, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-4">
                 {/* Back + logo + name */}
                 <div className="flex items-center mb-4" style={{ gap: 8 }}>
                   <button
@@ -2164,29 +2164,29 @@ export default function Dashboard() {
                     className="flex items-center active:scale-90 transition-all"
                     style={{ gap: 4 }}
                   >
-                    <ChevronLeft size={16} color="rgba(255,255,255,.5)" />
-                    <span className="font-black italic uppercase" style={{ color: 'rgba(255,255,255,.5)', fontSize: 11, letterSpacing: 0.5 }}>Tounen Sèvis</span>
+                    <ChevronLeft size={16} color={glass.textDim} />
+                    <span className="font-black italic uppercase" style={{ color: glass.textDim, fontSize: 11, letterSpacing: 0.5 }}>Tounen Sèvis</span>
                   </button>
-                  <div style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.1)', marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 11, background: glass.bgStrong, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${glass.border}`, marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
                     <img src={`/${selectedFinanceService.img}`} alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} />
                   </div>
                   <p className="font-black italic uppercase flex-1 text-white" style={{ fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
                 </div>
                 {/* BUY / SELL segmented control */}
-                <div className="flex" style={{ background: 'rgba(255,255,255,.05)', borderRadius: 12, padding: 4, border: '1px solid rgba(255,255,255,.09)' }}>
+                <div className="flex" style={{ background: glass.bg, borderRadius: 12, padding: 4, border: `1px solid ${glass.border}` }}>
                   <button
                     onClick={() => setFinanceType('BUY')}
                     className="flex-1 flex items-center justify-center transition-all"
                     style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, background: financeType === 'BUY' ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : 'transparent' }}
                   >
-                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'BUY' ? '#fff' : 'rgba(255,255,255,.45)' }}>Achte / Depoze</span>
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'BUY' ? '#fff' : glass.textDimmer }}>Achte / Depoze</span>
                   </button>
                   <button
                     onClick={() => setFinanceType('SELL')}
                     className="flex-1 flex items-center justify-center transition-all"
                     style={{ paddingTop: 10, paddingBottom: 10, borderRadius: 10, background: financeType === 'SELL' ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : 'transparent' }}
                   >
-                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'SELL' ? '#fff' : 'rgba(255,255,255,.45)' }}>Vann / Retire</span>
+                    <span className="font-black italic uppercase" style={{ fontSize: 11, letterSpacing: 0.5, color: financeType === 'SELL' ? '#fff' : glass.textDimmer }}>Vann / Retire</span>
                   </button>
                 </div>
               </div>
@@ -2197,8 +2197,8 @@ export default function Dashboard() {
                 {/* Account info card — BUY only */}
                 {financeType === 'BUY' && finAcct && (
                   <div style={{ background: 'rgba(255,122,0,.07)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,122,0,.2)' }}>
-                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</span>
-                    <p className="font-medium" style={{ color: 'rgba(255,255,255,.55)', fontSize: 11, marginBottom: 6 }}>{finAcct.label}</p>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</span>
+                    <p className="font-medium" style={{ color: glass.textDim, fontSize: 11, marginBottom: 6 }}>{finAcct.label}</p>
                     <div className="flex items-center" style={{ gap: 10 }}>
                       <p className="font-black flex-1" style={{ color: '#FF7A00', fontSize: 13, wordBreak: 'break-all' }}>{finAcct.info}</p>
                       <button
@@ -2218,10 +2218,10 @@ export default function Dashboard() {
 
                 {/* Amount field */}
                 <div>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>{amountLabel}</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 8 }}>{amountLabel}</span>
                   <input
-                    className="w-full outline-none font-medium text-white"
-                    style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 15 }}
+                    className="w-full outline-none font-medium"
+                    style={{ background: glass.inputBg, borderRadius: 14, border: `1px solid ${glass.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 15, color: colors.textPrimary }}
                     placeholder="0.00"
                     type="number"
                     min="0"
@@ -2232,10 +2232,10 @@ export default function Dashboard() {
 
                 {/* Fee row */}
                 <div className="flex justify-between" style={{ paddingLeft: 2, paddingRight: 2 }}>
-                  <span className="font-medium italic" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>
+                  <span className="font-medium italic" style={{ color: glass.textDimmer, fontSize: 11 }}>
                     Frè Echanj: <span className="font-black" style={{ color: '#FF7A00' }}>6%</span>
                   </span>
-                  <span className="font-medium italic" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>
+                  <span className="font-medium italic" style={{ color: glass.textDimmer, fontSize: 11 }}>
                     To: <span className="font-black" style={{ color: '#FF7A00' }}>1 USD = {exchangeRate} HTG</span>
                   </span>
                 </div>
@@ -2244,7 +2244,7 @@ export default function Dashboard() {
                 {isGaming ? (
                   <>
                     <div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Chwazi Jwèt</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 10 }}>Chwazi Jwèt</span>
                       <div className="flex flex-wrap" style={{ gap: 8 }}>
                         {['Free Fire', 'PUBG Mobile', 'Call of Duty'].map(g => (
                           <button
@@ -2253,18 +2253,18 @@ export default function Dashboard() {
                             className="active:scale-95 transition-all"
                             style={financeDetails.gamePack === g
                               ? { paddingLeft: 14, paddingRight: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 14, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
-                              : { paddingLeft: 14, paddingRight: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 14, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
+                              : { paddingLeft: 14, paddingRight: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 14, background: glass.bg, border: `1px solid ${glass.border}` }}
                           >
-                            <span className="font-black" style={{ color: financeDetails.gamePack === g ? '#fff' : 'rgba(255,255,255,.55)', fontSize: 12 }}>{g}</span>
+                            <span className="font-black" style={{ color: financeDetails.gamePack === g ? '#fff' : glass.textDim, fontSize: 12 }}>{g}</span>
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>Player ID</span>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 8 }}>Player ID</span>
                       <input
-                        className="w-full outline-none font-medium text-white"
-                        style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14 }}
+                        className="w-full outline-none font-medium"
+                        style={{ background: glass.inputBg, borderRadius: 14, border: `1px solid ${glass.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14, color: colors.textPrimary }}
                         value={financeDetails.gameId}
                         onChange={(e) => setFinanceDetails({...financeDetails, gameId: e.target.value})}
                         placeholder="ID jwè ou (egz: 123456789)"
@@ -2274,12 +2274,12 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <div>
-                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 8 }}>
                       {isUsdt ? 'Adrès TRC20 Ou' : 'Email / Kont Ou'}
                     </span>
                     <input
-                      className="w-full outline-none font-medium text-white"
-                      style={{ background: 'rgba(255,255,255,.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,.09)', paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14 }}
+                      className="w-full outline-none font-medium"
+                      style={{ background: glass.inputBg, borderRadius: 14, border: `1px solid ${glass.border}`, paddingLeft: 16, paddingRight: 16, paddingTop: 13, paddingBottom: 13, fontSize: 14, color: colors.textPrimary }}
                       value={financeDetails.email}
                       onChange={(e) => setFinanceDetails({...financeDetails, email: e.target.value})}
                       placeholder={isUsdt ? 'Adrès TRC20 pou resevwa' : 'email@exemple.com'}
@@ -2291,7 +2291,7 @@ export default function Dashboard() {
 
                 {/* Upload box */}
                 <div>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 8 }}>
                     {financeType === 'SELL' ? 'Screenshot Tranzaksyon (opsyonèl)' : 'Screenshot Prèv Peman (obligatwa)'}
                   </span>
                   <button
@@ -2299,7 +2299,7 @@ export default function Dashboard() {
                     className="w-full flex flex-col items-center active:scale-95 transition-all"
                     style={financeReceipt
                       ? { borderRadius: 16, border: '1.5px solid rgba(34,197,94,.5)', padding: 24, gap: 8, background: 'rgba(34,197,94,.07)' }
-                      : { borderRadius: 16, border: '1.5px dashed rgba(255,255,255,.2)', padding: 24, gap: 8, background: 'rgba(255,255,255,.03)' }}
+                      : { borderRadius: 16, border: `1.5px dashed ${glass.border}`, padding: 24, gap: 8, background: glass.inputBg }}
                   >
                     {financeReceipt ? (
                       <>
@@ -2308,8 +2308,8 @@ export default function Dashboard() {
                       </>
                     ) : (
                       <>
-                        <Upload size={28} color="rgba(255,255,255,.35)" />
-                        <span className="font-black italic uppercase" style={{ color: 'rgba(255,255,255,.4)', fontSize: 11, letterSpacing: 0.5, textAlign: 'center' }}>Chwazi Screenshot la</span>
+                        <Upload size={28} color={glass.textDimmer} />
+                        <span className="font-black italic uppercase" style={{ color: glass.textDimmer, fontSize: 11, letterSpacing: 0.5, textAlign: 'center' }}>Chwazi Screenshot la</span>
                       </>
                     )}
                   </button>
@@ -2516,10 +2516,10 @@ export default function Dashboard() {
                               className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all"
                               style={btn.isActive
                                 ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', border: '1.5px solid #FF7A00' }
-                                : { background: 'rgba(255,255,255,.06)', border: '1.5px solid rgba(255,255,255,.1)', backdropFilter: 'blur(12px)' }}
+                                : { background: glass.bg, border: `1.5px solid ${glass.border}`, backdropFilter: 'blur(12px)' }}
                             >
                               {btn.key === 'info' && secretDetailsLoading
-                                ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: btn.isActive ? 'rgba(255,255,255,0.4)' : '#FF7A00', borderTopColor: 'transparent' }} />
+                                ? <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: btn.isActive ? glass.textDimmer : '#FF7A00', borderTopColor: 'transparent' }} />
                                 : btn.key === 'info' && showCardDetails
                                 ? <EyeOff size={22} color="#FFFFFF" />
                                 : btn.key === 'info'
@@ -2561,7 +2561,7 @@ export default function Dashboard() {
                       <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 16 }}>
                         <div className="flex justify-between items-center mb-4">
                           <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Detay Kat</p>
-                          <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color="rgba(255,255,255,.4)" /></button>
+                          <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color={glass.textDimmer} /></button>
                         </div>
                         {secretDetailsLoading ? (
                           <div className="flex flex-col gap-1 animate-pulse">
@@ -2580,10 +2580,10 @@ export default function Dashboard() {
                         ) : (
                           <div className="flex flex-col gap-1">
                             <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
-                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
+                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                               </div>
                             </div>
                             <div className="flex gap-1">
@@ -2597,10 +2597,10 @@ export default function Dashboard() {
                               </div>
                             </div>
                             <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
-                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
+                              <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                               <div className="flex items-center justify-between gap-2">
                                 <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
-                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
+                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                               </div>
                             </div>
                           </div>
@@ -2623,13 +2623,13 @@ export default function Dashboard() {
                         { label: 'ZIP',     value: CARD_BILLING.zip },
                         { label: 'Country', value: CARD_BILLING.country },
                       ] as const).map(({ label, value }, i, arr) => (
-                        <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
+                        <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${glass.borderSubtle}` : 'none' }}>
                           <div>
                             <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 2 }}>{label}</span>
                             <p className="font-bold text-[13px] text-white">{value}</p>
                           </div>
-                          <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: 'rgba(255,255,255,.05)' }}>
-                            <Copy size={13} color="rgba(255,255,255,.4)" />
+                          <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: glass.inputBg }}>
+                            <Copy size={13} color={glass.textDimmer} />
                           </button>
                         </div>
                       ))}
@@ -2748,12 +2748,12 @@ export default function Dashboard() {
                           <div className="oz-glass" style={{ borderRadius: 24, padding: 16 }}>
                             <div className="flex justify-between items-center mb-4">
                               <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Detay Kat</p>
-                              <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color="rgba(255,255,255,.4)" /></button>
+                              <button onClick={() => setShowCardDetails(false)}><EyeOff size={18} color={glass.textDimmer} /></button>
                             </div>
                             {secretDetailsLoading ? (
                               <div className="flex flex-col gap-1 animate-pulse">
                                 <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
-                                <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: 'rgba(255,255,255,.07)' }} /></div>
+                                <div className="flex gap-1"><div className="h-[52px] rounded-[12px] flex-1" style={{ background: glass.bgStrong }} /><div className="h-[52px] rounded-[12px] flex-1" style={{ background: glass.bgStrong }} /></div>
                                 <div className="h-[52px] rounded-[12px]" style={{ background: glass.bgStrong }} />
                               </div>
                             ) : secretDetailsFailed ? (
@@ -2767,7 +2767,7 @@ export default function Dashboard() {
                                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
@@ -2784,7 +2784,7 @@ export default function Dashboard() {
                                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nom sou Kat</span>
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardName || '————'}</p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color="rgba(255,255,255,.4)" /></button>
+                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardName || ''); alert('Nom kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                   </div>
                                 </div>
                               </div>
@@ -2812,7 +2812,7 @@ export default function Dashboard() {
                                 <p className="font-bold text-[13px] text-white">{value}</p>
                               </div>
                               <button onClick={() => copyToClipboard(value)} className="flex items-center justify-center rounded-[12px] active:scale-90 transition-all" style={{ width: 32, height: 32, background: glass.inputBg }}>
-                                <Copy size={13} color="rgba(255,255,255,.4)" />
+                                <Copy size={13} color={glass.textDimmer} />
                               </button>
                             </div>
                           ))}
@@ -2847,7 +2847,7 @@ export default function Dashboard() {
                       {/* Header */}
                       <div className="flex justify-between items-center mb-4">
                         <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">Recharge Kat</p>
-                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color="rgba(255,255,255,.5)" /></button>
+                        <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color={glass.textDim} /></button>
                       </div>
                       {/* Balance */}
                       <p className="font-medium text-[13px] mb-4" style={{ color: glass.textDim }}>
@@ -3052,8 +3052,8 @@ export default function Dashboard() {
             ) : (
               /* PROFILE VIEW */
               <div className="lg:max-w-[700px] lg:mx-auto">
-                {/* ── HERO CARD — always #0F121E, scrolls in-flow ── */}
-                <div className="bg-[#0F121E] rounded-2xl p-4 mt-4 mb-4">
+                {/* ── HERO CARD — uses glass.innerDark so it adapts with the theme ── */}
+                <div className="rounded-2xl p-4 mt-4 mb-4" style={{ background: glass.innerDark }}>
                   <div className="flex items-center gap-4">
                     <div className="relative flex-shrink-0">
                       {profilePhoto ? (
@@ -3067,7 +3067,7 @@ export default function Dashboard() {
                         onClick={() => profilePhotoInputRef.current?.click()}
                         disabled={profilePhotoUploading}
                         className="absolute flex items-center justify-center rounded-full transition disabled:opacity-60"
-                        style={{ width: 26, height: 26, bottom: -2, right: -2, backgroundColor: colors.accent, border: '2px solid #0F121E' }}
+                        style={{ width: 26, height: 26, bottom: -2, right: -2, backgroundColor: colors.accent, border: `2px solid ${glass.innerDark}` }}
                       >
                         {profilePhotoUploading
                           ? <div className="w-[10px] h-[10px] border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -3106,14 +3106,14 @@ export default function Dashboard() {
                               <Pencil size={10} />
                             </button>
                           </div>
-                          {user?.email && <p className="text-[11px] mt-[3px] truncate" style={{ color: 'rgba(255,255,255,0.45)' }}>{user.email}</p>}
+                          {user?.email && <p className="text-[11px] mt-[3px] truncate" style={{ color: glass.textDimmer }}>{user.email}</p>}
                           <div className="flex flex-row gap-1.5 mt-1.5 flex-wrap">
                             {user?.kyc?.status === 'APPROVED' ? (
                               <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.18)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', letterSpacing: 0.5 }}>✓ Verifye</span>
                             ) : user?.kyc?.status === 'PENDING' ? (
                               <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c', letterSpacing: 0.5 }}>⏳ Annatant</span>
                             ) : (
-                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5 }}>Pa Verifye</span>
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim, letterSpacing: 0.5 }}>Pa Verifye</span>
                             )}
                             {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
                               <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}44`, color: colors.accent, letterSpacing: 0.5 }}>⚡ Ajan</span>
@@ -3435,13 +3435,13 @@ export default function Dashboard() {
             </h1>
 
             {/* Segmented control */}
-            <div className="flex rounded-xl p-[3px] mb-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
+            <div className="flex rounded-xl p-[3px] mb-4" style={{ background: glass.bg, border: `1px solid ${glass.border}` }}>
               <button
                 onClick={() => setGcSection('gifts')}
                 className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
                 style={gcSection === 'gifts'
                   ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
-                  : { color: 'rgba(255,255,255,.45)' }}
+                  : { color: glass.textDimmer }}
               >
                 Gift Cards
               </button>
@@ -3450,7 +3450,7 @@ export default function Dashboard() {
                 className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
                 style={gcSection === 'airtime'
                   ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
-                  : { color: 'rgba(255,255,255,.45)' }}
+                  : { color: glass.textDimmer }}
               >
                 Airtime
               </button>
@@ -3466,9 +3466,9 @@ export default function Dashboard() {
                       <CheckCircle2 size={28} color="#FF7A00" />
                     </div>
                     <p className="font-black italic uppercase text-base tracking-tight text-white">{gcOrderResult.productName}</p>
-                    <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,.5)' }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
+                    <p className="text-sm mt-1" style={{ color: glass.textDim }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
                     {gcOrderResult.redeemCode ? (
-                      <div className="mt-4 rounded-[12px] px-4 py-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+                      <div className="mt-4 rounded-[12px] px-4 py-3" style={{ background: glass.bg, border: `1px solid ${glass.border}` }}>
                         <p className="font-black text-[#FF7A00] text-xl tracking-[0.1em] break-all">{gcOrderResult.redeemCode}</p>
                         <button onClick={() => copyToClipboard(gcOrderResult.redeemCode)} className="mt-3 flex items-center gap-2 mx-auto text-white px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
                           <Copy size={15} /> Kopye Kòd la
@@ -3477,12 +3477,12 @@ export default function Dashboard() {
                     ) : (
                       <p className="font-bold text-sm mt-3" style={{ color: '#FF7A00' }}>Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
                     )}
-                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: 'rgba(255,255,255,.4)' }}>Fèmen</button>
+                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: glass.textDimmer }}>Fèmen</button>
                   </div>
                 )}
 
                 {/* Products section title */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Pwodwi Disponib</span>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 10 }}>Pwodwi Disponib</span>
 
                 {gcLoading ? (
                   <div className="flex justify-center py-8">
@@ -3490,7 +3490,7 @@ export default function Dashboard() {
                   </div>
                 ) : gcProducts.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn pwodwi disponib kounye a.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -3506,7 +3506,7 @@ export default function Dashboard() {
                         {p.logoUrls?.[0] ? (
                           <img src={p.logoUrls[0]} alt={p.brand?.brandName ?? p.productName} className="w-full h-14 object-contain rounded-md mb-2" />
                         ) : (
-                          <div className="w-full h-14 rounded-md mb-2" style={{ background: 'rgba(255,255,255,.07)' }} />
+                          <div className="w-full h-14 rounded-md mb-2" style={{ background: glass.bgStrong }} />
                         )}
                         <p className="font-black italic uppercase text-[10px] tracking-[0.03em] text-center leading-tight mb-0.5 truncate w-full text-white">
                           {p.brand?.brandName ?? p.productName}
@@ -3520,10 +3520,10 @@ export default function Dashboard() {
                 )}
 
                 {/* Gift card order history */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Gift Cards</span>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Gift Cards</span>
                 {gcOrders.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn achte poko.</p>
+                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn achte poko.</p>
                   </div>
                 ) : (
                   gcOrders.map((o: any) => (
@@ -3535,16 +3535,16 @@ export default function Dashboard() {
                           {gcStatusLabel(o.status)}
                         </span>
                       </div>
-                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
+                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
                         ${parseFloat(o.unitPrice).toFixed(2)} · {parseFloat(o.htgPaid).toFixed(2)} HTG
                       </p>
                       {o.redeemCode && (
-                        <div className="rounded-[10px] px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
+                        <div className="rounded-[10px] px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                           <p className="font-black text-[#FF7A00] text-[14px] tracking-[0.1em]">{o.redeemCode}</p>
                           <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00] ml-2"><Copy size={14} /></button>
                         </div>
                       )}
-                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,.35)' }}>{formatTxDate(o.createdAt)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: glass.textDimmer }}>{formatTxDate(o.createdAt)}</p>
                     </div>
                   ))
                 )}
@@ -3561,18 +3561,18 @@ export default function Dashboard() {
                       <CheckCircle2 size={28} color="#22C55E" />
                     </div>
                     <p className="font-black italic uppercase text-base text-white">Kredi Voye!</p>
-                    <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,.5)' }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,.4)' }}>{atResult.operatorName}</p>
-                    <div className="mt-4 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.45)', display: 'block', marginBottom: 4 }}>Peye</span>
+                    <p className="text-sm mt-1" style={{ color: glass.textDim }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
+                    <p className="text-xs mt-0.5" style={{ color: glass.textDimmer }}>{atResult.operatorName}</p>
+                    <div className="mt-4 rounded-2xl p-4" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 4 }}>Peye</span>
                       <p className="font-black text-xl text-white">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
                     </div>
-                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: 'rgba(255,255,255,.4)' }}>Fèmen</button>
+                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: glass.textDimmer }}>Fèmen</button>
                   </div>
                 )}
 
                 {/* Operators section title */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 10 }}>Operatè</span>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 10 }}>Operatè</span>
 
                 {atOpLoading ? (
                   <div className="flex justify-center py-8">
@@ -3580,7 +3580,7 @@ export default function Dashboard() {
                   </div>
                 ) : atOperators.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn pwodwi disponib kounye a.</p>
+                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn pwodwi disponib kounye a.</p>
                   </div>
                 ) : (
                   atOperators.map((op: any) => (
@@ -3596,30 +3596,30 @@ export default function Dashboard() {
                       {op.logoUrls?.[0] ? (
                         <img src={op.logoUrls[0]} alt={op.name} className="w-11 h-11 rounded-lg object-contain mr-4 flex-shrink-0" />
                       ) : (
-                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ background: 'rgba(255,255,255,.08)' }} />
+                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ background: glass.bgStrong }} />
                       )}
                       <div className="flex-1 text-left">
                         <p className="font-black italic uppercase text-[12px] tracking-[0.03em] mb-0.5 text-white">{op.name}</p>
-                        <p className="text-[11px]" style={{ color: 'rgba(255,255,255,.45)' }}>
+                        <p className="text-[11px]" style={{ color: glass.textDimmer }}>
                           {op.denominationType === 'FIXED' && op.localFixedAmounts?.length
                             ? op.localFixedAmounts.map((a: number) => `${a} HTG`).join(' · ')
                             : `${op.minAmount ?? 0}–${op.maxAmount ?? '?'} HTG`}
                         </p>
                       </div>
-                      <span className="text-[22px] ml-3" style={{ color: 'rgba(255,255,255,.3)' }}>›</span>
+                      <span className="text-[22px] ml-3" style={{ color: glass.textDimmer }}>›</span>
                     </button>
                   ))
                 )}
 
                 {/* Airtime order history */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: 'rgba(255,255,255,.5)', display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Airtime</span>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Airtime</span>
                 {atOrdersLoading ? (
                   <div className="flex justify-center py-4">
                     <div className="w-6 h-6 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : atOrders.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: 'rgba(255,255,255,.45)' }}>Pa gen okenn achte poko.</p>
+                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn achte poko.</p>
                   </div>
                 ) : (
                   atOrders.map((o: any) => (
@@ -3631,13 +3631,13 @@ export default function Dashboard() {
                           {gcStatusLabel(o.status)}
                         </span>
                       </div>
-                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
+                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
                         {parseFloat(o.amount).toFixed(2)} HTG → {o.phoneNumber}
                       </p>
-                      <p className="text-[11px] mb-1" style={{ color: 'rgba(255,255,255,.45)' }}>
+                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
                         Debite: {parseFloat(o.htgPaid).toFixed(2)} HTG
                       </p>
-                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,.35)' }}>{formatTxDate(o.createdAt)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: glass.textDimmer }}>{formatTxDate(o.createdAt)}</p>
                     </div>
                   ))
                 )}
@@ -3653,21 +3653,22 @@ export default function Dashboard() {
               >
                 <div
                   className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
-                  style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
+                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
+                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
                   <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
                     {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
                   </p>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white"
+                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
                     style={{
-                      background: 'rgba(255,255,255,.05)',
-                      border: '1px solid rgba(255,255,255,.09)',
+                      background: glass.inputBg,
+                      border: `1px solid ${glass.border}`,
+                      color: colors.textPrimary,
                       opacity: !gcIsRange(gcSelectedProduct) ? 0.6 : 1,
                     }}
                     value={gcBuyAmount}
@@ -3675,7 +3676,7 @@ export default function Dashboard() {
                     readOnly={!gcIsRange(gcSelectedProduct)}
                   />
                   {gcIsRange(gcSelectedProduct) && (
-                    <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,.4)' }}>
+                    <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
                       Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
                     </p>
                   )}
@@ -3691,7 +3692,7 @@ export default function Dashboard() {
                     onClick={() => { if (!gcOrderLoading) setGcSelectedProduct(null); }}
                     disabled={gcOrderLoading}
                     className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
-                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
+                    style={{ background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
                   >
                     Anile
                   </button>
@@ -3708,26 +3709,26 @@ export default function Dashboard() {
               >
                 <div
                   className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
-                  style={{ background: 'rgba(14,16,26,.94)', borderTop: '1px solid rgba(255,255,255,.09)', backdropFilter: 'blur(28px)' }}
+                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 2 }} />
+                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
                   <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
                     {atSelectedOp.name}
                   </p>
 
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 12 }}>Nimewo Telefòn</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Nimewo Telefòn</span>
                   <input
                     type="tel"
                     inputMode="numeric"
                     placeholder="ex: 36001234"
                     value={atPhone}
                     onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white placeholder:text-white/30"
-                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
+                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none placeholder:text-white/30"
+                    style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
                   />
 
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 6, marginTop: 14 }}>Montan (HTG)</span>
+                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 14 }}>Montan (HTG)</span>
                   {atSelectedOp.denominationType === 'FIXED' && atSelectedOp.localFixedAmounts?.length > 0 ? (
                     <div className="flex flex-wrap gap-2 mt-1">
                       {atSelectedOp.localFixedAmounts.map((a: number) => (
@@ -3737,7 +3738,7 @@ export default function Dashboard() {
                           className="rounded-xl px-4 py-2 text-[13px] font-bold transition-all active:scale-95"
                           style={atAmount === a
                             ? { background: 'rgba(255,122,0,.15)', border: '1.5px solid rgba(255,122,0,.5)', color: '#FF7A00' }
-                            : { background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
+                            : { background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
                         >
                           {a} HTG
                         </button>
@@ -3750,10 +3751,10 @@ export default function Dashboard() {
                         inputMode="decimal"
                         value={atAmount ?? ''}
                         onChange={e => setAtAmount(parseFloat(e.target.value) || null)}
-                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none text-white"
-                        style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}
+                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
+                        style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
                       />
-                      <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,.4)' }}>
+                      <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
                         Min {atSelectedOp.minAmount} — Max {atSelectedOp.maxAmount} HTG
                       </p>
                     </>
@@ -3771,7 +3772,7 @@ export default function Dashboard() {
                     onClick={() => { if (!atLoading) setAtSelectedOp(null); }}
                     disabled={atLoading}
                     className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
-                    style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)', color: 'rgba(255,255,255,.5)' }}
+                    style={{ background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
                   >
                     Anile
                   </button>
