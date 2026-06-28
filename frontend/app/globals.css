@@ -52,6 +52,10 @@
   50%     { transform: translate(20px,28px); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Dashboard data-loading splash screen ── */
 @keyframes splashBreath {
   0%,100% { transform: scale(1); }
