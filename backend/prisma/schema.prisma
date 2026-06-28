@@ -57,9 +57,13 @@ model User {
   adminInvitationToken String?
   adminSetupComplete   Boolean @default(false)
 
-  adminSessions   AdminSession[]
-  giftCardOrders  GiftCardOrder[]
-  airtimeOrders   AirtimeOrder[]
+  adminSessions        AdminSession[]
+  giftCardOrders       GiftCardOrder[]
+  airtimeOrders        AirtimeOrder[]
+  merchantApplications MerchantApplication[]
+  ownedBusinesses      Business[]            @relation("OwnedBusinesses")
+  businessMemberships  BusinessMember[]      @relation("BusinessMemberships")
+  businessPayments     BusinessTransaction[] @relation("BusinessPayments")
 
   @@index([email])
   @@index([role])
@@ -423,6 +427,31 @@ enum CommissionType {
   KYC
 }
 
+enum BusinessTier {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum BusinessApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BusinessMemberRole {
+  OWNER
+  ACCOUNTANT
+  CASHIER
+}
+
+enum BusinessTransactionType {
+  PAYMENT_RECEIVED
+  WITHDRAWAL
+  TRANSFER_OUT
+  TOPUP
+}
+
 model AdminInvitation {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -462,15 +491,19 @@ model AdminSession {
 }
 
 model MerchantApplication {
-  id           String   @id @default(uuid())
+  id           String                    @id @default(uuid())
   businessName String
   email        String
   phone        String
   address      String
-  plan         String   @default("STARTER")
-  status       String   @default("PENDING")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  plan         String                    @default("STARTER")
+  tier         BusinessTier              @default(STARTER)
+  status       BusinessApplicationStatus @default(PENDING)
+  userId       String?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  user         User?                     @relation(fields: [userId], references: [id])
+  business     Business?
 }
 
 enum LiquidityMethod {
@@ -533,4 +566,71 @@ model LiquidityRequest {
 
   @@index([agentId])
   @@index([status])
+}
+
+model Business {
+  id            String                    @id @default(uuid())
+  businessName  String
+  category      String
+  tier          BusinessTier
+  status        BusinessApplicationStatus @default(PENDING)
+  ownerId       String
+  applicationId String                    @unique
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  owner         User                      @relation("OwnedBusinesses", fields: [ownerId], references: [id])
+  application   MerchantApplication       @relation(fields: [applicationId], references: [id])
+  wallet        BusinessWallet?
+  members       BusinessMember[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model BusinessWallet {
+  id           String                @id @default(uuid())
+  businessId   String                @unique
+  balance      Decimal               @default(0.00) @db.Decimal(18, 2)
+  currency     String                @default("HTG")
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  business     Business              @relation(fields: [businessId], references: [id])
+  transactions BusinessTransaction[]
+}
+
+model BusinessMember {
+  id         String             @id @default(uuid())
+  businessId String
+  userId     String
+  role       BusinessMemberRole
+  invitedAt  DateTime           @default(now())
+  acceptedAt DateTime?
+  createdAt  DateTime           @default(now())
+  business   Business           @relation(fields: [businessId], references: [id])
+  user       User               @relation("BusinessMemberships", fields: [userId], references: [id])
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+}
+
+model BusinessTransaction {
+  id               String                  @id @default(uuid())
+  businessWalletId String
+  type             BusinessTransactionType
+  amount           Decimal                 @db.Decimal(18, 2)
+  fee              Decimal                 @default(0.00) @db.Decimal(18, 2)
+  netAmount        Decimal                 @db.Decimal(18, 2)
+  reference        String                  @unique
+  status           TransactionStatus       @default(PENDING)
+  payerUserId      String?
+  description      String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  businessWallet   BusinessWallet          @relation(fields: [businessWalletId], references: [id])
+  payer            User?                   @relation("BusinessPayments", fields: [payerUserId], references: [id])
+
+  @@index([businessWalletId])
+  @@index([status])
+  @@index([createdAt])
 }

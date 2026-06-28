@@ -753,6 +753,25 @@ export class MailService {
     await this.send(email, '🏆 OZAMAPAY x Mondial 2026 — 5 000 HTG pou tèt ou dèmen!', html);
   }
 
+  async sendBusinessMemberInvitation(
+    email: string,
+    inviteeName: string,
+    businessName: string,
+    role: string,
+    dashboardUrl: string,
+  ): Promise<void> {
+    const html = this.wrap(
+      `Envitasyon pou rejwenn ${businessName} — OZAMAPAY Business`,
+      'Envitasyon Biznis',
+      this.p(`Bonjou ${inviteeName},`) +
+      this.p(`Ou envite pou rejwenn <strong>${businessName}</strong> sou OZAMAPAY Business an tan ke <strong>${role}</strong>.`) +
+      this.accentLine('Konekte nan kont OZAMAPAY ou pou aksepte envitasyon sa.') +
+      this.btn('Aksepte Envitasyon →', dashboardUrl),
+      '#FF6B00',
+    );
+    await this.send(email, `Envitasyon pou rejwenn ${businessName} — OZAMAPAY Business`, html);
+  }
+
   async sendPasswordReset(email: string, name: string, resetUrl: string): Promise<void> {
     const html = this.wrap(
       'Demann reset modpas — OZAMAPAY',

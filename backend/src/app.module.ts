@@ -22,6 +22,7 @@ import { GiftCardsModule } from './giftcards/giftcards.module';
 import { ReloadlyAuthModule } from './reloadly/reloadly-auth.module';
 import { AirtimeModule } from './airtime/airtime.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { BusinessModule } from './business/business.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { TrackingModule } from './tracking/tracking.module';
     HealthModule,
     SubscriptionModule,
     MerchantModule,
+    BusinessModule,
     GiftCardsModule,
     ReloadlyAuthModule,
     AirtimeModule,
