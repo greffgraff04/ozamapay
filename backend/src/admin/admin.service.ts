@@ -1030,4 +1030,85 @@ export class AdminService {
 
     return updatedTx;
   }
+
+  // ── BUSINESS ADMIN ────────────────────────────────────────────────────────
+
+  async getBusinessApplications(status?: string) {
+    return this.prisma.business.findMany({
+      where: status ? { status: status as any } : {},
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        wallet: { select: { balance: true } },
+        members: { select: { id: true } },
+        application: { select: { tier: true, phone: true, address: true, adminNote: true, createdAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async approveBusinessApplication(businessId: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      include: { owner: true },
+    });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+    if (business.status !== 'PENDING') throw new BadRequestException('Biznis sa a deja trete');
+
+    await this.prisma.$transaction([
+      this.prisma.business.update({ where: { id: businessId }, data: { status: 'APPROVED' } }),
+      this.prisma.merchantApplication.update({
+        where: { id: business.applicationId },
+        data: { status: 'APPROVED' },
+      }),
+    ]);
+
+    try {
+      await this.mailService.sendBusinessApproved(
+        business.owner.email,
+        business.owner.name || business.owner.email,
+        business.businessName,
+      );
+    } catch {}
+
+    return { success: true };
+  }
+
+  async rejectBusinessApplication(businessId: string, reason?: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      include: { owner: true },
+    });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+    if (business.status !== 'PENDING') throw new BadRequestException('Biznis sa a deja trete');
+
+    await this.prisma.$transaction([
+      this.prisma.business.update({ where: { id: businessId }, data: { status: 'REJECTED' } }),
+      this.prisma.merchantApplication.update({
+        where: { id: business.applicationId },
+        data: { status: 'REJECTED', adminNote: reason ?? null },
+      }),
+    ]);
+
+    try {
+      await this.mailService.sendBusinessRejected(
+        business.owner.email,
+        business.owner.name || business.owner.email,
+        business.businessName,
+        reason,
+      );
+    } catch {}
+
+    return { success: true };
+  }
+
+  async getAllBusinesses() {
+    return this.prisma.business.findMany({
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        wallet: { select: { balance: true } },
+        members: { select: { id: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

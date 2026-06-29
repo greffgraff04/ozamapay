@@ -500,6 +500,7 @@ model MerchantApplication {
   tier         BusinessTier              @default(STARTER)
   status       BusinessApplicationStatus @default(PENDING)
   userId       String?
+  adminNote    String?
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
   user         User?                     @relation(fields: [userId], references: [id])

@@ -9,9 +9,18 @@ import { Prisma, BusinessMemberRole, BusinessApplicationStatus } from '@prisma/c
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { v4 as uuidv4 } from 'uuid';
+import * as bcrypt from 'bcrypt';
 
-// ── Named constant — easy to tune ──────────────────────────────────────────
+// ── Named constants — easy to tune ────────────────────────────────────────
 const BUSINESS_WITHDRAW_FEE = 0.015; // 1.5%
+
+const BUSINESS_PAYMENT_FEE: Record<string, number> = {
+  STARTER:    0.025, // 2.5%
+  PRO:        0.020, // 2.0%
+  ENTERPRISE: 0.015, // 1.5%
+};
+
+const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -437,11 +446,109 @@ export class BusinessService {
     return this.prisma.businessMember.delete({ where: { id: memberId } });
   }
 
-  // ── TODO: Payment integration point ──────────────────────────────────────
-  // When a P2P transfer is made to a user who owns a Business, route the
-  // credit to their BusinessWallet instead of personal Wallet, and create a
-  // BusinessTransaction(type=PAYMENT_RECEIVED). This requires modifying
-  // wallet.service.ts#transferP2P to check if the recipient has an
-  // active (status=APPROVED) Business, and if so, credit the BusinessWallet.
-  // Implement in Phase 3 after admin approval flows are built.
+  // ── Public info (no auth) ─────────────────────────────────────────────────
+
+  async getPublicInfo(businessId: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, businessName: true, category: true, tier: true, status: true },
+    });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+    return business;
+  }
+
+  // ── Pay business (authenticated payer) ───────────────────────────────────
+
+  async payBusiness(payerId: string, businessId: string, amount: number, pin: string) {
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Montan invalid');
+    }
+
+    // Verify payer PIN
+    const payer = await this.prisma.user.findUnique({ where: { id: payerId } });
+    if (!payer) throw new NotFoundException('Itilizatè pa jwenn');
+    const pinValid = payer.transactionPin && await bcrypt.compare(pin, payer.transactionPin);
+    if (!pinValid) {
+      throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
+    }
+
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      include: { wallet: true },
+    });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+    if (business.status !== 'APPROVED') {
+      throw new ForbiddenException('Biznis sa a pa aktif pou kounye a');
+    }
+    if (!business.wallet) throw new NotFoundException('BusinessWallet pa jwenn');
+
+    const feeRate = BUSINESS_PAYMENT_FEE[business.tier] ?? BUSINESS_PAYMENT_FEE.STARTER;
+    const fee = this.round(amount * feeRate);
+    const netAmount = this.round(amount - fee);
+    const reference = `BPAY-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Check payer balance
+        const payerWallet = await tx.wallet.findUnique({ where: { userId: payerId } });
+        if (!payerWallet || Number(payerWallet.balance) < amount) {
+          throw new BadRequestException('Balans ensifizan');
+        }
+
+        // Debit payer personal wallet
+        await tx.wallet.update({
+          where: { userId: payerId },
+          data: { balance: { decrement: amount } },
+        });
+
+        // Credit business wallet with net amount
+        await tx.businessWallet.update({
+          where: { id: business.wallet!.id },
+          data: { balance: { increment: netAmount } },
+        });
+
+        // Credit fee to master wallet
+        if (fee > 0) {
+          await tx.wallet.update({
+            where: { userId: MASTER_ID },
+            data: { balance: { increment: fee } },
+          });
+        }
+
+        // BusinessTransaction record (business-side ledger)
+        await tx.businessTransaction.create({
+          data: {
+            businessWalletId: business.wallet!.id,
+            type: 'PAYMENT_RECEIVED',
+            amount,
+            fee,
+            netAmount,
+            reference,
+            status: 'COMPLETED',
+            payerUserId: payerId,
+            description: `Peman de ${payer.name || payer.email}`,
+          },
+        });
+
+        // Personal Transaction record so payer sees it in their history
+        const personalTx = await tx.transaction.create({
+          data: {
+            reference: `${reference}-P`,
+            senderWalletId: payerWallet.id,
+            amount,
+            fee,
+            netAmount,
+            type: 'TRANSFER',
+            status: 'COMPLETED',
+            method: 'OZAMAPAY_BUSINESS',
+            title: `Peman bay ${business.businessName}`,
+            description: `Ou peye ${amount} HTG bay biznis ${business.businessName}`,
+          },
+        });
+
+        return { success: true, reference, transaction: personalTx };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
 }

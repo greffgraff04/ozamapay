@@ -57,6 +57,12 @@ export default function AdminDashboard() {
   const [userRole, setUserRole] = useState('');
   const [roleStats, setRoleStats] = useState<any>(null);
 
+  // Business applications state
+  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [businessView, setBusinessView] = useState<'pending' | 'all'>('pending');
+  const [rejectModal, setRejectModal] = useState<{ id: string; name: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [agentPackage, setAgentPackage] = useState('STANDARD_AGENT');
@@ -120,7 +126,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes, bizRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
@@ -131,6 +137,7 @@ export default function AdminDashboard() {
         fetch(`${API}/admin/daily-code`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/sessions`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/activity-logs`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/businesses`, { headers: H() }).catch(() => null),
       ]);
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
@@ -143,6 +150,10 @@ export default function AdminDashboard() {
       setPendingTransactions(Array.isArray(pendingTxData) ? pendingTxData : []);
       const financeData = financeRes && financeRes.ok ? await financeRes.json() : [];
       setFinanceRequests(Array.isArray(financeData) ? financeData : []);
+      if (bizRes && bizRes.ok) {
+        const bizData = await bizRes.json();
+        setBusinesses(Array.isArray(bizData) ? bizData : []);
+      }
 
       if (invitationsRes && invitationsRes.ok) {
         const invData = await invitationsRes.json();
@@ -485,6 +496,7 @@ export default function AdminDashboard() {
     { id: 'transactions', label: 'Topup & Retrè Manuel', icon: FileText, badge: pendingTransactions.length || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
     { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
     { id: 'rates', label: 'Taux & Frè', icon: Activity, roles: ['ADMIN'] },
+    { id: 'businesses', label: 'Biznis & Komèsan', icon: Briefcase, badge: businesses.filter((b: any) => b.status === 'PENDING').length || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
     { id: 'equipe', label: 'Équipe', icon: Users2, roles: [] },
   ];
 
@@ -1708,6 +1720,153 @@ export default function AdminDashboard() {
           )}
 
           {/* ==================== TAB: ÉQUIPE ==================== */}
+          {/* ==================== TAB: BUSINESSES ==================== */}
+          {activeTab === 'businesses' && (
+            <div className="space-y-6">
+              {/* Header + view toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Biznis & Komèsan</h3>
+                  <p className="text-[9px] font-mono text-white/30 mt-0.5 uppercase tracking-wider">Apwouve, rejte, ak sivèye kont biznis yo</p>
+                </div>
+                <div className="flex gap-1 bg-white/[0.03] border border-white/[0.05] rounded-xl p-1">
+                  {(['pending', 'all'] as const).map(v => (
+                    <button key={v} onClick={() => setBusinessView(v)}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition ${businessView === v ? 'bg-[#FF6B00] text-white' : 'text-white/40 hover:text-white/70'}`}>
+                      {v === 'pending' ? `En Atant (${businesses.filter((b: any) => b.status === 'PENDING').length})` : 'Tout Biznis'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Applications list */}
+              <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/[0.03]">
+                        {['Biznis', 'Pwopriyetè', 'Nivo', 'Balans', 'Manm', 'Estati', 'Aksyon'].map(h => (
+                          <th key={h} className="px-5 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {businesses
+                        .filter((b: any) => businessView === 'all' || b.status === 'PENDING')
+                        .map((b: any) => (
+                        <tr key={b.id} className="border-b border-white/[0.01] hover:bg-white/[0.01] transition">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center font-black text-[#FF6B00] text-xs uppercase shrink-0">
+                                {b.businessName?.[0]}
+                              </div>
+                              <div>
+                                <p className="font-bold text-xs text-white/90 leading-tight">{b.businessName}</p>
+                                <p className="text-[9px] text-white/30 font-mono">{b.category}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <p className="font-bold text-xs text-white/70">{b.owner?.name || '—'}</p>
+                            <p className="text-[9px] font-mono text-white/30">{b.owner?.email}</p>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${
+                              b.tier === 'ENTERPRISE' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
+                              b.tier === 'PRO' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                              'bg-white/[0.03] border-white/[0.06] text-white/40'
+                            }`}>{b.tier}</span>
+                          </td>
+                          <td className="px-5 py-4 font-mono font-black text-xs text-[#FF6B00] italic">
+                            {Number(b.wallet?.balance || 0).toLocaleString('fr-FR')} HTG
+                          </td>
+                          <td className="px-5 py-4 text-xs text-white/40 font-mono">{b.members?.length || 0}</td>
+                          <td className="px-5 py-4">
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              b.status === 'APPROVED' ? 'bg-green-500/10 border border-green-500/20 text-green-400' :
+                              b.status === 'REJECTED' ? 'bg-red-500/10 border border-red-500/20 text-red-400' :
+                              'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400'
+                            }`}>{b.status}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            {b.status === 'PENDING' ? (
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${API}/admin/business-applications/${b.id}/approve`, { method: 'PATCH', headers: H() });
+                                      if (res.ok) { showToast(`✅ ${b.businessName} apwouve`); setBusinesses(prev => prev.map((x: any) => x.id === b.id ? { ...x, status: 'APPROVED' } : x)); }
+                                      else showToast('Erè pandan apwobasyon an', 'error');
+                                    } catch { showToast('Erè rezo', 'error'); }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-500 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition flex items-center gap-1">
+                                  <CheckCircle2 size={10} /> Apwouve
+                                </button>
+                                <button
+                                  onClick={() => { setRejectModal({ id: b.id, name: b.businessName }); setRejectReason(''); }}
+                                  className="bg-red-600/20 hover:bg-red-600/40 border border-red-500/20 text-red-400 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition flex items-center gap-1">
+                                  <XCircle size={10} /> Refize
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[8px] font-mono text-white/20 uppercase tracking-widest">Trete</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {businesses.filter((b: any) => businessView === 'all' || b.status === 'PENDING').length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-5 py-12 text-center">
+                            <Briefcase size={24} className="text-white/10 mx-auto mb-3" />
+                            <p className="text-white/20 text-xs font-mono">Pa gen biznis {businessView === 'pending' ? 'an atant' : 'pou kounye a'}</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Reject reason modal ── */}
+          {rejectModal && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-[#0A0B0F]/70 backdrop-blur-md">
+              <div className="bg-[#0D0E14] border border-white/[0.05] w-full max-w-sm rounded-2xl p-6 relative shadow-2xl">
+                <button onClick={() => setRejectModal(null)} className="absolute right-5 top-5 text-white/20 hover:text-white transition">
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl"><XCircle size={14} className="text-red-400" /></div>
+                  <div>
+                    <h3 className="font-black text-xs uppercase tracking-widest text-white/90">Refize Demande</h3>
+                    <p className="text-[9px] font-mono text-white/30 mt-0.5">{rejectModal.name}</p>
+                  </div>
+                </div>
+                <label className="text-[9px] font-bold uppercase text-white/30 tracking-widest mb-1.5 block">Rezon (opsyonèl)</label>
+                <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3}
+                  placeholder="Eksplike rezon refi a pou pwopriyetè a..."
+                  className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:border-red-500/30 text-white placeholder:text-white/10 transition resize-none mb-4" />
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${API}/admin/business-applications/${rejectModal.id}/reject`, {
+                        method: 'PATCH', headers: H(), body: JSON.stringify({ reason: rejectReason || undefined })
+                      });
+                      if (res.ok) {
+                        showToast(`Biznis ${rejectModal.name} refize`);
+                        setBusinesses(prev => prev.map((x: any) => x.id === rejectModal.id ? { ...x, status: 'REJECTED' } : x));
+                        setRejectModal(null);
+                      } else showToast('Erè pandan refi a', 'error');
+                    } catch { showToast('Erè rezo', 'error'); }
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition active:scale-[0.98]">
+                  Konfime Refi →
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'equipe' && isMaster && (
             <div className="space-y-6">
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -196,5 +196,46 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   async sendPromoMondiale() {
     return this.adminService.sendPromoEmail();
+  }
+
+  // ── BUSINESS ADMIN ────────────────────────────────────────────────────────
+
+  @Get('business-applications')
+  @UseGuards(CooGuard)
+  async getBusinessApplications(@Query('status') status?: string) {
+    return this.adminService.getBusinessApplications(status);
+  }
+
+  @Patch('business-applications/:businessId/approve')
+  @UseGuards(CooGuard)
+  async approveBusinessApplication(
+    @Param('businessId') businessId: string,
+    @Req() req: any,
+  ) {
+    const adminId = req.user?.id;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.approveBusinessApplication(businessId);
+    await this.adminService.logActivity(adminId, 'BUSINESS_APPROVED', `Business ${businessId} apwouve`, ip);
+    return result;
+  }
+
+  @Patch('business-applications/:businessId/reject')
+  @UseGuards(CooGuard)
+  async rejectBusinessApplication(
+    @Param('businessId') businessId: string,
+    @Body() body: { reason?: string },
+    @Req() req: any,
+  ) {
+    const adminId = req.user?.id;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.rejectBusinessApplication(businessId, body.reason);
+    await this.adminService.logActivity(adminId, 'BUSINESS_REJECTED', `Business ${businessId} refize`, ip);
+    return result;
+  }
+
+  @Get('businesses')
+  @UseGuards(CooGuard)
+  async getAllBusinesses() {
+    return this.adminService.getAllBusinesses();
   }
 }

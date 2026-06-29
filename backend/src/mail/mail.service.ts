@@ -753,6 +753,36 @@ export class MailService {
     await this.send(email, '🏆 OZAMAPAY x Mondial 2026 — 5 000 HTG pou tèt ou dèmen!', html);
   }
 
+  async sendBusinessApproved(email: string, name: string, businessName: string): Promise<void> {
+    const html = this.wrap(
+      `Biznis ${businessName} apwouve — OZAMAPAY Business`,
+      'Biznis Ou Apwouve! 🎉',
+      this.p(`Bonjou ${name},`) +
+      this.badge('KONFIME') + '<br/>' +
+      this.p(`Nou kontan enfòme ou ke <strong>${businessName}</strong> apwouve sou OZAMAPAY Business.`) +
+      this.p('Ou ka kounye a kòmanse resevwa peman, jere ekip ou, ak fè retrè sou Dashboard Biznis ou.') +
+      this.accentLine('Pou aktive peman, ale sou /business-dashboard epi konfigire profil biznis ou.') +
+      this.btn('Ale sou Dashboard Biznis →', `${this.frontendUrl}/business-dashboard`),
+      '#22C55E',
+    );
+    await this.send(email, `Biznis ${businessName} apwouve — OZAMAPAY Business`, html);
+  }
+
+  async sendBusinessRejected(email: string, name: string, businessName: string, reason?: string): Promise<void> {
+    const html = this.wrap(
+      `Demande biznis ${businessName} — OZAMAPAY Business`,
+      'Demande Biznis Ou Refize',
+      this.p(`Bonjou ${name},`) +
+      this.badge('REJTE') + '<br/>' +
+      this.p(`Malerezman, demande pou <strong>${businessName}</strong> pa kapab apwouve pou kounye a.`) +
+      (reason ? this.accentLine(`Rezon: ${reason}`) : '') +
+      this.p('Si ou gen kesyon oswa ou vle aplike ankò apre kèk tan, kontakte nou.') +
+      this.btn('Kontakte Sipò →', `mailto:contact@ozamapay.com`),
+      '#DC2626',
+    );
+    await this.send(email, `Demande biznis ${businessName} refize — OZAMAPAY Business`, html);
+  }
+
   async sendBusinessMemberInvitation(
     email: string,
     inviteeName: string,

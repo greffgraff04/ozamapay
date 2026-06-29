@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   BusinessService,
@@ -95,5 +96,16 @@ export class BusinessController {
     @Param('memberId') memberId: string,
   ) {
     return this.businessService.removeMember(req.user.id, id, memberId);
+  }
+
+  // POST /business/:id/pay — authenticated payer
+  @Post(':id/pay')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  payBusiness(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: { amount: number; pin: string },
+  ) {
+    return this.businessService.payBusiness(req.user.id, id, body.amount, body.pin);
   }
 }
