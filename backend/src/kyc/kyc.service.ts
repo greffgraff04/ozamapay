@@ -6,6 +6,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKycDto } from './dto/kyc.dto';
+import { COMMISSION_AGENT_KYC } from '../common/constants';
 
 @Injectable()
 export class KycService {
@@ -226,7 +227,7 @@ export class KycService {
 
       const referringAgent = user?.referredByAgent;
       if (referringAgent?.wallet) {
-        const agentCommission = 390;
+        const agentCommission = COMMISSION_AGENT_KYC;
 
         // Deduct commission from master wallet (comes out of platform's cut)
         if (masterId) {

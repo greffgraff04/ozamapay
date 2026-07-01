@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { COMMISSION_AGENT_KYC } from '../common/constants';
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
@@ -173,7 +174,7 @@ export class AdminService {
         const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
 
         if (kyc.agentId) {
-          const agentCommission = 405;
+          const agentCommission = COMMISSION_AGENT_KYC;
           const masterAmount = Math.round((feeInHTG - agentCommission) * 100) / 100;
 
           const agentRecord = await tx.agent.findUnique({

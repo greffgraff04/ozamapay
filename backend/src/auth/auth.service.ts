@@ -9,10 +9,11 @@ import {
 
 import { JwtService } from '@nestjs/jwt';
 
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 
 import { MailService } from '../mail/mail.service';
 import { TwoFactorService } from './two-factor.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -35,6 +36,8 @@ export class AuthService {
     private mailService: MailService,
 
     private twoFactorService: TwoFactorService,
+
+    private tokenBlacklist: TokenBlacklistService,
   ) {}
 
   // =========================
@@ -131,7 +134,7 @@ export class AuthService {
 
                 referredByAgentId,
 
-                //emailVerificationToken: verificationToken,
+                emailVerificationToken: verificationToken,
               },
             });
 
@@ -600,9 +603,13 @@ export class AuthService {
     return { message: 'Déconnecté avec succès' };
   }
 
+  invalidateToken(jti: string, exp: number): void {
+    this.tokenBlacklist.add(jti, exp);
+  }
+
   signToken(userId: string, email: string, role: string): string {
     const masterId = process.env.OZAMAPAY_MASTER_ID;
     const isMaster = masterId ? userId === masterId : false;
-    return this.jwtService.sign({ sub: userId, email, role, isMaster });
+    return this.jwtService.sign({ sub: userId, email, role, isMaster, jti: randomUUID() });
   }
 }

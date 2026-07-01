@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { RatesService } from './rates.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AdminGuard } from '../admin/admin.guard';
+import { CooGuard } from '../admin/coo.guard';
 
 @Controller('rates')
 export class RatesController {
@@ -13,7 +13,7 @@ export class RatesController {
   }
 
   @Post('update')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard, CooGuard)
   update(@Body() data: { key: string; value: number }) {
     return this.ratesService.updateRate(data.key, data.value);
   }

@@ -147,11 +147,12 @@ function AuthForm() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+        const redirect = searchParams.get('redirect');
         const role = data.user?.role;
         if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'SUPPORT') {
           window.location.href = '/admin';
         } else {
-          window.location.href = '/dashboard';
+          window.location.href = redirect || '/dashboard';
         }
       } else {
         setError(data.message || 'Email oswa modpas pa bon');
@@ -182,7 +183,7 @@ function AuthForm() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
-        window.location.href = '/dashboard';
+        window.location.href = searchParams.get('redirect') || '/dashboard';
       } else {
         setError(data.message || 'Yon erè te fèt');
       }

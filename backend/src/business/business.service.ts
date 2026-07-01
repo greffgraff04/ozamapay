@@ -394,7 +394,24 @@ export class BusinessService {
     return member;
   }
 
-  // ── 7. Accept invitation ──────────────────────────────────────────────────
+  // ── 7. Invitation preview (pou paj akseptasyon frontend la) ─────────────────
+
+  async getInvitationPreview(userId: string, memberId: string) {
+    const member = await this.prisma.businessMember.findUnique({
+      where: { id: memberId },
+      include: { business: { select: { businessName: true } } },
+    });
+    if (!member) throw new NotFoundException('Envitasyon pa jwenn');
+    if (member.userId !== userId) throw new ForbiddenException('Envitasyon sa a pa pou ou');
+    return {
+      businessName: member.business.businessName,
+      role: member.role,
+      invitedAt: member.invitedAt,
+      alreadyAccepted: !!member.acceptedAt,
+    };
+  }
+
+  // ── 8. Accept invitation ──────────────────────────────────────────────────
 
   async acceptInvitation(userId: string, memberId: string) {
     const member = await this.prisma.businessMember.findUnique({

@@ -13,10 +13,14 @@ import {
 } from 'passport-jwt';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private tokenBlacklist: TokenBlacklistService,
+  ) {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET environment variable is required');
@@ -36,7 +40,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     sub: string;
     email: string;
     role: string;
+    jti?: string;
+    exp: number;
   }) {
+    if (payload.jti && this.tokenBlacklist.has(payload.jti)) {
+      throw new UnauthorizedException('Token révoqué');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: {
         id: payload.sub,
@@ -63,6 +73,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       role: user.role,
       name: user.name,
+      jti: payload.jti,
+      exp: payload.exp,
 
       wallet: user.wallet,
 

@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -29,6 +30,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Log every non-4xx error so it appears in Render logs
     if (status >= 500) {
+      Sentry.captureException(exception);
       const err = exception instanceof Error ? exception : new Error(String(exception));
       this.logger.error(
         `${request.method} ${request.url} → ${status}: ${err.message}`,

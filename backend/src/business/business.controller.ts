@@ -42,6 +42,12 @@ export class BusinessController {
     return this.businessService.getMyBusinesses(req.user.id);
   }
 
+  // GET /business/members/:memberId/preview
+  @Get('members/:memberId/preview')
+  getInvitationPreview(@Request() req, @Param('memberId') memberId: string) {
+    return this.businessService.getInvitationPreview(req.user.id, memberId);
+  }
+
   // POST /business/members/:memberId/accept
   // Note: this route must be declared before :id to avoid param collision
   @Post('members/:memberId/accept')

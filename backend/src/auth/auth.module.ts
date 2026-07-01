@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { TwoFactorService } from './two-factor.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 import { AuthController } from './auth.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
@@ -19,7 +20,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: {
-        expiresIn: '7d',
+        expiresIn: '24h',
       },
     }),
   ],
@@ -27,12 +28,14 @@ import { GoogleStrategy } from './strategies/google.strategy';
   providers: [
     AuthService,
     TwoFactorService,
+    TokenBlacklistService,
     JwtStrategy,
     GoogleStrategy,
   ],
   exports: [
     AuthService,
     TwoFactorService,
+    TokenBlacklistService,
     JwtStrategy,
     JwtModule,
   ],

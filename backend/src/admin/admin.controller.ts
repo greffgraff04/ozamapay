@@ -31,7 +31,7 @@ export class AdminController {
   }
 
   @Get('agents')
-  @UseGuards(AgentAccessGuard)
+  @UseGuards(CooGuard)
   async getAllAgents() {
     return this.adminService.getAllAgents();
   }
@@ -65,7 +65,7 @@ export class AdminController {
   }
 
   @Post('agents/:agentId/topup')
-  @UseGuards(AgentAccessGuard)
+  @UseGuards(CooGuard)
   async adminTopupAgent(
     @Param('agentId') agentId: string,
     @Body() body: { amount: number }
@@ -80,29 +80,6 @@ export class AdminController {
     @Body() body: { isSuspended: boolean }
   ) {
     return this.adminService.suspendUser(userId, body.isSuspended);
-  }
-
-  @Get('liquidity-requests')
-  async getLiquidityRequests() {
-    return this.adminService.getLiquidityRequests();
-  }
-
-  @Patch('liquidity-requests/:id/approve')
-  @UseGuards(AgentAccessGuard)
-  async approveLiquidityRequest(
-    @Param('id') id: string,
-    @Body() body: { adminNote?: string },
-  ) {
-    return this.adminService.approveLiquidityRequest(id, body.adminNote);
-  }
-
-  @Patch('liquidity-requests/:id/reject')
-  @UseGuards(AgentAccessGuard)
-  async rejectLiquidityRequest(
-    @Param('id') id: string,
-    @Body() body: { adminNote?: string },
-  ) {
-    return this.adminService.rejectLiquidityRequest(id, body.adminNote);
   }
 
   @Get('finance-requests')

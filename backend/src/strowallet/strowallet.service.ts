@@ -233,31 +233,54 @@ export class StrowalletService {
       );
     }
 
-    // Debi total (amount + serviceFee + ozamapayFee) — voye amount sèlman bay Strowallet
+    // ── Etap 1: Debi wallet sèlman (transaction 1) ──────────────────────────
     await this.prisma.$transaction(async (tx) => {
       await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: totalHtg } },
       });
+    });
 
-      // Apèl Strowallet — amount sèlman, pa gen frè
+    // ── Etap 2: Apèl HTTP Strowallet DEYÒ transaction ────────────────────────
+    try {
       await this.nfcPost('fund-withdraw-nfccard', {
         card_id: card.cardId,
         amount: String(amountUsd),
         type: 'fund',
       });
+    } catch (err) {
+      // ── Etap 3: Strowallet echwe → renmbi wallet (NOUVO transaction) ────────
+      await this.prisma.$transaction(async (tx) => {
+        await tx.wallet.update({
+          where: { userId },
+          data: { balance: { increment: totalHtg } },
+        });
+        await tx.transaction.create({
+          data: {
+            senderWalletId: wallet.id,
+            type: 'CARD',
+            amount: totalHtg,
+            netAmount: Math.ceil(amountUsd * exchangeRate),
+            fee: Math.round((serviceFeeUsd + ozamapayFeeUsd) * exchangeRate * 100) / 100,
+            status: 'FAILED',
+            description: `Recharge kat NFC $${amountUsd} ECHWE — renmbi otomatik fèt`,
+            reference: `CARD-FUND-FAIL-${card.cardId}-${Date.now()}`,
+          },
+        });
+      });
+      throw err;
+    }
 
+    // ── Etap 4: Strowallet siksè → update VirtualCard balance (NOUVO transaction) ──
+    await this.prisma.$transaction(async (tx) => {
       await tx.virtualCard.update({
         where: { userId },
         data: { balance: { increment: amountUsd } },
       });
-
-      // Kredi frè OZAMAPAY nan master wallet
       await tx.wallet.update({
         where: { userId: this.MASTER_ID },
         data: { balance: { increment: ozamapayFeeHtg } },
       });
-
       await tx.transaction.create({
         data: {
           senderWalletId: wallet.id,

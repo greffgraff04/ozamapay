@@ -29,7 +29,7 @@ model User {
   notifications   Notification[]
   serviceRequests ServiceRequest[]
   topups          TopUpRequest[]
-  virtualCard     VirtualCard?
+  virtualCards    VirtualCard[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
   emailVerified Boolean @default(false)
@@ -324,7 +324,7 @@ model Rate {
 
 model VirtualCard {
   id        String     @id @default(uuid())
-  userId    String     @unique
+  userId    String
   cardId    String     @unique
   cardName  String?
   last4     String?

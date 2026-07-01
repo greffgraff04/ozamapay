@@ -45,10 +45,21 @@ export class AuthController {
     return this.authService.login(dto, ip, userAgent);
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@Req() req: any) {
+    const { jti, exp } = req.user;
+    if (jti && exp) this.authService.invalidateToken(jti, exp);
+    return { message: 'Dekonekte avèk siksè' };
+  }
+
   @Post('admin/logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async adminLogout(@Req() req: any) {
+    const { jti, exp } = req.user;
+    if (jti && exp) this.authService.invalidateToken(jti, exp);
     const userId = req.user?.id || req.user?.sub;
     return this.authService.logoutAdmin(userId);
   }

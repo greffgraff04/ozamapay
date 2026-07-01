@@ -5,7 +5,7 @@ export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
     const role = req.user?.role;
-    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && role !== 'AGENT' && role !== 'SUPPORT') {
+    if (role !== 'ADMIN' && role !== 'SUPER_ADMIN' && role !== 'SUPPORT') {
       throw new ForbiddenException('Aksè refize — Admin sèlman');
     }
     return true;
