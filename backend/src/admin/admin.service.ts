@@ -129,7 +129,7 @@ export class AdminService {
       // 3. Si yo apwouve l, n ap debite frè KYC a epi aktive Ajan an
       if (status === 'APPROVED') {
         const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
-        const currentRate = Number(rateEntry?.value || 140);
+        const currentRate = Number(rateEntry?.value || 135);
         const feeInHTG = 25 * currentRate;
 
         const userWallet = await tx.wallet.findUnique({ where: { userId: kyc.userId } });
