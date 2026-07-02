@@ -64,6 +64,12 @@ export class AdminController {
     return result;
   }
 
+  @Patch('agents/:agentId/activate')
+  @UseGuards(CooGuard)
+  async activateAgent(@Param('agentId') agentId: string) {
+    return this.adminService.activateAgent(agentId);
+  }
+
   @Patch('agents/:agentId/package')
   @UseGuards(CooGuard)
   async updateAgentPackage(

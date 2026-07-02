@@ -315,6 +315,17 @@ export class AdminService {
     });
   }
 
+  async activateAgent(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
+    if (!agent) throw new NotFoundException('Ajan sa a pa egziste');
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.agent.update({ where: { id: agentId }, data: { status: 'ACTIVE' } });
+      await tx.user.update({ where: { id: agent.userId }, data: { role: 'AGENT' } });
+      return { message: 'Ajan aktive avèk siksè' };
+    });
+  }
+
   async updateAgentPackage(agentId: string, body: { packageType?: string; customCommission?: number; maxLimit?: number }) {
     const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
     if (!agent) throw new NotFoundException('Ajan sa a pa egziste');

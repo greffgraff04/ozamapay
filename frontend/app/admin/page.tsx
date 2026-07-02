@@ -286,33 +286,20 @@ export default function AdminDashboard() {
   };
 
   // ================================================================
-  // KORIJE: VALIDE KOCK / REVIEW POU CHANJE STATUT AN NAN PRISMA
-  // ================================================================
   const handleApproveAgent = async (agentObj: any) => {
     try {
-      // Nou rale KYC ID ki anndan objè ajan an depi nan relasyon NestJS la
-      const kycId = agentObj.raw?.user?.kyc?.id;
-
-      if (!kycId) {
-        showToast('Ajan sa a pa gen okenn dokiman KYC ki an pant', 'error');
-        return;
-      }
-
-      // Nou deklanche wout lejitim NestJS la ki se PATCH /admin/kyc/:id/review
-      const res = await fetch(`${API}/admin/kyc/${kycId}/review`, {
-        method: 'PATCH', 
+      const res = await fetch(`${API}/admin/agents/${agentObj.id}/activate`, {
+        method: 'PATCH',
         headers: H(),
-        body: JSON.stringify({ status: 'APPROVED' })
       });
-
       if (res.ok) {
-        showToast(`✅ Ajan ak KYC apwouve nèt nan Prisma Studio!`);
+        showToast('✅ Ajan aktive avèk siksè!');
         await fetchData();
-      } else { 
-        showToast('Erè nan transmisyon estati a bay baz de done a', 'error'); 
+      } else {
+        showToast('Erè nan aktivasyon ajan an', 'error');
       }
-    } catch (e) { 
-      showToast('Koneksyon echwe', 'error'); 
+    } catch (e) {
+      showToast('Koneksyon echwe', 'error');
     }
   };
 
