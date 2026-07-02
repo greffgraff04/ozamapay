@@ -315,6 +315,26 @@ export class AdminService {
     });
   }
 
+  async updateAgentPackage(agentId: string, body: { packageType?: string; customCommission?: number; maxLimit?: number }) {
+    const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
+    if (!agent) throw new NotFoundException('Ajan sa a pa egziste');
+
+    const levelMap: Record<string, 'BRONZE' | 'SILVER' | 'GOLD'> = {
+      STANDARD_AGENT: 'BRONZE',
+      VIP_AGENCE: 'SILVER',
+      MASTER_NODE: 'GOLD',
+    };
+
+    return this.prisma.agent.update({
+      where: { id: agentId },
+      data: {
+        ...(body.packageType && levelMap[body.packageType] && { level: levelMap[body.packageType] }),
+        ...(body.customCommission !== undefined && { commissionRate: body.customCommission }),
+        ...(body.maxLimit !== undefined && { dailyLimit: body.maxLimit }),
+      },
+    });
+  }
+
   async adminTopupAgent(agentId: string, amount: number) {
     if (amount <= 0) throw new BadRequestException('Kantite lajan an dwe pi gwo pase 0 HTG');
 

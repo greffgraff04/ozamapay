@@ -64,6 +64,15 @@ export class AdminController {
     return result;
   }
 
+  @Patch('agents/:agentId/package')
+  @UseGuards(CooGuard)
+  async updateAgentPackage(
+    @Param('agentId') agentId: string,
+    @Body() body: { packageType?: string; customCommission?: number; maxLimit?: number },
+  ) {
+    return this.adminService.updateAgentPackage(agentId, body);
+  }
+
   @Post('agents/:agentId/topup')
   @UseGuards(CooGuard)
   async adminTopupAgent(
