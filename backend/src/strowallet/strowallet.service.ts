@@ -274,7 +274,7 @@ export class StrowalletService {
     // ── Etap 4: Strowallet siksè → update VirtualCard balance (NOUVO transaction) ──
     await this.prisma.$transaction(async (tx) => {
       await tx.virtualCard.update({
-        where: { userId },
+        where: { cardId: card.cardId },
         data: { balance: { increment: amountUsd } },
       });
       await tx.wallet.update({
@@ -319,7 +319,7 @@ export class StrowalletService {
       const liveBalance = parseFloat(data?.response?.card_detail?.balance ?? data?.data?.balance);
       if (!isNaN(liveBalance)) {
         return await this.prisma.virtualCard.update({
-          where: { userId },
+          where: { cardId: card.cardId },
           data: { balance: liveBalance },
         });
       }
@@ -342,7 +342,7 @@ export class StrowalletService {
     });
 
     await this.prisma.virtualCard.update({
-      where: { userId },
+      where: { cardId: card.cardId },
       data: { status: 'FROZEN' },
     });
 
@@ -359,7 +359,7 @@ export class StrowalletService {
     });
 
     await this.prisma.virtualCard.update({
-      where: { userId },
+      where: { cardId: card.cardId },
       data: { status: 'ACTIVE' },
     });
 

@@ -161,15 +161,14 @@ async function processAccount(acc: AccountSeed): Promise<StepResult[]> {
       continue;
     }
 
-    // Tcheke kontrènt userId @unique — 1 sèl kat pou yon itilizatè
-    const byUserId = await prisma.virtualCard.findUnique({ where: { userId } });
+    // Tcheke si itilizatè deja gen yon kat ak menm cardId
+    const byUserId = await prisma.virtualCard.findFirst({ where: { userId } });
     if (byUserId) {
       results.push({
         label: `VirtualCard ${card.cardId.slice(0, 8)}… ($${card.balance})`,
-        status: '✗',
-        detail: `BLOKE — userId @unique deja pran pa kat ${byUserId.cardId.slice(0, 8)}… Bezwen migrasyon pou retire @unique.`,
+        status: '⚠',
+        detail: `Itilizatè deja gen kat ${byUserId.cardId.slice(0, 8)}… — ap kreye yon dezyèm kat.`,
       });
-      continue;
     }
 
     try {
