@@ -91,7 +91,7 @@ export class StrowalletService {
 
   async createAndFundCard(userId: string, amountUsd: number) {
     // Verifye pa gen kat deja
-    const existing = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const existing = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (existing) throw new BadRequestException('Ou genyen yon kat vityèl deja');
 
     // Jwenn done itilizatè
@@ -196,7 +196,7 @@ export class StrowalletService {
   // ─── 2. SECRET DETAILS (nimewo konplè, CVV, dat ekspirasyon) ────────────────
 
   async getCardSecretDetails(userId: string) {
-    const virtualCard = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const virtualCard = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!virtualCard) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
     const data = await this.nfcGet('fetch-nfccard-detail', { card_id: virtualCard.cardId });
@@ -215,7 +215,7 @@ export class StrowalletService {
   // ─── 3. FUND CARD (recharje) ─────────────────────────────────────────────────
 
   async fundVirtualCard(userId: string, amountUsd: number) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
     if (card.status !== 'ACTIVE') throw new BadRequestException('Kat ou a pa aktif');
 
@@ -226,7 +226,7 @@ export class StrowalletService {
     const totalHtg = Math.ceil(totalUsd * exchangeRate);
     const ozamapayFeeHtg = Math.round(ozamapayFeeUsd * exchangeRate * 100) / 100;
 
-    const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+    const wallet = await this.prisma.wallet.findFirst({ where: { userId } });
     if (!wallet || Number(wallet.balance) < totalHtg) {
       throw new BadRequestException(
         `Balans ennsifizan. Ou bezwen ${totalHtg} HTG (recharge $${amountUsd} + frè sèvis $${serviceFeeUsd.toFixed(2)} + OZAMAPAY $${ozamapayFeeUsd.toFixed(2)})`
@@ -301,7 +301,7 @@ export class StrowalletService {
   // ─── 4. CARD HISTORY ─────────────────────────────────────────────────────────
 
   async getCardHistory(userId: string) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!card) return [];
 
     const data = await this.nfcGet('fetch-nfccard-history', { card_id: card.cardId });
@@ -311,7 +311,7 @@ export class StrowalletService {
   // ─── 5. LOCAL DATA (with live balance sync) ──────────────────────────────────
 
   async getMyCardLocalData(userId: string) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!card) return null;
 
     try {
@@ -333,7 +333,7 @@ export class StrowalletService {
   // ─── 6. FREEZE / UNFREEZE ────────────────────────────────────────────────────
 
   async freezeCard(userId: string) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
     await this.nfcGet('freezeactivate-nfc', {
@@ -350,7 +350,7 @@ export class StrowalletService {
   }
 
   async unfreezeCard(userId: string) {
-    const card = await this.prisma.virtualCard.findUnique({ where: { userId } });
+    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
 
     await this.nfcGet('freezeactivate-nfc', {
