@@ -63,6 +63,11 @@ export default function AdminDashboard() {
   const [rejectModal, setRejectModal] = useState<{ id: string; name: string } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Business withdrawals (MonCash/Bank) state
+  const [businessWithdrawals, setBusinessWithdrawals] = useState<any[]>([]);
+  const [bizWdRejectModal, setBizWdRejectModal] = useState<{ id: string; name: string } | null>(null);
+  const [bizWdRejectReason, setBizWdRejectReason] = useState('');
+
   // Jesyon Ajan ak Packages
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [agentPackage, setAgentPackage] = useState('STANDARD_AGENT');
@@ -126,7 +131,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes, bizRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes, bizRes, bizWdRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
@@ -138,6 +143,7 @@ export default function AdminDashboard() {
         fetch(`${API}/admin/sessions`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/activity-logs`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/businesses`, { headers: H() }).catch(() => null),
+        fetch(`${API}/admin/business-withdrawals/pending`, { headers: H() }).catch(() => null),
       ]);
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
@@ -153,6 +159,10 @@ export default function AdminDashboard() {
       if (bizRes && bizRes.ok) {
         const bizData = await bizRes.json();
         setBusinesses(Array.isArray(bizData) ? bizData : []);
+      }
+      if (bizWdRes && bizWdRes.ok) {
+        const bizWdData = await bizWdRes.json();
+        setBusinessWithdrawals(Array.isArray(bizWdData) ? bizWdData : []);
       }
 
       if (invitationsRes && invitationsRes.ok) {
@@ -484,6 +494,7 @@ export default function AdminDashboard() {
     { id: 'finance', label: 'Finance / Exchange', icon: TrendingUp, badge: pendingFinanceCount || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
     { id: 'rates', label: 'Taux & Frè', icon: Activity, roles: ['ADMIN'] },
     { id: 'businesses', label: 'Biznis & Komèsan', icon: Briefcase, badge: businesses.filter((b: any) => b.status === 'PENDING').length || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
+    { id: 'business-withdrawals', label: 'Retrè Biznis', icon: Banknote, badge: businessWithdrawals.length || undefined, roles: ['ADMIN', 'SUPER_ADMIN'] },
     { id: 'equipe', label: 'Équipe', icon: Users2, roles: [] },
   ];
 
@@ -1812,6 +1823,149 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== TAB: BUSINESS WITHDRAWALS ==================== */}
+          {activeTab === 'business-withdrawals' && (
+            <div className="space-y-6">
+              <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl overflow-hidden">
+                <div className="p-6 border-b border-white/[0.03] flex items-center justify-between">
+                  <div>
+                    <h3 className="font-black text-xs uppercase tracking-widest text-white/80">
+                      {businessWithdrawals.length} Retrè Biznis An Atant
+                    </h3>
+                    <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mt-0.5">
+                      Trete retrè MonCash/Bank pou biznis yo (pwosesis manyèl)
+                    </p>
+                  </div>
+                  {businessWithdrawals.length > 0 && (
+                    <span className="bg-[#FF6B00] text-white text-[9px] font-black px-2.5 py-1 rounded-lg">
+                      {businessWithdrawals.length} an pant
+                    </span>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-white/[0.03]">
+                        {['Biznis', 'Pwopriyetè', 'Montan', 'Metòd', 'Dat Soumisyon', 'Estati', 'Aksyon'].map(h => (
+                          <th key={h} className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/30">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {businessWithdrawals.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-16 text-white/20 text-xs font-mono uppercase tracking-widest">
+                            Pa gen retrè biznis an atant
+                          </td>
+                        </tr>
+                      ) : (
+                        businessWithdrawals.map((w: any) => (
+                          <tr key={w.id} className="border-b border-white/[0.01] hover:bg-white/[0.01] transition">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center font-black text-[#FF6B00] text-xs uppercase">
+                                  {w.businessName?.[0]}
+                                </div>
+                                <span className="font-bold text-xs text-white/90">{w.businessName}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-xs text-white/70">{w.owner?.name || '—'}</p>
+                              <p className="text-[9px] font-mono text-white/30">{w.owner?.email}</p>
+                            </td>
+                            <td className="px-6 py-4 font-mono font-black text-xs text-[#FF6B00] italic">
+                              {Number(w.amount).toLocaleString('fr-FR')} HTG
+                              <p className="text-[8px] text-white/30 font-mono normal-case">net {Number(w.netAmount).toLocaleString('fr-FR')} HTG</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[8px] font-mono font-black px-2 py-0.5 rounded-md bg-white/[0.03] border border-white/[0.05] text-white/60 uppercase">
+                                {w.method}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-white/30 text-[9px] font-mono">
+                              {new Date(w.submittedAt).toLocaleString('fr-FR')}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md bg-[#FF6B00]/10 text-[#FF6B00]">
+                                ANNATANT
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${API}/admin/business-withdrawals/${w.id}/approve`, { method: 'PATCH', headers: H() });
+                                      const data = await res.json();
+                                      if (res.ok) { showToast(`✅ Retrè ${w.businessName} apwouve`); await fetchData(); }
+                                      else showToast(data.message || 'Erè apwobasyon', 'error');
+                                    } catch { showToast('Erè rezo', 'error'); }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-500 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition flex items-center gap-1"
+                                >
+                                  <CheckCircle2 size={10} /> Apwouve
+                                </button>
+                                <button
+                                  onClick={() => { setBizWdRejectModal({ id: w.id, name: w.businessName }); setBizWdRejectReason(''); }}
+                                  className="bg-red-600/20 hover:bg-red-600/40 border border-red-500/20 text-red-400 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition flex items-center gap-1"
+                                >
+                                  <XCircle size={10} /> Rejte
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Business withdrawal reject reason modal ── */}
+          {bizWdRejectModal && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-[#0A0B0F]/70 backdrop-blur-md">
+              <div className="bg-[#0D0E14] border border-white/[0.05] w-full max-w-sm rounded-2xl p-6 relative shadow-2xl">
+                <button onClick={() => setBizWdRejectModal(null)} className="absolute right-5 top-5 text-white/20 hover:text-white transition">
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl"><XCircle size={14} className="text-red-400" /></div>
+                  <div>
+                    <h3 className="font-black text-xs uppercase tracking-widest text-white/90">Rejte Retrè</h3>
+                    <p className="text-[9px] font-mono text-white/30 mt-0.5">{bizWdRejectModal.name}</p>
+                  </div>
+                </div>
+                <label className="text-[9px] font-bold uppercase text-white/30 tracking-widest mb-1.5 block">Rezon (opsyonèl)</label>
+                <textarea value={bizWdRejectReason} onChange={e => setBizWdRejectReason(e.target.value)} rows={3}
+                  placeholder="Eksplike rezon rejè a pou pwopriyetè a..."
+                  className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:border-red-500/30 text-white placeholder:text-white/10 transition resize-none mb-4" />
+                <p className="text-[9px] text-white/20 font-mono mb-4">Lajan an ap retounen otomatikman sou wallet biznis la.</p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${API}/admin/business-withdrawals/${bizWdRejectModal.id}/reject`, {
+                        method: 'PATCH', headers: H(), body: JSON.stringify({ reason: bizWdRejectReason || undefined })
+                      });
+                      if (res.ok) {
+                        showToast(`Retrè ${bizWdRejectModal.name} rejte — lajan retounen`);
+                        setBizWdRejectModal(null);
+                        await fetchData();
+                      } else {
+                        const data = await res.json().catch(() => ({}));
+                        showToast(data.message || 'Erè pandan rejè a', 'error');
+                      }
+                    } catch { showToast('Erè rezo', 'error'); }
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition active:scale-[0.98]">
+                  Konfime Rejè →
+                </button>
               </div>
             </div>
           )}

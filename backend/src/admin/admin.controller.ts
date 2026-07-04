@@ -230,4 +230,36 @@ export class AdminController {
   async getAllBusinesses() {
     return this.adminService.getAllBusinesses();
   }
+
+  // ── BUSINESS WITHDRAWALS (MonCash/Bank manual processing) ─────────────────
+
+  @Get('business-withdrawals/pending')
+  @UseGuards(CooGuard)
+  async getPendingBusinessWithdrawals() {
+    return this.adminService.getPendingBusinessWithdrawals();
+  }
+
+  @Patch('business-withdrawals/:id/approve')
+  @UseGuards(CooGuard)
+  async approveBusinessWithdrawal(@Param('id') id: string, @Req() req: any) {
+    const adminId = req.user?.id;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.approveBusinessWithdrawal(id);
+    await this.adminService.logActivity(adminId, 'BUSINESS_WITHDRAWAL_APPROVED', `Retrè biznis ${id} apwouve`, ip);
+    return result;
+  }
+
+  @Patch('business-withdrawals/:id/reject')
+  @UseGuards(CooGuard)
+  async rejectBusinessWithdrawal(
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+    @Req() req: any,
+  ) {
+    const adminId = req.user?.id;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.rejectBusinessWithdrawal(id, body.reason);
+    await this.adminService.logActivity(adminId, 'BUSINESS_WITHDRAWAL_REJECTED', `Retrè biznis ${id} rejte${body.reason ? ': ' + body.reason : ''}`, ip);
+    return result;
+  }
 }

@@ -333,30 +333,44 @@ export class BusinessService {
       );
     }
 
-    // MONCASH or BANK — manual admin processing
-    const current = await this.prisma.businessWallet.findUnique({
-      where: { businessId },
-    });
-    if (!current || Number(current.balance) < amount) {
-      throw new BadRequestException('Balans biznis ensifizan');
-    }
+    // MONCASH or BANK — manual admin processing.
+    // Reserve the full amount now (mirrors PERSONAL_WALLET) so admin
+    // approve/reject later can settle or refund without ever creating or
+    // destroying balance: approve credits the fee to master, reject
+    // refunds this same amount back to the business wallet.
+    return this.prisma.$transaction(
+      async (tx) => {
+        const current = await tx.businessWallet.findUnique({
+          where: { businessId },
+        });
+        if (!current || Number(current.balance) < amount) {
+          throw new BadRequestException('Balans biznis ensifizan');
+        }
 
-    const txRecord = await this.prisma.businessTransaction.create({
-      data: {
-        businessWalletId: wallet.id,
-        type: 'WITHDRAWAL',
-        amount,
-        fee,
-        netAmount,
-        reference,
-        status: 'PENDING',
-        description: dto.accountInfo
-          ? `Retrè via ${dto.destination}: ${dto.accountInfo}`
-          : `Retrè via ${dto.destination}`,
+        await tx.businessWallet.update({
+          where: { businessId },
+          data: { balance: { decrement: amount } },
+        });
+
+        const txRecord = await tx.businessTransaction.create({
+          data: {
+            businessWalletId: wallet.id,
+            type: 'WITHDRAWAL',
+            amount,
+            fee,
+            netAmount,
+            reference,
+            status: 'PENDING',
+            description: dto.accountInfo
+              ? `Retrè via ${dto.destination}: ${dto.accountInfo}`
+              : `Retrè via ${dto.destination}`,
+          },
+        });
+
+        return { success: true, transaction: txRecord, manual: true };
       },
-    });
-
-    return { success: true, transaction: txRecord, manual: true };
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   // ── 6. Invite member ──────────────────────────────────────────────────────

@@ -783,6 +783,51 @@ export class MailService {
     await this.send(email, `Demande biznis ${businessName} refize — OZAMAPAY Business`, html);
   }
 
+  async sendBusinessWithdrawalApproved(
+    email: string,
+    name: string,
+    businessName: string,
+    netAmount: number,
+    method: string,
+  ): Promise<void> {
+    const html = this.wrap(
+      `Retrè ${businessName} konplete — OZAMAPAY Business`,
+      'Retrè Konplete ✅',
+      this.p(`Bonjou ${name},`) +
+      this.badge('KONFIME') + '<br/>' +
+      this.p(`Retrè biznis <strong>${businessName}</strong> ou a fin trete.`) +
+      this.table(
+        this.infoRow('Biznis', businessName) +
+        this.infoRow('Metòd', method) +
+        this.infoRow('Montan voye', `${netAmount.toLocaleString('fr-FR')} HTG`),
+      ) +
+      this.accentLine(`Lajan an ta dwe rive sou kont ${method} ou talè.`),
+      '#22C55E',
+    );
+    await this.send(email, `Retrè ${businessName} konplete — OZAMAPAY Business`, html);
+  }
+
+  async sendBusinessWithdrawalRejected(
+    email: string,
+    name: string,
+    businessName: string,
+    amount: number,
+    reason?: string,
+  ): Promise<void> {
+    const html = this.wrap(
+      `Retrè ${businessName} rejte — OZAMAPAY Business`,
+      'Retrè Rejte',
+      this.p(`Bonjou ${name},`) +
+      this.badge('REJTE') + '<br/>' +
+      this.p(`Demand retrè ${amount.toLocaleString('fr-FR')} HTG pou <strong>${businessName}</strong> pa kapab trete.`) +
+      (reason ? this.accentLine(`Rezon: ${reason}`) : '') +
+      this.p('Lajan an retounen sou wallet biznis ou — ou ka eseye ankò oswa chwazi yon lòt metòd.') +
+      this.btn('Kontakte Sipò →', `mailto:contact@ozamapay.com`),
+      '#DC2626',
+    );
+    await this.send(email, `Retrè ${businessName} rejte — OZAMAPAY Business`, html);
+  }
+
   async sendBusinessMemberInvitation(
     email: string,
     inviteeName: string,

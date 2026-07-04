@@ -1143,4 +1143,111 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // ── BUSINESS WITHDRAWALS (MONCASH/BANK — manual admin processing) ─────────
+  // PERSONAL_WALLET withdrawals settle instantly and are never PENDING, so
+  // any WITHDRAWAL row still PENDING here is by definition a MonCash/Bank
+  // request awaiting manual payout.
+
+  private withdrawalMethod(description: string | null): string {
+    return description?.includes('MONCASH') ? 'MONCASH' : 'BANK';
+  }
+
+  async getPendingBusinessWithdrawals() {
+    const rows = await this.prisma.businessTransaction.findMany({
+      where: { type: 'WITHDRAWAL', status: 'PENDING' },
+      include: {
+        businessWallet: {
+          include: { business: { include: { owner: { select: { id: true, name: true, email: true } } } } },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return rows.map((tx) => ({
+      id: tx.id,
+      businessName: tx.businessWallet.business.businessName,
+      amount: tx.amount,
+      fee: tx.fee,
+      netAmount: tx.netAmount,
+      method: this.withdrawalMethod(tx.description),
+      description: tx.description,
+      submittedAt: tx.createdAt,
+      owner: tx.businessWallet.business.owner,
+    }));
+  }
+
+  async approveBusinessWithdrawal(txId: string) {
+    const tx = await this.prisma.businessTransaction.findUnique({
+      where: { id: txId },
+      include: {
+        businessWallet: {
+          include: { business: { include: { owner: true } } },
+        },
+      },
+    });
+    if (!tx) throw new NotFoundException('Tranzaksyon retrè pa jwenn');
+    if (tx.type !== 'WITHDRAWAL' || tx.status !== 'PENDING') {
+      throw new BadRequestException('Tranzaksyon sa a deja trete');
+    }
+
+    const fee = Number(tx.fee);
+    await this.prisma.$transaction(async (p) => {
+      await p.businessTransaction.update({ where: { id: txId }, data: { status: 'COMPLETED' } });
+      if (fee > 0) {
+        await p.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { increment: fee } } });
+      }
+    });
+
+    const owner = tx.businessWallet.business.owner;
+    const method = this.withdrawalMethod(tx.description);
+    try {
+      await this.mailService.sendBusinessWithdrawalApproved(
+        owner.email,
+        owner.name || owner.email,
+        tx.businessWallet.business.businessName,
+        Number(tx.netAmount),
+        method,
+      );
+    } catch {}
+
+    return { success: true };
+  }
+
+  async rejectBusinessWithdrawal(txId: string, reason?: string) {
+    const tx = await this.prisma.businessTransaction.findUnique({
+      where: { id: txId },
+      include: {
+        businessWallet: {
+          include: { business: { include: { owner: true } } },
+        },
+      },
+    });
+    if (!tx) throw new NotFoundException('Tranzaksyon retrè pa jwenn');
+    if (tx.type !== 'WITHDRAWAL' || tx.status !== 'PENDING') {
+      throw new BadRequestException('Tranzaksyon sa a deja trete');
+    }
+
+    const amount = Number(tx.amount);
+    await this.prisma.$transaction(async (p) => {
+      await p.businessTransaction.update({ where: { id: txId }, data: { status: 'FAILED' } });
+      await p.businessWallet.update({
+        where: { id: tx.businessWalletId },
+        data: { balance: { increment: amount } },
+      });
+    });
+
+    const owner = tx.businessWallet.business.owner;
+    try {
+      await this.mailService.sendBusinessWithdrawalRejected(
+        owner.email,
+        owner.name || owner.email,
+        tx.businessWallet.business.businessName,
+        amount,
+        reason,
+      );
+    } catch {}
+
+    return { success: true };
+  }
 }
