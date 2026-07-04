@@ -299,6 +299,14 @@ export class BusinessService {
             data: { balance: { increment: netAmount } },
           });
 
+          // Credit fee to master wallet
+          if (fee > 0) {
+            await tx.wallet.update({
+              where: { userId: MASTER_ID },
+              data: { balance: { increment: fee } },
+            });
+          }
+
           const txRecord = await tx.businessTransaction.create({
             data: {
               businessWalletId: wallet.id,
