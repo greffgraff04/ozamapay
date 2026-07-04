@@ -3268,7 +3268,24 @@ export default function Dashboard() {
                   )}
 
                   {/* Row 3b — Business */}
-                  {!myBusinesses?.owned?.length && (
+                  {myBusinesses?.owned?.length ? (
+                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = `/business/${myBusinesses.owned[0].id}`; }}
+                      className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                      style={{ borderColor: colors.border }}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }}>
+                        <Briefcase size={18} color={colors.accent} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>
+                          {myBusinesses.owned[0].status === 'APPROVED' ? 'Biznis Mwen' : myBusinesses.owned[0].status === 'PENDING' ? 'Aplikasyon Biznis' : 'Biznis Refize'}
+                        </p>
+                        <p className="text-[10px]" style={{ color: colors.textSecondary }}>
+                          {myBusinesses.owned[0].status === 'APPROVED' ? 'Jere wallet, tranzaksyon ak manm' : myBusinesses.owned[0].status === 'PENDING' ? 'An atant apwobasyon admin' : 'Wè detay aplikasyon an'}
+                        </p>
+                      </div>
+                      <ChevronRight size={16} color={colors.textSecondary} />
+                    </button>
+                  ) : (
                     <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/business/apply'; }}
                       className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
                       style={{ borderColor: colors.border }}>

@@ -36,6 +36,7 @@ export class WithdrawDto {
   amount: number;
   destination: 'PERSONAL_WALLET' | 'MONCASH' | 'BANK';
   accountInfo?: string;
+  pin: string;
 }
 
 export class InviteMemberDto {
@@ -147,7 +148,7 @@ export class BusinessService {
     // Businesses the user owns
     const owned = await this.prisma.business.findMany({
       where: { ownerId: userId },
-      include: { wallet: true },
+      include: { wallet: true, application: { select: { adminNote: true } } },
     });
 
     // Businesses the user is a member of (accepted invitation, not owner)
@@ -158,7 +159,7 @@ export class BusinessService {
         acceptedAt: { not: null },
       },
       include: {
-        business: { include: { wallet: true } },
+        business: { include: { wallet: true, application: { select: { adminNote: true } } } },
       },
     });
 
@@ -253,6 +254,12 @@ export class BusinessService {
 
   async withdraw(userId: string, businessId: string, dto: WithdrawDto) {
     await this.assertMember(userId, businessId, ['OWNER']);
+
+    const owner = await this.prisma.user.findUnique({ where: { id: userId } });
+    const pinValid = owner?.transactionPin && await bcrypt.compare(dto.pin ?? '', owner.transactionPin);
+    if (!pinValid) {
+      throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Retrè bloke!');
+    }
 
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
