@@ -1,61 +1,19 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
-
 export default function Trust() {
-  const problems = [
-    'Limited banking access',
-    'International payment barriers',
-    'Slow card recharges',
-    'No online business solutions',
-    'Expensive transfers',
-  ];
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          className="text-center space-y-8"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold">
-            Trusted financial infrastructure{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              for modern Haiti.
-            </span>
-          </h2>
-
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-            Nou bati OZAMAPAY pou rezoud pwoblèm finans dijital Ayiti:
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
-            {problems.map((problem, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700"
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <CheckCircle className="w-6 h-6 text-orange-500 flex-shrink-0" />
-                <span className="text-slate-300">{problem}</span>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="pt-8 border-t border-slate-800">
-            <p className="text-xl text-slate-300 font-semibold">
-              OZAMAPAY retire tout friksyon sa yo. 🚀
-            </p>
-          </div>
-        </motion.div>
+    <section data-screen-label="Enfrastrikti" style={{
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 760, margin: '0 auto', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>
+        POUKISA OZAMAPAY
       </div>
+      <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(26px, 3.4vw, 38px)', letterSpacing: '-0.02em', margin: '0 0 16px', fontWeight: 700 }}>
+        Enfrastrikti finansye ou ka fè konfyans
+      </h2>
+      <p style={{ color: 'var(--ink-soft)', fontSize: 16.5, lineHeight: 1.65, margin: 0 }}>
+        Bank tradisyonèl yo limite pou antreprenè ayisyen ak dyaspora a. Ozamapay bati yon platfòm ki elimine friksyon sa yo — pou w ka resevwa, jere, epi voye lajan san restriksyon.
+      </p>
     </section>
   );
 }

@@ -1,88 +1,36 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+const TESTIMONIALS = [
+  { quote: 'Ozamapay ban mwen libète pou m peye founisè m yo san m pa bezwen yon bank tradisyonèl.', name: 'Jameson R.', role: 'Vandè E-commerce', from: 'var(--navy)', to: 'var(--orange)' },
+  { quote: 'Kounye a mwen ka resevwa lajan kliyan entènasyonal mwen yo san tèt chaje.', name: 'Nadège P.', role: 'Freelancer Design', from: 'var(--orange)', to: 'var(--navy)' },
+  { quote: 'Kat vityèl yo chanje jan m jere piblisite mwen yo — tout bagay nan yon sèl plas.', name: 'Widelson C.', role: 'Ajans Piblisite', from: 'var(--navy)', to: 'var(--orange-dark)' },
+];
 
 export default function Testimonials() {
-  const testimonials = [
-    {
-      name: 'Jean-Pierre Merlus',
-      role: 'Entrepreneur',
-      text: 'OZAMAPAY finally gives Haitian entrepreneurs global payment freedom. I can now scale my business without banking limitations.',
-      rating: 5,
-    },
-    {
-      name: 'Marie Joseph',
-      role: 'Freelancer',
-      text: 'I can now pay for tools and receive money from international clients without any headaches. Life-changing!',
-      rating: 5,
-    },
-    {
-      name: 'Yvens Labadee',
-      role: 'E-commerce Seller',
-      text: 'The virtual cards changed the game for my business. I can now run ads on multiple platforms and manage everything in one place.',
-      rating: 5,
-    },
-  ];
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Built for the{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              next generation.
-            </span>
-          </h2>
-        </motion.div>
-
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ staggerChildren: 0.1 }}
-          viewport={{ once: true }}
-        >
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              className="p-6 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -10 }}
-            >
-              {/* Stars */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-orange-500 text-orange-500"
-                  />
-                ))}
+    <section data-screen-label="Temwayaj" style={{
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 1280, margin: '0 auto',
+    }}>
+      <div style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>TEMWAYAJ</div>
+        <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
+          Antreprenè fè konfyans nan nou
+        </h2>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+        {TESTIMONIALS.map((t) => (
+          <div key={t.name} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <span style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 38, lineHeight: 1, color: 'var(--orange-soft)', fontWeight: 700 }}>"</span>
+            <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--ink)' }}>{t.quote}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 'auto' }}>
+              <span style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(135deg, ${t.from}, ${t.to})`, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.name}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t.role}</div>
               </div>
-
-              {/* Quote */}
-              <p className="text-slate-300 mb-6 leading-relaxed italic">
-                "{testimonial.text}"
-              </p>
-
-              {/* Author */}
-              <div className="border-t border-slate-700 pt-4">
-                <p className="font-semibold text-white">{testimonial.name}</p>
-                <p className="text-sm text-slate-400">{testimonial.role}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

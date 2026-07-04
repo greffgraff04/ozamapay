@@ -1,102 +1,41 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+const FAQS = [
+  { question: 'Kisa Ozamapay ye?', answer: 'Ozamapay se yon sistèm finansye ki pèmèt itilizatè Ayiti ak dyaspora a jere lajan yo, kreye kat vityèl, epi fè peman toupatou nan mond lan.' },
+  { question: 'Kijan pou m kreye yon kat vityèl?', answer: 'Apre w fin verifye kont ou, ou ka kreye yon kat vityèl Visa/Mastercard an kèk segond dirèkteman nan app la.' },
+  { question: 'Èske lajan m an sekirite?', answer: 'Wi. Nou itilize ankriptaj nivo endistri a, siveyans fwod 24/7, ak yon pwosesis verifikasyon KYC solid.' },
+  { question: 'Ki jan pou m chaje kont mwen?', answer: 'Ou ka rechaj kont ou ak MonCash, kat bankè, oswa transfè dirèk soti nan yon lòt kont Ozamapay.' },
+  { question: 'Konbyen tan verifikasyon KYC pran?', answer: 'Pifò verifikasyon konplete an kèk minit, men kèk ka ka pran jiska 24èdtan selon dokiman yo bay.' },
+  { question: 'Ki peyi Ozamapay disponib ladan yo?', answer: 'Ozamapay fèt pou Ayiti ak dyaspora a, ak sipò pou tranzaksyon entènasyonal toupatou nan mond lan.' },
+];
 
 export default function FAQ() {
-  const [open, setOpen] = useState<number | null>(0);
-
-  const faqs = [
-    {
-      q: 'Is OZAMAPAY secure?',
-      a: 'Yes. Security and identity protection are core priorities. We use enterprise-grade encryption and fraud monitoring.',
-    },
-    {
-      q: 'Can I create virtual cards?',
-      a: 'Yes, you can create virtual Visa/Mastercard cards instantly after completing identity verification.',
-    },
-    {
-      q: 'What payment methods are supported?',
-      a: 'Currently, we support MonCash and bank transfers. Additional methods are continuously being added.',
-    },
-    {
-      q: 'Is OZAMAPAY available internationally?',
-      a: 'Yes, our infrastructure is designed for global scalability. You can use OZAMAPAY from anywhere in the world.',
-    },
-    {
-      q: 'Is KYC required?',
-      a: 'Yes, KYC (Know Your Customer) verification is required for compliance and security reasons. The process takes just a few minutes.',
-    },
-    {
-      q: 'What are the fees?',
-      a: 'Visit our pricing page for detailed fee information. We offer competitive rates for transfers, card creation, and recharges.',
-    },
-  ];
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Frequently Asked{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Questions.
-            </span>
-          </h2>
-        </motion.div>
-
-        <motion.div
-          className="space-y-4"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ staggerChildren: 0.1 }}
-          viewport={{ once: true }}
-        >
-          {faqs.map((faq, index) => (
-            <motion.div
-              key={index}
-              className="border border-slate-700 rounded-lg overflow-hidden"
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              viewport={{ once: true }}
-            >
-              <button
-                onClick={() => setOpen(open === index ? null : index)}
-                className="w-full px-6 py-4 flex items-center justify-between bg-slate-800/50 hover:bg-slate-800/80 transition-colors text-left"
-              >
-                <span className="font-semibold text-white">{faq.q}</span>
-                <motion.div
-                  animate={{ rotate: open === index ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-5 h-5 text-orange-500" />
-                </motion.div>
-              </button>
-
-              <AnimatePresence>
-                {open === index && (
-                  <motion.div
-                    className="px-6 py-4 bg-slate-900/50 border-t border-slate-700 text-slate-300"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {faq.a}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </motion.div>
+    <section data-screen-label="FAQ" id="faq" style={{
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 800, margin: '0 auto',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>FAQ</div>
+        <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
+          Kesyon moun poze souvan
+        </h2>
+      </div>
+      <style>{`
+        .ozp-faq summary { list-style: none; }
+        .ozp-faq summary::-webkit-details-marker { display: none; }
+        .ozp-faq details[open] summary span:last-child { transform: rotate(45deg); }
+        .ozp-faq summary span:last-child { display: inline-block; transition: transform 0.15s ease; }
+      `}</style>
+      <div className="ozp-faq" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {FAQS.map((f) => (
+          <details key={f.question} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 24px' }}>
+            <summary style={{ fontSize: 15.5, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+              <span>{f.question}</span>
+              <span style={{ color: 'var(--orange)', fontSize: 20, fontWeight: 400 }}>+</span>
+            </summary>
+            <p style={{ color: 'var(--ink-soft)', fontSize: 14.5, lineHeight: 1.6, margin: '14px 0 0' }}>{f.answer}</p>
+          </details>
+        ))}
       </div>
     </section>
   );

@@ -1,84 +1,31 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { UserPlus, CheckCircle, Wallet, Zap } from 'lucide-react';
+const STEPS = [
+  { n: '01', title: 'Enskri epi Verifye', desc: 'Kreye kont ou an de minit epi konplete verifikasyon KYC rapid la.' },
+  { n: '02', title: 'Chaje Kont Ou', desc: 'Rechaj ak MonCash, kat, oswa transfè dirèk.' },
+  { n: '03', title: 'Kreye Kat Vityèl', desc: 'Jenere yon kat Visa/Mastercard vityèl an kèk segond.' },
+  { n: '04', title: 'Voye, Resevwa, Peye', desc: 'Jere tout operasyon finansye w yo nan yon sèl app.' },
+];
 
 export default function HowItWorks() {
-  const steps = [
-    {
-      icon: UserPlus,
-      title: 'Create your free account',
-      description: 'Sign up in less than 2 minutes',
-    },
-    {
-      icon: CheckCircle,
-      title: 'Verify your identity',
-      description: 'Complete KYC verification',
-    },
-    {
-      icon: Wallet,
-      title: 'Fund your wallet',
-      description: 'Add money via MonCash or bank transfer',
-    },
-    {
-      icon: Zap,
-      title: 'Start paying globally',
-      description: 'Enjoy borderless payments instantly',
-    },
-  ];
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900/50 to-transparent">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Start in{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              minutes.
-            </span>
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <motion.div
-                key={index}
-                className="relative"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                {/* Number badge */}
-                <div className="absolute -top-4 -left-4 w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg z-10">
-                  {index + 1}
-                </div>
-
-                {/* Card */}
-                <div className="p-6 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl h-full flex flex-col items-center text-center space-y-4">
-                  <Icon className="w-12 h-12 text-orange-500" />
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                    <p className="text-sm text-slate-400">{step.description}</p>
-                  </div>
-                </div>
-
-                {/* Connector line */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-1 bg-gradient-to-r from-orange-500 to-transparent -translate-y-1/2" />
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+    <section data-screen-label="Kijan li mache" style={{
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 1280, margin: '0 auto',
+    }}>
+      <div style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>KIJAN LI MACHE</div>
+        <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
+          Kat etap, epi w pare
+        </h2>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
+        {STEPS.map((s) => (
+          <div key={s.n}>
+            <div style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 22, fontWeight: 700, color: 'var(--orange)', marginBottom: 12 }}>{s.n}</div>
+            <h3 style={{ fontSize: 16.5, fontWeight: 600, margin: '0 0 8px' }}>{s.title}</h3>
+            <p style={{ color: 'var(--ink-soft)', fontSize: 14.5, lineHeight: 1.55, margin: 0 }}>{s.desc}</p>
+          </div>
+        ))}
       </div>
     </section>
   );

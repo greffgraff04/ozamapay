@@ -1,63 +1,97 @@
 'use client';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
+
 import Link from 'next/link';
-import { Mail, ExternalLink } from 'lucide-react';
+
+const FOOTER_COLS: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: 'PWODWI',
+    links: [
+      { label: 'Kat Vityèl', href: '#kat-vityel' },
+      { label: 'Transfè', href: '#fonksyonalite' },
+      { label: 'Mobile Money', href: '#fonksyonalite' },
+      { label: 'Wallet', href: '#fonksyonalite' },
+    ],
+  },
+  {
+    title: 'BIZNIS',
+    links: [
+      { label: 'Dropshipping', href: '#biznis' },
+      { label: 'Freelance', href: '#biznis' },
+      { label: 'Ajans', href: '#biznis' },
+      { label: 'E-commerce', href: '#biznis' },
+    ],
+  },
+  {
+    title: 'KONPAYI',
+    links: [
+      { label: 'Sou Nou', href: '/about' },
+      { label: 'Vizyon', href: '#' },
+      { label: 'Kontakte Nou', href: '/support' },
+      { label: 'Blog', href: '/press' },
+    ],
+  },
+  {
+    title: 'SIPÒ',
+    links: [
+      { label: 'Sant Èd', href: '/support' },
+      { label: 'FAQ', href: '#faq' },
+      { label: 'Sekirite', href: '#sekirite' },
+      { label: 'Devlopè', href: '#' },
+    ],
+  },
+];
+
+const SOCIALS = ['IG', 'FB', 'X'];
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
-  const footerSections = [
-    { title: 'Company', links: [{ label: 'About Us', href: '/about' }, { label: 'Careers', href: '/careers' }, { label: 'Press', href: '/press' }, { label: 'Contact', href: '/support' }] },
-    { title: 'Product', links: [{ label: 'Wallet', href: '#' }, { label: 'Virtual Cards', href: '#cards' }, { label: 'Transfers', href: '#features' }, { label: 'Business Payments', href: '#business' }, { label: 'Komèsan', href: '/merchant' }] },
-    { title: 'Resources', links: [{ label: 'Help Center', href: '/support' }, { label: 'API Docs', href: '/developers' }, { label: 'Developers', href: '/developers' }, { label: 'Status', href: 'https://status.ozamapay.com' }] },
-    { title: 'Legal', links: [{ label: 'Terms of Service', href: '/terms' }, { label: 'Privacy Policy', href: '/privacy' }, { label: 'AML Policy', href: '/aml-policy' }, { label: 'KYC Policy', href: '/kyc-policy' }, { label: 'Cookie Policy', href: '/cookie-policy' }, { label: 'Compliance', href: '/compliance' }] },
-  ];
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-950 border-t border-slate-800">
-      <div className="px-4 sm:px-6 lg:px-8 py-16">
-        <div className="max-w-7xl mx-auto">
-          {/* Footer Links Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-8 mb-12">
-            {footerSections.map((section, index) => (
-              <div key={index}>
-                <h3 className="font-semibold text-white mb-4 text-sm">{section.title}</h3>
-                <ul className="space-y-3">
-                  {section.links.map((link, lIndex) => (
-                    <li key={lIndex}>
-                      <Link href={link.href} className="text-slate-400 hover:text-orange-400 text-sm transition-colors">
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+    <footer data-screen-label="Footer" style={{
+      background: 'linear-gradient(120deg, var(--navy), var(--navy-deep))', color: 'white',
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px) 0',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '44px 0', display: 'flex', flexWrap: 'wrap', gap: 36, justifyContent: 'space-between' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontWeight: 700, fontSize: 19, marginBottom: 12 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: 'var(--orange)', display: 'inline-block' }} />
+            OZAMAPAY
           </div>
+          <p style={{ color: 'oklch(0.75 0.02 260)', fontSize: 13.5, lineHeight: 1.6, maxWidth: 240, margin: 0 }}>
+            Sistèm finansye pou Ayiti ak dyaspora a.
+          </p>
+        </div>
 
-          {/* Bottom Section - Logo LARGE */}
-          <div className="pt-8 border-t border-slate-800 text-center space-y-6">
-            <Link href="/" className="flex justify-center">
-              <div className="w-40 h-40 rounded-lg overflow-hidden hover:shadow-lg hover:shadow-orange-500/50 transition-all">
-                <Image
-                  src="/logo.png"
-                  alt="OZAMAPAY"
-                  width={160}
-                  height={160}
-                  className="w-full h-full object-cover"
-                  priority
-                />
-              </div>
-            </Link>
-            
-            <p className="text-slate-400 text-sm max-w-md mx-auto">
-              Financial operating system for Haiti and the diaspora. Fast, secure, and borderless payments.
-            </p>
-
-            <div className="text-slate-400 text-sm">
-              © {currentYear} OZAMAPAY. All rights reserved.
+        {FOOTER_COLS.map((col) => (
+          <div key={col.title} style={{ flex: '1 1 130px' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'oklch(0.9 0.01 260)', marginBottom: 16, letterSpacing: '0.04em' }}>{col.title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {col.links.map((l) => (
+                l.href.startsWith('#') ? (
+                  <a key={l.label} href={l.href} style={{ color: 'oklch(0.75 0.02 260)', textDecoration: 'none', fontSize: 13.5 }}>{l.label}</a>
+                ) : (
+                  <Link key={l.label} href={l.href} style={{ color: 'oklch(0.75 0.02 260)', textDecoration: 'none', fontSize: 13.5 }}>{l.label}</Link>
+                )
+              ))}
             </div>
           </div>
+        ))}
+      </div>
+
+      <div style={{
+        maxWidth: 1280, margin: '0 auto', padding: '22px 0 30px', display: 'flex', flexWrap: 'wrap', gap: 16,
+        alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid oklch(1 0 0 / 0.08)',
+      }}>
+        <span style={{ color: 'oklch(0.65 0.02 260)', fontSize: 13 }}>© {year} Ozamapay. Tout dwa rezève.</span>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {SOCIALS.map((s) => (
+            <span key={s} style={{
+              width: 34, height: 34, borderRadius: '50%', background: 'oklch(1 0 0 / 0.08)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 600, color: 'oklch(0.85 0.02 260)',
+            }}>
+              {s}
+            </span>
+          ))}
         </div>
       </div>
     </footer>

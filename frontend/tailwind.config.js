@@ -8,6 +8,7 @@ module.exports = {
     extend: {
       fontFamily: {
         'space-grotesk': ['var(--font-space-grotesk)', 'sans-serif'],
+        'ibm-plex-sans': ['var(--font-ibm-plex-sans)', 'sans-serif'],
       },
       colors: {
         ozama: {

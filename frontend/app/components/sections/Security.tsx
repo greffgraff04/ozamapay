@@ -1,69 +1,39 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Lock, Shield, AlertCircle, Eye } from 'lucide-react';
+const TRUST_POINTS = [
+  { title: 'Ankriptaj Total', desc: 'Chak done ak chak tranzaksyon pwoteje ak ankriptaj nivo endistri a.' },
+  { title: 'Siveyans Fwod 24/7', desc: 'Sistèm nou yo veye kont ou tout tan pou detekte aktivite sispèk.' },
+  { title: 'Verifikasyon KYC', desc: 'Chak itilizatè pase yon pwosesis verifikasyon idantite solid.' },
+];
 
 export default function Security() {
-  const securityFeatures = [
-    { icon: Lock, label: 'Encrypted infrastructure' },
-    { icon: Eye, label: 'Identity verification' },
-    { icon: Shield, label: 'Secure authentication' },
-    { icon: AlertCircle, label: 'Fraud monitoring' },
-  ];
-
   return (
-    <section id="security" className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-            Security{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              first.
-            </span>
+    <section data-screen-label="Sekirite" id="sekirite" style={{
+      position: 'relative', overflow: 'hidden', background: 'var(--navy)', color: 'white',
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)',
+    }}>
+      <div style={{ position: 'absolute', width: 380, height: 380, borderRadius: '50%', background: 'var(--orange)', filter: 'blur(100px)', opacity: 0.22, top: -100, right: -60 }} />
+      <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: 560, margin: '0 auto 44px', textAlign: 'center' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>SEKIRITE</div>
+          <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: '0 0 14px', fontWeight: 700 }}>
+            Konfyans se fondasyon nou
           </h2>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-            We use modern security standards to protect users and transactions.
+          <p style={{ color: 'oklch(0.85 0.02 260)', fontSize: 16.5, lineHeight: 1.6, margin: 0 }}>
+            Nou aplike estanda sekirite endistri a itilize pou pwoteje chak tranzaksyon ak chak kont.
           </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {securityFeatures.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <motion.div
-                key={index}
-                className="p-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700 rounded-2xl"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ borderColor: 'rgb(249, 115, 22)' }}
-              >
-                <Icon className="w-12 h-12 text-orange-500 mb-4" />
-                <h3 className="font-semibold text-white">{feature.label}</h3>
-              </motion.div>
-            );
-          })}
         </div>
-
-        <motion.div
-          className="mt-16 p-8 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-2xl text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          viewport={{ once: true }}
-        >
-          <p className="text-lg text-slate-300">
-            🔐 Your financial data is encrypted end-to-end and backed by enterprise-grade
-            security standards.
-          </p>
-        </motion.div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+          {TRUST_POINTS.map((t) => (
+            <div key={t.title} style={{ background: 'oklch(1 0 0 / 0.05)', border: '1px solid oklch(1 0 0 / 0.12)', borderRadius: 18, padding: 26 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 13, background: 'oklch(1 0 0 / 0.1)', marginBottom: 16, position: 'relative' }}>
+                <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 15, height: 15, borderRadius: '50%', background: 'var(--orange)' }} />
+              </div>
+              <h3 style={{ fontSize: 16.5, fontWeight: 600, margin: '0 0 8px' }}>{t.title}</h3>
+              <p style={{ color: 'oklch(0.8 0.02 260)', fontSize: 14, lineHeight: 1.55, margin: 0 }}>{t.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

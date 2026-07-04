@@ -1,70 +1,25 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+const PILLS = ['Kat', 'Transfè', 'Biznis', 'Epay', 'Epi Plis'];
 
 export default function SuperAppVision() {
-  const visions = [
-    'Digital banking',
-    'Virtual cards',
-    'International payments',
-    'Merchant tools',
-    'Crypto integrations',
-    'E-commerce ecosystem',
-    'Financial services APIs',
-  ];
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-orange-500/5 to-transparent">
-      <div className="max-w-4xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="space-y-8"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold">
-            More than a wallet.{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              A financial super app.
-            </span>
-          </h2>
-
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-            OZAMAPAY is building the future financial infrastructure of Haiti. Our
-            vision includes:
-          </p>
-
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-8"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ staggerChildren: 0.05 }}
-            viewport={{ once: true }}
-          >
-            {visions.map((vision, index) => (
-              <motion.div
-                key={index}
-                className="flex items-center space-x-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-orange-500/50 transition-all"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Sparkles className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                <span className="text-sm font-medium text-slate-300">{vision}</span>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <div className="pt-8 border-t border-slate-800">
-            <p className="text-xl text-slate-300 font-semibold">
-              One ecosystem. Infinite possibilities. 🚀
-            </p>
-          </div>
-        </motion.div>
+    <section data-screen-label="Vizyon" style={{
+      padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 800, margin: '0 auto', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>VIZYON</div>
+      <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: '0 0 18px', fontWeight: 700 }}>
+        K ap bati super app finansye Ayiti a
+      </h2>
+      <p style={{ color: 'var(--ink-soft)', fontSize: 16.5, lineHeight: 1.6, margin: '0 0 32px' }}>
+        Objektif nou se konbine kat, transfè, biznis ak epay nan yon sèl platfòm — pou chak Ayisyen, kèlkeswa kote yo ye, jwenn menm nivo zouti finansye ak nenpòt lòt peyi.
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+        {PILLS.map((p) => (
+          <span key={p} style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange-dark)', background: 'var(--orange-soft)', padding: '8px 16px', borderRadius: 100 }}>
+            {p}
+          </span>
+        ))}
       </div>
     </section>
   );

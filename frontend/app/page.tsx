@@ -16,6 +16,7 @@ import WhyOzamapay from './components/sections/WhyOzamapay';
 import FAQ from './components/sections/FAQ';
 import FinalCTA from './components/sections/FinalCTA';
 import PWAInstallBanner from './components/PWAInstallBanner';
+import { themeVars } from './components/sections/theme';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
 
@@ -137,7 +138,10 @@ export default function HomePage() {
   };
 
   return (
-    <main className="w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <main
+      className="font-ibm-plex-sans"
+      style={{ ...themeVars, width: '100%', background: 'var(--bg)', color: 'var(--ink)', overflowX: 'hidden', position: 'relative' }}
+    >
       <PWAInstallBanner />
 
       {/* Invisible Easter-egg trigger wrapping the header logo area */}
