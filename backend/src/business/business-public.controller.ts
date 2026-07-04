@@ -10,4 +10,10 @@ export class BusinessPublicController {
   getPublicInfo(@Param('id') id: string) {
     return this.businessService.getPublicInfo(id);
   }
+
+  // GET /business/api-payments/:paymentId/public — no auth required
+  @Get('api-payments/:paymentId/public')
+  getPublicApiPayment(@Param('paymentId') paymentId: string) {
+    return this.businessService.getPublicApiPayment(paymentId);
+  }
 }

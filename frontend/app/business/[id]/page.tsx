@@ -8,7 +8,7 @@ const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
 const ACC = '#FF7A00';
 
 type Role = 'OWNER' | 'ACCOUNTANT' | 'CASHIER';
-type Tab = 'home' | 'receive' | 'tx' | 'withdraw' | 'team' | 'profile' | 'support';
+type Tab = 'home' | 'receive' | 'tx' | 'withdraw' | 'team' | 'api' | 'profile' | 'support';
 
 const ROLE_LABELS: Record<Role, string> = { OWNER: 'Pwopriyetè', ACCOUNTANT: 'Kontab', CASHIER: 'Kès' };
 const TIER_FEE: Record<string, string> = { STARTER: '2.5%', PRO: '2.0%', ENTERPRISE: '1.5%' };
@@ -32,7 +32,7 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = 
 // 'receive'/'profile'/'support' are purely-informational additions with no
 // backend guard, so they ride along with the tabs each role already had.
 const TABS_BY_ROLE: Record<Role, Tab[]> = {
-  OWNER: ['home', 'receive', 'tx', 'withdraw', 'team', 'profile', 'support'],
+  OWNER: ['home', 'receive', 'tx', 'withdraw', 'team', 'api', 'profile', 'support'],
   ACCOUNTANT: ['home', 'receive', 'tx', 'profile', 'support'],
   CASHIER: ['tx', 'profile', 'support'],
 };
@@ -43,6 +43,7 @@ const NAV_ICONS: Record<Tab, string[]> = {
   tx: ['M4 7h16M4 12h16M4 17h10'],
   withdraw: ['M12 19V5M5 12l7 7 7-7'],
   team: ['M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8'],
+  api: ['M8 17l-5-5 5-5M16 7l5 5-5 5'],
   profile: ['M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5'],
   support: ['M3 18v-6a9 9 0 0118 0v6M21 19a2 2 0 01-2 2h-3v-7h3a2 2 0 012 2zM3 19a2 2 0 002 2h3v-7H5a2 2 0 00-2 2z'],
 };
@@ -53,9 +54,13 @@ const NAV_LABELS: Record<Tab, [string, string]> = {
   tx: ['Tranzaksyon', 'Istwa tranzaksyon biznis ou'],
   withdraw: ['Retrè', 'Transfere lajan biznis ou'],
   team: ['Ekip', 'Manm ak otorizasyon yo'],
+  api: ['API & Devlopè', 'Entegre peman OZAMAPAY nan sit/app ou'],
   profile: ['Pwofil biznis', 'Enfòmasyon biznis ou'],
   support: ['Sipò Business', 'Asistans pou kont biznis ou'],
 };
+
+const API_TIERS = ['PRO', 'ENTERPRISE'];
+const API_BASE_URL = 'https://ozamapay.com/api/v1';
 
 function Icon({ paths, size = 20, color = 'currentColor', strokeWidth = 1.9 }: { paths: string[]; size?: number; color?: string; strokeWidth?: number }) {
   return (
@@ -132,6 +137,29 @@ export default function BusinessDashboardPage() {
 
   const [qCents, setQCents] = useState(0);
   const [copied, setCopied] = useState(false);
+
+  // ── Developer API state ──────────────────────────────────────────────────
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [apiKeysLoading, setApiKeysLoading] = useState(false);
+  const [showCreateKey, setShowCreateKey] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyMode, setNewKeyMode] = useState<'LIVE' | 'TEST'>('TEST');
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [createKeyError, setCreateKeyError] = useState('');
+  const [justCreatedKey, setJustCreatedKey] = useState<{ key: string; name: string; mode: string } | null>(null);
+
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhooksLoading, setWebhooksLoading] = useState(false);
+  const [showAddWebhook, setShowAddWebhook] = useState(false);
+  const [newWebhookUrl, setNewWebhookUrl] = useState('');
+  const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>(['payment.received']);
+  const [creatingWebhook, setCreatingWebhook] = useState(false);
+  const [webhookError, setWebhookError] = useState('');
+  const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null);
+  const [webhookTestResult, setWebhookTestResult] = useState<Record<string, string>>({});
+
+  const [docsTab, setDocsTab] = useState<'overview' | 'payments' | 'webhooks' | 'reference'>('overview');
+  const [docsLang, setDocsLang] = useState<'curl' | 'js' | 'python'>('curl');
 
   // ── Access check ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -223,12 +251,40 @@ export default function BusinessDashboardPage() {
     }
   }, [businessId, token]);
 
+  const loadApiKeys = useCallback(async () => {
+    if (!token) return;
+    setApiKeysLoading(true);
+    try {
+      const res = await fetch(`${API}/business/${businessId}/api-keys`, { headers: authHeaders(token) });
+      if (res.ok) setApiKeys(await res.json());
+    } finally {
+      setApiKeysLoading(false);
+    }
+  }, [businessId, token]);
+
+  const loadWebhooks = useCallback(async () => {
+    if (!token) return;
+    setWebhooksLoading(true);
+    try {
+      const res = await fetch(`${API}/business/${businessId}/webhooks`, { headers: authHeaders(token) });
+      if (res.ok) setWebhooks(await res.json());
+    } finally {
+      setWebhooksLoading(false);
+    }
+  }, [businessId, token]);
+
   useEffect(() => {
     if (!token || !myRole || !business) return;
     if (business.status !== 'APPROVED') return;
     if (myRole === 'OWNER' || myRole === 'ACCOUNTANT') loadWallet();
     loadTransactions(1);
-    if (myRole === 'OWNER') loadMembers();
+    if (myRole === 'OWNER') {
+      loadMembers();
+      if (API_TIERS.includes(business.tier)) {
+        loadApiKeys();
+        loadWebhooks();
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, myRole, business?.status]);
 
@@ -301,6 +357,102 @@ export default function BusinessDashboardPage() {
     } catch { /* list stays as-is, user can retry */ }
   };
 
+  // ── Developer API — keys & webhooks ─────────────────────────────────────
+  const handleCreateApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateKeyError('');
+    if (!newKeyName.trim()) { setCreateKeyError('Antre yon non pou kle a.'); return; }
+    setCreatingKey(true);
+    try {
+      const res = await fetch(`${API}/business/${businessId}/api-keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+        body: JSON.stringify({ name: newKeyName.trim(), mode: newKeyMode }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setJustCreatedKey({ key: data.key, name: data.name, mode: data.mode });
+        setNewKeyName('');
+        setShowCreateKey(false);
+        loadApiKeys();
+      } else {
+        setCreateKeyError(data?.message || 'Erè pandan kreyasyon kle a.');
+      }
+    } catch {
+      setCreateKeyError('Erè rezo. Verifye koneksyon ou.');
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleRevokeApiKey = async (keyId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/business/${businessId}/api-keys/${keyId}`, {
+        method: 'DELETE',
+        headers: authHeaders(token),
+      });
+      if (res.ok) loadApiKeys();
+    } catch { /* list stays as-is, user can retry */ }
+  };
+
+  const handleCreateWebhook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWebhookError('');
+    if (!newWebhookUrl.trim()) { setWebhookError('Antre yon URL.'); return; }
+    setCreatingWebhook(true);
+    try {
+      const res = await fetch(`${API}/business/${businessId}/webhooks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+        body: JSON.stringify({ url: newWebhookUrl.trim(), events: newWebhookEvents }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok) {
+        setNewWebhookUrl('');
+        setShowAddWebhook(false);
+        loadWebhooks();
+      } else {
+        setWebhookError(data?.message || 'Erè pandan kreyasyon webhook la.');
+      }
+    } catch {
+      setWebhookError('Erè rezo. Verifye koneksyon ou.');
+    } finally {
+      setCreatingWebhook(false);
+    }
+  };
+
+  const handleTestWebhook = async (webhookId: string) => {
+    if (!token) return;
+    setTestingWebhookId(webhookId);
+    try {
+      const res = await fetch(`${API}/business/${businessId}/webhooks/${webhookId}/test`, {
+        method: 'POST',
+        headers: authHeaders(token),
+      });
+      const data = await res.json().catch(() => null);
+      setWebhookTestResult((prev) => ({
+        ...prev,
+        [webhookId]: data?.success ? `✓ ${data.statusCode}` : `✕ ${data?.error || data?.statusCode || 'echwe'}`,
+      }));
+    } catch {
+      setWebhookTestResult((prev) => ({ ...prev, [webhookId]: '✕ erè rezo' }));
+    } finally {
+      setTestingWebhookId(null);
+    }
+  };
+
+  const handleRemoveWebhook = async (webhookId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API}/business/${businessId}/webhooks/${webhookId}`, {
+        method: 'DELETE',
+        headers: authHeaders(token),
+      });
+      if (res.ok) loadWebhooks();
+    } catch { /* list stays as-is, user can retry */ }
+  };
+
   // ── Quick-amount keypad (Resevwa peman) ─────────────────────────────────
   const pushDigit = (d: number) => setQCents((c) => Math.min(c * 10 + d, 99999999));
   const pushZeros = () => setQCents((c) => Math.min(c * 100, 99999999));
@@ -318,6 +470,11 @@ export default function BusinessDashboardPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   };
+
+  // Docs examples use the real key while it's still visible on screen (just
+  // created); otherwise a masked prefix, or a placeholder if none exist yet.
+  const apiKeyExample = justCreatedKey?.key
+    || (apiKeys[0]?.keyPrefix ? `${apiKeys[0].keyPrefix}••••••••••••••••••••` : 'ozpk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 
   const filteredTx = useMemo(() => {
     let rows = transactions;
@@ -897,6 +1054,305 @@ export default function BusinessDashboardPage() {
                         Kès la wè tranzaksyon jodi a sèlman, e li pa ka wè wallet ni fè retrè. Kontab la wè wallet ak tout tranzaksyon, men li pa ka fè retrè ni jere ekip la. Sèl Pwopriyetè a gen kontwòl konplè.
                       </div>
                     </>
+                  )}
+
+                  {/* ── API & DEVLOPÈ ── */}
+                  {tab === 'api' && myRole === 'OWNER' && (
+                    <div style={{ maxWidth: 900 }}>
+                      {!API_TIERS.includes(business.tier) ? (
+                        <div style={{ ...card, padding: 32, textAlign: 'center' }}>
+                          <div style={{ fontSize: 36, marginBottom: 14 }}>🔒</div>
+                          <p style={{ ...h, fontSize: 14, marginBottom: 8 }}>API disponib pou plan PRO ak ENTERPRISE</p>
+                          <p style={{ color: 'rgba(255,255,255,.5)', fontSize: 13 }}>
+                            Biznis ou a se plan <strong style={{ color: '#fff' }}>{business.tier}</strong> kounye a. Upgrade pou PRO pou jwenn aksè API, API Key, ak webhook.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* ── Section 1: API Keys ── */}
+                          <div style={{ ...card, padding: 24, marginBottom: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                              <div>
+                                <div style={{ ...h, fontSize: 15 }}>API Keys</div>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginTop: 4 }}>Jere kle ki konekte sit/app ou ak OZAMAPAY</p>
+                              </div>
+                              <div onClick={() => { setShowCreateKey((s) => !s); setCreateKeyError(''); }} style={{ display: 'flex', alignItems: 'center', gap: 9, background: ACC, borderRadius: 12, height: 40, padding: '0 16px', cursor: 'pointer' }}>
+                                <Icon paths={['M12 5v14M5 12h14']} size={16} color="#0A0C14" strokeWidth={2.4} />
+                                <span style={{ fontSize: 12, fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '.03em', color: '#0A0C14' }}>Kreye nouvo API Key</span>
+                              </div>
+                            </div>
+
+                            {justCreatedKey && (
+                              <div style={{ background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.3)', borderRadius: 14, padding: 16, marginBottom: 16 }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', textTransform: 'uppercase', marginBottom: 8 }}>
+                                  ⚠️ Kle a montre 1 sèl fwa sèlman — kopye l kounye a
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0A0C14', borderRadius: 10, padding: '10px 12px' }}>
+                                  <code style={{ flex: 1, fontSize: 12, color: '#fff', fontFamily: 'monospace', wordBreak: 'break-all' }}>{justCreatedKey.key}</code>
+                                  <span onClick={() => { navigator.clipboard?.writeText(justCreatedKey.key).catch(() => {}); }} style={{ fontSize: 10, fontWeight: 700, color: ACC, cursor: 'pointer', whiteSpace: 'nowrap' }}>Kopye</span>
+                                </div>
+                                <div style={{ textAlign: 'right', marginTop: 8 }}>
+                                  <span onClick={() => setJustCreatedKey(null)} style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', cursor: 'pointer' }}>Fèmen</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {showCreateKey && (
+                              <form onSubmit={handleCreateApiKey} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: 12, alignItems: 'end' }}>
+                                  <div>
+                                    <div style={{ ...lbl, marginBottom: 8 }}>Non Kle a</div>
+                                    <input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Sit entènèt mwen"
+                                      style={{ width: '100%', background: '#0A0C14', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                                  </div>
+                                  <div>
+                                    <div style={{ ...lbl, marginBottom: 8 }}>Mod</div>
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                      {(['TEST', 'LIVE'] as const).map((m) => (
+                                        <span key={m} onClick={() => setNewKeyMode(m)} style={{
+                                          flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                                          background: newKeyMode === m ? ACC : '#0A0C14', color: newKeyMode === m ? '#0A0C14' : 'rgba(255,255,255,.5)',
+                                          border: '1px solid rgba(255,255,255,.1)',
+                                        }}>{m}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <button type="submit" disabled={creatingKey} style={{ height: 42, padding: '0 20px', background: ACC, border: 'none', borderRadius: 12, color: '#0A0C14', fontWeight: 700, fontSize: 12, cursor: 'pointer', textTransform: 'uppercase' }}>
+                                    {creatingKey ? '...' : 'Kreye'}
+                                  </button>
+                                </div>
+                                {createKeyError && <p style={{ color: '#ff7a7a', fontSize: 11, fontWeight: 700, marginTop: 10 }}>{createKeyError}</p>}
+                              </form>
+                            )}
+
+                            {apiKeysLoading ? (
+                              <div style={{ textAlign: 'center', padding: '20px 0', ...h, fontSize: 12, color: 'rgba(255,255,255,.4)' }}>Chajman...</div>
+                            ) : apiKeys.length === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '20px 0', ...h, fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Ou pa gen API Key ankò</div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {apiKeys.map((k) => (
+                                  <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, padding: '12px 16px', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: 1, minWidth: 180 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{k.name}</span>
+                                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: k.mode === 'LIVE' ? 'rgba(34,197,94,.14)' : 'rgba(245,177,76,.14)', color: k.mode === 'LIVE' ? '#22C55E' : '#f5b14c' }}>{k.mode}</span>
+                                        {!k.isActive && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'rgba(239,68,68,.13)', color: '#ff7a7a' }}>REVOKE</span>}
+                                      </div>
+                                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', fontFamily: 'monospace', marginTop: 4 }}>{k.keyPrefix}••••••••</p>
+                                      <p style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 2 }}>
+                                        {k.lastUsedAt ? `Itilize dènye fwa ${new Date(k.lastUsedAt).toLocaleString('fr-FR')}` : 'Poko janm itilize'}
+                                      </p>
+                                    </div>
+                                    {k.isActive && (
+                                      <span onClick={() => handleRevokeApiKey(k.id)} style={{ fontSize: 10, fontWeight: 700, color: '#ff7a7a', cursor: 'pointer', textTransform: 'uppercase' }}>Revoke</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* ── Section 2: Webhooks ── */}
+                          <div style={{ ...card, padding: 24, marginBottom: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                              <div>
+                                <div style={{ ...h, fontSize: 15 }}>Webhooks</div>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginTop: 4 }}>Resevwa yon notifikasyon lè yon evènman fèt</p>
+                              </div>
+                              <div onClick={() => { setShowAddWebhook((s) => !s); setWebhookError(''); }} style={{ display: 'flex', alignItems: 'center', gap: 9, background: ACC, borderRadius: 12, height: 40, padding: '0 16px', cursor: 'pointer' }}>
+                                <Icon paths={['M12 5v14M5 12h14']} size={16} color="#0A0C14" strokeWidth={2.4} />
+                                <span style={{ fontSize: 12, fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '.03em', color: '#0A0C14' }}>Ajoute Webhook</span>
+                              </div>
+                            </div>
+
+                            {showAddWebhook && (
+                              <form onSubmit={handleCreateWebhook} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
+                                <div style={{ ...lbl, marginBottom: 8 }}>URL (dwe HTTPS)</div>
+                                <input value={newWebhookUrl} onChange={(e) => setNewWebhookUrl(e.target.value)} placeholder="https://sitmwen.com/webhooks/ozamapay"
+                                  style={{ width: '100%', background: '#0A0C14', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, padding: '11px 14px', color: '#fff', fontSize: 13, outline: 'none', marginBottom: 12 }} />
+                                <div style={{ ...lbl, marginBottom: 8 }}>Evènman</div>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+                                  {['payment.received', 'withdrawal.completed', 'withdrawal.rejected'].map((ev) => (
+                                    <span key={ev} onClick={() => setNewWebhookEvents((prev) => prev.includes(ev) ? prev.filter((x) => x !== ev) : [...prev, ev])}
+                                      style={{
+                                        fontSize: 11, fontWeight: 600, padding: '7px 12px', borderRadius: 20, cursor: 'pointer',
+                                        background: newWebhookEvents.includes(ev) ? 'rgba(255,122,0,.14)' : '#0A0C14',
+                                        color: newWebhookEvents.includes(ev) ? ACC : 'rgba(255,255,255,.5)',
+                                        border: '1px solid rgba(255,255,255,.1)',
+                                      }}>{ev}</span>
+                                  ))}
+                                </div>
+                                <button type="submit" disabled={creatingWebhook} style={{ width: '100%', padding: 12, background: ACC, border: 'none', borderRadius: 12, color: '#0A0C14', fontWeight: 700, fontSize: 12, cursor: 'pointer', textTransform: 'uppercase' }}>
+                                  {creatingWebhook ? '...' : 'Anrejistre Webhook'}
+                                </button>
+                                {webhookError && <p style={{ color: '#ff7a7a', fontSize: 11, fontWeight: 700, marginTop: 10 }}>{webhookError}</p>}
+                              </form>
+                            )}
+
+                            {webhooksLoading ? (
+                              <div style={{ textAlign: 'center', padding: '20px 0', ...h, fontSize: 12, color: 'rgba(255,255,255,.4)' }}>Chajman...</div>
+                            ) : webhooks.length === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '20px 0', ...h, fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Ou pa gen webhook ankò</div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {webhooks.map((wh) => (
+                                  <div key={wh.id} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 12, padding: '12px 16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                      <div style={{ flex: 1, minWidth: 200 }}>
+                                        <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', wordBreak: 'break-all' }}>{wh.url}</p>
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                                          {wh.events.map((ev: string) => (
+                                            <span key={ev} style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,122,0,.1)', color: ACC }}>{ev}</span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        {webhookTestResult[wh.id] && <span style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>{webhookTestResult[wh.id]}</span>}
+                                        <span onClick={() => handleTestWebhook(wh.id)} style={{ fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer', textTransform: 'uppercase' }}>
+                                          {testingWebhookId === wh.id ? '...' : 'Teste'}
+                                        </span>
+                                        <span onClick={() => handleRemoveWebhook(wh.id)} style={{ fontSize: 10, fontWeight: 700, color: '#ff7a7a', cursor: 'pointer', textTransform: 'uppercase' }}>Retire</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* ── Section 3: Integrated docs ── */}
+                          <div style={{ ...card, padding: 24 }}>
+                            <div style={{ ...h, fontSize: 15, marginBottom: 4 }}>Dokimantasyon</div>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 16 }}>Baz URL: <code style={{ color: ACC, fontFamily: 'monospace' }}>{API_BASE_URL}</code></p>
+
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+                              {([['overview', 'Aperçu'], ['payments', 'Peman'], ['webhooks', 'Webhook'], ['reference', 'Referans']] as const).map(([id, label]) => (
+                                <span key={id} onClick={() => setDocsTab(id)} style={{
+                                  fontSize: 11, fontWeight: 700, padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
+                                  background: docsTab === id ? ACC : 'rgba(255,255,255,.04)', color: docsTab === id ? '#0A0C14' : 'rgba(255,255,255,.55)',
+                                }}>{label}</span>
+                              ))}
+                            </div>
+
+                            {docsTab === 'overview' && (
+                              <div style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', lineHeight: 1.8 }}>
+                                <p>Otantifikasyon fèt ak yon header <code style={{ color: ACC }}>X-API-Key</code> sou chak rekèt.</p>
+                                <p>Sèvi ak yon kle <strong>TEST</strong> (<code>ozpk_test_...</code>) pandan devlopman — okenn lajan reyèl pa deplase, wallet tès separe. Kle <strong>LIVE</strong> (<code>ozpk_live_...</code>) deplase lajan reyèl.</p>
+                                <p>Limit: <strong style={{ color: '#fff' }}>100 rekèt/minit</strong> ak <strong style={{ color: '#fff' }}>1000 rekèt/jou</strong> pa kle. Depase limit la ap retounen <code style={{ color: '#ff7a7a' }}>429 Too Many Requests</code>.</p>
+                              </div>
+                            )}
+
+                            {(docsTab === 'payments' || docsTab === 'webhooks') && (
+                              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                                {(['curl', 'js', 'python'] as const).map((l) => (
+                                  <span key={l} onClick={() => setDocsLang(l)} style={{
+                                    fontSize: 10, fontWeight: 700, padding: '5px 10px', borderRadius: 8, cursor: 'pointer', textTransform: 'uppercase',
+                                    background: docsLang === l ? 'rgba(255,255,255,.1)' : 'transparent', color: docsLang === l ? '#fff' : 'rgba(255,255,255,.4)',
+                                  }}>{l === 'js' ? 'JavaScript' : l === 'python' ? 'Python' : 'cURL'}</span>
+                                ))}
+                              </div>
+                            )}
+
+                            {docsTab === 'payments' && (
+                              <>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', marginBottom: 8 }}>Kreye yon demand peman:</p>
+                                <pre style={{ background: '#0A0C14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: 16, fontSize: 11.5, color: '#d4d4d4', overflowX: 'auto', fontFamily: 'monospace', lineHeight: 1.6 }}>
+{docsLang === 'curl' &&
+`curl -X POST ${API_BASE_URL}/payments/initiate \\
+  -H "X-API-Key: ${apiKeyExample}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"amount": 1000, "currency": "HTG", "description": "Komann #4521"}'`}
+{docsLang === 'js' &&
+`const res = await fetch("${API_BASE_URL}/payments/initiate", {
+  method: "POST",
+  headers: {
+    "X-API-Key": "${apiKeyExample}",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ amount: 1000, currency: "HTG", description: "Komann #4521" }),
+});
+const { paymentId, paymentUrl } = await res.json();
+// Redirije kliyan an sou paymentUrl pou l peye`}
+{docsLang === 'python' &&
+`import requests
+
+res = requests.post(
+    "${API_BASE_URL}/payments/initiate",
+    headers={"X-API-Key": "${apiKeyExample}"},
+    json={"amount": 1000, "currency": "HTG", "description": "Komann #4521"},
+)
+data = res.json()
+print(data["paymentUrl"])  # redirije kliyan an la a`}
+                                </pre>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', margin: '16px 0 8px' }}>Verifye estati:</p>
+                                <pre style={{ background: '#0A0C14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: 16, fontSize: 11.5, color: '#d4d4d4', overflowX: 'auto', fontFamily: 'monospace' }}>
+{`GET ${API_BASE_URL}/payments/{paymentId}
+X-API-Key: ${apiKeyExample}`}
+                                </pre>
+                              </>
+                            )}
+
+                            {docsTab === 'webhooks' && (
+                              <>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', marginBottom: 8 }}>Chak evènman voye kòm yon POST ak yon siyati HMAC-SHA256:</p>
+                                <pre style={{ background: '#0A0C14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: 16, fontSize: 11.5, color: '#d4d4d4', overflowX: 'auto', fontFamily: 'monospace', lineHeight: 1.6 }}>
+{`POST /webhooks/ozamapay HTTP/1.1
+X-Ozamapay-Signature: 5f4dcc3b5aa765d61d8327deb882cf99...
+Content-Type: application/json
+
+{ "event": "payment.received", "paymentId": "...", "amount": 1000, "status": "COMPLETED" }`}
+                                </pre>
+                                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', margin: '16px 0 8px' }}>Verifye siyati a ({docsLang === 'python' ? 'Python' : 'Node.js'}):</p>
+                                <pre style={{ background: '#0A0C14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: 16, fontSize: 11.5, color: '#d4d4d4', overflowX: 'auto', fontFamily: 'monospace', lineHeight: 1.6 }}>
+{docsLang === 'python' ?
+`import hmac, hashlib
+
+expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+if not hmac.compare_digest(expected, signature_header):
+    raise Exception("Siyati envalid")` :
+`const crypto = require("crypto");
+
+const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+if (expected !== signatureHeader) throw new Error("Siyati envalid");`}
+                                </pre>
+                              </>
+                            )}
+
+                            {docsTab === 'reference' && (
+                              <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+                                      {['Metòd', 'Wout', 'Deskripsyon'].map((h) => (
+                                        <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: 'rgba(255,255,255,.4)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {[
+                                      ['POST', '/payments/initiate', 'Kreye yon demand peman'],
+                                      ['GET', '/payments/:paymentId', 'Verifye estati yon peman'],
+                                      ['GET', '/transactions', 'Istwa tranzaksyon (limit, offset, status, from, to)'],
+                                      ['GET', '/balance', 'Balans aktyèl wallet biznis la'],
+                                      ['POST', '/webhooks', 'Anrejistre yon URL webhook'],
+                                      ['GET', '/webhooks', 'Lis webhook konfigire yo'],
+                                      ['DELETE', '/webhooks/:id', 'Retire yon webhook'],
+                                    ].map((row) => (
+                                      <tr key={row[1]} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                                        <td style={{ padding: '10px', color: row[0] === 'GET' ? '#6cb2ff' : row[0] === 'DELETE' ? '#ff7a7a' : '#22C55E', fontWeight: 700, fontFamily: 'monospace' }}>{row[0]}</td>
+                                        <td style={{ padding: '10px', color: '#fff', fontFamily: 'monospace' }}>{row[1]}</td>
+                                        <td style={{ padding: '10px', color: 'rgba(255,255,255,.6)' }}>{row[2]}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   )}
 
                   {/* ── PROFILE ── */}

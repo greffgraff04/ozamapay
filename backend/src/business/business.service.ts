@@ -10,6 +10,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
+import { createHash, createHmac, randomBytes } from 'crypto';
+import { ApiService } from '../api/api.service';
 
 // ── Named constants — easy to tune ────────────────────────────────────────
 const BUSINESS_WITHDRAW_FEE = 0.015; // 1.5%
@@ -44,6 +46,19 @@ export class InviteMemberDto {
   role: 'ACCOUNTANT' | 'CASHIER';
 }
 
+export class CreateApiKeyDto {
+  name: string;
+  mode: 'LIVE' | 'TEST';
+  permissions?: ('READ' | 'WRITE' | 'WEBHOOK')[];
+}
+
+export class CreateBizWebhookDto {
+  url: string;
+  events: string[];
+}
+
+const API_TIERS = ['PRO', 'ENTERPRISE'];
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -51,6 +66,7 @@ export class BusinessService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
+    private apiService: ApiService,
   ) {}
 
   private round(n: number) {
@@ -503,9 +519,32 @@ export class BusinessService {
     return business;
   }
 
+  // Lets the payer's browser resolve a Developer API payment link
+  // (POST /api/v1/payments/initiate → paymentUrl) without needing an API key.
+  async getPublicApiPayment(paymentId: string) {
+    const payment = await this.prisma.apiPayment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        amount: true,
+        description: true,
+        status: true,
+        business: { select: { businessName: true } },
+      },
+    });
+    if (!payment) throw new NotFoundException('Peman pa jwenn');
+    return {
+      paymentId: payment.id,
+      amount: payment.amount,
+      description: payment.description,
+      status: payment.status,
+      businessName: payment.business.businessName,
+    };
+  }
+
   // ── Pay business (authenticated payer) ───────────────────────────────────
 
-  async payBusiness(payerId: string, businessId: string, amount: number, pin: string) {
+  async payBusiness(payerId: string, businessId: string, amount: number, pin: string, apiPaymentId?: string) {
     if (isNaN(amount) || amount <= 0) {
       throw new BadRequestException('Montan invalid');
     }
@@ -528,12 +567,29 @@ export class BusinessService {
     }
     if (!business.wallet) throw new NotFoundException('BusinessWallet pa jwenn');
 
+    // If this payment is settling a Developer API payment link, validate it
+    // matches before touching any money.
+    let apiPayment: { id: string; amount: any; fee: any } | null = null;
+    if (apiPaymentId) {
+      const found = await this.prisma.apiPayment.findUnique({ where: { id: apiPaymentId } });
+      if (!found || found.businessId !== businessId) {
+        throw new NotFoundException('Peman API pa jwenn');
+      }
+      if (found.status !== 'PENDING') {
+        throw new BadRequestException('Peman sa a deja trete');
+      }
+      if (Number(found.amount) !== Number(amount)) {
+        throw new BadRequestException('Montan pa matche ak peman API la');
+      }
+      apiPayment = found;
+    }
+
     const feeRate = BUSINESS_PAYMENT_FEE[business.tier] ?? BUSINESS_PAYMENT_FEE.STARTER;
     const fee = this.round(amount * feeRate);
     const netAmount = this.round(amount - fee);
     const reference = `BPAY-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         // Check payer balance
         const payerWallet = await tx.wallet.findUnique({ where: { userId: payerId } });
@@ -592,9 +648,163 @@ export class BusinessService {
           },
         });
 
+        if (apiPayment) {
+          await tx.apiPayment.update({
+            where: { id: apiPayment.id },
+            data: { status: 'COMPLETED', paidAt: new Date(), payerUserId: payerId },
+          });
+        }
+
         return { success: true, reference, transaction: personalTx };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    if (apiPayment) {
+      this.apiService.fireWebhooks(businessId, 'payment.received', {
+        paymentId: apiPayment.id,
+        amount,
+        fee,
+        status: 'COMPLETED',
+      }).catch(() => {});
+    }
+
+    return result;
+  }
+
+  // ── API Keys (developer API — dashboard management) ───────────────────────
+
+  private async assertApiTier(businessId: string) {
+    const business = await this.prisma.business.findUnique({ where: { id: businessId } });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+    if (business.status !== 'APPROVED') {
+      throw new ForbiddenException('Biznis ou a dwe apwouve anvan ou ka jere API');
+    }
+    if (!API_TIERS.includes(business.tier)) {
+      throw new ForbiddenException('Aksè API disponib sèlman pou plan PRO ak ENTERPRISE');
+    }
+    return business;
+  }
+
+  async listApiKeys(userId: string, businessId: string) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    const keys = await this.prisma.apiKey.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return keys.map((k) => ({
+      id: k.id,
+      name: k.name,
+      keyPrefix: k.keyPrefix,
+      mode: k.mode,
+      permissions: k.permissions,
+      isActive: k.isActive,
+      lastUsedAt: k.lastUsedAt,
+      createdAt: k.createdAt,
+      revokedAt: k.revokedAt,
+    }));
+  }
+
+  async createApiKey(userId: string, businessId: string, dto: CreateApiKeyDto) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    await this.assertApiTier(businessId);
+
+    if (!dto.name?.trim()) throw new BadRequestException('Non kle a obligatwa');
+    const mode = dto.mode === 'TEST' ? 'TEST' : 'LIVE';
+    const permissions = dto.permissions?.length ? dto.permissions : (['READ', 'WRITE', 'WEBHOOK'] as const);
+
+    const secretPart = randomBytes(32).toString('hex');
+    const fullKey = `ozpk_${mode.toLowerCase()}_${secretPart}`;
+    const keyHash = createHash('sha256').update(fullKey).digest('hex');
+    const keyPrefix = fullKey.slice(0, 18);
+
+    const apiKey = await this.prisma.apiKey.create({
+      data: {
+        businessId,
+        name: dto.name.trim(),
+        keyPrefix,
+        keyHash,
+        mode,
+        permissions: permissions as any,
+        isActive: true,
+      },
+    });
+
+    return {
+      id: apiKey.id,
+      name: apiKey.name,
+      mode: apiKey.mode,
+      permissions: apiKey.permissions,
+      key: fullKey, // shown once — never retrievable again after this response
+      keyPrefix: apiKey.keyPrefix,
+      createdAt: apiKey.createdAt,
+    };
+  }
+
+  async revokeApiKey(userId: string, businessId: string, keyId: string) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    const key = await this.prisma.apiKey.findUnique({ where: { id: keyId } });
+    if (!key || key.businessId !== businessId) throw new NotFoundException('API Key pa jwenn');
+    await this.prisma.apiKey.update({
+      where: { id: keyId },
+      data: { isActive: false, revokedAt: new Date() },
+    });
+    return { success: true };
+  }
+
+  // ── Webhooks (developer API — dashboard management) ───────────────────────
+
+  async listBusinessWebhooks(userId: string, businessId: string) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    return this.prisma.webhookEndpoint.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createBusinessWebhook(userId: string, businessId: string, dto: CreateBizWebhookDto) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    await this.assertApiTier(businessId);
+
+    if (!dto.url || !/^https:\/\//.test(dto.url)) {
+      throw new BadRequestException('URL webhook dwe kòmanse ak https://');
+    }
+    const secret = `whsec_${randomBytes(24).toString('hex')}`;
+    return this.prisma.webhookEndpoint.create({
+      data: { businessId, url: dto.url, events: dto.events || [], secret },
+    });
+  }
+
+  async removeBusinessWebhook(userId: string, businessId: string, webhookId: string) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    const wh = await this.prisma.webhookEndpoint.findUnique({ where: { id: webhookId } });
+    if (!wh || wh.businessId !== businessId) throw new NotFoundException('Webhook pa jwenn');
+    await this.prisma.webhookEndpoint.delete({ where: { id: webhookId } });
+    return { success: true };
+  }
+
+  async testBusinessWebhook(userId: string, businessId: string, webhookId: string) {
+    await this.assertMember(userId, businessId, ['OWNER']);
+    const wh = await this.prisma.webhookEndpoint.findUnique({ where: { id: webhookId } });
+    if (!wh || wh.businessId !== businessId) throw new NotFoundException('Webhook pa jwenn');
+
+    const body = JSON.stringify({
+      event: 'test.ping',
+      businessId,
+      message: 'Sa se yon evènman tès ki soti nan OZAMAPAY Business',
+      timestamp: new Date().toISOString(),
+    });
+    const signature = createHmac('sha256', wh.secret).update(body).digest('hex');
+
+    try {
+      const res = await fetch(wh.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Ozamapay-Signature': signature },
+        body,
+      });
+      return { success: res.ok, statusCode: res.status };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Rekèt la echwe' };
+    }
   }
 }

@@ -18,6 +18,8 @@ import {
   ApplyBusinessDto,
   WithdrawDto,
   InviteMemberDto,
+  CreateApiKeyDto,
+  CreateBizWebhookDto,
 } from './business.service';
 
 @UseGuards(JwtAuthGuard)
@@ -110,8 +112,52 @@ export class BusinessController {
   payBusiness(
     @Request() req,
     @Param('id') id: string,
-    @Body() body: { amount: number; pin: string },
+    @Body() body: { amount: number; pin: string; apiPaymentId?: string },
   ) {
-    return this.businessService.payBusiness(req.user.id, id, body.amount, body.pin);
+    return this.businessService.payBusiness(req.user.id, id, body.amount, body.pin, body.apiPaymentId);
+  }
+
+  // ── Developer API — keys & webhooks (dashboard management) ───────────────
+
+  // GET /business/:id/api-keys
+  @Get(':id/api-keys')
+  getApiKeys(@Request() req, @Param('id') id: string) {
+    return this.businessService.listApiKeys(req.user.id, id);
+  }
+
+  // POST /business/:id/api-keys
+  @Post(':id/api-keys')
+  createApiKey(@Request() req, @Param('id') id: string, @Body() dto: CreateApiKeyDto) {
+    return this.businessService.createApiKey(req.user.id, id, dto);
+  }
+
+  // DELETE /business/:id/api-keys/:keyId
+  @Delete(':id/api-keys/:keyId')
+  revokeApiKey(@Request() req, @Param('id') id: string, @Param('keyId') keyId: string) {
+    return this.businessService.revokeApiKey(req.user.id, id, keyId);
+  }
+
+  // GET /business/:id/webhooks
+  @Get(':id/webhooks')
+  getBizWebhooks(@Request() req, @Param('id') id: string) {
+    return this.businessService.listBusinessWebhooks(req.user.id, id);
+  }
+
+  // POST /business/:id/webhooks
+  @Post(':id/webhooks')
+  createBizWebhook(@Request() req, @Param('id') id: string, @Body() dto: CreateBizWebhookDto) {
+    return this.businessService.createBusinessWebhook(req.user.id, id, dto);
+  }
+
+  // DELETE /business/:id/webhooks/:webhookId
+  @Delete(':id/webhooks/:webhookId')
+  removeBizWebhook(@Request() req, @Param('id') id: string, @Param('webhookId') webhookId: string) {
+    return this.businessService.removeBusinessWebhook(req.user.id, id, webhookId);
+  }
+
+  // POST /business/:id/webhooks/:webhookId/test
+  @Post(':id/webhooks/:webhookId/test')
+  testBizWebhook(@Request() req, @Param('id') id: string, @Param('webhookId') webhookId: string) {
+    return this.businessService.testBusinessWebhook(req.user.id, id, webhookId);
   }
 }

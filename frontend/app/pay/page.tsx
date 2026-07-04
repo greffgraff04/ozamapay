@@ -67,6 +67,10 @@ function PayContent() {
   const businessId = params.get("business") || "";
   const isBusinessMode = Boolean(businessId);
 
+  // Developer API payment link — ?business={id}&apiPayment={paymentId}
+  const apiPaymentId = params.get("apiPayment") || "";
+  const [apiPaymentInfo, setApiPaymentInfo] = useState<{ amount: string; description: string | null; status: string } | null>(null);
+
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,6 +121,21 @@ function PayContent() {
       .finally(() => setBizLoading(false));
   }, [businessId]);
 
+  // Developer API payment link — prefill + lock the amount to what the
+  // merchant's integration requested via POST /api/v1/payments/initiate
+  useEffect(() => {
+    if (!apiPaymentId) return;
+    fetch(`${backendUrl}/business/api-payments/${apiPaymentId}/public`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setApiPaymentInfo(data);
+          setAmount(String(data.amount));
+        }
+      })
+      .catch(() => {});
+  }, [apiPaymentId]);
+
   const showToast = (
     message: string,
     type: "error" | "success" | "warning" = "error"
@@ -148,7 +167,7 @@ function PayContent() {
         res = await fetch(`${backendUrl}/business/${businessId}/pay`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: amt, pin }),
+          body: JSON.stringify({ amount: amt, pin, apiPaymentId: apiPaymentId || undefined }),
         });
       } else {
         if (!recipientEmail) { showToast("Adrès destinatè a manke", "error"); setLoading(false); return; }
@@ -293,23 +312,31 @@ function PayContent() {
               placeholder="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 text-4xl font-black text-[#0F121E] bg-transparent outline-none placeholder:text-[#0F121E]/15"
-              autoFocus
+              readOnly={Boolean(apiPaymentId)}
+              className="flex-1 text-4xl font-black text-[#0F121E] bg-transparent outline-none placeholder:text-[#0F121E]/15 disabled:opacity-60"
+              autoFocus={!apiPaymentId}
             />
             <span className="text-sm font-black text-[#0F121E]/40 mb-1">HTG</span>
           </div>
-          <div className="mt-3 h-px bg-[#F0F0F0]" />
-          <div className="flex gap-2 mt-3 flex-wrap">
-            {[500, 1000, 2000, 5000].map((v) => (
-              <button
-                key={v}
-                onClick={() => setAmount(String(v))}
-                className="px-3 py-1.5 rounded-xl bg-[#F8F9FA] border border-[#F0F0F0] text-[11px] font-black text-[#0F121E]/60 hover:border-[#FF6B00]/40 hover:text-[#FF6B00] transition"
-              >
-                {v.toLocaleString("fr-HT")}
-              </button>
-            ))}
-          </div>
+          {apiPaymentInfo?.description && (
+            <p className="mt-2 text-[11px] text-[#0F121E]/40">{apiPaymentInfo.description}</p>
+          )}
+          {!apiPaymentId && (
+            <>
+              <div className="mt-3 h-px bg-[#F0F0F0]" />
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {[500, 1000, 2000, 5000].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setAmount(String(v))}
+                    className="px-3 py-1.5 rounded-xl bg-[#F8F9FA] border border-[#F0F0F0] text-[11px] font-black text-[#0F121E]/60 hover:border-[#FF6B00]/40 hover:text-[#FF6B00] transition"
+                  >
+                    {v.toLocaleString("fr-HT")}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* PIN input */}

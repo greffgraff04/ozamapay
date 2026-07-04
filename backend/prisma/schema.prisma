@@ -32,12 +32,12 @@ model User {
   virtualCards    VirtualCard[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
-  emailVerified Boolean @default(false)
+  emailVerified   Boolean             @default(false)
 
   emailVerificationToken String?
-  resetPasswordToken String?
-  resetPasswordExpires DateTime?
-  emailVerifiedAt DateTime?
+  resetPasswordToken     String?
+  resetPasswordExpires   DateTime?
+  emailVerifiedAt        DateTime?
 
   twoFactorSecret  String?
   twoFactorEnabled Boolean @default(false)
@@ -269,12 +269,12 @@ model Agent {
   trustScore            Decimal             @default(100.00) @db.Decimal(5, 2)
   user                  User                @relation(fields: [userId], references: [id])
   wallet                AgentWallet?
-  commissions        Commission[]
-  kycs               Kyc[]
-  topups             TopUpRequest[]
-  withdrawals        WithdrawalRequest[]
-  referredUsers      User[]               @relation("AgentReferrals")
-  liquidityRequests  LiquidityRequest[]
+  commissions           Commission[]
+  kycs                  Kyc[]
+  topups                TopUpRequest[]
+  withdrawals           WithdrawalRequest[]
+  referredUsers         User[]              @relation("AgentReferrals")
+  liquidityRequests     LiquidityRequest[]
 }
 
 model AgentWallet {
@@ -570,19 +570,24 @@ model LiquidityRequest {
 }
 
 model Business {
-  id            String                    @id @default(uuid())
-  businessName  String
-  category      String
-  tier          BusinessTier
-  status        BusinessApplicationStatus @default(PENDING)
-  ownerId       String
-  applicationId String                    @unique
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  owner         User                      @relation("OwnedBusinesses", fields: [ownerId], references: [id])
-  application   MerchantApplication       @relation(fields: [applicationId], references: [id])
-  wallet        BusinessWallet?
-  members       BusinessMember[]
+  id                String                    @id @default(uuid())
+  businessName      String
+  category          String
+  tier              BusinessTier
+  status            BusinessApplicationStatus @default(PENDING)
+  ownerId           String
+  applicationId     String                    @unique
+  testWalletBalance Decimal                   @default(1000000.00) @db.Decimal(18, 2)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  owner             User                      @relation("OwnedBusinesses", fields: [ownerId], references: [id])
+  application       MerchantApplication       @relation(fields: [applicationId], references: [id])
+  wallet            BusinessWallet?
+  members           BusinessMember[]
+  apiKeys           ApiKey[]
+  webhooks          WebhookEndpoint[]
+  apiPayments       ApiPayment[]
+  testTransactions  TestTransaction[]
 
   @@index([ownerId])
   @@index([status])
@@ -634,4 +639,96 @@ model BusinessTransaction {
   @@index([businessWalletId])
   @@index([status])
   @@index([createdAt])
+}
+
+enum ApiKeyMode {
+  LIVE
+  TEST
+}
+
+enum ApiKeyPermission {
+  READ
+  WRITE
+  WEBHOOK
+}
+
+enum ApiPaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+model ApiKey {
+  id          String             @id @default(uuid())
+  businessId  String
+  name        String
+  keyPrefix   String
+  keyHash     String             @unique
+  mode        ApiKeyMode
+  permissions ApiKeyPermission[]
+  isActive    Boolean            @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  revokedAt   DateTime?
+
+  business         Business          @relation(fields: [businessId], references: [id])
+  apiPayments      ApiPayment[]
+  testTransactions TestTransaction[]
+
+  @@index([businessId])
+  @@index([keyHash])
+}
+
+model WebhookEndpoint {
+  id         String   @id @default(uuid())
+  businessId String
+  url        String
+  events     String[]
+  secret     String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model ApiPayment {
+  id          String           @id @default(uuid())
+  businessId  String
+  apiKeyId    String
+  amount      Decimal          @db.Decimal(18, 2)
+  currency    String           @default("HTG")
+  fee         Decimal          @default(0.00) @db.Decimal(18, 2)
+  reference   String           @unique
+  description String?
+  status      ApiPaymentStatus @default(PENDING)
+  payerUserId String?
+  paidAt      DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+  apiKey   ApiKey   @relation(fields: [apiKeyId], references: [id])
+
+  @@index([businessId])
+  @@index([status])
+}
+
+model TestTransaction {
+  id          String           @id @default(uuid())
+  businessId  String
+  apiKeyId    String
+  amount      Decimal          @db.Decimal(18, 2)
+  fee         Decimal          @default(0.00) @db.Decimal(18, 2)
+  reference   String           @unique
+  description String?
+  status      ApiPaymentStatus @default(COMPLETED)
+  createdAt   DateTime         @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+  apiKey   ApiKey   @relation(fields: [apiKeyId], references: [id])
+
+  @@index([businessId])
 }

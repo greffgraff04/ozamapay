@@ -24,6 +24,7 @@ import { ReloadlyAuthModule } from './reloadly/reloadly-auth.module';
 import { AirtimeModule } from './airtime/airtime.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { BusinessModule } from './business/business.module';
+import { ApiModule } from './api/api.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BusinessModule } from './business/business.module';
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 60000, limit: 100 },
       { name: 'long', ttl: 3600000, limit: 1000 },
+      { name: 'apiDaily', ttl: 86400000, limit: 1000 },
     ]),
     PrismaModule,
     UsersModule,
@@ -49,6 +51,7 @@ import { BusinessModule } from './business/business.module';
     SubscriptionModule,
     MerchantModule,
     BusinessModule,
+    ApiModule,
     GiftCardsModule,
     ReloadlyAuthModule,
     AirtimeModule,
