@@ -77,6 +77,7 @@ const signOut = async () => {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState<any>(null);
+  const [myBusinesses, setMyBusinesses] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isCardFrozen, setIsCardFrozen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -398,21 +399,25 @@ export default function Dashboard() {
       const headers = { Authorization: `Bearer ${localToken}` };
       const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-      const [txRes, meRes, rateRes, notifRes, cardRes] = await Promise.all([
+      const [txRes, meRes, rateRes, notifRes, cardRes, bizRes] = await Promise.all([
         fetch(`${API_BASE}/wallet/transactions?limit=5`, { headers }).catch(() => null),
         fetch(`${API_BASE}/auth/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/rates`).catch(() => null),
         fetch(`${API_BASE}/wallet/notifications`, { headers }).catch(() => null),
         fetch(`${API_BASE}/v1/cards/my-card`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
+        fetch(`${API_BASE}/business/me`, { headers }).catch(() => null),
       ]);
 
-      const [txData, meData, ratesData, notifData, cardData] = await Promise.all([
+      const [txData, meData, ratesData, notifData, cardData, bizData] = await Promise.all([
         txRes?.ok ? txRes.json().catch(() => null) : null,
         meRes?.ok ? meRes.json().catch(() => null) : null,
         rateRes?.ok ? rateRes.json().catch(() => null) : null,
         notifRes?.ok ? notifRes.json().catch(() => null) : null,
         cardRes?.ok ? cardRes.json().catch(() => null) : null,
+        bizRes?.ok ? bizRes.json().catch(() => null) : null,
       ]);
+
+      setMyBusinesses(bizData);
 
       setTransactions(Array.isArray(txData?.data) ? txData.data : []);
 
@@ -3256,6 +3261,22 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 text-left">
                         <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Vin yon Ajan</p>
+                        <p className="text-[10px]" style={{ color: colors.textSecondary }}>Aplike kounye a — Mande KYC Apwouve</p>
+                      </div>
+                      <ChevronRight size={16} color={colors.textSecondary} />
+                    </button>
+                  )}
+
+                  {/* Row 3b — Business */}
+                  {!myBusinesses?.owned?.length && (
+                    <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/business/apply'; }}
+                      className="w-full flex items-center gap-3 px-4 py-4 border-b active:opacity-70 transition-all"
+                      style={{ borderColor: colors.border }}>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}33` }}>
+                        <Briefcase size={18} color={colors.accent} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-black italic uppercase text-[12px]" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Vin yon Biznis</p>
                         <p className="text-[10px]" style={{ color: colors.textSecondary }}>Aplike kounye a — Mande KYC Apwouve</p>
                       </div>
                       <ChevronRight size={16} color={colors.textSecondary} />
