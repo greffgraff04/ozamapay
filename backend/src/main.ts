@@ -5,12 +5,26 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { HealthService } from './health/health.service';
 
 async function bootstrap() {
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+
+  // Fail fast if the DB schema is behind the Prisma migrations shipped in
+  // this build — refuse to serve traffic against a stale schema instead of
+  // starting up silently (this is what let the 2026-07-04 incident happen).
+  try {
+    await app.get(HealthService).assertMigrationsInSync();
+  } catch (err) {
+    console.error(
+      `FATAL: sèvè a p ap demare — ${err instanceof Error ? err.message : err}`,
+    );
+    await app.close();
+    process.exit(1);
+  }
 
   // Konfigirasyon limit pou JSON ak URL-encoded. The verify callback captures req.rawBody
   // so @RawBody() works in the webhook controller. This middleware runs before NestJS's own

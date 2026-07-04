@@ -1,11 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
+import { HealthService } from './health.service';
 
 @SkipThrottle()
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly healthService: HealthService,
+  ) {}
 
   @Get('detailed')
   async getDetailed() {
@@ -25,5 +29,17 @@ export class HealthController {
         timestamp: new Date(),
       };
     }
+  }
+
+  // GET /health/migrations — lets admin check migration sync status without
+  // needing direct DB/psql access (the exact gap that delayed catching the
+  // 2026-07-04 schema-drift incident).
+  @Get('migrations')
+  async getMigrations() {
+    const status = await this.healthService.getMigrationStatus();
+    return {
+      status: status.inSync ? 'ok' : 'drift',
+      ...status,
+    };
   }
 }
