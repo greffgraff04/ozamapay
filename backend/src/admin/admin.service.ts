@@ -1144,6 +1144,38 @@ export class AdminService {
     });
   }
 
+  async updateBusinessTier(businessId: string, tier: string) {
+    if (!['STARTER', 'PRO', 'ENTERPRISE'].includes(tier)) {
+      throw new BadRequestException('Tyè envalid — STARTER, PRO, oswa ENTERPRISE sèlman');
+    }
+
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      include: { owner: true },
+    });
+    if (!business) throw new NotFoundException('Biznis pa jwenn');
+
+    const previousTier = business.tier;
+    await this.prisma.business.update({
+      where: { id: businessId },
+      data: { tier: tier as any },
+    });
+
+    if (previousTier !== tier) {
+      try {
+        await this.mailService.sendBusinessTierChanged(
+          business.owner.email,
+          business.owner.name || business.owner.email,
+          business.businessName,
+          previousTier,
+          tier,
+        );
+      } catch {}
+    }
+
+    return { success: true, previousTier, tier };
+  }
+
   // ── BUSINESS WITHDRAWALS (MONCASH/BANK — manual admin processing) ─────────
   // PERSONAL_WALLET withdrawals settle instantly and are never PENDING, so
   // any WITHDRAWAL row still PENDING here is by definition a MonCash/Bank

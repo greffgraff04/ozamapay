@@ -783,6 +783,35 @@ export class MailService {
     await this.send(email, `Demande biznis ${businessName} refize — OZAMAPAY Business`, html);
   }
 
+  async sendBusinessTierChanged(
+    email: string,
+    name: string,
+    businessName: string,
+    previousTier: string,
+    newTier: string,
+  ): Promise<void> {
+    const TIER_FEE: Record<string, string> = { STARTER: '2.5%', PRO: '2.0%', ENTERPRISE: '1.5%' };
+    const isUpgrade = ['STARTER', 'PRO', 'ENTERPRISE'].indexOf(newTier) > ['STARTER', 'PRO', 'ENTERPRISE'].indexOf(previousTier);
+
+    const html = this.wrap(
+      `Plan biznis ${businessName} chanje — OZAMAPAY Business`,
+      isUpgrade ? 'Plan Biznis Ou Amelyore! 🎉' : 'Plan Biznis Ou Chanje',
+      this.p(`Bonjou ${name},`) +
+      this.badge('KONFIME') + '<br/>' +
+      this.p(`Plan biznis <strong>${businessName}</strong> ou a chanje.`) +
+      this.table(
+        this.infoRow('Ansyen plan', previousTier) +
+        this.infoRow('Nouvo plan', newTier) +
+        this.infoRow('Nouvo frè tranzaksyon', TIER_FEE[newTier] ?? '—'),
+      ) +
+      (newTier !== 'STARTER'
+        ? this.accentLine('Ou kounye a gen aksè nan API Devlopè — jenere yon API Key nan Dashboard Biznis ou.')
+        : ''),
+      '#22C55E',
+    );
+    await this.send(email, `Plan biznis ${businessName} chanje — OZAMAPAY Business`, html);
+  }
+
   async sendBusinessWithdrawalApproved(
     email: string,
     name: string,

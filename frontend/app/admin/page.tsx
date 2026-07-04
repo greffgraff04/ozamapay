@@ -62,6 +62,9 @@ export default function AdminDashboard() {
   const [businessView, setBusinessView] = useState<'pending' | 'all'>('pending');
   const [rejectModal, setRejectModal] = useState<{ id: string; name: string } | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [tierModal, setTierModal] = useState<{ id: string; name: string; currentTier: string } | null>(null);
+  const [selectedTier, setSelectedTier] = useState('');
+  const [tierSaving, setTierSaving] = useState(false);
 
   // Business withdrawals (MonCash/Bank) state
   const [businessWithdrawals, setBusinessWithdrawals] = useState<any[]>([]);
@@ -1806,6 +1809,12 @@ export default function AdminDashboard() {
                                   <XCircle size={10} /> Refize
                                 </button>
                               </div>
+                            ) : b.status === 'APPROVED' ? (
+                              <button
+                                onClick={() => { setTierModal({ id: b.id, name: b.businessName, currentTier: b.tier }); setSelectedTier(b.tier); }}
+                                className="bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/70 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition flex items-center gap-1">
+                                <Sliders size={10} /> Tier
+                              </button>
                             ) : (
                               <span className="text-[8px] font-mono text-white/20 uppercase tracking-widest">Trete</span>
                             )}
@@ -2003,6 +2012,56 @@ export default function AdminDashboard() {
                   }}
                   className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition active:scale-[0.98]">
                   Konfime Refi →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Business tier change modal ── */}
+          {tierModal && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 bg-[#0A0B0F]/70 backdrop-blur-md">
+              <div className="bg-[#0D0E14] border border-white/[0.05] w-full max-w-sm rounded-2xl p-6 relative shadow-2xl">
+                <button onClick={() => setTierModal(null)} className="absolute right-5 top-5 text-white/20 hover:text-white transition">
+                  <X size={16} />
+                </button>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-xl"><Sliders size={14} className="text-[#FF6B00]" /></div>
+                  <div>
+                    <h3 className="font-black text-xs uppercase tracking-widest text-white/90">Chanje Tier</h3>
+                    <p className="text-[9px] font-mono text-white/30 mt-0.5">{tierModal.name} · aktyèlman {tierModal.currentTier}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mb-5">
+                  {(['STARTER', 'PRO', 'ENTERPRISE'] as const).map(t => (
+                    <button key={t} onClick={() => setSelectedTier(t)}
+                      className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition border ${
+                        selectedTier === t
+                          ? 'bg-[#FF6B00] border-[#FF6B00] text-white'
+                          : 'bg-white/[0.02] border-white/[0.06] text-white/40 hover:border-white/20'
+                      }`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={tierSaving || selectedTier === tierModal.currentTier}
+                  onClick={async () => {
+                    setTierSaving(true);
+                    try {
+                      const res = await fetch(`${API}/admin/businesses/${tierModal.id}/tier`, {
+                        method: 'PATCH', headers: H(), body: JSON.stringify({ tier: selectedTier })
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      if (res.ok) {
+                        showToast(`✅ ${tierModal.name} kounye a se ${selectedTier}`);
+                        setBusinesses(prev => prev.map((x: any) => x.id === tierModal.id ? { ...x, tier: selectedTier } : x));
+                        setTierModal(null);
+                      } else showToast(data.message || 'Erè pandan chanjman tier la', 'error');
+                    } catch { showToast('Erè rezo', 'error'); }
+                    finally { setTierSaving(false); }
+                  }}
+                  className="w-full bg-[#FF6B00] hover:bg-[#FF8534] disabled:opacity-40 disabled:cursor-not-allowed text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition active:scale-[0.98]">
+                  {tierSaving ? 'Ap sove...' : 'Konfime Chanjman →'}
                 </button>
               </div>
             </div>

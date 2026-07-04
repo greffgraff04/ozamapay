@@ -231,6 +231,20 @@ export class AdminController {
     return this.adminService.getAllBusinesses();
   }
 
+  @Patch('businesses/:id/tier')
+  @UseGuards(CooGuard)
+  async updateBusinessTier(
+    @Param('id') id: string,
+    @Body() body: { tier: 'STARTER' | 'PRO' | 'ENTERPRISE' },
+    @Req() req: any,
+  ) {
+    const adminId = req.user?.id;
+    const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+    const result = await this.adminService.updateBusinessTier(id, body.tier);
+    await this.adminService.logActivity(adminId, 'BUSINESS_TIER_CHANGED', `Tyè biznis ${id} chanje: ${result.previousTier} → ${result.tier}`, ip);
+    return result;
+  }
+
   // ── BUSINESS WITHDRAWALS (MonCash/Bank manual processing) ─────────────────
 
   @Get('business-withdrawals/pending')
