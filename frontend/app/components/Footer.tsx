@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 const FOOTER_COLS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -47,14 +48,14 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer data-screen-label="Footer" style={{
-      background: 'linear-gradient(120deg, var(--navy), var(--navy-deep))', color: 'white',
+    <footer data-screen-label="Footer" className="ozp-gradient-anim" style={{
+      background: 'linear-gradient(120deg, var(--navy), var(--navy-deep), var(--orange-dark), var(--navy))', color: 'white',
       padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px) 0',
     }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '44px 0', display: 'flex', flexWrap: 'wrap', gap: 36, justifyContent: 'space-between' }}>
         <div style={{ flex: '1 1 200px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontWeight: 700, fontSize: 19, marginBottom: 12 }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: 'var(--orange)', display: 'inline-block' }} />
+            <Image src="/logo.png" alt="Ozamapay" width={26} height={26} style={{ borderRadius: 6 }} />
             OZAMAPAY
           </div>
           <p style={{ color: 'oklch(0.75 0.02 260)', fontSize: 13.5, lineHeight: 1.6, maxWidth: 240, margin: 0 }}>

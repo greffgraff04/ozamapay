@@ -104,3 +104,26 @@
   -webkit-backdrop-filter: blur(24px);
   box-shadow: var(--oz-glass-shadow);
 }
+
+/* ── Landing page: shared hover interaction for CTAs ── */
+.ozp-btn-glow {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ozp-btn-glow:hover {
+  transform: scale(1.05);
+  box-shadow: 0 14px 34px -10px color-mix(in srgb, var(--orange, #FF7A00) 65%, transparent);
+}
+.ozp-btn-glow:active {
+  transform: scale(0.98);
+}
+
+/* ── Landing page: slow continuous gradient shift for hero/CTA backgrounds ── */
+@keyframes ozpGradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.ozp-gradient-anim {
+  background-size: 200% 200%;
+  animation: ozpGradientShift 12s ease-in-out infinite;
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Lock } from 'lucide-react';
 import Header from './components/Navbar';
 import Footer from './components/Footer';
 import Hero from './components/sections/Hero';
@@ -175,9 +176,7 @@ export default function HomePage() {
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF6B00] to-[#E05E00] flex items-center justify-center shadow-lg shadow-[#FF6B00]/20">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 10-9 0v3M4.5 10.5h15M4.5 10.5v9a1.5 1.5 0 001.5 1.5h12a1.5 1.5 0 001.5-1.5v-9" />
-                </svg>
+                <Lock className="w-6 h-6 text-white" strokeWidth={2} />
               </div>
             </div>
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { motion } from 'framer-motion';
+
 const FAQS = [
   { question: 'Kisa Ozamapay ye?', answer: 'Ozamapay se yon sistèm finansye ki pèmèt itilizatè Ayiti ak dyaspora a jere lajan yo, kreye kat vityèl, epi fè peman toupatou nan mond lan.' },
   { question: 'Kijan pou m kreye yon kat vityèl?', answer: 'Apre w fin verifye kont ou, ou ka kreye yon kat vityèl Visa/Mastercard an kèk segond dirèkteman nan app la.' },
@@ -14,12 +16,18 @@ export default function FAQ() {
     <section data-screen-label="FAQ" id="faq" style={{
       padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 800, margin: '0 auto',
     }}>
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true, margin: '-80px' }}
+        style={{ textAlign: 'center', marginBottom: 36 }}
+      >
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>FAQ</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
           Kesyon moun poze souvan
         </h2>
-      </div>
+      </motion.div>
       <style>{`
         .ozp-faq summary { list-style: none; }
         .ozp-faq summary::-webkit-details-marker { display: none; }

@@ -1,5 +1,7 @@
 'use client';
 
+import { motion } from 'framer-motion';
+
 const TESTIMONIALS = [
   { quote: 'Ozamapay ban mwen libète pou m peye founisè m yo san m pa bezwen yon bank tradisyonèl.', name: 'Jameson R.', role: 'Vandè E-commerce', from: 'var(--navy)', to: 'var(--orange)' },
   { quote: 'Kounye a mwen ka resevwa lajan kliyan entènasyonal mwen yo san tèt chaje.', name: 'Nadège P.', role: 'Freelancer Design', from: 'var(--orange)', to: 'var(--navy)' },
@@ -11,15 +13,39 @@ export default function Testimonials() {
     <section data-screen-label="Temwayaj" style={{
       padding: 'clamp(48px, 7vw, 80px) clamp(20px, 5vw, 56px)', maxWidth: 1280, margin: '0 auto',
     }}>
-      <div style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}>
+      <style>{`
+        .ozp-testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        @media (max-width: 640px) {
+          .ozp-testimonials-grid {
+            display: flex; overflow-x: auto; gap: 16px; scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch; padding-bottom: 8px; margin: 0 -20px; padding-left: 20px; padding-right: 20px;
+          }
+          .ozp-testimonials-grid > * { flex: 0 0 85%; scroll-snap-align: center; }
+        }
+      `}</style>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true, margin: '-80px' }}
+        style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}
+      >
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>TEMWAYAJ</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
           Antreprenè fè konfyans nan nou
         </h2>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-        {TESTIMONIALS.map((t) => (
-          <div key={t.name} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      </motion.div>
+      <div className="ozp-testimonials-grid">
+        {TESTIMONIALS.map((t, i) => (
+          <motion.div
+            key={t.name}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: i * 0.08 }}
+            viewport={{ once: true, margin: '-60px' }}
+            whileHover={{ y: -4 }}
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}
+          >
             <span style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 38, lineHeight: 1, color: 'var(--orange-soft)', fontWeight: 700 }}>"</span>
             <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--ink)' }}>{t.quote}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 'auto' }}>
@@ -29,7 +55,7 @@ export default function Testimonials() {
                 <div style={{ fontSize: 12.5, color: 'var(--ink-soft)' }}>{t.role}</div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>

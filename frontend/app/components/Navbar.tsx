@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const NAV_LINKS = [
   { label: 'Fonksyonalite', href: '#fonksyonalite' },
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const checkSize = () => {
@@ -28,14 +30,23 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', checkSize);
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <nav style={{
       position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px clamp(20px, 5vw, 56px)', background: 'color-mix(in oklch, var(--bg) 88%, transparent)',
-      backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--border)',
+      padding: '16px clamp(20px, 5vw, 56px)', background: scrolled ? 'color-mix(in oklch, var(--bg) 94%, transparent)' : 'color-mix(in oklch, var(--bg) 82%, transparent)',
+      backdropFilter: scrolled ? 'blur(16px)' : 'blur(8px)', borderBottom: '1px solid var(--border)',
+      boxShadow: scrolled ? '0 12px 30px -20px oklch(0.2 0.03 260 / 0.3)' : 'none',
+      transition: 'background 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em', flexShrink: 0 }}>
-        <span style={{ width: 11, height: 11, borderRadius: 3, background: 'var(--orange)', display: 'inline-block' }} />
+        <Image src="/logo.png" alt="Ozamapay" width={28} height={28} style={{ borderRadius: 7 }} priority />
         OZAMAPAY
       </div>
 
@@ -49,8 +60,8 @@ export default function Navbar() {
           <Link href="/login" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 6 }}>
             Konekte
           </Link>
-          <Link href="/register" style={{
-            background: 'var(--orange)', color: 'white', padding: '11px 20px', borderRadius: 100,
+          <Link href="/register" className="ozp-btn-glow" style={{
+            background: 'var(--orange)', color: 'white', padding: '13px 20px', borderRadius: 100,
             fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-block',
           }}>
             Kreye Kont
@@ -61,7 +72,7 @@ export default function Navbar() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Meni"
           style={{
-            width: 40, height: 40, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)',
+            width: 44, height: 44, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer',
           }}>
           <span style={{ width: 18, height: 2, background: 'var(--ink)', borderRadius: 2 }} />
@@ -84,8 +95,8 @@ export default function Navbar() {
           <Link href="/login" onClick={() => setMenuOpen(false)} style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 15, fontWeight: 500, padding: '10px 4px' }}>
             Konekte
           </Link>
-          <Link href="/register" onClick={() => setMenuOpen(false)} style={{
-            background: 'var(--orange)', color: 'white', padding: '13px 20px', borderRadius: 100,
+          <Link href="/register" onClick={() => setMenuOpen(false)} className="ozp-btn-glow" style={{
+            background: 'var(--orange)', color: 'white', padding: '14px 20px', borderRadius: 100,
             fontSize: 15, fontWeight: 600, textDecoration: 'none', textAlign: 'center', marginTop: 8,
           }}>
             Kreye Kont
