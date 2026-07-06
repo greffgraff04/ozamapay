@@ -1,36 +1,41 @@
 'use client';
 
 import {
-  ShoppingBag, Store, Cpu, Coffee, Shirt, Stethoscope, GraduationCap, Truck,
-  UtensilsCrossed, Hammer, Sparkles, Car, Flower2, Pill, Plane, Home,
-  Dumbbell, Music, Gem, BookOpen,
+  ShoppingBag, Store, ShoppingCart, Music, Smartphone, PlayCircle, Car, Home,
+  BedDouble, Wallet, Gamepad2, Tv, Clapperboard, Palette, Layers, Briefcase, Bot,
 } from 'lucide-react';
-import { eyebrow, sectionHeading } from './theme';
+import { eyebrow, sectionHeading, sectionIntro } from './theme';
 
+// Category accents: Boutique #FF9900 · Streaming #E50914 · Transport #000000 · Tech #007AFF · Travail #1DBF73
 const ROW_1 = [
-  { name: 'Santoli Store', icon: ShoppingBag, color: '#FF7A00' },
-  { name: 'Marché Caraïbe', icon: Store, color: '#0EA5A0' },
-  { name: 'TechHaïti', icon: Cpu, color: '#3B82F6' },
-  { name: 'CaféPort', icon: Coffee, color: '#A0522D' },
-  { name: 'LaMode HTI', icon: Shirt, color: '#EC4899' },
-  { name: 'MonDoc Santé', icon: Stethoscope, color: '#EF4444' },
-  { name: 'SkoolHaïti', icon: GraduationCap, color: '#6366F1' },
-  { name: 'LivraPort', icon: Truck, color: '#22C55E' },
-  { name: 'FoodExpress', icon: UtensilsCrossed, color: '#F97316' },
-  { name: 'ArtisanHaïti', icon: Hammer, color: '#D97706' },
+  { name: 'Amazon', icon: ShoppingBag, color: '#FF9900' },
+  { name: 'Netflix', icon: Tv, color: '#E50914' },
+  { name: 'Uber', icon: Car, color: '#000000' },
+  { name: 'Apple Store', icon: Smartphone, color: '#007AFF' },
+  { name: 'Shopify', icon: Store, color: '#1DBF73' },
+  { name: 'Spotify', icon: Music, color: '#E50914' },
+  { name: 'Airbnb', icon: Home, color: '#000000' },
+  { name: 'PayPal', icon: Wallet, color: '#007AFF' },
+  { name: 'Canva', icon: Palette, color: '#007AFF' },
+  { name: 'Steam', icon: Gamepad2, color: '#E50914' },
+  { name: 'Shein', icon: ShoppingBag, color: '#FF9900' },
+  { name: 'Fiverr', icon: Briefcase, color: '#1DBF73' },
+  { name: 'Disney+', icon: Clapperboard, color: '#E50914' },
 ];
 
 const ROW_2 = [
-  { name: 'BeautéCaraïbe', icon: Sparkles, color: '#D946EF' },
-  { name: 'AutoJacmel', icon: Car, color: '#64748B' },
-  { name: 'FleurDézil', icon: Flower2, color: '#FB7185' },
-  { name: 'PharmaRapid', icon: Pill, color: '#10B981' },
-  { name: 'VoyagePap', icon: Plane, color: '#0EA5E9' },
-  { name: 'ImmoHaïti', icon: Home, color: '#06B6D4' },
-  { name: 'SportZone509', icon: Dumbbell, color: '#84CC16' },
-  { name: 'MusicKreyòl', icon: Music, color: '#8B5CF6' },
-  { name: 'BijouCap', icon: Gem, color: '#EAB308' },
-  { name: 'EcoleTechno', icon: BookOpen, color: '#14B8A6' },
+  { name: 'Alibaba', icon: Store, color: '#FF9900' },
+  { name: 'PlayStation', icon: Gamepad2, color: '#E50914' },
+  { name: 'Booking.com', icon: BedDouble, color: '#000000' },
+  { name: 'Adobe', icon: Layers, color: '#007AFF' },
+  { name: 'AliExpress', icon: ShoppingCart, color: '#FF9900' },
+  { name: 'Hulu', icon: Tv, color: '#E50914' },
+  { name: 'Xbox', icon: Gamepad2, color: '#E50914' },
+  { name: 'Google Play', icon: PlayCircle, color: '#007AFF' },
+  { name: 'Upwork', icon: Briefcase, color: '#1DBF73' },
+  { name: 'eBay', icon: ShoppingBag, color: '#FF9900' },
+  { name: 'ChatGPT Plus', icon: Bot, color: '#007AFF' },
+  { name: 'Amazon Prime', icon: PlayCircle, color: '#E50914' },
 ];
 
 function Card({ item }: { item: (typeof ROW_1)[number] }) {
@@ -62,8 +67,11 @@ export default function PartnerCarousel() {
         .ozp-partner-row:hover .ozp-partner-track-right { animation-play-state: paused; }
       `}</style>
       <div style={{ maxWidth: 620, margin: '0 auto 40px', textAlign: 'center', padding: '0 clamp(20px, 5vw, 56px)' }}>
-        <div style={eyebrow}>ILS NOUS FONT CONFIANCE</div>
-        <h2 style={sectionHeading}>Ils acceptent déjà OZAMAPAY</h2>
+        <div style={eyebrow}>CARTE VISA NFC</div>
+        <h2 style={{ ...sectionHeading, marginBottom: 14 }}>Votre carte OZAMAPAY acceptée partout</h2>
+        <p style={sectionIntro}>
+          Shoppez sur vos sites préférés avec votre carte VISA virtuelle OZAMAPAY
+        </p>
       </div>
 
       <div
