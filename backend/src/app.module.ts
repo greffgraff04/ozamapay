@@ -25,6 +25,7 @@ import { AirtimeModule } from './airtime/airtime.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { BusinessModule } from './business/business.module';
 import { ApiModule } from './api/api.module';
+import { TeamModule } from './team/team.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ApiModule } from './api/api.module';
     ReloadlyAuthModule,
     AirtimeModule,
     TrackingModule,
+    TeamModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

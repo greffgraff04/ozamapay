@@ -890,4 +890,110 @@ export class MailService {
     );
     await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
   }
+
+  // ── Team Hub ──────────────────────────────────────────────────────────────
+
+  async sendTeamInvitation(email: string, role: string, joinLink: string): Promise<void> {
+    const roleLabel: Record<string, string> = {
+      SUPER_ADMIN: 'Super Administrateur',
+      COO: 'Chief Operating Officer',
+      AGENT_MANAGER: 'Gestionnaire des Agents',
+      GRAPHISTE: 'Graphiste',
+      SUPPORT: 'Support',
+      CAMERAMAN: 'Caméraman',
+      MODEL: 'Modèle',
+    };
+    const html = this.wrap(
+      `Invitation à rejoindre l'équipe OZAMAPAY`,
+      'Invitation Team Hub',
+      this.p('Bonjour,') +
+      this.p(`Vous êtes invité(e) à rejoindre l'équipe OZAMAPAY sur Team Hub.`) +
+      this.table(this.infoRow('Poste', roleLabel[role] ?? role)) +
+      this.p('Connectez-vous (ou créez votre compte OZAMAPAY) puis cliquez sur le bouton ci-dessous pour finaliser votre accès.') +
+      this.btn('Rejoindre l\'équipe →', joinLink) +
+      this.accentLine('Ce lien expire dans 48 heures. Ne le partagez avec personne.'),
+    );
+    await this.send(email, `Invitation à rejoindre l'équipe OZAMAPAY`, html);
+  }
+
+  async sendTeamTaskAssigned(
+    email: string,
+    name: string,
+    title: string,
+    description: string,
+    priority: string,
+    deadline?: Date | null,
+  ): Promise<void> {
+    const deadlineStr = deadline
+      ? new Date(deadline).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+      : 'Pa gen dat limit';
+    const html = this.wrap(
+      `Nouvelle tâche assignée: ${title}`,
+      'Nouvelle Tâche',
+      this.p(`Bonjour ${name},`) +
+      this.p(`Une nouvelle tâche vous a été assignée.`) +
+      this.table(
+        this.infoRow('Titre', title) +
+        this.infoRow('Priorité', priority) +
+        this.infoRow('Échéance', deadlineStr),
+      ) +
+      (description ? this.p(description) : '') +
+      this.btn('Voir mes tâches →', `${this.frontendUrl}/team/tasks`),
+      '#FF7A00',
+    );
+    await this.send(email, `Nouvelle tâche assignée: ${title}`, html);
+  }
+
+  async sendTeamReportReviewed(
+    email: string,
+    name: string,
+    title: string,
+    status: string,
+    reviewNote?: string,
+  ): Promise<void> {
+    const isApproved = status === 'APPROVED';
+    const isRejected = status === 'REJECTED';
+    const html = this.wrap(
+      `Votre rapport a été ${isApproved ? 'approuvé' : isRejected ? 'rejeté' : 'révisé'}`,
+      'Rapport Révisé',
+      this.p(`Bonjour ${name},`) +
+      (isApproved ? this.badge('KONFIME') : isRejected ? this.badge('REJTE') : '') +
+      `<div style="height:16px;"></div>` +
+      this.table(
+        this.infoRow('Rapport', title) +
+        this.infoRow('Statut', status),
+      ) +
+      (reviewNote ? this.accentLine(`Note: ${reviewNote}`) : '') +
+      this.btn('Voir mes rapports →', `${this.frontendUrl}/team/reports`),
+      isApproved ? '#22C55E' : isRejected ? '#DC2626' : '#1565C0',
+    );
+    await this.send(email, `Votre rapport a été ${isApproved ? 'approuvé' : isRejected ? 'rejeté' : 'révisé'}`, html);
+  }
+
+  async sendTeamMeetingReminder(
+    email: string,
+    name: string,
+    meetingTitle: string,
+    startAt: Date,
+    meetingUrl: string,
+  ): Promise<void> {
+    const timeStr = new Date(startAt).toLocaleTimeString('fr-FR', {
+      timeZone: 'America/Port-au-Prince',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const html = this.wrap(
+      `Réunion dans 30 minutes: ${meetingTitle}`,
+      'Réunion Imminente',
+      this.p(`Bonjour ${name},`) +
+      this.p(`Votre réunion commence dans 30 minutes.`) +
+      this.table(
+        this.infoRow('Réunion', meetingTitle) +
+        this.infoRow('Heure', `${timeStr} (heure Haïti)`),
+      ) +
+      this.btn('Rejoindre maintenant →', meetingUrl),
+      '#1565C0',
+    );
+    await this.send(email, `Réunion dans 30 minutes: ${meetingTitle}`, html);
+  }
 }

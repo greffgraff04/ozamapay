@@ -65,6 +65,8 @@ model User {
   businessMemberships  BusinessMember[]      @relation("BusinessMemberships")
   businessPayments     BusinessTransaction[] @relation("BusinessPayments")
 
+  teamMember TeamMember?
+
   @@index([email])
   @@index([role])
 }
@@ -731,4 +733,292 @@ model TestTransaction {
   apiKey   ApiKey   @relation(fields: [apiKeyId], references: [id])
 
   @@index([businessId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM HUB
+// ═══════════════════════════════════════════════════════════════
+
+enum TeamRole {
+  SUPER_ADMIN
+  COO
+  AGENT_MANAGER
+  GRAPHISTE
+  SUPPORT
+  CAMERAMAN
+  MODEL
+}
+
+enum TeamChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+enum TeamTaskPriority {
+  URGENT
+  NORMAL
+  BAS
+}
+
+enum TeamTaskStatus {
+  TODO
+  EN_COURS
+  REVIZYON
+  FINI
+}
+
+enum TeamFileCategory {
+  DESIGN
+  VIDEO
+  PHOTO
+  DOCUMENT
+  OTHER
+}
+
+enum TeamReportType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TeamReportStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+enum TeamAnnouncementPriority {
+  NORMAL
+  IMPORTANT
+  URGENT
+}
+
+enum TeamCalendarEventType {
+  MEETING
+  DEADLINE
+  LAUNCH
+  OTHER
+}
+
+enum TeamNotificationType {
+  MESSAGE
+  TASK
+  REPORT
+  ANNOUNCEMENT
+  CALENDAR
+  MEETING
+}
+
+model TeamInvitation {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  role        TeamRole
+  displayName String
+  token       String   @unique
+  expiresAt   DateTime
+  accepted    Boolean  @default(false)
+  invitedById String
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model TeamMember {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  role        TeamRole
+  displayName String
+  avatar      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdChannels TeamChannel[]       @relation("TeamChannelCreator")
+  channels        TeamChannel[]       @relation("TeamChannelMembers")
+  messages        TeamMessage[]       @relation("TeamMessageSender")
+  assignedTasks   TeamTask[]          @relation("TeamTaskAssignee")
+  createdTasks    TeamTask[]          @relation("TeamTaskAssigner")
+  taskComments    TeamTaskComment[]   @relation("TeamTaskCommentAuthor")
+  uploadedFiles   TeamFile[]          @relation("TeamFileUploader")
+  reports         TeamReport[]        @relation("TeamReportAuthor")
+  announcements   TeamAnnouncement[]  @relation("TeamAnnouncementAuthor")
+  createdEvents   TeamCalendarEvent[] @relation("TeamCalendarEventCreator")
+  attendingEvents TeamCalendarEvent[] @relation("TeamCalendarEventAttendees")
+  notifications   TeamNotification[]  @relation("TeamNotificationRecipient")
+
+  @@index([role])
+  @@index([isActive])
+}
+
+model TeamChannel {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  type        TeamChannelType @default(PUBLIC)
+  createdById String
+  createdAt   DateTime        @default(now())
+
+  createdBy TeamMember    @relation("TeamChannelCreator", fields: [createdById], references: [id])
+  members   TeamMember[]  @relation("TeamChannelMembers")
+  messages  TeamMessage[]
+
+  @@index([createdById])
+  @@index([type])
+}
+
+model TeamMessage {
+  id        String    @id @default(uuid())
+  channelId String
+  senderId  String
+  content   String
+  fileUrl   String?
+  fileType  String?
+  replyToId String?
+  createdAt DateTime  @default(now())
+  editedAt  DateTime?
+
+  channel TeamChannel   @relation(fields: [channelId], references: [id])
+  sender  TeamMember    @relation("TeamMessageSender", fields: [senderId], references: [id])
+  replyTo TeamMessage?  @relation("TeamMessageReplies", fields: [replyToId], references: [id])
+  replies TeamMessage[] @relation("TeamMessageReplies")
+
+  @@index([channelId])
+  @@index([senderId])
+  @@index([replyToId])
+  @@index([createdAt])
+}
+
+model TeamTask {
+  id           String           @id @default(uuid())
+  title        String
+  description  String?
+  assignedToId String
+  assignedById String
+  priority     TeamTaskPriority @default(NORMAL)
+  status       TeamTaskStatus   @default(TODO)
+  deadline     DateTime?
+  projectTag   String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  assignedTo TeamMember        @relation("TeamTaskAssignee", fields: [assignedToId], references: [id])
+  assignedBy TeamMember        @relation("TeamTaskAssigner", fields: [assignedById], references: [id])
+  comments   TeamTaskComment[]
+  files      TeamFile[]
+
+  @@index([assignedToId])
+  @@index([assignedById])
+  @@index([status])
+  @@index([priority])
+  @@index([projectTag])
+}
+
+model TeamTaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  task   TeamTask   @relation(fields: [taskId], references: [id])
+  author TeamMember @relation("TeamTaskCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([taskId])
+  @@index([authorId])
+}
+
+model TeamFile {
+  id           String           @id @default(uuid())
+  name         String
+  url          String
+  size         Int
+  mimeType     String
+  uploadedById String
+  category     TeamFileCategory @default(OTHER)
+  description  String?
+  taskId       String?
+  createdAt    DateTime         @default(now())
+
+  uploadedBy TeamMember @relation("TeamFileUploader", fields: [uploadedById], references: [id])
+  task       TeamTask?  @relation(fields: [taskId], references: [id])
+
+  @@index([uploadedById])
+  @@index([category])
+  @@index([taskId])
+}
+
+model TeamReport {
+  id          String           @id @default(uuid())
+  title       String
+  content     String
+  authorId    String
+  type        TeamReportType
+  status      TeamReportStatus @default(DRAFT)
+  reviewNote  String?
+  createdAt   DateTime         @default(now())
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+
+  author TeamMember @relation("TeamReportAuthor", fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([status])
+  @@index([type])
+}
+
+model TeamAnnouncement {
+  id        String                   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  priority  TeamAnnouncementPriority @default(NORMAL)
+  createdAt DateTime                 @default(now())
+
+  author TeamMember @relation("TeamAnnouncementAuthor", fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([priority])
+}
+
+model TeamCalendarEvent {
+  id             String                @id @default(uuid())
+  title          String
+  description    String?
+  startAt        DateTime
+  endAt          DateTime
+  type           TeamCalendarEventType @default(OTHER)
+  createdById    String
+  meetingUrl     String?
+  isJitsiMeeting Boolean               @default(false)
+  jitsiRoomId    String?
+  reminderSent   Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+
+  createdBy TeamMember   @relation("TeamCalendarEventCreator", fields: [createdById], references: [id])
+  attendees TeamMember[] @relation("TeamCalendarEventAttendees")
+
+  @@index([createdById])
+  @@index([type])
+  @@index([startAt])
+}
+
+model TeamNotification {
+  id          String               @id @default(uuid())
+  recipientId String
+  type        TeamNotificationType
+  title       String
+  content     String
+  isRead      Boolean              @default(false)
+  link        String?
+  createdAt   DateTime             @default(now())
+
+  recipient TeamMember @relation("TeamNotificationRecipient", fields: [recipientId], references: [id])
+
+  @@index([recipientId])
+  @@index([isRead])
 }
