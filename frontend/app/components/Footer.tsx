@@ -40,6 +40,17 @@ const FOOTER_COLS: { title: string; links: { label: string; href: string }[] }[]
       { label: 'Devlopè', href: '#' },
     ],
   },
+  {
+    title: 'LEGAL',
+    links: [
+      { label: 'Politique de Confidentialité', href: '/privacy' },
+      { label: "Conditions d'Utilisation", href: '/terms' },
+      { label: 'Politique AML', href: '/aml-policy' },
+      { label: 'Politique Cookies', href: '/cookie-policy' },
+      { label: 'Politique KYC', href: '/kyc-policy' },
+      { label: 'Conformité', href: '/compliance' },
+    ],
+  },
 ];
 
 const SOCIALS = ['IG', 'FB', 'X'];
