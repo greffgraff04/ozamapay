@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Lock, ShieldAlert, UserCheck } from 'lucide-react';
 
 const TRUST_POINTS = [
-  { title: 'Ankriptaj Total', desc: 'Chak done ak chak tranzaksyon pwoteje ak ankriptaj nivo endistri a.', icon: Lock },
-  { title: 'Siveyans Fwod 24/7', desc: 'Sistèm nou yo veye kont ou tout tan pou detekte aktivite sispèk.', icon: ShieldAlert },
-  { title: 'Verifikasyon KYC', desc: 'Chak itilizatè pase yon pwosesis verifikasyon idantite solid.', icon: UserCheck },
+  { title: 'Chiffrement Total', desc: 'Chaque donnée et chaque transaction est protégée par un chiffrement de niveau industriel.', icon: Lock },
+  { title: 'Surveillance Anti-Fraude 24/7', desc: 'Nos systèmes surveillent votre compte en permanence pour détecter toute activité suspecte.', icon: ShieldAlert },
+  { title: 'Vérification KYC', desc: 'Chaque utilisateur suit un processus de vérification d’identité rigoureux.', icon: UserCheck },
 ];
 
 export default function Security() {
@@ -24,12 +24,12 @@ export default function Security() {
           viewport={{ once: true, margin: '-80px' }}
           style={{ maxWidth: 560, margin: '0 auto 44px', textAlign: 'center' }}
         >
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>SEKIRITE</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>SÉCURITÉ</div>
           <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: '0 0 14px', fontWeight: 700 }}>
-            Konfyans se fondasyon nou
+            La confiance est notre fondation
           </h2>
           <p style={{ color: 'oklch(0.85 0.02 260)', fontSize: 16.5, lineHeight: 1.6, margin: 0 }}>
-            Nou aplike estanda sekirite endistri a itilize pou pwoteje chak tranzaksyon ak chak kont.
+            Nous appliquons les standards de sécurité utilisés par l’industrie pour protéger chaque transaction et chaque compte.
           </p>
         </motion.div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>

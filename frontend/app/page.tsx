@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import Hero from './components/sections/Hero';
 import Trust from './components/sections/Trust';
 import Features from './components/sections/Features';
+import PartnerCarousel from './components/sections/PartnerCarousel';
 import OzamaCard from './components/sections/OzamaCard';
 import Business from './components/sections/Business';
 import SuperAppVision from './components/sections/SuperAppVision';
@@ -153,6 +154,7 @@ export default function HomePage() {
       <Hero />
       <Trust />
       <Features />
+      <PartnerCarousel />
       <OzamaCard />
       <Business />
       <SuperAppVision />

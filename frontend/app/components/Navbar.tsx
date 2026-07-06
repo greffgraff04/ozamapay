@@ -5,13 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const NAV_LINKS = [
-  { label: 'Fonksyonalite', href: '#fonksyonalite' },
-  { label: 'Kat', href: '#kat-vityel' },
-  { label: 'Biznis', href: '#biznis' },
-  { label: 'Pri', href: '#' },
-  { label: 'Sekirite', href: '#sekirite' },
-  { label: 'Devlopè', href: '#' },
-  { label: 'Sipò', href: '#faq' },
+  { label: 'Fonctionnalités', href: '#fonksyonalite' },
+  { label: 'Carte', href: '#kat-vityel' },
+  { label: 'Business', href: '/business' },
+  { label: 'Tarifs', href: '#' },
+  { label: 'Sécurité', href: '#sekirite' },
+  { label: 'Développeurs', href: '#' },
+  { label: 'Support', href: '#faq' },
 ];
 
 export default function Navbar() {
@@ -58,19 +58,19 @@ export default function Navbar() {
             </a>
           ))}
           <Link href="/login" style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 6 }}>
-            Konekte
+            Se connecter
           </Link>
           <Link href="/register" className="ozp-btn-glow" style={{
             background: 'var(--orange)', color: 'white', padding: '13px 20px', borderRadius: 100,
             fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-block',
           }}>
-            Kreye Kont
+            Créer un compte
           </Link>
         </div>
       ) : (
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Meni"
+          aria-label="Menu"
           style={{
             width: 44, height: 44, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer',
@@ -93,13 +93,13 @@ export default function Navbar() {
             </a>
           ))}
           <Link href="/login" onClick={() => setMenuOpen(false)} style={{ color: 'var(--ink-soft)', textDecoration: 'none', fontSize: 15, fontWeight: 500, padding: '10px 4px' }}>
-            Konekte
+            Se connecter
           </Link>
           <Link href="/register" onClick={() => setMenuOpen(false)} className="ozp-btn-glow" style={{
             background: 'var(--orange)', color: 'white', padding: '14px 20px', borderRadius: 100,
             fontSize: 15, fontWeight: 600, textDecoration: 'none', textAlign: 'center', marginTop: 8,
           }}>
-            Kreye Kont
+            Créer un compte
           </Link>
         </div>
       )}

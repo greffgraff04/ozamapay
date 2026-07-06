@@ -4,10 +4,10 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 const CAPABILITIES = [
-  'Kreyasyon enstantane',
-  'Jesyon limit depans',
-  'Jele oswa dejele nenpòt lè',
-  'Plizyè kat pou plizyè pwojè',
+  'Création instantanée',
+  'Gestion des limites de dépenses',
+  'Geler ou dégeler à tout moment',
+  'Plusieurs cartes pour plusieurs projets',
 ];
 
 export default function OzamaCard() {
@@ -30,12 +30,12 @@ export default function OzamaCard() {
         viewport={{ once: true, margin: '-80px' }}
         style={{ flex: '1 1 420px' }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>KAT VITYÈL</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>CARTE VIRTUELLE</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: '0 0 18px', fontWeight: 700 }}>
-          Yon kat pou chak bezwen
+          Une carte pour chaque besoin
         </h2>
         <p style={{ color: 'var(--ink-soft)', fontSize: 16.5, lineHeight: 1.6, margin: '0 0 28px' }}>
-          Kreye kat Visa/Mastercard vityèl san limit pou peye abònman, piblisite, ak zouti travay ou. Kontwole yo an tan reyèl, dirèkteman nan app la.
+          Créez des cartes Visa/Mastercard virtuelles illimitées pour payer vos abonnements, votre publicité et vos outils de travail. Contrôlez-les en temps réel, directement depuis l’app.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {CAPABILITIES.map((c) => (
@@ -59,7 +59,7 @@ export default function OzamaCard() {
         }}>
           <Image
             src="/card.png"
-            alt="Kat vityèl Ozamapay"
+            alt="Carte virtuelle Ozamapay"
             width={1012}
             height={638}
             style={{ width: '100%', height: 'auto', display: 'block' }}

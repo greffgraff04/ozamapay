@@ -5,39 +5,39 @@ import Image from 'next/image';
 
 const FOOTER_COLS: { title: string; links: { label: string; href: string }[] }[] = [
   {
-    title: 'PWODWI',
+    title: 'PRODUITS',
     links: [
-      { label: 'Kat Vityèl', href: '#kat-vityel' },
-      { label: 'Transfè', href: '#fonksyonalite' },
+      { label: 'Carte Virtuelle', href: '#kat-vityel' },
+      { label: 'Transfert', href: '#fonksyonalite' },
       { label: 'Mobile Money', href: '#fonksyonalite' },
-      { label: 'Wallet', href: '#fonksyonalite' },
+      { label: 'Portefeuille', href: '#fonksyonalite' },
     ],
   },
   {
-    title: 'BIZNIS',
+    title: 'BUSINESS',
     links: [
       { label: 'Dropshipping', href: '#biznis' },
       { label: 'Freelance', href: '#biznis' },
-      { label: 'Ajans', href: '#biznis' },
+      { label: 'Agences', href: '#biznis' },
       { label: 'E-commerce', href: '#biznis' },
     ],
   },
   {
-    title: 'KONPAYI',
+    title: 'ENTREPRISE',
     links: [
-      { label: 'Sou Nou', href: '/about' },
-      { label: 'Vizyon', href: '#' },
-      { label: 'Kontakte Nou', href: '/support' },
+      { label: 'À propos', href: '/about' },
+      { label: 'Vision', href: '#' },
+      { label: 'Nous contacter', href: '/support' },
       { label: 'Blog', href: '/press' },
     ],
   },
   {
-    title: 'SIPÒ',
+    title: 'SUPPORT',
     links: [
-      { label: 'Sant Èd', href: '/support' },
+      { label: 'Centre d’aide', href: '/support' },
       { label: 'FAQ', href: '#faq' },
-      { label: 'Sekirite', href: '#sekirite' },
-      { label: 'Devlopè', href: '#' },
+      { label: 'Sécurité', href: '#sekirite' },
+      { label: 'Développeurs', href: '#' },
     ],
   },
   {
@@ -70,7 +70,7 @@ export default function Footer() {
             OZAMAPAY
           </div>
           <p style={{ color: 'oklch(0.75 0.02 260)', fontSize: 13.5, lineHeight: 1.6, maxWidth: 240, margin: 0 }}>
-            Sistèm finansye pou Ayiti ak dyaspora a.
+            Le système financier pour Haïti et sa diaspora.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function Footer() {
         maxWidth: 1280, margin: '0 auto', padding: '22px 0 30px', display: 'flex', flexWrap: 'wrap', gap: 16,
         alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid oklch(1 0 0 / 0.08)',
       }}>
-        <span style={{ color: 'oklch(0.65 0.02 260)', fontSize: 13 }}>© {year} Ozamapay. Tout dwa rezève.</span>
+        <span style={{ color: 'oklch(0.65 0.02 260)', fontSize: 13 }}>© {year} Ozamapay. Tous droits réservés.</span>
         <div style={{ display: 'flex', gap: 10 }}>
           {SOCIALS.map((s) => (
             <span key={s} style={{

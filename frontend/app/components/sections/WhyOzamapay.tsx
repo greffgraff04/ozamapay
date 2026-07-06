@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 import { Zap, DollarSign, Headphones, Globe2, BarChart3 } from 'lucide-react';
 
 const WHY_POINTS = [
-  { title: 'KYC Rapid', desc: 'Verifikasyon idantite an kèk minit.', icon: Zap },
-  { title: 'San Frè Kache', desc: 'Pri klè, san sipriz.', icon: DollarSign },
-  { title: 'Sipò 24/7', desc: 'Ekip nou toujou disponib.', icon: Headphones },
-  { title: 'Fèt pou Ayiti', desc: 'Konstwi pou dyaspora a ak MonCash.', icon: Globe2 },
-  { title: 'Kontwòl Total', desc: 'Swiv chak depans an tan reyèl.', icon: BarChart3 },
+  { title: 'KYC Rapide', desc: 'Vérification d’identité en quelques minutes.', icon: Zap },
+  { title: 'Sans Frais Cachés', desc: 'Des prix clairs, sans surprise.', icon: DollarSign },
+  { title: 'Support 24/7', desc: 'Notre équipe est toujours disponible.', icon: Headphones },
+  { title: 'Conçu pour Haïti', desc: 'Pensé pour la diaspora et MonCash.', icon: Globe2 },
+  { title: 'Contrôle Total', desc: 'Suivez chaque dépense en temps réel.', icon: BarChart3 },
 ];
 
 export default function WhyOzamapay() {
@@ -23,9 +23,9 @@ export default function WhyOzamapay() {
         viewport={{ once: true, margin: '-80px' }}
         style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>POUKISA OZAMAPAY</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>POURQUOI OZAMAPAY</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
-          Sa ki fè n diferan
+          Ce qui nous rend différents
         </h2>
       </motion.div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>

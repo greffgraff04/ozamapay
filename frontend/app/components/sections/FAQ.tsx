@@ -3,12 +3,12 @@
 import { motion } from 'framer-motion';
 
 const FAQS = [
-  { question: 'Kisa Ozamapay ye?', answer: 'Ozamapay se yon sistèm finansye ki pèmèt itilizatè Ayiti ak dyaspora a jere lajan yo, kreye kat vityèl, epi fè peman toupatou nan mond lan.' },
-  { question: 'Kijan pou m kreye yon kat vityèl?', answer: 'Apre w fin verifye kont ou, ou ka kreye yon kat vityèl Visa/Mastercard an kèk segond dirèkteman nan app la.' },
-  { question: 'Èske lajan m an sekirite?', answer: 'Wi. Nou itilize ankriptaj nivo endistri a, siveyans fwod 24/7, ak yon pwosesis verifikasyon KYC solid.' },
-  { question: 'Ki jan pou m chaje kont mwen?', answer: 'Ou ka rechaj kont ou ak MonCash, kat bankè, oswa transfè dirèk soti nan yon lòt kont Ozamapay.' },
-  { question: 'Konbyen tan verifikasyon KYC pran?', answer: 'Pifò verifikasyon konplete an kèk minit, men kèk ka ka pran jiska 24èdtan selon dokiman yo bay.' },
-  { question: 'Ki peyi Ozamapay disponib ladan yo?', answer: 'Ozamapay fèt pou Ayiti ak dyaspora a, ak sipò pou tranzaksyon entènasyonal toupatou nan mond lan.' },
+  { question: 'Qu’est-ce qu’Ozamapay ?', answer: 'Ozamapay est un système financier qui permet aux utilisateurs en Haïti et dans la diaspora de gérer leur argent, créer des cartes virtuelles, et effectuer des paiements partout dans le monde.' },
+  { question: 'Comment créer une carte virtuelle ?', answer: 'Une fois votre compte vérifié, vous pouvez créer une carte virtuelle Visa/Mastercard en quelques secondes directement depuis l’app.' },
+  { question: 'Mon argent est-il en sécurité ?', answer: 'Oui. Nous utilisons un chiffrement de niveau industriel, une surveillance anti-fraude 24/7, et un processus de vérification KYC rigoureux.' },
+  { question: 'Comment recharger mon compte ?', answer: 'Vous pouvez recharger votre compte avec MonCash, une carte bancaire, ou un transfert direct depuis un autre compte Ozamapay.' },
+  { question: 'Combien de temps prend la vérification KYC ?', answer: 'La plupart des vérifications sont complétées en quelques minutes, mais certaines peuvent prendre jusqu’à 24 heures selon les documents fournis.' },
+  { question: 'Dans quels pays Ozamapay est-il disponible ?', answer: 'Ozamapay est conçu pour Haïti et sa diaspora, avec un support pour les transactions internationales partout dans le monde.' },
 ];
 
 export default function FAQ() {
@@ -25,7 +25,7 @@ export default function FAQ() {
       >
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>FAQ</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
-          Kesyon moun poze souvan
+          Questions fréquemment posées
         </h2>
       </motion.div>
       <style>{`

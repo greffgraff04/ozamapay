@@ -15,13 +15,13 @@ export default function Trust() {
       }}
     >
       <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>
-        POUKISA OZAMAPAY
+        POURQUOI OZAMAPAY
       </div>
       <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(26px, 3.4vw, 38px)', letterSpacing: '-0.02em', margin: '0 0 16px', fontWeight: 700 }}>
-        Enfrastrikti finansye ou ka fè konfyans
+        Une infrastructure financière en qui vous pouvez avoir confiance
       </h2>
       <p style={{ color: 'var(--ink-soft)', fontSize: 16.5, lineHeight: 1.65, margin: 0 }}>
-        Bank tradisyonèl yo limite pou antreprenè ayisyen ak dyaspora a. Ozamapay bati yon platfòm ki elimine friksyon sa yo — pou w ka resevwa, jere, epi voye lajan san restriksyon.
+        Les banques traditionnelles limitent les entrepreneurs haïtiens et la diaspora. Ozamapay construit une plateforme qui élimine ces frictions — pour recevoir, gérer et envoyer de l’argent sans restriction.
       </p>
     </motion.section>
   );

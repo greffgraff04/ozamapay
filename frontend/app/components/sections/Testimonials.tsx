@@ -3,9 +3,9 @@
 import { motion } from 'framer-motion';
 
 const TESTIMONIALS = [
-  { quote: 'Ozamapay ban mwen libète pou m peye founisè m yo san m pa bezwen yon bank tradisyonèl.', name: 'Jameson R.', role: 'Vandè E-commerce', from: 'var(--navy)', to: 'var(--orange)' },
-  { quote: 'Kounye a mwen ka resevwa lajan kliyan entènasyonal mwen yo san tèt chaje.', name: 'Nadège P.', role: 'Freelancer Design', from: 'var(--orange)', to: 'var(--navy)' },
-  { quote: 'Kat vityèl yo chanje jan m jere piblisite mwen yo — tout bagay nan yon sèl plas.', name: 'Widelson C.', role: 'Ajans Piblisite', from: 'var(--navy)', to: 'var(--orange-dark)' },
+  { quote: 'Ozamapay me donne la liberté de payer mes fournisseurs sans passer par une banque traditionnelle.', name: 'Jameson R.', role: 'Vendeur E-commerce', from: 'var(--navy)', to: 'var(--orange)' },
+  { quote: 'Maintenant je peux recevoir l’argent de mes clients internationaux sans tracas.', name: 'Nadège P.', role: 'Designer Freelance', from: 'var(--orange)', to: 'var(--navy)' },
+  { quote: 'Les cartes virtuelles ont changé ma façon de gérer ma publicité — tout est au même endroit.', name: 'Widelson C.', role: 'Agence Publicitaire', from: 'var(--navy)', to: 'var(--orange-dark)' },
 ];
 
 export default function Testimonials() {
@@ -30,9 +30,9 @@ export default function Testimonials() {
         viewport={{ once: true, margin: '-80px' }}
         style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>TEMWAYAJ</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>TÉMOIGNAGES</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
-          Antreprenè fè konfyans nan nou
+          Les entrepreneurs nous font confiance
         </h2>
       </motion.div>
       <div className="ozp-testimonials-grid">

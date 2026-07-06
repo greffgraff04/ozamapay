@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useInView, animate } from 'framer-motion';
-import InstallButton from '../InstallButton';
 
 const STATS = [
-  { value: '50K+', label: 'Tranzaksyon' },
-  { value: '24/7', label: 'Disponiblite' },
-  { value: '99.9%', label: 'Uptime' },
+  { value: '50K+', label: 'Transactions' },
+  { value: '24/7', label: 'Disponibilité' },
+  { value: '99.9%', label: 'Fiabilité' },
 ];
 
 function StatCounter({ value, label }: { value: string; label: string }) {
@@ -61,29 +60,28 @@ export default function Hero() {
 
       <div style={{ flex: '1 1 480px', position: 'relative', zIndex: 1, animation: 'fadeUp 0.7s ease both' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 16px', borderRadius: 100, background: 'var(--orange-soft)', color: 'var(--orange-dark)', fontSize: 13, fontWeight: 600, marginBottom: 24 }}>
-          Fintech Ayisyen • Peman Global • Kat Vityèl
+          Fintech Haïtienne • Paiements Globaux • Carte Virtuelle
         </div>
         <h1 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(36px, 5.2vw, 62px)', lineHeight: 1.05, letterSpacing: '-0.02em', margin: '0 0 22px', fontWeight: 700 }}>
-          <span style={{ color: 'var(--orange)' }}>JUST PAY.</span> LAJAN W SAN LIMIT.
+          <span style={{ color: 'var(--orange)' }}>JUST PAY.</span> VOTRE ARGENT, SANS LIMITES.
         </h1>
         <p style={{ fontSize: 'clamp(17px, 1.6vw, 19px)', lineHeight: 1.6, color: 'var(--ink-soft)', maxWidth: 520, margin: '0 0 32px' }}>
-          Yon sèl app pou kreye kat vityèl, voye lajan, epi grandi biznis ou — kèlkeswa kote w ye.
+          Une seule application pour créer des cartes virtuelles, envoyer de l’argent et développer votre activité — où que vous soyez.
         </p>
-        <div className="ozp-hero-ctas" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 40, alignItems: 'center' }}>
+        <div className="ozp-hero-ctas" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 40, alignItems: 'center', justifyContent: 'flex-start' }}>
           <Link href="/register" className="ozp-btn-glow" style={{
             background: 'var(--orange)', color: 'white', padding: '16px 30px', borderRadius: 100, fontSize: 16, fontWeight: 600,
             cursor: 'pointer', boxShadow: '0 12px 30px -12px color-mix(in srgb, var(--orange) 55%, transparent)', textDecoration: 'none', display: 'inline-block',
           }}>
-            Kreye Kont
+            Créer un compte
           </Link>
           <a href="#fonksyonalite" className="ozp-btn-glow" style={{
             background: 'transparent', color: 'var(--ink)', border: '1.5px solid var(--border)', padding: '16px 30px', borderRadius: 100,
             fontSize: 16, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
           }}>
             <span style={{ width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '9px solid var(--ink)' }} />
-            Gade Demo
+            Voir la démo
           </a>
-          <InstallButton className="inline-flex items-center gap-2.5 bg-transparent text-[var(--ink)] border-[1.5px] border-solid border-[var(--border)] px-[30px] py-4 rounded-full font-semibold text-base cursor-pointer whitespace-nowrap" />
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32 }}>
           {STATS.map((s) => (
@@ -100,7 +98,7 @@ export default function Hero() {
         }}>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16 }}>
             <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--navy)', background: 'oklch(0.99 0.005 80 / 0.9)', padding: '8px 10px', borderRadius: 8, border: '1px dashed var(--navy)' }}>
-              app mockup
+              aperçu de l’app
             </span>
           </div>
         </div>
@@ -117,7 +115,7 @@ export default function Hero() {
           filter: 'drop-shadow(0 25px 40px color-mix(in srgb, var(--orange) 45%, transparent))',
           animation: 'floatCard 6s ease-in-out infinite',
         }}>
-          <Image src="/card.png" alt="Kat vityèl Ozamapay" width={1012} height={638} style={{ width: '100%', height: 'auto', display: 'block' }} priority />
+          <Image src="/card.png" alt="Carte virtuelle Ozamapay" width={1012} height={638} style={{ width: '100%', height: 'auto', display: 'block' }} priority />
         </div>
       </div>
     </section>

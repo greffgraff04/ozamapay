@@ -3,11 +3,11 @@
 import { motion } from 'framer-motion';
 
 const AUDIENCES = [
-  { title: 'Freelancer', desc: 'Resevwa peman kliyan entènasyonal san tèt chaje.' },
-  { title: 'Vandè E-commerce', desc: 'Aksepte peman kliyan toupatou nan mond lan.' },
-  { title: 'Ajans Piblisite', desc: 'Peye piblisite ak zouti travay ak kat vityèl.' },
-  { title: 'Dropshipper', desc: 'Jere founisè ak zouti SaaS soti nan yon sèl kont.' },
-  { title: 'Fondatè Startup', desc: 'Chèche pou grandi biznis ou san limit bankè.' },
+  { title: 'Freelance', desc: 'Recevez les paiements de vos clients internationaux sans tracas.' },
+  { title: 'Vendeur E-commerce', desc: 'Acceptez les paiements de vos clients partout dans le monde.' },
+  { title: 'Agence Publicitaire', desc: 'Payez vos publicités et outils de travail avec une carte virtuelle.' },
+  { title: 'Dropshipper', desc: 'Gérez vos fournisseurs et outils SaaS depuis un seul compte.' },
+  { title: 'Fondateur de Startup', desc: 'Développez votre activité sans les limites bancaires classiques.' },
 ];
 
 export default function Business() {
@@ -22,9 +22,9 @@ export default function Business() {
         viewport={{ once: true, margin: '-80px' }}
         style={{ maxWidth: 620, margin: '0 auto 40px', textAlign: 'center' }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>BIZNIS</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>BUSINESS</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
-          Fèt pou moun k ap bati
+          Conçu pour ceux qui bâtissent
         </h2>
       </motion.div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>

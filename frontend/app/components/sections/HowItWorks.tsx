@@ -3,10 +3,10 @@
 import { motion } from 'framer-motion';
 
 const STEPS = [
-  { n: '01', title: 'Enskri epi Verifye', desc: 'Kreye kont ou an de minit epi konplete verifikasyon KYC rapid la.' },
-  { n: '02', title: 'Chaje Kont Ou', desc: 'Rechaj ak MonCash, kat, oswa transfè dirèk.' },
-  { n: '03', title: 'Kreye Kat Vityèl', desc: 'Jenere yon kat Visa/Mastercard vityèl an kèk segond.' },
-  { n: '04', title: 'Voye, Resevwa, Peye', desc: 'Jere tout operasyon finansye w yo nan yon sèl app.' },
+  { n: '01', title: 'Inscrivez-vous et Vérifiez', desc: 'Créez votre compte en deux minutes et complétez la vérification KYC rapide.' },
+  { n: '02', title: 'Alimentez Votre Compte', desc: 'Rechargez avec MonCash, une carte, ou un transfert direct.' },
+  { n: '03', title: 'Créez une Carte Virtuelle', desc: 'Générez une carte Visa/Mastercard virtuelle en quelques secondes.' },
+  { n: '04', title: 'Envoyez, Recevez, Payez', desc: 'Gérez toutes vos opérations financières dans une seule app.' },
 ];
 
 export default function HowItWorks() {
@@ -21,9 +21,9 @@ export default function HowItWorks() {
         viewport={{ once: true, margin: '-80px' }}
         style={{ maxWidth: 620, margin: '0 auto 44px', textAlign: 'center' }}
       >
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>KIJAN LI MACHE</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--orange)', letterSpacing: '0.08em', marginBottom: 12 }}>COMMENT ÇA MARCHE</div>
         <h2 style={{ fontFamily: 'var(--font-space-grotesk), "Space Grotesk", sans-serif', fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '-0.02em', margin: 0, fontWeight: 700 }}>
-          Kat etap, epi w pare
+          Quatre étapes, et vous êtes prêt
         </h2>
       </motion.div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
