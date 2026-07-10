@@ -8,7 +8,7 @@ import {
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
-  Sun, Moon, ChevronDown
+  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -90,6 +90,8 @@ export default function Dashboard() {
   const [showCardDetails, setShowCardDetails] = useState<boolean>(false);
   const [secretDetailsLoading, setSecretDetailsLoading] = useState(false);
   const [secretDetailsFailed, setSecretDetailsFailed] = useState(false);
+  const [cardFetchError, setCardFetchError] = useState(false);
+  const [cardRetryLoading, setCardRetryLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('moncash');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
@@ -408,14 +410,28 @@ export default function Dashboard() {
         fetch(`${API_BASE}/business/me`, { headers }).catch(() => null),
       ]);
 
-      const [txData, meData, ratesData, notifData, cardData, bizData] = await Promise.all([
+      const [txData, meData, ratesData, notifData, bizData] = await Promise.all([
         txRes?.ok ? txRes.json().catch(() => null) : null,
         meRes?.ok ? meRes.json().catch(() => null) : null,
         rateRes?.ok ? rateRes.json().catch(() => null) : null,
         notifRes?.ok ? notifRes.json().catch(() => null) : null,
-        cardRes?.ok ? cardRes.json().catch(() => null) : null,
         bizRes?.ok ? bizRes.json().catch(() => null) : null,
       ]);
+
+      // Kat vityèl la trete apa: yon echèk rezo/500 pa dwe konfonn ak yon
+      // repons 200 ki konfime (DB) itilizatè a pa gen kat.
+      let cardData: any = null;
+      let cardFetchFailed = false;
+      if (cardRes && cardRes.ok) {
+        try {
+          cardData = await cardRes.json();
+        } catch {
+          cardFetchFailed = true;
+        }
+      } else {
+        cardFetchFailed = true;
+      }
+      setCardFetchError(cardFetchFailed);
 
       setMyBusinesses(bizData);
 
@@ -444,21 +460,34 @@ export default function Dashboard() {
         setUnreadCount(notifData.filter((n: any) => !n.isRead).length);
       }
 
-      if (cardData) {
-        setVirtualCard((prev: any) => ({
-          ...cardData,
-          cardNumber: prev?.cardNumber,
-          cvv: prev?.cvv,
-          expiryDate: prev?.expiryDate,
-          cardName: prev?.cardName || cardData?.cardName,
-          last4: prev?.last4 || cardData?.last4,
-        }));
+      if (!cardFetchFailed) {
+        if (cardData) {
+          setVirtualCard((prev: any) => ({
+            ...cardData,
+            cardNumber: prev?.cardNumber,
+            cvv: prev?.cvv,
+            expiryDate: prev?.expiryDate,
+            cardName: prev?.cardName || cardData?.cardName,
+            last4: prev?.last4 || cardData?.last4,
+          }));
+        } else {
+          setVirtualCard(null);
+        }
       }
 
     } catch (e) {
       console.error("SYNC ERROR:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCardRetry = async () => {
+    setCardRetryLoading(true);
+    try {
+      await fetchData();
+    } finally {
+      setCardRetryLoading(false);
     }
   };
 
@@ -2320,7 +2349,36 @@ export default function Dashboard() {
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="oz-fadeUp px-5 lg:px-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-            {!virtualCard?.cardId ? (
+            {cardFetchError && !virtualCard?.cardId ? (
+              /* ===== FETCH ERROR — pa konfime DB, pa montre flow kreyasyon ===== */
+              <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
+                <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
+                  <div className="flex items-start gap-3 mb-6">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,.12)' }}>
+                      <AlertTriangle size={20} color="#EF4444" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-[13px] mb-1 text-white">Erè chajman kat</p>
+                      <p className="font-medium text-[12px] leading-[18px]" style={{ color: glass.textDim }}>
+                        Nou pa t kapab chaje enfòmasyon kat ou a. Eseye ankò.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCardRetry}
+                    disabled={cardRetryLoading}
+                    className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', opacity: cardRetryLoading ? 0.6 : 1 }}
+                  >
+                    {cardRetryLoading
+                      ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <><RefreshCw size={16} color="#FFFFFF" /> ESEYE ANKÒ</>
+                    }
+                  </button>
+                </div>
+              </div>
+            ) : !virtualCard?.cardId ? (
               /* ===== NO CARD — CREATION FORM ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
