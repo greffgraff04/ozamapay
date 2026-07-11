@@ -2349,8 +2349,8 @@ export default function Dashboard() {
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="oz-fadeUp px-5 lg:px-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-            {cardFetchError && !virtualCard?.cardId ? (
-              /* ===== FETCH ERROR — pa konfime DB, pa montre flow kreyasyon ===== */
+            {virtualCard?.cardId && cardFetchError ? (
+              /* ===== FETCH ERROR — DB te konfime yon kat egziste, men fetch aktyèl la echwe ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
                 <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
@@ -2379,7 +2379,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : !virtualCard?.cardId ? (
-              /* ===== NO CARD — CREATION FORM ===== */
+              /* ===== NO CARD — CREATION FORM (DB konfime pa gen kat, oswa fetch echwe san okenn kat konfime anvan) ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
                 {/* Card image: borderRadius 0 per spec */}
