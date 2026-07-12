@@ -47,7 +47,7 @@ const fees = [
   {
     label: 'KYC Verifikasyon',
     sub: 'Yon sèl fwa',
-    value: '$25 USD',
+    value: '~3,375 HTG',
     note: 'peman yon sèl fwa',
     icon: '✓',
   },

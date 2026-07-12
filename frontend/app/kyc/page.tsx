@@ -114,7 +114,7 @@ export default function KycUploadPage() {
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : "Peye $25 & Soumèt"}
+          ) : "Peye ~3,375 HTG & Soumèt"}
         </button>
       </div>
     </div>

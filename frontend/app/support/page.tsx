@@ -27,7 +27,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Ki frè OZAMAPAY mande?',
-    a: 'Topup: 6%. Retrè: 2%. KYC: $25 yon fwa. Kreye kat: GRATIS.',
+    a: 'Topup: 6%. Retrè: 2%. KYC: ~3,375 HTG yon fwa. Kreye kat: GRATIS.',
   },
   {
     q: 'Kijan mwen ka kontakte yon ajans?',

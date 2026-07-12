@@ -830,7 +830,7 @@ export default function Dashboard() {
     const currentBalance = user?.wallet?.balance || 0;
 
     if (currentBalance < kycCostHtg) {
-      showToast(`Balans ou pa ase. Ou bezwen omwen ${kycCostHtg} HTG ($25 USD).`, "error");
+      showToast(`Balans ou pa ase. Ou bezwen omwen ~3,375 HTG pou peye frè KYC a.`, "error");
       return;
     }
 
@@ -869,7 +869,7 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast("Verifikasyon soumèt epi $25 USD debite ak siksè! 🎉", "success");
+        showToast("Verifikasyon soumèt epi ~3,375 HTG debite ak siksè! 🎉", "success");
         setShowKycForm(false);
         
         // 1. Kreye nouvo objè user a ak status PENDING lan
@@ -1065,7 +1065,7 @@ export default function Dashboard() {
           {
             icon: <Shield size={48} className="text-[#FF6B00]" />,
             title: 'Etap 2: Verifye Idantite Ou',
-            text: 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Frè: $25 USD.',
+            text: 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Frè: ~3,375 HTG.',
             btn: 'Kontinye →',
           },
           {
@@ -3084,11 +3084,11 @@ export default function Dashboard() {
                   <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-3">
                     <Info size={18} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">
-                      Sistèm lan ap debite <span className="text-[var(--oz-text)] font-black">3,375 HTG ($25 USD)</span> otomatikman pou frè verifikasyon.
+                      Sistèm lan ap debite <span className="text-[var(--oz-text)] font-black">~3,375 HTG</span> otomatikman pou frè verifikasyon.
                     </p>
                   </div>
                   <button onClick={handleKycSubmit} disabled={kycLoading} className="w-full bg-[#FF6B00] text-white py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-lg text-xs transition-all active:scale-95 hover:bg-[#e66000] flex items-center justify-center gap-2 disabled:opacity-50">
-                    {kycLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Peye $25 & Soumèt'}
+                    {kycLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Peye ~3,375 HTG & Soumèt'}
                   </button>
                 </div>
               </div>
@@ -3266,7 +3266,7 @@ export default function Dashboard() {
                       ) : user?.kyc?.status === 'PENDING' ? (
                         <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.15)', color: '#f97316' }}>Annatant</span>
                       ) : (
-                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: colors.background, color: colors.textSecondary }}>$25</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: colors.background, color: colors.textSecondary }}>~3,375 HTG</span>
                       )}
                       {user?.kyc?.status !== 'APPROVED' && <ChevronRight size={16} color={colors.textSecondary} />}
                     </div>

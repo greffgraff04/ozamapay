@@ -1138,7 +1138,7 @@ export default function AdminDashboard() {
                   <div className="flex gap-3">
                     <button onClick={() => handleKycReview(selectedKyc.id, 'APPROVED')}
                       className="flex-1 bg-[#FF6B00] hover:bg-[#E05E00] text-white py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition">
-                      <CheckCircle2 size={14} /> Approve KYC — Debite $25
+                      <CheckCircle2 size={14} /> Approve KYC — Debite ~3,375 HTG
                     </button>
                     <button onClick={() => handleKycReview(selectedKyc.id, 'REJECTED')}
                       className="flex-1 bg-white/[0.02] hover:bg-white/[0.04] text-white/60 border border-white/[0.05] py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition">
@@ -1686,7 +1686,7 @@ export default function AdminDashboard() {
                       { label: 'Depot / TopUp', value: '6%', desc: 'Sou chak rechajman' },
                       { label: 'Transfè P2P', value: '0.99%', desc: 'Sou chak voye' },
                       { label: 'Retrè / Withdraw', value: '2%', desc: 'Sou chak retrè' },
-                      { label: 'KYC Verification', value: '$25', desc: '405 HTG → Ajans, Rès → OZAMA' },
+                      { label: 'KYC Verification', value: '~3,375 HTG', desc: '405 HTG → Ajans, Rès → OZAMA' },
                       { label: 'Virtual Card', value: 'Variable', desc: 'Selon taux USD/HTG' },
                     ].map((fee, i) => (
                       <div key={i} className="flex items-center justify-between p-3.5 bg-white/[0.01] border border-white/[0.03] rounded-xl transition">
