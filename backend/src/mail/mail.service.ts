@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 
 @Injectable()
 export class MailService {
-  private resend = new Resend(process.env.RESEND_API_KEY);
+  private readonly brevo: BrevoClient;
+  private readonly SENDER = { name: 'OZAMAPAY', email: 'contact@ozamapay.com' };
 
   private readonly frontendUrl =
     process.env.FRONTEND_URL || 'https://ozamapay.com';
+
+  constructor() {
+    this.brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY as string });
+  }
 
   // ── private helpers ──────────────────────────────────────────────────────
 
@@ -101,11 +106,11 @@ export class MailService {
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      await this.resend.emails.send({
-        from: 'OZAMAPAY <contact@ozamapay.com>',
-        to,
+      await this.brevo.transactionalEmails.sendTransacEmail({
+        sender: this.SENDER,
+        to: [{ email: to }],
         subject,
-        html,
+        htmlContent: html,
       });
     } catch (err) {
       console.error(`[MailService] Failed to send "${subject}" to ${to}:`, err);

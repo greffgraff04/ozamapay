@@ -23,6 +23,7 @@
     "audit:finance": "bash scripts/audit.sh"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^6.0.2",
     "@moncashconnect/sdk": "^1.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -55,7 +56,6 @@
     "pg": "^8.20.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
-    "resend": "^6.12.4",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.29"
   },
