@@ -49,7 +49,7 @@ export default function KYCPolicyPage() {
               </p>
             </motion.div>
 
-            {/* 2. Frais de vérification */}
+            {/* 2. Verification Fees */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -57,9 +57,9 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">2. Frais de vérification</h2>
+              <h2 className="text-2xl font-bold text-white">2. Verification Fees</h2>
               <p className="text-white/70 leading-relaxed">
-                La vérification d'identité (KYC) est requise pour accéder aux services OZAMAPAY. Des frais de ~3,375 HTG s'appliquent.
+                Identity verification (KYC) is required to access OZAMAPAY services. A fee of ~3,375 HTG applies.
               </p>
             </motion.div>
 
