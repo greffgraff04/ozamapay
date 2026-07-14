@@ -49,7 +49,7 @@ export default function KYCPolicyPage() {
               </p>
             </motion.div>
 
-            {/* 2. KYC Process Overview */}
+            {/* 2. Frais de vérification */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -57,7 +57,21 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">2. KYC Process Overview</h2>
+              <h2 className="text-2xl font-bold text-white">2. Frais de vérification</h2>
+              <p className="text-white/70 leading-relaxed">
+                La vérification d'identité (KYC) est requise pour accéder aux services OZAMAPAY. Des frais de ~3,375 HTG s'appliquent.
+              </p>
+            </motion.div>
+
+            {/* 3. KYC Process Overview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="space-y-4"
+            >
+              <h2 className="text-2xl font-bold text-white">3. KYC Process Overview</h2>
               <p className="text-white/70 leading-relaxed">
                 Our KYC process consists of three main phases:
               </p>
@@ -76,7 +90,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">3. Information Collection</h2>
+              <h2 className="text-2xl font-bold text-white">4. Information Collection</h2>
               <p className="text-white/70 leading-relaxed">
                 During account opening, we collect the following information from all customers:
               </p>
@@ -124,7 +138,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">4. Identity Verification</h2>
+              <h2 className="text-2xl font-bold text-white">5. Identity Verification</h2>
               <p className="text-white/70 leading-relaxed">
                 We verify customer identity through a combination of methods:
               </p>
@@ -145,7 +159,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">5. Beneficial Owner Identification</h2>
+              <h2 className="text-2xl font-bold text-white">6. Beneficial Owner Identification</h2>
               <p className="text-white/70 leading-relaxed">
                 For business accounts, we identify and verify beneficial owners (individuals who directly or indirectly own 25% or more of the entity). This includes:
               </p>
@@ -166,7 +180,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">6. Risk Assessment</h2>
+              <h2 className="text-2xl font-bold text-white">7. Risk Assessment</h2>
               <p className="text-white/70 leading-relaxed">
                 We assign a risk level to each customer based on multiple factors:
               </p>
@@ -188,7 +202,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">7. Enhanced Due Diligence (EDD)</h2>
+              <h2 className="text-2xl font-bold text-white">8. Enhanced Due Diligence (EDD)</h2>
               <p className="text-white/70 leading-relaxed">
                 High-risk customers undergo Enhanced Due Diligence, which may include:
               </p>
@@ -211,7 +225,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">8. Ongoing Monitoring</h2>
+              <h2 className="text-2xl font-bold text-white">9. Ongoing Monitoring</h2>
               <p className="text-white/70 leading-relaxed">
                 We continuously monitor all customer accounts for suspicious activity:
               </p>
@@ -233,7 +247,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">9. Record Retention</h2>
+              <h2 className="text-2xl font-bold text-white">10. Record Retention</h2>
               <p className="text-white/70 leading-relaxed">
                 All KYC documents, verification records, and customer information are retained for a minimum of five (5) years after account closure or relationship termination, as required by law. Records are stored securely and protected from unauthorized access.
               </p>
@@ -247,7 +261,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">10. Account Activation</h2>
+              <h2 className="text-2xl font-bold text-white">11. Account Activation</h2>
               <p className="text-white/70 leading-relaxed">
                 Accounts are only activated after successful completion of KYC verification. Customers may face account restrictions or suspension if:
               </p>
@@ -268,7 +282,7 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <h2 className="text-2xl font-bold text-white">11. Privacy and Data Protection</h2>
+              <h2 className="text-2xl font-bold text-white">12. Privacy and Data Protection</h2>
               <p className="text-white/70 leading-relaxed">
                 All personal information collected during the KYC process is handled with strict confidentiality. We comply with data protection regulations and only use information for KYC, AML, and fraud prevention purposes. Customer data is protected with advanced encryption and security measures.
               </p>
@@ -282,14 +296,13 @@ export default function KYCPolicyPage() {
               viewport={{ once: true }}
               className="space-y-4 bg-white/5 rounded-2xl p-8 border border-white/10"
             >
-              <h2 className="text-2xl font-bold text-white">12. Contact Information</h2>
+              <h2 className="text-2xl font-bold text-white">13. Contact Information</h2>
               <p className="text-white/70 leading-relaxed">
                 For questions about our KYC procedures or to update your customer information:
               </p>
               <div className="space-y-2 text-white/70 mt-4">
-                <p><strong>Email:</strong> kyc@ozamapay.com</p>
-                <p><strong>General:</strong> contact@ozamapay.com</p>
-                <p><strong>Phone:</strong> +509 36 40 1900</p>
+                <p><strong>Email:</strong> contact@ozamapay.com</p>
+                <p><strong>Phone:</strong> +509 31 91 99 91</p>
                 <p><strong>Address:</strong> Jacmel, Haiti</p>
                 <p><strong>Support Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM (Haiti Time)</p>
               </div>
