@@ -140,8 +140,9 @@ export default function Dashboard() {
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
   const [topupNote, setTopupNote] = useState('');
   const [mccPaymentUrl, setMccPaymentUrl] = useState<string | null>(null);
-  const [mccPolling, setMccPolling] = useState(false);
   const [mccInitialBalance, setMccInitialBalance] = useState(0);
+  const [mccStatus, setMccStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+  const [mccError, setMccError] = useState('');
   const mccPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
@@ -661,17 +662,20 @@ export default function Dashboard() {
     return () => observer.disconnect();
   }, [transactions, activeTab]);
 
-  const handlePaymentLogic = async () => {
+  const handlePaymentLogic = async (moncashTab?: Window | null) => {
   if (!topUpAmount || Number(topUpAmount) <= 0) {
     showToast('Antre yon montan valid', 'error');
+    if (moncashTab) moncashTab.close();
     return;
   }
   if (!selectedMethod) {
     showToast('Chwazi yon mwayen peman', 'error');
+    if (moncashTab) moncashTab.close();
     return;
   }
   if (topUpType === 'MANUAL' && !receipt) {
     showToast('Upload reçu peman ou anvan ou soumèt', 'error');
+    if (moncashTab) moncashTab.close();
     return;
   }
 
@@ -687,6 +691,8 @@ export default function Dashboard() {
   setTopupLoading(true);
   try {
     if (selectedMethod === 'moncash' && topUpType === 'AUTOMATIC') {
+      setMccStatus('pending');
+      setMccError('');
       try {
         const res = await fetch(`${backendUrl}/payments/moncashconnect/initiate`, {
           method: 'POST',
@@ -701,14 +707,21 @@ export default function Dashboard() {
         const initialBal = Number(freshMe?.wallet?.balance ?? user?.wallet?.balance ?? 0);
         setMccInitialBalance(initialBal);
         setMccPaymentUrl(data.paymentUrl);
-        setMccPolling(true);
+
+        if (moncashTab && !moncashTab.closed) {
+          moncashTab.location.href = data.paymentUrl;
+        } else {
+          window.location.href = data.paymentUrl;
+        }
 
         if (mccPollRef.current) clearInterval(mccPollRef.current);
         const deadline = Date.now() + 10 * 60 * 1000;
         mccPollRef.current = setInterval(async () => {
           if (Date.now() > deadline) {
             clearInterval(mccPollRef.current!);
-            setMccPolling(false);
+            setMccPaymentUrl(null);
+            setMccStatus('error');
+            setMccError('Nou pa t detekte peman an nan 10 minit. Verifye si ou konfime l sou MonCash, oswa eseye ankò.');
             return;
           }
           try {
@@ -719,8 +732,8 @@ export default function Dashboard() {
               const newBal = Number(fresh?.wallet?.balance ?? 0);
               if (newBal > initialBal) {
                 clearInterval(mccPollRef.current!);
-                setMccPolling(false);
                 setMccPaymentUrl(null);
+                setMccStatus('success');
                 setUser(fresh);
                 setTopUpAmount('');
                 setToast({ message: `Depot konfime! +${(newBal - initialBal).toLocaleString()} HTG ✅`, type: 'success' });
@@ -730,6 +743,9 @@ export default function Dashboard() {
           } catch {}
         }, 10000);
       } catch {
+        if (moncashTab) { try { moncashTab.close(); } catch {} }
+        setMccStatus('error');
+        setMccError('Erè koneksyon ak sèvè MonCash. Eseye ankò.');
         setToast({ message: 'Erè koneksyon ak sèvè MonCash', type: 'error' });
       }
     } else {
@@ -1864,20 +1880,26 @@ export default function Dashboard() {
                       </div>
                     );
                   })()}
-                  {mccPaymentUrl ? (
+                  {mccStatus === 'success' ? (
+                    <div className="flex items-center gap-2" style={{ background: 'rgba(34,197,94,0.08)', border: `1px solid ${colors.success}`, borderRadius: 16, padding: '14px 16px' }}>
+                      <CheckCircle2 size={18} style={{ color: colors.success, flexShrink: 0 }} />
+                      <p className="font-bold text-[12px]" style={{ color: colors.success }}>Depo konfime ak siksè! ✅</p>
+                    </div>
+                  ) : mccStatus === 'pending' ? (
                     <div className="flex flex-col gap-2">
                       <button
-                        onClick={() => { window.location.href = mccPaymentUrl; }}
-                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all"
+                        disabled
+                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
                         style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
                       >
-                        Peye via MonCash →
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Peman an kou...
                       </button>
-                      {mccPolling && (
-                        <p className="font-medium italic text-[11px] text-center animate-pulse" style={{ color: colors.textSecondary }}>Ap verifye peman ou… 🔄</p>
-                      )}
+                      <p className="font-medium italic text-[11px] text-center" style={{ color: colors.textSecondary }}>
+                        Ouvri MonCash sou telefòn ou epi konfime peman an. Pa klike ankò.
+                      </p>
                       <button
-                        onClick={() => { setMccPaymentUrl(null); setMccPolling(false); if (mccPollRef.current) clearInterval(mccPollRef.current); }}
+                        onClick={() => { setMccPaymentUrl(null); setMccStatus('idle'); setMccError(''); if (mccPollRef.current) clearInterval(mccPollRef.current); }}
                         className="font-medium italic text-[11px] text-center py-1 hover:opacity-70 transition-all"
                         style={{ color: colors.textSecondary }}
                       >
@@ -1885,14 +1907,23 @@ export default function Dashboard() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => { setSelectedMethod('moncash'); setTopUpType('AUTOMATIC'); handlePaymentLogic(); }}
-                      disabled={topupLoading || !topUpAmount || Number(topUpAmount) <= 0}
-                      className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                      style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
-                    >
-                      {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'Depoze ak MonCash'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          const tab = window.open('', '_blank');
+                          setSelectedMethod('moncash'); setTopUpType('AUTOMATIC');
+                          handlePaymentLogic(tab);
+                        }}
+                        disabled={topupLoading || !topUpAmount || Number(topUpAmount) <= 0}
+                        className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
+                      >
+                        {topupLoading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Ap trete...</> : 'Depoze ak MonCash'}
+                      </button>
+                      {mccStatus === 'error' && mccError && (
+                        <p className="font-medium text-[11px] text-center mt-2" style={{ color: colors.error }}>{mccError}</p>
+                      )}
+                    </>
                   )}
                   <p className="font-medium italic text-[11px] text-center mt-2" style={{ color: colors.textSecondary }}>
                     Sistèm otomatik — 8.9% frè aplike (6% OZAMAPAY + 2.9% MonCash), ou resevwa 91.1% nan depo a imedyatman apre peman konfime.
@@ -2040,7 +2071,7 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <button
-                    onClick={handlePaymentLogic}
+                    onClick={() => handlePaymentLogic()}
                     disabled={topupLoading || !(topUpAmount && selectedMethod && topUpType === 'MANUAL')}
                     className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     style={{ background: colors.accent, paddingTop: 16, paddingBottom: 16 }}
