@@ -146,6 +146,9 @@ export default function Dashboard() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawAccountInfo, setWithdrawAccountInfo] = useState('');
+  const [withdrawFullName, setWithdrawFullName] = useState('');
+  const [withdrawBankCurrency, setWithdrawBankCurrency] = useState<'HTG' | 'USD'>('HTG');
+  const [withdrawBankDetails, setWithdrawBankDetails] = useState('');
   const [pin, setPin] = useState('');
   
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
@@ -288,7 +291,7 @@ export default function Dashboard() {
   const paymentMethods = [
     { id: 'zelle', label: 'Zelle', img: 'zelle.png', info: "786 868 6782", name: "Ralph Olivier Greffin" },
     { id: 'cashapp', label: 'CashApp', img: 'cashapp.png', info: "$Pascoue93", name: "Ralph Olivier Greffin" },
-    { id: 'moncash', label: 'MonCash', img: 'moncash.png', info: "Nimewo MonCash la", name: "Ralph Olivier Greffin" },
+    { id: 'moncash', label: 'MonCash', img: 'moncash.png', info: "+509 48 08 87 15", name: "Ralph Olivier Greffin" },
     { id: 'natcash', label: 'NatCash', img: 'natcash.png', info: "55187047", name: "Ralph Olivier Greffin" },
     { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" },
     { id: 'usdt', label: 'USDT', img: 'usdt.png', info: PAYMENT_INFO.usdt.acc, name: "Adrès USDT TRC20" }
@@ -847,7 +850,16 @@ export default function Dashboard() {
       const res = await fetch(`${backendUrl}/wallet/withdraw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ amount: parseFloat(withdrawAmount), method: withdrawMethod, accountInfo: withdrawAccountInfo })
+        body: JSON.stringify({
+          amount: parseFloat(withdrawAmount),
+          method: withdrawMethod,
+          accountInfo: withdrawAccountInfo,
+          ...(withdrawMethod === 'bank' ? {
+            fullName: withdrawFullName,
+            currency: withdrawBankCurrency,
+            bankDetails: withdrawBankDetails,
+          } : {}),
+        })
       });
       if (res.ok) { alert("Demann retrè voye !"); fetchData(); }
     } catch (e) { alert("Erè koneksyon"); }
@@ -1957,6 +1969,37 @@ export default function Dashboard() {
                       </div>
                     );
                   })()}
+                  {selectedMethod === 'moncash' && topUpType === 'MANUAL' && (
+                    <div className="rounded-xl border px-3 py-3 flex flex-col items-center gap-2 mb-1 text-center" style={{ background: colors.background, borderColor: colors.border }}>
+                      <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>
+                        Voye kantite + frè MonCash
+                      </p>
+                      <img src="/moncashqrcode.png" alt="QR Code MonCash" className="w-32 h-32 object-contain rounded-lg" />
+                      <p className="font-medium text-[11px]" style={{ color: colors.accent }}>
+                        Si ou itilize app MonCash, skane QR code a — pa gen frè!
+                      </p>
+                    </div>
+                  )}
+                  {selectedMethod === 'bank' && topUpType === 'MANUAL' && (
+                    <div className="rounded-xl border px-3 py-3 flex flex-col gap-2 mb-1" style={{ background: colors.background, borderColor: colors.border }}>
+                      <div className="flex items-center gap-2">
+                        <img src="/capitalbank.png" alt="Capital Bank" className="w-8 h-8 object-contain" />
+                        <span className="font-black text-[12px] uppercase tracking-[0.5px]" style={{ color: colors.textPrimary }}>Capital Bank</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Nimewo Kont</span>
+                        <span className="font-black text-[12px]" style={{ color: colors.accent }}>1920222</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Non</span>
+                        <span className="font-black text-[12px]" style={{ color: colors.textPrimary }}>Ralph Olivier GREFFIN</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Devise</span>
+                        <span className="font-black text-[12px]" style={{ color: colors.textPrimary }}>USD</span>
+                      </div>
+                    </div>
+                  )}
                   {selectedMethod === 'usdt' && topUpType === 'MANUAL' && (
                     <div className="rounded-xl border px-3 py-2 flex items-start gap-2 mb-1" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
                       <span className="text-[13px] flex-shrink-0">⚠️</span>
@@ -2103,31 +2146,9 @@ export default function Dashboard() {
                   })}
                 </div>
 
-                {/* selected method info strip */}
-                {withdrawMethod && (() => {
-                  const method = paymentMethods.find(x => x.id === withdrawMethod);
-                  if (!method) return null;
-                  return (
-                    <div className="flex items-center gap-2 mt-3" style={{ background: 'rgba(255,122,0,.07)', border: '1px solid rgba(255,122,0,.2)', borderRadius: 14, padding: '10px 12px' }}>
-                      <p className="flex-1 text-[11px] leading-5" style={{ color: glass.textDim }}>
-                        Voye lajan sou:{' '}
-                        <span style={{ fontWeight: 700, color: '#FF7A00' }}>{method.info}</span>
-                      </p>
-                      <button
-                        onClick={() => copyToClipboard(method.info)}
-                        className="flex items-center gap-1 active:scale-90 transition-all"
-                        style={{ background: 'rgba(255,122,0,.15)', border: '1px solid rgba(255,122,0,.3)', borderRadius: 10, padding: '5px 9px' }}
-                      >
-                        <Copy size={11} color="#FF7A00" />
-                        <span style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.05em', color: '#FF7A00' }}>KOPYE</span>
-                      </button>
-                    </div>
-                  );
-                })()}
-
                 {/* account info input */}
                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 16, marginBottom: 6 }}>
-                  Enfòmasyon Kont (opsyonèl)
+                  Enfòmasyon Kont (email/nimewo/id/tag)
                 </span>
                 <input
                   className="w-full outline-none text-[14px]"
@@ -2137,10 +2158,74 @@ export default function Dashboard() {
                   onChange={(e) => setWithdrawAccountInfo(e.target.value)}
                 />
 
+                {/* bank-specific required fields */}
+                {withdrawMethod === 'bank' && (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 6 }}>
+                        Non Konplet
+                      </span>
+                      <input
+                        className="w-full outline-none text-[14px]"
+                        style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, borderRadius: 14, padding: '13px 16px', color: colors.textPrimary }}
+                        placeholder="Non ak Siyati..."
+                        value={withdrawFullName}
+                        onChange={(e) => setWithdrawFullName(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 6 }}>
+                        Devise
+                      </span>
+                      <div className="flex gap-2">
+                        {(['HTG', 'USD'] as const).map((cur) => {
+                          const isSel = withdrawBankCurrency === cur;
+                          return (
+                            <button
+                              key={cur}
+                              onClick={() => setWithdrawBankCurrency(cur)}
+                              className="flex-1 active:scale-95 transition-all"
+                              style={{
+                                padding: '10px 0',
+                                borderRadius: 12,
+                                background: isSel ? 'rgba(255,122,0,.12)' : glass.bg,
+                                border: `1.5px solid ${isSel ? 'rgba(255,122,0,.6)' : glass.borderSubtle}`,
+                                color: isSel ? '#FF7A00' : glass.textDim,
+                                fontWeight: 700,
+                                fontSize: 12,
+                              }}
+                            >
+                              {cur}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 6 }}>
+                        Detay Bank
+                      </span>
+                      <input
+                        className="w-full outline-none text-[14px]"
+                        style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, borderRadius: 14, padding: '13px 16px', color: colors.textPrimary }}
+                        placeholder="Non Bank, Nimewo Kont..."
+                        value={withdrawBankDetails}
+                        onChange={(e) => setWithdrawBankDetails(e.target.value)}
+                      />
+                    </div>
+
+                    <p style={{ fontSize: 11, color: glass.textDimmer, lineHeight: 1.6 }}>
+                      Retrè bank pran 2 jou ouvrab.
+                    </p>
+                  </div>
+                )}
+
                 {/* danger submit — glass with red border */}
                 <button
                   onClick={handleWithdraw}
-                  disabled={!(withdrawAmount && withdrawMethod)}
+                  disabled={!(withdrawAmount && withdrawMethod && withdrawAccountInfo && (withdrawMethod !== 'bank' || (withdrawFullName && withdrawBankDetails)))}
                   className="w-full font-black italic uppercase active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2 mt-5"
                   style={{
                     background: 'rgba(239,68,68,.08)',
@@ -2162,7 +2247,7 @@ export default function Dashboard() {
               <div className="flex items-start gap-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, borderRadius: 18, padding: '14px 16px' }}>
                 <Info size={15} color={glass.textDimmer} style={{ flexShrink: 0, marginTop: 1 }} />
                 <p style={{ fontSize: 11, color: glass.textDimmer, lineHeight: 1.6 }}>
-                  Demann retrè yo trete nan 1–3 jou ouvrab. Frais 2% aplike sou tout retrè.
+                  Retrè ka pran 15-30 minit. Frais 2% aplike sou tout retrè.
                 </p>
               </div>
 
