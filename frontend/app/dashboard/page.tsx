@@ -8,7 +8,7 @@ import {
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
-  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle
+  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle, PlayCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -73,7 +73,50 @@ const signOut = async () => {
   document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   window.location.replace("/login");
 };
- 
+
+function VideoGuideBadge({ phrase }: { phrase: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full active:opacity-70"
+        style={{ background: 'rgba(255,122,0,0.15)', border: '1px solid rgba(255,122,0,0.35)', color: '#FF7A00', fontSize: 11, fontWeight: 700 }}
+      >
+        <PlayCircle size={14} />
+        Wè Guide
+      </button>
+      {open && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center p-6"
+          style={{ background: 'rgba(0,0,0,0.78)' }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-[340px] rounded-3xl p-6 border shadow-2xl flex flex-col items-center text-center"
+            style={{ background: '#0F121E', borderColor: 'rgba(255,122,0,0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <PlayCircle size={40} style={{ color: '#FF7A00' }} className="mb-3" />
+            <p className="font-black italic uppercase text-[15px] tracking-[0.5px] text-white mb-2">{phrase}</p>
+            <p className="text-[12px] uppercase tracking-[1px] font-bold mb-1" style={{ color: '#FF7A00' }}>Video tutoryèl</p>
+            <p className="text-[13px] text-white/60 mb-5">Guide video ap disponib byento!</p>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="w-full py-3 rounded-xl font-bold text-[13px] uppercase"
+              style={{ background: '#FF7A00', color: '#0F121E' }}
+            >
+              Fèmen
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState<any>(null);
@@ -1294,7 +1337,11 @@ export default function Dashboard() {
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.78)' }} onClick={() => setShowQrModal(false)}>
                   <div className="relative w-full max-w-[320px] rounded-3xl p-6 border shadow-2xl flex flex-col items-center" style={{ background: colors.surface, borderColor: colors.border }} onClick={e => e.stopPropagation()}>
                     <h3 className="font-black italic text-[16px] uppercase tracking-[1px] mb-1 text-center" style={{ color: colors.textPrimary }}>Kòd QR Peman Ou</h3>
-                    <p className="font-medium text-[11px] text-center mb-6" style={{ color: colors.textSecondary }}>Lòt moun skane sa pou voye kòb ba ou</p>
+                    <p className="font-medium text-[11px] text-center mb-2" style={{ color: colors.textSecondary }}>Lòt moun skane sa pou voye kòb ba ou</p>
+                    <div className="flex flex-col items-center gap-2 mb-4">
+                      <p className="font-medium text-[11px] text-center" style={{ color: colors.textSecondary }}>Kijan pou resevwa lajan?</p>
+                      <VideoGuideBadge phrase="Kijan pou resevwa lajan?" />
+                    </div>
                     <div className="p-4 rounded-2xl border mb-4" style={{ background: colors.background, borderColor: colors.border }}>
                       <QRCodeSVG
                         id="qr-svg"
@@ -1679,6 +1726,11 @@ export default function Dashboard() {
           </button>
         </div>
 
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Kijan pou voye lajan bay yon lòt moun?</p>
+          <VideoGuideBadge phrase="Kijan pou voye lajan bay yon lòt moun?" />
+        </div>
+
         <div className="space-y-4">
           {/* RECIPIENT */}
           <div className="space-y-2">
@@ -1767,6 +1819,10 @@ export default function Dashboard() {
                   <Landmark size={16} style={{ color: colors.accent }} />
                   <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>MonCash Otomatik</h3>
                 </div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Kijan pou recharge kont ou otomatikman?</p>
+                  <VideoGuideBadge phrase="Kijan pou recharge kont ou otomatikman?" />
+                </div>
                 <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
                   <div className="mb-2">
                     <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Montan (HTG)</label>
@@ -1837,6 +1893,10 @@ export default function Dashboard() {
                 <div className="flex items-center gap-[6px] mb-2">
                   <Upload size={16} style={{ color: colors.accent }} />
                   <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>Depo Manyèl</h3>
+                </div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Kijan pou recharge kont ou manyèlman?</p>
+                  <VideoGuideBadge phrase="Kijan pou recharge kont ou manyèlman?" />
                 </div>
                 <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
                   <div className="mb-2">
@@ -2121,6 +2181,10 @@ export default function Dashboard() {
               <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
                 Echanj lajan ak Wise, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
+              <div className="flex items-center justify-between gap-2 mb-5">
+                <p className="font-medium text-[11px]" style={{ color: glass.textDimmer }}>Kijan pou jere finans ou?</p>
+                <VideoGuideBadge phrase="Kijan pou jere finans ou?" />
+              </div>
               <div className="flex flex-col" style={{ gap: 10 }}>
                 {[
                   { id: 'wise',    name: 'Wise',         desc: 'USD Transfer',     img: 'wise.png' },
@@ -2395,6 +2459,10 @@ export default function Dashboard() {
                   <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: '#FF7A00' }}>
                     Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
                   </p>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou kreye kat VISA ou?</p>
+                    <VideoGuideBadge phrase="Kijan pou kreye kat VISA ou?" />
+                  </div>
                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
                   <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
                     <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
@@ -2892,6 +2960,10 @@ export default function Dashboard() {
                         <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">Recharge Kat</p>
                         <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color={glass.textDim} /></button>
                       </div>
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou recharge kat VISA ou?</p>
+                        <VideoGuideBadge phrase="Kijan pou recharge kat VISA ou?" />
+                      </div>
                       {/* Balance */}
                       <p className="font-medium text-[13px] mb-4" style={{ color: glass.textDim }}>
                         Balans aktyèl:{' '}
@@ -3011,6 +3083,10 @@ export default function Dashboard() {
                     <span className="text-[10px] font-black bg-orange-50 text-[#FF6B00] px-3 py-1 rounded-full border border-orange-100">Etap 1/2</span>
                   </div>
                   <p className="text-[9px] font-bold text-[var(--oz-text-sec)] uppercase tracking-widest mt-1">Mete enfòmasyon reyèl pou deboke limit lan</p>
+                  <div className="flex items-center justify-between gap-2 mt-4">
+                    <p className="font-medium text-[11px] text-[var(--oz-text-sec)]">Kijan pou verifye idantite ou?</p>
+                    <VideoGuideBadge phrase="Kijan pou verifye idantite ou?" />
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
