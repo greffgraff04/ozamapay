@@ -108,14 +108,14 @@ export default function Hero() {
           filter: 'blur(2px) drop-shadow(0 20px 30px color-mix(in srgb, var(--navy) 40%, transparent))',
           animation: 'floatCard2 7s ease-in-out infinite',
         }}>
-          <Image src="/card.png" alt="" width={1012} height={638} aria-hidden style={{ width: '100%', height: 'auto', display: 'block' }} />
+          <Image src="/carte_for_the_app.png" alt="" width={1012} height={638} aria-hidden style={{ width: '100%', height: 'auto', display: 'block' }} />
         </div>
         <div style={{
           width: 'min(320px, 84%)', position: 'absolute', top: '8%', left: '30%',
           filter: 'drop-shadow(0 25px 40px color-mix(in srgb, var(--orange) 45%, transparent))',
           animation: 'floatCard 6s ease-in-out infinite',
         }}>
-          <Image src="/card.png" alt="Carte virtuelle Ozamapay" width={1012} height={638} style={{ width: '100%', height: 'auto', display: 'block' }} priority />
+          <Image src="/carte_for_the_app.png" alt="Carte virtuelle Ozamapay" width={1012} height={638} style={{ width: '100%', height: 'auto', display: 'block' }} priority />
         </div>
       </div>
     </section>

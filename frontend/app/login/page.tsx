@@ -568,7 +568,7 @@ function AuthForm() {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '0 40px' }}>
             <div style={{ transform: 'rotate(-4deg)', filter: 'drop-shadow(0 28px 56px rgba(255,107,0,.38))' }}>
               <img
-                src="/card.png"
+                src="/carte_for_the_app.png"
                 alt="OZAMAPAY Virtual Card"
                 style={{ width: 368, maxWidth: '90%', objectFit: 'contain', display: 'block' }}
               />

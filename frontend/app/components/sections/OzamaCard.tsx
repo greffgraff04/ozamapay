@@ -58,7 +58,7 @@ export default function OzamaCard() {
           filter: 'drop-shadow(0 30px 45px color-mix(in srgb, var(--orange) 45%, transparent))',
         }}>
           <Image
-            src="/card.png"
+            src="/carte_for_the_app.png"
             alt="Carte virtuelle Ozamapay"
             width={1012}
             height={638}

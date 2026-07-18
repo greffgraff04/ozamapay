@@ -2384,7 +2384,7 @@ export default function Dashboard() {
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
                 {/* Card image: borderRadius 0 per spec */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
-                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                  <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                 </div>
                 {/* Create form */}
                 <div className="oz-glass-strong mb-4" style={{ borderRadius: 24, padding: 16 }}>
@@ -2447,7 +2447,7 @@ export default function Dashboard() {
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
                 {/* Card image: dim + terminated overlay */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
-                  <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
+                  <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
                   <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
                     <span className="font-bold text-[11px] uppercase tracking-[2px] text-white px-4 py-2 rounded-full" style={{ background: '#EF4444' }}>DEZAKTIVE</span>
                   </div>
@@ -2487,7 +2487,7 @@ export default function Dashboard() {
 
                     {/* Card image: marginHorizontal 20, borderRadius 0 */}
                     <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
-                      <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" style={virtualCard?.status === 'FROZEN' ? { filter: 'grayscale(0.4)' } : {}} />
+                      <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={virtualCard?.status === 'FROZEN' ? { filter: 'grayscale(0.4)' } : {}} />
                       {/* Overlay: paddingHorizontal 20, paddingVertical 18 */}
                       <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
                         <div />
@@ -2707,7 +2707,7 @@ export default function Dashboard() {
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
                         {/* Card image: borderRadius 0 */}
                         <div className="relative overflow-hidden" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
-                          <img src="/card.png" alt="OZAMA Card" className="w-full h-full object-cover" />
+                          <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
                             <div />
                             <div>
