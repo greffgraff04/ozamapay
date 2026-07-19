@@ -55,5 +55,15 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: TRON_MASTER_MNEMONIC
+        sync: false
+      - key: TRONGRID_API_KEY
+        sync: false
+      - key: TRONGRID_BASE_URL
+        sync: false
+      - key: USDT_TRC20_CONTRACT_ADDRESS
+        sync: false
+      - key: USDT_MIN_CONFIRMATIONS
+        sync: false
       - key: NODE_ENV
         value: production

@@ -26,6 +26,7 @@ import { TrackingModule } from './tracking/tracking.module';
 import { BusinessModule } from './business/business.module';
 import { ApiModule } from './api/api.module';
 import { TeamModule } from './team/team.module';
+import { TronModule } from './tron/tron.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { TeamModule } from './team/team.module';
     AirtimeModule,
     TrackingModule,
     TeamModule,
+    TronModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

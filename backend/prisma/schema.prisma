@@ -32,6 +32,7 @@ model User {
   virtualCards    VirtualCard[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
+  depositAddress  DepositAddress?
   emailVerified   Boolean             @default(false)
 
   emailVerificationToken String?
@@ -106,6 +107,7 @@ model Transaction {
   ledgerEntries    LedgerEntry[]
   receiverWallet   Wallet?           @relation("ReceiverTransactions", fields: [receiverWalletId], references: [id])
   senderWallet     Wallet?           @relation("SenderTransactions", fields: [senderWalletId], references: [id])
+  cryptoDeposit    CryptoDeposit?
 
   @@index([reference])
   @@index([status])
@@ -343,6 +345,52 @@ model VirtualCard {
   @@index([userId])
   @@index([cardId])
   @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USDT (TRC20) DEPOSITS
+// ═══════════════════════════════════════════════════════════════
+// HD wallet derivation: no individual private keys are ever stored.
+// `derivationIndex` is the only secret-adjacent value persisted — it is
+// combined with a master mnemonic (env var, never in the DB) at address
+// derivation time. See TronAddressService.
+
+model DepositAddress {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  address         String   @unique
+  derivationIndex Int      @unique @default(autoincrement())
+  network         String   @default("TRC20")
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+  deposits        CryptoDeposit[]
+
+  @@index([userId])
+  @@index([address])
+}
+
+model CryptoDeposit {
+  id               String              @id @default(uuid())
+  depositAddressId String
+  txHash           String              @unique
+  amountUsdt       Decimal             @db.Decimal(18, 6)
+  status           CryptoDepositStatus @default(PENDING)
+  confirmations    Int                 @default(0)
+  transactionId    String?             @unique
+  detectedAt       DateTime            @default(now())
+  creditedAt       DateTime?
+  depositAddress   DepositAddress      @relation(fields: [depositAddressId], references: [id])
+  transaction      Transaction?        @relation(fields: [transactionId], references: [id])
+
+  @@index([depositAddressId])
+  @@index([status])
+}
+
+enum CryptoDepositStatus {
+  PENDING
+  CONFIRMED
+  CREDITED
+  FAILED
 }
 
 enum UserRole {

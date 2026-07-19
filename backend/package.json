@@ -41,9 +41,11 @@
     "@types/qrcode": "^1.5.6",
     "axios": "^1.16.1",
     "bcrypt": "^6.0.0",
+    "bip39": "^3.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "geoip-lite": "^1.4.10",
+    "hdkey": "^2.1.0",
     "helmet": "^8.2.0",
     "imagekit": "^6.0.0",
     "moncash-sdk": "github:ecelestin/ecelestin-Moncash-sdk-nodejs",
@@ -57,6 +59,7 @@
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "tronweb": "^6.4.0",
     "typeorm": "^0.3.29"
   },
   "devDependencies": {
@@ -68,6 +71,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/geoip-lite": "^1.4.4",
+    "@types/hdkey": "^2.1.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.1.0",
     "@types/node": "^24.0.0",
