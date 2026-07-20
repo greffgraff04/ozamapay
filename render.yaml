@@ -65,5 +65,11 @@ services:
         sync: false
       - key: USDT_MIN_CONFIRMATIONS
         sync: false
+      - key: SWEEP_MASTER_MNEMONIC
+        sync: false
+      - key: SWEEP_GAS_FUNDING_TRX
+        sync: false
+      - key: SWEEP_MIN_USDT_THRESHOLD
+        sync: false
       - key: NODE_ENV
         value: production

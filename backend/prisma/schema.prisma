@@ -364,6 +364,7 @@ model DepositAddress {
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id])
   deposits        CryptoDeposit[]
+  sweeps          SweepTransaction[]
 
   @@index([userId])
   @@index([address])
@@ -390,6 +391,34 @@ enum CryptoDepositStatus {
   PENDING
   CONFIRMED
   CREDITED
+  FAILED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USDT (TRC20) SWEEP — Faz 2
+// ═══════════════════════════════════════════════════════════════
+// Consolidates USDT collected across per-user deposit addresses into a
+// single treasury address (derived from SWEEP_MASTER_MNEMONIC — a
+// separate mnemonic from TRON_MASTER_MNEMONIC). See SweepService.
+
+model SweepTransaction {
+  id               String       @id @default(uuid())
+  depositAddressId String
+  amountUsdt       Decimal      @db.Decimal(18, 6)
+  txHash           String?      @unique
+  gasFundingTxHash String?
+  status           SweepStatus  @default(PENDING)
+  sweptAt          DateTime?
+  createdAt        DateTime     @default(now())
+  depositAddress   DepositAddress @relation(fields: [depositAddressId], references: [id])
+
+  @@index([depositAddressId])
+  @@index([status])
+}
+
+enum SweepStatus {
+  PENDING
+  COMPLETED
   FAILED
 }
 
