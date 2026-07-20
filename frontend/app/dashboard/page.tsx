@@ -144,6 +144,9 @@ export default function Dashboard() {
   const [mccStatus, setMccStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [mccError, setMccError] = useState('');
   const mccPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [usdtDepositAddress, setUsdtDepositAddress] = useState<{ address: string; network: string } | null>(null);
+  const [usdtAddressLoading, setUsdtAddressLoading] = useState(false);
+  const [usdtAddressError, setUsdtAddressError] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawMethod, setWithdrawMethod] = useState('');
   const [withdrawAccountInfo, setWithdrawAccountInfo] = useState('');
@@ -610,6 +613,9 @@ export default function Dashboard() {
     if (activeTab === 'profile') {
       fetchData();
     }
+    if (activeTab === 'topup' && !usdtDepositAddress && !usdtAddressLoading) {
+      fetchUsdtDepositAddress();
+    }
     if (activeTab === 'giftcards' && gcProducts.length === 0) {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -661,6 +667,18 @@ export default function Dashboard() {
     });
     return () => observer.disconnect();
   }, [transactions, activeTab]);
+
+  const fetchUsdtDepositAddress = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setUsdtAddressLoading(true);
+    setUsdtAddressError('');
+    fetch(`${backendUrl}/wallet/deposit-address`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(data => setUsdtDepositAddress({ address: data.address, network: data.network }))
+      .catch(() => setUsdtAddressError('Nou pa t kapab chaje adrès USDT ou. Eseye ankò.'))
+      .finally(() => setUsdtAddressLoading(false));
+  };
 
   const handlePaymentLogic = async (moncashTab?: Window | null) => {
   if (!topUpAmount || Number(topUpAmount) <= 0) {
@@ -2081,6 +2099,66 @@ export default function Dashboard() {
                   <p className="font-medium italic text-[11px] text-center mt-2" style={{ color: colors.textSecondary }}>
                     Depo manyèl bezwen apwobasyon yon ajan OZAMAPAY.
                   </p>
+                </div>
+              </div>
+
+              {/* ── USDT Otomatik (TRC20) ── */}
+              <div className="mb-6">
+                <div className="flex items-center gap-[6px] mb-2">
+                  <Banknote size={16} style={{ color: colors.accent }} />
+                  <h3 className="font-black italic uppercase text-[14px] tracking-[1px]" style={{ color: colors.textPrimary }}>USDT Otomatik (TRC20)</h3>
+                </div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Kijan pou depoze ak USDT?</p>
+                  <VideoGuideBadge phrase="Kijan pou depoze ak USDT?" />
+                </div>
+                <div className="rounded-[28px] border p-4 flex flex-col gap-3" style={{ background: colors.surface, borderColor: colors.border }}>
+                  <p className="font-medium text-[11px] leading-[16px]" style={{ color: colors.textSecondary }}>
+                    Voye USDT (rezo TRC20 sèlman) sou adrès pèsonèl ou anba a — kredi otomatik apre ~20 konfimasyon, san admin.
+                  </p>
+
+                  {usdtAddressLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <span className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: colors.accent, borderTopColor: 'transparent' }} />
+                    </div>
+                  ) : usdtAddressError ? (
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      <p className="font-medium text-[11px] text-center" style={{ color: colors.error }}>{usdtAddressError}</p>
+                      <button
+                        onClick={fetchUsdtDepositAddress}
+                        className="flex items-center gap-1 rounded-xl border px-3 py-[6px] active:scale-95 transition-all"
+                        style={{ background: 'rgba(255,122,0,0.1)', borderColor: 'rgba(255,122,0,0.25)' }}
+                      >
+                        <RefreshCw size={12} style={{ color: colors.accent }} />
+                        <span className="font-black text-[10px] tracking-[0.5px]" style={{ color: colors.accent }}>Eseye ankò</span>
+                      </button>
+                    </div>
+                  ) : usdtDepositAddress ? (
+                    <>
+                      <div className="flex flex-col items-center gap-2 py-2">
+                        <div className="p-3 rounded-2xl border" style={{ background: colors.background, borderColor: colors.border }}>
+                          <QRCodeSVG value={usdtDepositAddress.address} size={140} bgColor="transparent" fgColor={colors.textPrimary} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border px-2 py-2" style={{ background: colors.background, borderColor: colors.border }}>
+                        <p className="flex-1 font-medium text-[11px] leading-4 break-all" style={{ color: colors.textSecondary }}>
+                          <span className="font-black" style={{ color: colors.accent }}>{usdtDepositAddress.address}</span>
+                        </p>
+                        <button
+                          onClick={() => copyToClipboard(usdtDepositAddress.address)}
+                          className="flex items-center gap-1 rounded-xl border px-2 py-[5px] flex-shrink-0 active:scale-90 transition-all"
+                          style={{ background: 'rgba(255,122,0,0.1)', borderColor: 'rgba(255,122,0,0.25)' }}
+                        >
+                          <Copy size={12} style={{ color: colors.accent }} />
+                          <span className="font-black text-[10px] tracking-[0.5px]" style={{ color: colors.accent }}>Kopye</span>
+                        </button>
+                      </div>
+                      <div className="rounded-xl border px-3 py-2 flex items-start gap-2" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)' }}>
+                        <span className="text-[13px] flex-shrink-0">⚠️</span>
+                        <p className="font-black text-[9px] uppercase tracking-wide leading-relaxed" style={{ color: colors.error }}>Sèlman rezo TRC20 — pa voye sou ERC20 oswa BEP20, lajan ap pèdi nèt!</p>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
