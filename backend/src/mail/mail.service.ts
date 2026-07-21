@@ -523,7 +523,7 @@ export class MailService {
             </table>
 
             <!-- CTA -->
-            <a href="https://ozamapay.com/kyc" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">F&egrave; KYC mwen kounye a &rarr;</a>
+            <a href="${this.frontendUrl}/kyc" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">F&egrave; KYC mwen kounye a &rarr;</a>
 
             <!-- Closing italic line -->
             <div style="border-left:3px solid #FF7A00;padding:14px 18px;background:#fff8f0;border-radius:0 6px 6px 0;">
@@ -537,7 +537,7 @@ export class MailService {
         <tr>
           <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
             <p style="margin:0 0 6px;font-size:11px;color:#999999;text-align:center;line-height:1.6;">Pa janm pataje PIN ou ak p&egrave;s&ograve;n &mdash; menm ekip OZAMAPAY pa ka mande l.</p>
-            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="${this.frontendUrl}" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
 
@@ -589,7 +589,7 @@ export class MailService {
         </tr>
         <tr>
           <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
-            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="${this.frontendUrl}" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
       </table>
@@ -651,7 +651,7 @@ export class MailService {
         </tr>
         <tr>
           <td style="border-top:0.5px solid #eeeeee;padding:16px 40px;background:#f9f9f9;">
-            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jakmel, Ayiti &middot; <a href="${this.frontendUrl}" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
       </table>
@@ -730,7 +730,7 @@ export class MailService {
             </table>
 
             <!-- CTA -->
-            <a href="https://ozamapay.com/dashboard" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">Jwenn lyen referans mwen &rarr;</a>
+            <a href="${this.frontendUrl}/dashboard" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">Jwenn lyen referans mwen &rarr;</a>
 
             <!-- Quote -->
             <div style="border-left:3px solid #FF7A00;padding:14px 18px;background:#fff8f0;border-radius:0 6px 6px 0;margin:0 0 24px;">
@@ -746,7 +746,7 @@ export class MailService {
         <!-- FOOTER -->
         <tr>
           <td style="border-top:0.5px solid #eeeeee;padding:20px 40px;background:#f9f9f9;">
-            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jacmel, Ha&iuml;ti &middot; <a href="https://ozamapay.com" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;text-align:center;">OZAMAPAY &middot; Jacmel, Ha&iuml;ti &middot; <a href="${this.frontendUrl}" style="color:#FF7A00;text-decoration:none;">ozamapay.com</a></p>
           </td>
         </tr>
 
