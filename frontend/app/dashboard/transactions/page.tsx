@@ -102,8 +102,8 @@ export default function TransactionsPage() {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-  const fetchTransactions = async () => {
-    setLoading(true);
+  const fetchTransactions = async (silent = false) => {
+    if (!silent) setLoading(true);
     const token = localStorage.getItem("token");
     if (!token) { window.location.href = "/login"; return; }
     try {
@@ -127,6 +127,16 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => { fetchTransactions(); }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => fetchTransactions(true), 20000);
+    const onVisible = () => { if (document.visibilityState === "visible") fetchTransactions(true); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const filtered = transactions.filter(t =>
     filter === "Tout" ? true : t.type === filter
@@ -166,7 +176,7 @@ export default function TransactionsPage() {
             <span className="text-sm font-black tracking-widest uppercase" style={{ color: colors.textPrimary }}>Istorik Tranzaksyon</span>
           </div>
           <button
-            onClick={fetchTransactions}
+            onClick={() => fetchTransactions()}
             className="w-9 h-9 rounded-2xl transition flex items-center justify-center"
             style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.surface, color: colors.textPrimary }}
           >

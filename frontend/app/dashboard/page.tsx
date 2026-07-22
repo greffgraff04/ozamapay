@@ -608,7 +608,13 @@ export default function Dashboard() {
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, []);
- 
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchData();

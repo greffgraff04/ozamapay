@@ -116,8 +116,8 @@ export default function AgentDashboard() {
 
   // ── data fetching ────────────────────────────────────────────────────────
 
-  const fetchAll = async () => {
-    setLoading(true);
+  const fetchAll = async (silent = false) => {
+    if (!silent) setLoading(true);
     const token = localStorage.getItem("token");
     if (!token) { window.location.href = "/login"; return; }
 
@@ -174,6 +174,16 @@ export default function AgentDashboard() {
         }
       })
       .catch(() => { setLoading(false); window.location.href = "/login"; });
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => fetchAll(true), 20000);
+    const onVisible = () => { if (document.visibilityState === "visible") fetchAll(true); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   // ── actions ──────────────────────────────────────────────────────────────
@@ -296,7 +306,7 @@ export default function AgentDashboard() {
           <span className="text-sm font-black tracking-[0.18em] uppercase text-[#FF6B00]">Agency Desk</span>
 
           <button
-            onClick={fetchAll}
+            onClick={() => fetchAll()}
             className="w-9 h-9 rounded-xl border border-[#F0F0F0] flex items-center justify-center text-[#0F121E] hover:bg-[#F8F9FA] transition"
           >
             <RefreshCw size={15} />
