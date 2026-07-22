@@ -11,8 +11,28 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, BarChart, Bar
 } from 'recharts';
+import { isBusinessHours } from '../lib/businessHours';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
+
+function BusinessHoursNotice() {
+  const status = isBusinessHours();
+  const meta = {
+    OPEN: { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', color: '#22C55E', text: 'Nou disponib' },
+    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)', color: '#EAB308', text: 'Mesaj sèlman jodi a' },
+    CLOSED: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', color: '#EF4444', text: 'Nou fèmen' },
+  }[status];
+
+  return (
+    <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
+      <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: meta.color }} />
+      <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.text}</span>
+      {status === 'CLOSED' && (
+        <span className="text-[10px] font-mono text-white/40">— Demand ap trete pwochen jou ouvrab</span>
+      )}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
@@ -1083,6 +1103,7 @@ export default function AdminDashboard() {
           {/* ==================== TAB: KYC ==================== */}
           {activeTab === 'kyc' && (
             <div className="space-y-6">
+              <BusinessHoursNotice />
               {selectedKyc ? (
                 <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl p-8">
                   <button onClick={() => setSelectedKyc(null)} className="mb-6 text-[#FF6B00] text-[10px] font-black uppercase flex items-center gap-2 tracking-widest hover:opacity-85 transition-all">

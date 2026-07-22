@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { isBusinessHours, BUSINESS_HOURS_LABEL } from '../lib/businessHours';
 
 const FAQ_ITEMS = [
   {
@@ -69,6 +70,30 @@ const contacts: ContactCard[] = [
   },
 ];
 
+function BusinessHoursNotice() {
+  const status = isBusinessHours();
+  const meta = {
+    OPEN: { bg: 'bg-green-500/10', border: 'border-green-500/25', text: 'text-green-400', label: 'Nou disponib' },
+    MESSAGE_ONLY: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/25', text: 'text-yellow-400', label: 'Mesaj sèlman jodi a' },
+    CLOSED: { bg: 'bg-red-500/10', border: 'border-red-500/25', text: 'text-red-400', label: 'Nou fèmen' },
+  }[status];
+
+  return (
+    <div className={`inline-flex flex-col gap-2 rounded-2xl border ${meta.bg} ${meta.border} px-4 py-3`}>
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${meta.text.replace('text-', 'bg-')}`} />
+        <span className={`text-xs font-black uppercase tracking-wider ${meta.text}`}>{meta.label}</span>
+        {status === 'CLOSED' && (
+          <span className="text-xs text-slate-400">— Demand ap trete pwochen jou ouvrab</span>
+        )}
+      </div>
+      <p className="text-xs text-slate-500">
+        {BUSINESS_HOURS_LABEL.weekday} · {BUSINESS_HOURS_LABEL.saturday} · {BUSINESS_HOURS_LABEL.sunday}
+      </p>
+    </div>
+  );
+}
+
 export default function SupportPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -98,8 +123,9 @@ export default function SupportPage() {
               </span>
             </h1>
             <p className="text-slate-400 text-lg">
-              Ekip sipò nou an disponib pou ede ou 7 jou sou 7, 24 èdtan sou 24.
+              Ekip sipò nou an disponib pou ede ou pandan orè travay nou yo.
             </p>
+            <BusinessHoursNotice />
           </div>
 
           {/* Kontakte nou */}

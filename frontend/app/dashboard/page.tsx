@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { isBusinessHours } from '../lib/businessHours';
  
 const CARD_BILLING = {
   street: '3401 N. Miami Ave, Ste 230',
@@ -114,6 +115,30 @@ function VideoGuideBadge({ phrase }: { phrase: string }) {
         </div>
       )}
     </>
+  );
+}
+
+function BusinessHoursNotice() {
+  const status = isBusinessHours();
+  const meta = {
+    OPEN: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.35)', color: '#22C55E', text: 'Nou disponib' },
+    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', color: '#EAB308', text: 'Mesaj sèlman jodi a' },
+    CLOSED: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)', color: '#EF4444', text: 'Nou fèmen' },
+  }[status];
+
+  return (
+    <div className="flex flex-col gap-1 mb-3">
+      <span
+        className="inline-flex items-center gap-[6px] self-start px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.5px]"
+        style={{ background: meta.bg, border: `1px solid ${meta.border}`, color: meta.color }}
+      >
+        <span className="w-[6px] h-[6px] rounded-full" style={{ background: meta.color }} />
+        {meta.text}
+      </span>
+      {status === 'CLOSED' && (
+        <p className="text-[10px] font-medium" style={{ color: '#EF4444' }}>Demand ap trete pwochen jou ouvrab.</p>
+      )}
+    </div>
   );
 }
 
@@ -1965,6 +1990,7 @@ export default function Dashboard() {
                   <p className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>Kijan pou recharge kont ou manyèlman?</p>
                   <VideoGuideBadge phrase="Kijan pou recharge kont ou manyèlman?" />
                 </div>
+                <BusinessHoursNotice />
                 <div className="rounded-[28px] border p-4 flex flex-col gap-1" style={{ background: colors.surface, borderColor: colors.border }}>
                   <div className="mb-2">
                     <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-1 block" style={{ color: colors.textSecondary }}>Montan (HTG)</label>
@@ -2197,10 +2223,11 @@ export default function Dashboard() {
               <div className="oz-glass-strong" style={{ borderRadius: 26, padding: 20 }}>
 
                 {/* section label */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <Banknote size={15} color="#FF7A00" />
                   <span style={{ fontWeight: 700, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em', color: colors.textPrimary, fontSize: 15 }}>Demand Retrè</span>
                 </div>
+                <BusinessHoursNotice />
 
                 {/* amount label */}
                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 6 }}>
