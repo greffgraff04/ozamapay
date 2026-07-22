@@ -5,7 +5,8 @@ import {
   UserX, UserCheck, CheckCircle2, XCircle, ChevronDown, LogOut,
   TrendingUp, DollarSign, Search, Filter, ArrowUpRight, Zap, Clock,
   Briefcase, Award, ShieldAlert, Sliders, ToggleLeft, ToggleRight, UserPlus, UserMinus, Banknote, FileText, Mail,
-  Users2, KeyRound, RotateCcw, Send, AlertTriangle, Trophy, AlertCircle
+  Users2, KeyRound, RotateCcw, Send, AlertTriangle, Trophy, AlertCircle,
+  MessageCircle, Wrench
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,7 +26,14 @@ function BusinessHoursNotice() {
 
   return (
     <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
-      <span className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: meta.color }} />
+      {status === 'OPEN' && <CheckCircle2 size={13} color="#22C55E" className="flex-shrink-0" />}
+      {status === 'MESSAGE_ONLY' && (
+        <span className="flex items-center gap-1 flex-shrink-0">
+          <MessageCircle size={13} color="#EAB308" />
+          <Wrench size={13} color="#3B82F6" />
+        </span>
+      )}
+      {status === 'CLOSED' && <XCircle size={13} color="#EF4444" className="flex-shrink-0" />}
       <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: meta.color }}>{meta.text}</span>
       {status === 'CLOSED' && (
         <span className="text-[10px] font-mono text-white/40">— Demand ap trete pwochen jou ouvrab</span>

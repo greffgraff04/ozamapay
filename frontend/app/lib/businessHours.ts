@@ -1,9 +1,13 @@
 // Orè travay OZAMAPAY (America/Port-au-Prince):
 //   Lendi–Vandredi: 8h–18h  — tout sèvis
-//   Samdi: 8h–15h           — sèvis kliyan sèlman
+//   Samdi: 8h–15h           — tout sèvis
 //   Dimanch: Mesaj sèlman + Maintenance (pa gen tretman)
 
 export type BusinessHoursStatus = 'OPEN' | 'MESSAGE_ONLY' | 'CLOSED';
+
+// Consuming components map these keys to actual Lucide icons — kept as
+// plain string keys here since this file has no JSX/React dependency.
+export type ScheduleIconKey = 'check' | 'message' | 'wrench';
 
 const TIMEZONE = 'America/Port-au-Prince';
 
@@ -13,10 +17,10 @@ export const BUSINESS_HOURS_LABEL = {
   sunday: 'Dimanch: Mesaj sèlman + Maintenance',
 };
 
-export const BUSINESS_HOURS_SCHEDULE = [
-  { jou: 'Lendi–Ven', le: '8h–18h', emoji: '✅', sevis: 'Tout sèvis' },
-  { jou: 'Samdi', le: '8h–15h', emoji: '💬', sevis: 'Sèvis kliyan sèlman' },
-  { jou: 'Dimanch', le: '---', emoji: '🔧', sevis: 'Mesaj + Maintenance' },
+export const BUSINESS_HOURS_SCHEDULE: Array<{ jou: string; le: string; icons: ScheduleIconKey[]; sevis: string }> = [
+  { jou: 'Lendi–Ven', le: '8h–18h', icons: ['check'], sevis: 'Tout sèvis' },
+  { jou: 'Samdi', le: '8h–15h', icons: ['check'], sevis: 'Tout sèvis' },
+  { jou: 'Dimanch', le: '---', icons: ['message', 'wrench'], sevis: 'Mesaj + Maintenance' },
 ];
 
 export const AFTER_HOURS_NOTE =

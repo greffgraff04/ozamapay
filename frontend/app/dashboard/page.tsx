@@ -8,7 +8,8 @@ import {
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
-  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle, PlayCircle
+  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle, PlayCircle,
+  MessageCircle, Wrench, XCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -132,7 +133,14 @@ function BusinessHoursNotice() {
         className="inline-flex items-center gap-[6px] self-start px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.5px]"
         style={{ background: meta.bg, border: `1px solid ${meta.border}`, color: meta.color }}
       >
-        <span className="w-[6px] h-[6px] rounded-full" style={{ background: meta.color }} />
+        {status === 'OPEN' && <CheckCircle2 size={12} color="#22C55E" />}
+        {status === 'MESSAGE_ONLY' && (
+          <span className="inline-flex items-center gap-[3px]">
+            <MessageCircle size={12} color="#EAB308" />
+            <Wrench size={12} color="#3B82F6" />
+          </span>
+        )}
+        {status === 'CLOSED' && <XCircle size={12} color="#EF4444" />}
         {meta.text}
       </span>
       {status === 'CLOSED' && (
@@ -141,6 +149,12 @@ function BusinessHoursNotice() {
     </div>
   );
 }
+
+const SCHEDULE_ICON_MAP: Record<'check' | 'message' | 'wrench', { Icon: any; color: string }> = {
+  check: { Icon: CheckCircle2, color: '#22C55E' },
+  message: { Icon: MessageCircle, color: '#EAB308' },
+  wrench: { Icon: Wrench, color: '#3B82F6' },
+};
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('home');
@@ -3743,7 +3757,13 @@ export default function Dashboard() {
                     <div key={row.jou} className="grid grid-cols-3 gap-2 py-2" style={{ borderBottom: `1px solid ${colors.border}` }}>
                       <span className="font-bold text-[11px]" style={{ color: colors.textPrimary }}>{row.jou}</span>
                       <span className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>{row.le}</span>
-                      <span className="text-[11px]">{row.emoji} {row.sevis}</span>
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: colors.textPrimary }}>
+                        {row.icons.map((key) => {
+                          const { Icon, color } = SCHEDULE_ICON_MAP[key];
+                          return <Icon key={key} size={13} color={color} />;
+                        })}
+                        {row.sevis}
+                      </span>
                     </div>
                   ))}
                   <p className="text-[10px] mt-3 leading-[15px]" style={{ color: colors.textSecondary }}>{AFTER_HOURS_NOTE}</p>

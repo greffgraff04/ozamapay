@@ -9,6 +9,9 @@ import {
   ChevronDown,
   ShieldCheck,
   ChevronRight,
+  CheckCircle2,
+  Wrench,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { isBusinessHours, BUSINESS_HOURS_LABEL } from '../lib/businessHours';
@@ -81,7 +84,14 @@ function BusinessHoursNotice() {
   return (
     <div className={`inline-flex flex-col gap-2 rounded-2xl border ${meta.bg} ${meta.border} px-4 py-3`}>
       <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${meta.text.replace('text-', 'bg-')}`} />
+        {status === 'OPEN' && <CheckCircle2 className="w-4 h-4 text-green-400" />}
+        {status === 'MESSAGE_ONLY' && (
+          <span className="flex items-center gap-1">
+            <MessageCircle className="w-4 h-4 text-yellow-400" />
+            <Wrench className="w-4 h-4 text-blue-400" />
+          </span>
+        )}
+        {status === 'CLOSED' && <XCircle className="w-4 h-4 text-red-400" />}
         <span className={`text-xs font-black uppercase tracking-wider ${meta.text}`}>{meta.label}</span>
         {status === 'CLOSED' && (
           <span className="text-xs text-slate-400">— Demand ap trete pwochen jou ouvrab</span>
