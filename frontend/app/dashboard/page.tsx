@@ -959,6 +959,15 @@ export default function Dashboard() {
       showToast("Tanpri mete yon foto pa w (Selfie) pou verifikasyon", "error");
       return;
     }
+    const ACCEPTED_KYC_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!ACCEPTED_KYC_TYPES.includes(idCardFile.type)) {
+      showToast('Foto pyès idantite a: sèlman JPEG, PNG, WEBP aksepte (pa PDF, pa HEIC).', 'error');
+      return;
+    }
+    if (!ACCEPTED_KYC_TYPES.includes(userPhotoFile.type)) {
+      showToast('Selfie a: sèlman JPEG, PNG, WEBP aksepte (pa PDF, pa HEIC).', 'error');
+      return;
+    }
 
     const kycCostHtg = 3375; // $25 USD = 3375 HTG
     const currentBalance = user?.wallet?.balance || 0;
@@ -3387,7 +3396,7 @@ export default function Dashboard() {
                         <FileText size={22} className="text-[#FF6B00]" />
                         <span className="text-[8px] font-black uppercase italic text-[var(--oz-text-sec)] text-center">{idCardFile ? idCardFile.name : 'Chwazi foto pyès'}</span>
                       </button>
-                      <input type="file" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
+                      <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" ref={idCardInputRef} hidden onChange={(e) => setIdCardFile(e.target.files?.[0] || null)} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase text-[var(--oz-text-sec)] ml-1 tracking-widest">Selfie / Portrait</label>
@@ -3395,9 +3404,12 @@ export default function Dashboard() {
                         <Camera size={22} className="text-[#FF6B00]" />
                         <span className="text-[8px] font-black uppercase italic text-[var(--oz-text-sec)] text-center">{userPhotoFile ? userPhotoFile.name : 'Chwazi selfie'}</span>
                       </button>
-                      <input type="file" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
+                      <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" ref={userPhotoInputRef} hidden onChange={(e) => setUserPhotoFile(e.target.files?.[0] || null)} />
                     </div>
                   </div>
+                  <p className="text-[8px] font-bold uppercase tracking-wider text-[var(--oz-text-sec)] ml-1">
+                    Aksepte: JPEG, PNG, WEBP sèlman (pa PDF, pa HEIC). Tay maksimòm: 10 MB
+                  </p>
                   <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-3">
                     <Info size={18} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">

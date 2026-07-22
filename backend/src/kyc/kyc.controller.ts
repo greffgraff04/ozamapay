@@ -7,6 +7,7 @@ import {
   Request,
   UploadedFiles,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -36,7 +37,12 @@ export class KycController {
           if (file.mimetype.match(/^image\/(jpeg|jpg|png|webp)$/)) {
             cb(null, true);
           } else {
-            cb(new Error('Sèlman imaj JPEG, PNG, WEBP ki aksepte'), false);
+            cb(
+              new BadRequestException(
+                'Sèlman imaj JPEG, PNG, WEBP ki aksepte. iPhone: ale nan Réglages → Appareil photo → Formats → "Le plus compatible"',
+              ),
+              false,
+            );
           }
         },
       },
