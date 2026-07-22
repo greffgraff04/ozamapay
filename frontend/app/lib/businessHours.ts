@@ -1,7 +1,7 @@
 // Orè travay OZAMAPAY (America/Port-au-Prince):
-//   Lendi–Vandredi: 8h–18h
-//   Samdi: 8h–15h
-//   Dimanch: Mesaj sèlman (pa gen tretman)
+//   Lendi–Vandredi: 8h–18h  — tout sèvis
+//   Samdi: 8h–15h           — sèvis kliyan sèlman
+//   Dimanch: Mesaj sèlman + Maintenance (pa gen tretman)
 
 export type BusinessHoursStatus = 'OPEN' | 'MESSAGE_ONLY' | 'CLOSED';
 
@@ -10,8 +10,17 @@ const TIMEZONE = 'America/Port-au-Prince';
 export const BUSINESS_HOURS_LABEL = {
   weekday: 'Lendi–Vandredi: 8h–18h',
   saturday: 'Samdi: 8h–15h',
-  sunday: 'Dimanch: Mesaj sèlman',
+  sunday: 'Dimanch: Mesaj sèlman + Maintenance',
 };
+
+export const BUSINESS_HOURS_SCHEDULE = [
+  { jou: 'Lendi–Ven', le: '8h–18h', emoji: '✅', sevis: 'Tout sèvis' },
+  { jou: 'Samdi', le: '8h–15h', emoji: '💬', sevis: 'Sèvis kliyan sèlman' },
+  { jou: 'Dimanch', le: '---', emoji: '🔧', sevis: 'Mesaj + Maintenance' },
+];
+
+export const AFTER_HOURS_NOTE =
+  'Tout tranzaksyon deyò lè travay yo ap trete premye lè pwochen jou ouvrab.';
 
 // Uses Intl with an explicit timeZone so the result is correct regardless
 // of the visitor's own device timezone (no manual UTC-offset math, which

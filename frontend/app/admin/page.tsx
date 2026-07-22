@@ -19,7 +19,7 @@ function BusinessHoursNotice() {
   const status = isBusinessHours();
   const meta = {
     OPEN: { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', color: '#22C55E', text: 'Nou disponib' },
-    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)', color: '#EAB308', text: 'Mesaj sèlman jodi a' },
+    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)', color: '#EAB308', text: 'Mesaj sèlman + Maintenance jodi a' },
     CLOSED: { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', color: '#EF4444', text: 'Nou fèmen' },
   }[status];
 

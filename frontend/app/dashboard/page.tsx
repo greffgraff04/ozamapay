@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { isBusinessHours } from '../lib/businessHours';
+import { isBusinessHours, BUSINESS_HOURS_SCHEDULE, AFTER_HOURS_NOTE } from '../lib/businessHours';
  
 const CARD_BILLING = {
   street: '3401 N. Miami Ave, Ste 230',
@@ -122,7 +122,7 @@ function BusinessHoursNotice() {
   const status = isBusinessHours();
   const meta = {
     OPEN: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.35)', color: '#22C55E', text: 'Nou disponib' },
-    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', color: '#EAB308', text: 'Mesaj sèlman jodi a' },
+    MESSAGE_ONLY: { bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.35)', color: '#EAB308', text: 'Mesaj sèlman + Maintenance jodi a' },
     CLOSED: { bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)', color: '#EF4444', text: 'Nou fèmen' },
   }[status];
 
@@ -3730,6 +3730,24 @@ export default function Dashboard() {
                   </div>
                   <ChevronRight size={16} color={colors.textSecondary} />
                 </button>
+
+                {/* ── ORÈ TRAVAY ── */}
+                <div className="rounded-2xl p-4 mb-4" style={{ background: colors.surface, border: `1px solid ${colors.border}` }}>
+                  <p className="font-black italic uppercase text-[12px] mb-3" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Orè Travay</p>
+                  <div className="grid grid-cols-3 gap-2 mb-1 pb-2" style={{ borderBottom: `1px solid ${colors.border}` }}>
+                    <span className="font-black uppercase text-[9px]" style={{ color: colors.textSecondary, letterSpacing: 0.5 }}>Jou</span>
+                    <span className="font-black uppercase text-[9px]" style={{ color: colors.textSecondary, letterSpacing: 0.5 }}>Lè</span>
+                    <span className="font-black uppercase text-[9px]" style={{ color: colors.textSecondary, letterSpacing: 0.5 }}>Sèvis</span>
+                  </div>
+                  {BUSINESS_HOURS_SCHEDULE.map((row) => (
+                    <div key={row.jou} className="grid grid-cols-3 gap-2 py-2" style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <span className="font-bold text-[11px]" style={{ color: colors.textPrimary }}>{row.jou}</span>
+                      <span className="font-medium text-[11px]" style={{ color: colors.textSecondary }}>{row.le}</span>
+                      <span className="text-[11px]">{row.emoji} {row.sevis}</span>
+                    </div>
+                  ))}
+                  <p className="text-[10px] mt-3 leading-[15px]" style={{ color: colors.textSecondary }}>{AFTER_HOURS_NOTE}</p>
+                </div>
 
                 {/* ── LOGOUT ── */}
                 <button onClick={signOut}

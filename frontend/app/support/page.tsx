@@ -74,7 +74,7 @@ function BusinessHoursNotice() {
   const status = isBusinessHours();
   const meta = {
     OPEN: { bg: 'bg-green-500/10', border: 'border-green-500/25', text: 'text-green-400', label: 'Nou disponib' },
-    MESSAGE_ONLY: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/25', text: 'text-yellow-400', label: 'Mesaj sèlman jodi a' },
+    MESSAGE_ONLY: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/25', text: 'text-yellow-400', label: 'Mesaj sèlman + Maintenance jodi a' },
     CLOSED: { bg: 'bg-red-500/10', border: 'border-red-500/25', text: 'text-red-400', label: 'Nou fèmen' },
   }[status];
 
