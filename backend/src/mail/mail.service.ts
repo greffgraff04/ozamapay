@@ -24,10 +24,10 @@ export class MailService {
     return `<!DOCTYPE html>
 <html lang="ht">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;border:1px solid #eeeeee;">
         <tr>
           <td style="background:${headerColor};padding:28px 40px;">
             <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.65);text-transform:uppercase;">OZAMAPAY</p>
@@ -77,7 +77,7 @@ export class MailService {
   }
 
   private btn(label: string, url: string): string {
-    return `<a href="${url}" style="display:block;margin-top:24px;padding:14px;background:#FF6B00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">${label}</a>`;
+    return `<div style="text-align:center;margin-top:24px;"><a href="${url}" style="display:inline-block;background-color:#FF7A00;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;font-family:Arial,sans-serif;">${label}</a></div>`;
   }
 
   private p(text: string): string {
@@ -126,7 +126,8 @@ export class MailService {
       'Konfime Email Ou',
       this.p('Bonjou,') +
       this.p('Mèsi pou enskripsyon ou nan OZAMAPAY. Pou aktive kont ou, klike sou bouton anba a.') +
-      this.p('Lyen sa valid pou 24 èdtan sèlman. Si se pa ou ki kreye kont sa, ou ka ignoreye mesaj sa.'),
+      this.p('Lyen sa valid pou 24 èdtan sèlman. Si se pa ou ki kreye kont sa, ou ka ignoreye mesaj sa.') +
+      this.btn('Konfime Email Ou →', url),
       '#1565C0',
     );
     await this.send(email, 'Konfime adrès email ou — OZAMAPAY', html);
@@ -147,7 +148,8 @@ export class MailService {
         'Ou ka voye kòb bay fanmi ou imedyatman',
       ]) +
       this.p('Pa kite opòtinite sa pase.') +
-      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.'),
+      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.') +
+      this.btn('Fè KYC Mwen Kounye a →', `${this.frontendUrl}/kyc`),
     );
     await this.send(email, `${name}, byenvini nan OZAMAPAY`, html);
   }
@@ -168,7 +170,8 @@ export class MailService {
         'Voye ak resevwa kòb san limit',
       ]) +
       this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +
-      this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.'),
+      this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.') +
+      this.btn('Kreye Kat VISA Ou →', `${this.frontendUrl}/dashboard`),
     );
     await this.send(email, `${name} — Aksè konplè. Kat VISA ou disponib.`, html);
   }
@@ -191,7 +194,8 @@ export class MailService {
         'Resoumèt foto ki klè ak konplè',
         'Tann mwens pase 24 èdtan pou repons',
       ]) +
-      this.p('Resoumèt la gratis. Done ou yo sekirize epi konfidansyèl.'),
+      this.p('Resoumèt la gratis. Done ou yo sekirize epi konfidansyèl.') +
+      this.btn('Resoumèt Dokiman Yo →', `${this.frontendUrl}/kyc`),
       '#e65100',
     );
     await this.send(email, `${name} — Yon kòreksyon rapid epi ou pare`, html);
@@ -431,10 +435,10 @@ export class MailService {
     const html = `<!DOCTYPE html>
 <html lang="ht">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ou prèske rive — OZAMAPAY</title></head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:4px;overflow:hidden;border:1px solid #eeeeee;">
 
         <!-- HEADER -->
         <tr>
@@ -523,7 +527,7 @@ export class MailService {
             </table>
 
             <!-- CTA -->
-            <a href="${this.frontendUrl}/kyc" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;margin-bottom:24px;">F&egrave; KYC mwen kounye a &rarr;</a>
+            <div style="text-align:center;margin-bottom:24px;"><a href="${this.frontendUrl}/kyc" style="display:inline-block;background-color:#FF7A00;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;font-family:Arial,sans-serif;">F&egrave; KYC mwen kounye a &rarr;</a></div>
 
             <!-- Closing italic line -->
             <div style="border-left:3px solid #FF7A00;padding:14px 18px;background:#fff8f0;border-radius:0 6px 6px 0;">
@@ -583,7 +587,7 @@ export class MailService {
               <li>De choisir un mot de passe sécurisé</li>
               <li>Du code journalier fourni par votre supérieur</li>
             </ul>
-            <a href="${invitationLink}" style="display:block;padding:16px;background:#FF7A00;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:700;font-size:14px;text-align:center;">Créer mon compte employé &rarr;</a>
+            <div style="text-align:center;"><a href="${invitationLink}" style="display:inline-block;background-color:#FF7A00;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;font-family:Arial,sans-serif;">Créer mon compte employé &rarr;</a></div>
             <p style="margin:20px 0 0;font-size:11px;color:#aaaaaa;text-align:center;">Ce lien expire dans 7 jours. Ne le partagez avec personne.</p>
           </td>
         </tr>
