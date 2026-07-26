@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { UserPlus, Trash2, Hash, Lock, Users } from 'lucide-react';
 import { useTeamSession } from '../../lib/useTeamSession';
 import { teamFetch } from '../../lib/team-api';
-import { COLORS, ROLE_LABELS, ALL_TEAM_ROLES, TeamRole, PRIVILEGED_ROLES } from '../../lib/theme';
+import { COLORS, ROLE_LABELS, ALL_TEAM_ROLES, TeamRole, PRIVILEGED_ROLES, avatarColorFor } from '../../lib/theme';
 import TeamModal from '../../components/TeamModal';
 import TeamToast, { useTeamToast } from '../../components/TeamToast';
 
@@ -110,149 +110,112 @@ export default function TeamSettingsPage() {
 
   if (loading || !teamMember || !PRIVILEGED_ROLES.includes(teamMember.role)) return null;
 
-  return (
-    <div className="p-4 lg:p-8 max-w-4xl mx-auto">
-      <h1 className="text-xl font-black italic mb-5" style={{ color: COLORS.textPrimary }}>Paramètres</h1>
+  const tabLabel = { MEMBERS: 'Membres', CHANNELS: 'Canaux', GENERAL: 'Général' };
 
-      <div className="flex gap-2 mb-6">
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 820, animation: '0.4s ease 0s 1 normal none running fadeIn' }}>
+      <div style={{ display: 'flex', gap: 8 }}>
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className="px-3 py-1.5 rounded-full text-[11px] font-bold uppercase"
             style={{
-              background: tab === t ? COLORS.accent : COLORS.card,
-              color: tab === t ? '#fff' : COLORS.textSecondary,
+              padding: '8px 16px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer',
+              background: tab === t ? COLORS.accent : COLORS.card, color: tab === t ? '#fff' : COLORS.textSecondary,
               border: `1px solid ${tab === t ? COLORS.accent : COLORS.border}`,
             }}
           >
-            {t === 'MEMBERS' ? 'Membres' : t === 'CHANNELS' ? 'Canaux' : 'Général'}
+            {tabLabel[t]}
           </button>
         ))}
       </div>
 
       {tab === 'MEMBERS' && (
-        <div>
-          <div className="flex justify-end mb-3">
-            <button onClick={() => setInviteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => setInviteOpen(true)} className="team-btn-accent" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', background: COLORS.accent, color: '#fff', border: 'none', cursor: 'pointer' }}>
               <UserPlus size={14} /> Inviter un membre
             </button>
           </div>
-          <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${COLORS.border}` }}>
-            {members.map((m) => (
-              <div key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3" style={{ background: COLORS.card, borderBottom: `1px solid ${COLORS.border}` }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: COLORS.accent, color: '#fff' }}>
-                  {m.displayName.charAt(0).toUpperCase()}
+          {members.map((m) => {
+            const color = avatarColorFor(m.displayName);
+            return (
+              <div key={m.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 18, padding: '14px 18px', boxShadow: COLORS.cardShadow }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${color}26`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>
+                  {m.displayName.slice(0, 2).toUpperCase()}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold truncate" style={{ color: COLORS.textPrimary }}>{m.displayName}</p>
-                  <p className="text-[10px] truncate" style={{ color: COLORS.textSecondary }}>{m.user?.email}</p>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700 }}>{m.displayName}</p>
+                  <p style={{ fontSize: 11, color: COLORS.textSecondary }}>{m.user?.email}</p>
                 </div>
                 {isSuperAdmin ? (
                   <select
                     value={m.role}
                     onChange={(e) => changeRole(m.id, e.target.value as TeamRole)}
-                    className="px-2 py-1.5 rounded-lg text-[10px] outline-none"
-                    style={{ background: 'rgba(255,255,255,0.06)', color: COLORS.textPrimary }}
+                    style={{ padding: '6px 10px', borderRadius: 10, fontSize: 11, background: 'rgba(255,255,255,0.06)', color: '#fff', border: 'none' }}
                   >
                     {ALL_TEAM_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                   </select>
                 ) : (
-                  <span className="text-[10px] px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: COLORS.textSecondary }}>{ROLE_LABELS[m.role]}</span>
+                  <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', color: COLORS.textSecondary }}>{ROLE_LABELS[m.role]}</span>
                 )}
                 <button
                   onClick={() => toggleActive(m)}
-                  className="text-[10px] font-bold uppercase px-2 py-1 rounded"
-                  style={{ background: m.isActive ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', color: m.isActive ? COLORS.success : COLORS.error }}
+                  style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', background: m.isActive ? `${COLORS.success}26` : `${COLORS.error}26`, color: m.isActive ? COLORS.success : COLORS.error }}
                 >
                   {m.isActive ? 'Actif' : 'Désactivé'}
                 </button>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 
       {tab === 'CHANNELS' && (
-        <div>
-          <div className="flex justify-end mb-3">
-            <button onClick={() => setChannelOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => setChannelOpen(true)} className="team-btn-accent" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', background: COLORS.accent, color: '#fff', border: 'none', cursor: 'pointer' }}>
               <Hash size={14} /> Nouveau canal
             </button>
           </div>
-          <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${COLORS.border}` }}>
-            {channels.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ background: COLORS.card, borderBottom: `1px solid ${COLORS.border}` }}>
-                {c.type === 'PUBLIC' ? <Hash size={14} color={COLORS.textSecondary} /> : c.type === 'DIRECT' ? <Users size={14} color={COLORS.textSecondary} /> : <Lock size={14} color={COLORS.textSecondary} />}
-                <span className="text-xs font-semibold flex-1" style={{ color: COLORS.textPrimary }}>{c.name}</span>
-                <span className="text-[10px]" style={{ color: COLORS.textMuted }}>{c._count.messages} messages</span>
-                <button onClick={() => deleteChannel(c.id)}><Trash2 size={13} color={COLORS.error} /></button>
-              </div>
-            ))}
-            {channels.length === 0 && <p className="text-center text-xs py-8" style={{ color: COLORS.textMuted }}>Aucun canal</p>}
-          </div>
+          {channels.map((c) => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 18, padding: '14px 18px', boxShadow: COLORS.cardShadow }}>
+              {c.type === 'PUBLIC' ? <Hash size={14} color={COLORS.textSecondary} /> : c.type === 'DIRECT' ? <Users size={14} color={COLORS.textSecondary} /> : <Lock size={14} color={COLORS.textSecondary} />}
+              <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{c.name}</span>
+              <span style={{ fontSize: 11, color: COLORS.textMuted }}>{c._count.messages} messages</span>
+              <button onClick={() => deleteChannel(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={13} color={COLORS.error} /></button>
+            </div>
+          ))}
+          {channels.length === 0 && <p style={{ textAlign: 'center', fontSize: 12, padding: '32px 0', color: COLORS.textMuted }}>Aucun canal</p>}
         </div>
       )}
 
       {tab === 'GENERAL' && (
-        <div className="rounded-2xl p-6 text-center" style={{ background: COLORS.card, border: `1px solid ${COLORS.border}` }}>
-          <p className="text-xs" style={{ color: COLORS.textMuted }}>Paramètres généraux de l'équipe — à venir.</p>
+        <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 20, padding: 24, textAlign: 'center', boxShadow: COLORS.cardShadow }}>
+          <p style={{ fontSize: 12, color: COLORS.textMuted }}>Paramètres généraux de l'équipe — à venir.</p>
         </div>
       )}
 
       <TeamModal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Inviter un membre">
         <div className="space-y-3">
-          <input
-            value={invite.email}
-            onChange={(e) => setInvite((s) => ({ ...s, email: e.target.value }))}
-            placeholder="Email"
-            type="email"
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', color: COLORS.textPrimary }}
-          />
-          <input
-            value={invite.displayName}
-            onChange={(e) => setInvite((s) => ({ ...s, displayName: e.target.value }))}
-            placeholder="Nom affiché"
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', color: COLORS.textPrimary }}
-          />
-          <select
-            value={invite.role}
-            onChange={(e) => setInvite((s) => ({ ...s, role: e.target.value as TeamRole }))}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', color: COLORS.textPrimary }}
-          >
+          <input value={invite.email} onChange={(e) => setInvite((s) => ({ ...s, email: e.target.value }))} placeholder="Email" type="email" className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+          <input value={invite.displayName} onChange={(e) => setInvite((s) => ({ ...s, displayName: e.target.value }))} placeholder="Nom affiché" className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+          <select value={invite.role} onChange={(e) => setInvite((s) => ({ ...s, role: e.target.value as TeamRole }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
             {ALL_TEAM_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </select>
-          <button onClick={sendInvite} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>
-            Envoyer l'invitation
-          </button>
+          <button onClick={sendInvite} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>Envoyer l'invitation</button>
         </div>
       </TeamModal>
 
       <TeamModal open={channelOpen} onClose={() => setChannelOpen(false)} title="Nouveau canal">
         <div className="space-y-3">
-          <input
-            value={newChannel.name}
-            onChange={(e) => setNewChannel((s) => ({ ...s, name: e.target.value }))}
-            placeholder="Nom du canal"
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', color: COLORS.textPrimary }}
-          />
-          <select
-            value={newChannel.type}
-            onChange={(e) => setNewChannel((s) => ({ ...s, type: e.target.value }))}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: 'rgba(255,255,255,0.05)', color: COLORS.textPrimary }}
-          >
+          <input value={newChannel.name} onChange={(e) => setNewChannel((s) => ({ ...s, name: e.target.value }))} placeholder="Nom du canal" className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }} />
+          <select value={newChannel.type} onChange={(e) => setNewChannel((s) => ({ ...s, type: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
             <option value="PUBLIC">Public</option>
             <option value="PRIVATE">Privé</option>
             <option value="DIRECT">Direct</option>
           </select>
-          <button onClick={createChannel} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>
-            Créer
-          </button>
+          <button onClick={createChannel} className="w-full py-2.5 rounded-xl text-xs font-bold uppercase" style={{ background: COLORS.accent, color: '#fff' }}>Créer</button>
         </div>
       </TeamModal>
 
