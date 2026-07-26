@@ -72,7 +72,10 @@ export default function TeamSettingsPage() {
   };
 
   const sendInvite = async () => {
-    if (!invite.email.trim() || !invite.displayName.trim()) return;
+    if (!invite.email.trim() || !invite.displayName.trim()) {
+      showToast('Antre yon email ak yon non afiche anvan ou voye envitasyon an.', 'error');
+      return;
+    }
     try {
       await teamFetch('/team/members/invite', { method: 'POST', body: JSON.stringify(invite) });
       setInviteOpen(false);
