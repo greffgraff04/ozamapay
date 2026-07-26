@@ -616,29 +616,42 @@ export class AdminService {
       throw new BadRequestException(`Rôle invalide. Valeurs acceptées: ${VALID_ROLES.join(', ')}`);
     }
 
-    const existing = await this.prisma.adminInvitation.findUnique({ where: { email } });
+    // Normalized to lowercase so "User@x.com" and "user@x.com" are treated as
+    // the same invitee — Postgres unique constraints are case-sensitive.
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existing = await this.prisma.adminInvitation.findUnique({ where: { email: normalizedEmail } });
     if (existing && !existing.accepted) {
       throw new BadRequestException('Une invitation est déjà en cours pour cet email');
     }
     if (existing) {
-      await this.prisma.adminInvitation.delete({ where: { email } });
+      await this.prisma.adminInvitation.delete({ where: { email: normalizedEmail } });
     }
 
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const invitation = await this.prisma.adminInvitation.create({
-      data: { email, role: role as any, token, expiresAt, invitedBy: invitedByUserId },
+      data: { email: normalizedEmail, role: role as any, token, expiresAt, invitedBy: invitedByUserId },
     });
 
     const link = `${process.env.FRONTEND_URL || 'https://ozamapay.com'}/admin/setup?token=${token}`;
-    await this.mailService.sendAdminInvitation(email, role, link);
+    console.log(`[DIAG] inviteEmployee: BEFORE sendAdminInvitation(${normalizedEmail}, ${role})`);
+    await this.mailService.sendAdminInvitation(normalizedEmail, role, link);
+    console.log(`[DIAG] inviteEmployee: AFTER sendAdminInvitation(${normalizedEmail}) call returned`);
 
     return invitation;
   }
 
   async getInvitations() {
     return this.prisma.adminInvitation.findMany({ orderBy: { createdAt: 'desc' } });
+  }
+
+  async deleteInvitation(id: string) {
+    const existing = await this.prisma.adminInvitation.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Invitation introuvable');
+    await this.prisma.adminInvitation.delete({ where: { id } });
+    return { message: 'Invitation supprimée' };
   }
 
   async validateSetupToken(token: string) {

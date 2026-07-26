@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Param, Body, Req, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Param, Body, Req, UseGuards, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -156,6 +156,12 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, MasterGuard)
   async getInvitations() {
     return this.adminService.getInvitations();
+  }
+
+  @Delete('invitations/:id')
+  @UseGuards(JwtAuthGuard, MasterGuard)
+  async deleteInvitation(@Param('id') id: string) {
+    return this.adminService.deleteInvitation(id);
   }
 
   @Get('daily-code')

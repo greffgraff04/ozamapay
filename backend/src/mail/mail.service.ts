@@ -106,12 +106,14 @@ export class MailService {
 
   private async send(to: string, subject: string, html: string): Promise<void> {
     try {
-      await this.brevo.transactionalEmails.sendTransacEmail({
+      console.log(`[DIAG] MailService.send: BEFORE brevo.sendTransacEmail to=${to} subject="${subject}"`);
+      const result = await this.brevo.transactionalEmails.sendTransacEmail({
         sender: this.SENDER,
         to: [{ email: to }],
         subject,
         htmlContent: html,
       });
+      console.log(`[DIAG] MailService.send: SUCCESS to=${to} response=${JSON.stringify(result)}`);
     } catch (err) {
       console.error(`[MailService] Failed to send "${subject}" to ${to}:`, err);
     }
