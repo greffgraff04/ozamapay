@@ -38,6 +38,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // 401s are silent everywhere else (no Render HTTP access-logs on this plan),
+    // which let a StroWallet webhook secret mismatch go unnoticed for 2 months.
+    // Surface this one route's 401s at warn level without making 401s noisy app-wide.
+    if (status === HttpStatus.UNAUTHORIZED && request.path?.startsWith('/v1/webhooks/strowallet')) {
+      this.logger.warn(`[StrowalletWebhook] 401 rejected — ${request.method} ${request.url}: ${message}`);
+    }
+
     response.status(status).json({ statusCode: status, message });
   }
 }
