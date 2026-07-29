@@ -248,6 +248,59 @@ export class MailService {
     await this.send(email, `Retrè ou konfime — ${amountFmt} HTG`, html);
   }
 
+  async sendCardReplaced(
+    email: string,
+    name: string,
+    fundAmountUsd: number,
+    feeDeductedHtg?: number,
+  ): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+    const html = this.wrap(
+      'Kat vityèl ou ranplase otomatikman',
+      'Kat Ranplase',
+      this.badge('KONFIME') +
+      `<div style="height:16px;"></div>` +
+      this.amountBox(`$${fundAmountUsd.toFixed(2)}`, 'Nouvo balans kat la') +
+      this.table(
+        this.infoRow('Rezon', 'Kat presedan an te dezaktive/terminen pa StroWallet') +
+        (feeDeductedHtg
+          ? this.infoRow('Frè dediwi nan wallet ou', `${feeDeductedHtg.toLocaleString('fr-HT')} HTG`)
+          : '') +
+        this.infoRow('Dat', now),
+      ) +
+      this.p(`Bonjou ${name},`) +
+      this.p('Kat vityèl ou a te dezaktive pa StroWallet epi nou ranplase l otomatikman pou ou.') +
+      this.accentLine('Kat ou pare pou itilize kounye a — verifye l nan app la.') +
+      this.btn('Wè Kat Ou →', `${this.frontendUrl}/dashboard`),
+    );
+    await this.send(email, 'Kat vityèl ou ranplase otomatikman', html);
+  }
+
+  async sendCardPendingRecharge(
+    email: string,
+    name: string,
+    shortfallHtg: number,
+    missingHtg: number,
+  ): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const shortfallFmt = shortfallHtg.toLocaleString('fr-HT');
+    const missingFmt = missingHtg.toLocaleString('fr-HT');
+    const html = this.wrap(
+      'Kat ou dezaktive — rechaje wallet ou pou nouvo kat',
+      'Aksyon Nesesè',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('Kat ou a te dezaktive pa StroWallet (sa ka rive apre plizyè tantativ tranzaksyon ki echwe, oswa achte nan yon kategori komèsan ki pa otorize).') +
+      this.p(`Pou n ka kreye yon nouvo kat pou ou, gen ${shortfallFmt} HTG frè ranplasman ki poko kouvri (wallet ou manke ${missingFmt} HTG).`) +
+      this.accentLine(`Rechaje wallet ou ak omwen ${missingFmt} HTG, epi n ap kreye nouvo kat la otomatikman pou ou.`) +
+      this.p('Konsèy: pou evite sa rive ankò, toujou kenbe yon ti balans sou kat ou lè w ap fè acha, epi evite eseye peye lè kat la pa gen ase lajan.') +
+      this.btn('Rechaje Wallet Ou →', `${this.frontendUrl}/dashboard`),
+      '#e65100',
+    );
+    await this.send(email, 'Kat ou dezaktive — rechaje wallet ou pou nouvo kat', html);
+  }
+
   async sendSystemAlert(error: string, uptime: number): Promise<void> {
     const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(

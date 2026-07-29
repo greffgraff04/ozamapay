@@ -327,24 +327,36 @@ model Rate {
 }
 
 model VirtualCard {
-  id        String     @id @default(uuid())
-  userId    String
-  cardId    String     @unique
-  cardName  String?
-  last4     String?
-  expiry    String?
-  brand     String     @default("VISA")
-  balance   Decimal    @default(0.00) @db.Decimal(18, 2)
-  currency  String     @default("USD")
-  provider  String     @default("STROWALLET_NFC")
-  status    CardStatus @default(ACTIVE)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  user      User       @relation(fields: [userId], references: [id])
+  id                   String     @id @default(uuid())
+  userId               String
+  cardId               String     @unique
+  cardName             String?
+  last4                String?
+  expiry               String?
+  brand                String     @default("VISA")
+  balance              Decimal    @default(0.00) @db.Decimal(18, 2)
+  currency             String     @default("USD")
+  provider             String     @default("STROWALLET_NFC")
+  status               CardStatus @default(ACTIVE)
+  balanceAtTermination Decimal?   @db.Decimal(18, 2)
+  pendingShortfallHtg  Decimal?   @db.Decimal(18, 2)
+  replacedByCardId     String?
+  terminatedAt         DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  user                 User       @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([cardId])
   @@index([status])
+}
+
+model StrowalletWebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  event       String
+  rawPayload  Json
+  processedAt DateTime @default(now())
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -491,6 +503,8 @@ enum CardStatus {
   ACTIVE
   FROZEN
   TERMINATED
+  REPLACED
+  PENDING_RECHARGE
 }
 
 enum AgentLevel {

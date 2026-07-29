@@ -26,7 +26,7 @@ export class StrowalletService {
 
   // ─── HELPER ────────────────────────────────────────────────────────────────
 
-  private async getExchangeRate(): Promise<number> {
+  async getExchangeRate(): Promise<number> {
     const rate = await this.prisma.rate.findUnique({
       where: { key: 'CARD_RATE' },
     });
@@ -191,6 +191,61 @@ export class StrowalletService {
       message: 'Kat vityèl NFC kreye avèk siksè! Google Pay & Apple Pay aktive.',
       card: virtualCard,
     };
+  }
+
+  // ─── 1b. CREATE REPLACEMENT CARD (apre terminasyon, deja finanse) ───────────
+  // Itilize pa CardTerminationService: pa gen verifikasyon "kat deja egziste",
+  // ni debi wallet — lajan an soti nan pool StroWallet (balans ranbouse a).
+  async createReplacementCard(userId: string, fundAmountUsd: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { kyc: true },
+    });
+    if (!user) throw new NotFoundException('Itilizatè introuvable');
+
+    const nameParts = (user.name || 'OZAMA USER').trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || 'USER';
+
+    const dob = user.kyc?.dateOfBirth
+      ? new Date(user.kyc.dateOfBirth).toLocaleDateString('en-US', {
+          month: '2-digit', day: '2-digit', year: 'numeric',
+        })
+      : '01/01/1990';
+
+    const nfcParams = {
+      name: user.name || 'OZAMA USER',
+      first_name: firstName,
+      last_name: lastName,
+      dob,
+      id_type: 'national_id',
+      id_number: user.kyc?.idNumber || '00000000',
+      email: user.email,
+      line1: '3401 N. Miami Ave, Ste 230',
+      city: 'Miami',
+      state: 'FL',
+      postal_code: '33127',
+      country: 'USA',
+      amount_usd: String(fundAmountUsd),
+      phone: (user.phone && !user.phone.startsWith('509') && !user.phone.startsWith('+509'))
+        ? user.phone
+        : '3055550100',
+    };
+
+    const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
+    const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
+    if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id pou kat ranplasman an');
+
+    return this.prisma.virtualCard.create({
+      data: {
+        userId,
+        cardId,
+        balance: fundAmountUsd,
+        currency: 'USD',
+        provider: 'STROWALLET_NFC',
+        status: 'ACTIVE',
+      },
+    });
   }
 
   // ─── 2. SECRET DETAILS (nimewo konplè, CVV, dat ekspirasyon) ────────────────

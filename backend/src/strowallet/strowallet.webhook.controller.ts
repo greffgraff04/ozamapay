@@ -1,11 +1,15 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Req, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CardTerminationService } from './card-termination.service';
 
 @Controller('v1/webhooks/strowallet')
 export class StrowalletWebhookController {
   private readonly logger = new Logger(StrowalletWebhookController.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cardTerminationService: CardTerminationService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -145,17 +149,10 @@ export class StrowalletWebhookController {
   // ── terminated ────────────────────────────────────────────────────────────
 
   private async handleTerminated(payload: any) {
-    const { cardId } = payload;
-    this.logger.warn(`[Strowallet][terminated] cardId=${cardId}`);
-
-    if (!cardId) return;
+    this.logger.warn(`[Strowallet][terminated] cardId=${payload?.cardId} eventId=${payload?.id}`);
 
     try {
-      await this.prisma.virtualCard.update({
-        where: { cardId },
-        data: { status: 'TERMINATED' },
-      });
-      this.logger.log(`[Strowallet][terminated] Card ${cardId} marked TERMINATED`);
+      await this.cardTerminationService.handleTerminationEvent(payload);
     } catch (err: any) {
       this.logger.error(`[Strowallet][terminated] Error: ${err.message}`);
     }

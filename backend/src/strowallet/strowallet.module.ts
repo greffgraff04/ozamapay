@@ -4,16 +4,18 @@ import { StrowalletService } from './strowallet.service';
 import { StrowalletController } from './strowallet.controller';
 import { StrowalletHealthController } from './strowallet.health.controller';
 import { StrowalletWebhookController } from './strowallet.webhook.controller';
+import { CardTerminationService } from './card-termination.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [ConfigModule.forRoot()],
+  imports: [ConfigModule.forRoot(), MailModule],
   controllers: [
     StrowalletWebhookController,
     StrowalletHealthController,
     StrowalletController,
   ],
-  providers: [StrowalletService, PrismaService],
+  providers: [StrowalletService, CardTerminationService, PrismaService],
   exports: [StrowalletService],
 })
 export class StrowalletModule {}
