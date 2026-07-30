@@ -174,18 +174,35 @@ export default function Dashboard() {
     );
   }, [transactions, cardActivity]);
 
-  // Title/amount for a transaction row, aware of CardTransaction rows (source
-  // === 'CARD') and retroactively cleaning up old-style wallet Transaction rows
-  // whose merchant detail is buried in `description` (e.g. "Visa — ANTHROPIC* ...")
-  // from before CardTransaction existed.
-  function txDisplayTitle(t: any): string {
-    if (t.source === 'CARD') {
-      return t.type === 'AUTHORIZATION' ? parseMerchant(t.merchant, t.narrative).displayName : 'Rechaj Kat';
+  // Single source of truth for "does this row have a merchant, and what raw text
+  // do we feed to parseMerchant/MerchantAvatar" — used by both the title text and
+  // the icon, so they never disagree on whether a row is a merchant purchase.
+  // Card recharges/creations (type 'CARD', old-style wallet rows with no `source`)
+  // are NOT merchant purchases — their `description` is already a clean OZAMAPAY
+  // string ("Recharge kat NFC $21 + frè sèvis...") and must not be run through
+  // parseMerchant, which would try to (wrongly) extract a brand name from it.
+  function txMerchantSource(t: any): { merchant: string | null; narrative: string | null } {
+    if (t.source === 'CARD' && t.type === 'AUTHORIZATION') {
+      return { merchant: t.merchant ?? null, narrative: t.narrative ?? null };
     }
+    // Old-style wallet Transaction rows created before CardTransaction existed —
+    // merchant detail is buried in description (e.g. "Visa — ANTHROPIC* ...").
     if (t.type === 'PAYMENT' && t.description) {
-      const stripped = t.description.replace(/^Visa\s*—\s*/, '');
-      return parseMerchant(stripped, null).displayName;
+      return { merchant: null, narrative: t.description.replace(/^Visa\s*—\s*/, '') };
     }
+    return { merchant: null, narrative: null };
+  }
+
+  function txDisplayTitle(t: any): string | null {
+    if (t.source === 'CARD' && t.type === 'TOPUP') return 'Rechaj Kat';
+
+    const { merchant, narrative } = txMerchantSource(t);
+    if (merchant || narrative) return parseMerchant(merchant, narrative).displayName;
+
+    // Card recharge/creation rows — description is already human-readable, no
+    // merchant to clean up.
+    if (t.type === 'CARD' && t.description) return t.description;
+
     return t.title ?? null;
   }
   const [isCardFrozen, setIsCardFrozen] = useState(false);
@@ -1530,6 +1547,8 @@ export default function Dashboard() {
                     WITHDRAWAL: 'Retrè', CARD: 'Kat',
                   };
                   const txTitle = txDisplayTitle(t) ?? (TX_LABELS[t.type] || t.type || 'Tranzaksyon');
+                  const merchantSrc = txMerchantSource(t);
+                  const showMerchantAvatar = !!(merchantSrc.merchant || merchantSrc.narrative);
                   const amtNum = Number(t.amount || 0);
                   const amtDisplay = t.source === 'CARD'
                     ? `$${amtNum.toFixed(2)}`
@@ -1546,8 +1565,8 @@ export default function Dashboard() {
                   return (
                     <div key={t.id || idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                       <div className="flex items-center gap-2 min-w-0">
-                        {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
-                          <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={40} />
+                        {showMerchantAvatar ? (
+                          <MerchantAvatar merchant={merchantSrc.merchant} narrative={merchantSrc.narrative} isDark={isDark} size={40} />
                         ) : (
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                                style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
@@ -1703,6 +1722,8 @@ export default function Dashboard() {
                         TRANSFER: 'Virement', PAYMENT: 'Peman', TOPUP: 'Rechajman', WITHDRAWAL: 'Retrè', CARD: 'Kat',
                       };
                       const txTitleD = txDisplayTitle(t) ?? (TX_LABELS_D[t.type] || t.type || 'Tranzaksyon');
+                      const merchantSrcD = txMerchantSource(t);
+                      const showMerchantAvatarD = !!(merchantSrcD.merchant || merchantSrcD.narrative);
                       const amtNum = Number(t.amount || 0);
                       const amtDisplay = t.source === 'CARD'
                         ? `$${amtNum.toFixed(2)}`
@@ -1717,8 +1738,8 @@ export default function Dashboard() {
                       return (
                         <div key={t.id || idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                           <div className="flex items-center gap-3 min-w-0">
-                            {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
-                              <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={40} />
+                            {showMerchantAvatarD ? (
+                              <MerchantAvatar merchant={merchantSrcD.merchant} narrative={merchantSrcD.narrative} isDark={isDark} size={40} />
                             ) : (
                               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                                    style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
@@ -1832,20 +1853,23 @@ export default function Dashboard() {
                       (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   const title = t.source === 'CARD'
-                    ? (t.type === 'AUTHORIZATION' ? parseMerchant(t.merchant, t.narrative).displayName : 'Rechaj Kat')
+                    ? txDisplayTitle(t)
                     : t.type === 'TOPUP' ? (t.method || 'Depot')
                     : t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè')
                     : t.type === 'PAYMENT' ? (txDisplayTitle(t) || 'Peman Visa')
-                    : t.type === 'CARD' ? (t.title || 'Viz Kont')
+                    : t.type === 'CARD' ? (txDisplayTitle(t) || 'Viz Kont')
                     : isDebit
                       ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
                       : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User');
 
+                  const merchantSrcH = txMerchantSource(t);
+                  const showMerchantAvatarH = !!(merchantSrcH.merchant || merchantSrcH.narrative);
+
                   return (
                     <div key={t.id || idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
                       <div className="flex items-center gap-4">
-                        {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
-                          <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={48} />
+                        {showMerchantAvatarH ? (
+                          <MerchantAvatar merchant={merchantSrcH.merchant} narrative={merchantSrcH.narrative} isDark={isDark} size={48} />
                         ) : (
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
                             {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
