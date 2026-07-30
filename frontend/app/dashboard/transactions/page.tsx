@@ -11,44 +11,12 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useTheme } from '../../../contexts/ThemeContext';
+import { parseMerchant } from '../../../lib/merchant';
+import { MerchantAvatar } from '@/components/MerchantAvatar';
 
 type TxType = "Tout" | "TOPUP" | "WITHDRAWAL" | "TRANSFER" | "FINANCE" | "KAT";
 
 const FILTERS: TxType[] = ["Tout", "TOPUP", "WITHDRAWAL", "TRANSFER", "FINANCE", "KAT"];
-
-// Best-effort domain extraction from StroWallet's merchant/narrative text
-// (e.g. "SHEIN.COM 137-2105366 DEUS" -> "shein.com") for a Clearbit logo lookup.
-// No match -> caller falls back to a generic icon.
-function extractMerchantDomain(text?: string | null): string | null {
-  if (!text) return null;
-  const match = text.match(/([a-z0-9-]+\.(?:com|net|org|io|co|us|ie|fr|ca|uk))/i);
-  return match ? match[1].toLowerCase() : null;
-}
-
-function MerchantAvatar({ merchant, narrative, isDark }: { merchant?: string | null; narrative?: string | null; isDark: boolean }) {
-  const [failed, setFailed] = useState(false);
-  const domain = extractMerchantDomain(merchant) || extractMerchantDomain(narrative);
-
-  if (!domain || failed) {
-    return (
-      <div
-        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-        style={{ backgroundColor: isDark ? 'rgba(255,122,0,0.15)' : '#FFF7ED' }}
-      >
-        <CreditCard size={20} className="text-[#FF6B00]" />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={`https://logo.clearbit.com/${domain}`}
-      alt={merchant || 'Machann'}
-      className="w-11 h-11 rounded-2xl object-cover shrink-0 bg-white"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -61,7 +29,7 @@ function formatDate(iso: string) {
 
 function txTitle(t: any, isDebit: boolean) {
   if (t.source === "CARD") {
-    return t.type === "AUTHORIZATION" ? (t.merchant || t.narrative || "Peman Kat") : "Rechaj Kat";
+    return t.type === "AUTHORIZATION" ? parseMerchant(t.merchant, t.narrative).displayName : "Rechaj Kat";
   }
   if (t.type === "TOPUP") return t.method || "Depot";
   if (t.type === "WITHDRAWAL") return t.description || t.method || "Retrè";

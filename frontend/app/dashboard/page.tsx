@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, ChevronLeft,
@@ -14,6 +14,8 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { isBusinessHours, BUSINESS_HOURS_SCHEDULE, AFTER_HOURS_NOTE } from '../lib/businessHours';
+import { parseMerchant } from '../../lib/merchant';
+import { MerchantAvatar } from '@/components/MerchantAvatar';
  
 const CARD_BILLING = {
   street: '3401 N. Miami Ave, Ste 230',
@@ -161,6 +163,31 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [myBusinesses, setMyBusinesses] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [cardActivity, setCardActivity] = useState<any[]>([]);
+
+  // Merged, date-sorted feed for display only — `transactions` itself stays
+  // wallet-only so the existing HTG ANTRE/SOTI aggregate math isn't affected.
+  const displayFeed = useMemo(() => {
+    const cardItems = cardActivity.map((c: any) => ({ ...c, createdAt: c.date }));
+    return [...transactions, ...cardItems].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [transactions, cardActivity]);
+
+  // Title/amount for a transaction row, aware of CardTransaction rows (source
+  // === 'CARD') and retroactively cleaning up old-style wallet Transaction rows
+  // whose merchant detail is buried in `description` (e.g. "Visa — ANTHROPIC* ...")
+  // from before CardTransaction existed.
+  function txDisplayTitle(t: any): string {
+    if (t.source === 'CARD') {
+      return t.type === 'AUTHORIZATION' ? parseMerchant(t.merchant, t.narrative).displayName : 'Rechaj Kat';
+    }
+    if (t.type === 'PAYMENT' && t.description) {
+      const stripped = t.description.replace(/^Visa\s*—\s*/, '');
+      return parseMerchant(stripped, null).displayName;
+    }
+    return t.title ?? null;
+  }
   const [isCardFrozen, setIsCardFrozen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [minLoadDone, setMinLoadDone] = useState(false);
@@ -490,22 +517,30 @@ export default function Dashboard() {
       const headers = { Authorization: `Bearer ${localToken}` };
       const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-      const [txRes, meRes, rateRes, notifRes, cardRes, bizRes] = await Promise.all([
+      const [txRes, meRes, rateRes, notifRes, cardRes, bizRes, cardHistoryRes] = await Promise.all([
         fetch(`${API_BASE}/wallet/transactions?limit=5`, { headers }).catch(() => null),
         fetch(`${API_BASE}/auth/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/rates`).catch(() => null),
         fetch(`${API_BASE}/wallet/notifications`, { headers }).catch(() => null),
         fetch(`${API_BASE}/v1/cards/my-card`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
         fetch(`${API_BASE}/business/me`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/v1/cards/history`, { headers }).catch(() => null),
       ]);
 
-      const [txData, meData, ratesData, notifData, bizData] = await Promise.all([
+      const [txData, meData, ratesData, notifData, bizData, cardHistoryData] = await Promise.all([
         txRes?.ok ? txRes.json().catch(() => null) : null,
         meRes?.ok ? meRes.json().catch(() => null) : null,
         rateRes?.ok ? rateRes.json().catch(() => null) : null,
         notifRes?.ok ? notifRes.json().catch(() => null) : null,
         bizRes?.ok ? bizRes.json().catch(() => null) : null,
+        cardHistoryRes?.ok ? cardHistoryRes.json().catch(() => null) : null,
       ]);
+
+      // /v1/cards/history merges CardTransaction (StroWallet card activity) with
+      // wallet Transaction rows; only the CARD-sourced ones are new here — wallet
+      // rows are already covered by the /wallet/transactions fetch above, and we
+      // don't want to touch the existing HTG-only aggregate math that reads `transactions`.
+      setCardActivity(Array.isArray(cardHistoryData) ? cardHistoryData.filter((t: any) => t.source === 'CARD') : []);
 
       // Kat vityèl la trete apa: yon echèk rezo/500 pa dwe konfonn ak yon
       // repons 200 ki konfime (DB) itilizatè a pa gen kat.
@@ -1478,40 +1513,49 @@ export default function Dashboard() {
             <div style={{ height: 'calc(100vh - 396px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
  
             <div className="space-y-2">
-              {transactions.length === 0 ? (
+              {displayFeed.length === 0 ? (
                 <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
                   Pa gen okenn tranzaksyon poko.
                 </p>
               ) : (
-                transactions.slice(0, 5).map((t: any, idx) => {
-                  const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
-                    t.type === 'PAYMENT' || t.type === 'CARD' ||
-                    (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+                displayFeed.slice(0, 5).map((t: any, idx) => {
+                  const isDebit = t.source === 'CARD'
+                    ? t.type === 'AUTHORIZATION'
+                    : t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                      t.type === 'PAYMENT' || t.type === 'CARD' ||
+                      (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
 
                   const TX_LABELS: Record<string, string> = {
                     TRANSFER: 'Virement', PAYMENT: 'Peman', TOPUP: 'Rechajman',
                     WITHDRAWAL: 'Retrè', CARD: 'Kat',
                   };
-                  const txTitle = t.title ?? (TX_LABELS[t.type] || t.type || 'Tranzaksyon');
+                  const txTitle = txDisplayTitle(t) ?? (TX_LABELS[t.type] || t.type || 'Tranzaksyon');
                   const amtNum = Number(t.amount || 0);
-                  const amtDisplay = amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  const statusColor = t.status === 'COMPLETED' ? colors.success
-                    : (t.status === 'PENDING' || t.status === 'PROCESSING') ? colors.accent
+                  const amtDisplay = t.source === 'CARD'
+                    ? `$${amtNum.toFixed(2)}`
+                    : amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  const statusUpper = (t.status || '').toUpperCase();
+                  const statusColor = statusUpper === 'COMPLETED' || statusUpper === 'COMPLETE' ? colors.success
+                    : (statusUpper === 'PENDING' || statusUpper === 'PROCESSING') ? colors.accent
                     : colors.error;
                   const STATUS_TX: Record<string, string> = {
-                    COMPLETED: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
+                    COMPLETED: 'Konplete', COMPLETE: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
                     FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
                   };
 
                   return (
-                    <div key={idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
+                    <div key={t.id || idx} className="tx-item flex items-center justify-between p-4 gap-2 transition-all active:scale-[0.98]" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                             style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
-                          {isDebit
-                            ? <ArrowUpCircle size={18} color="#EF4444" />
-                            : <ArrowDownCircle size={18} color="#22C55E" />}
-                        </div>
+                        {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
+                          <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={40} />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                               style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
+                            {isDebit
+                              ? <ArrowUpCircle size={18} color="#EF4444" />
+                              : <ArrowDownCircle size={18} color="#22C55E" />}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate" style={{ color: colors.textPrimary }}>
                             {txTitle}
@@ -1527,7 +1571,7 @@ export default function Dashboard() {
                         </span>
                         <span className="font-black uppercase text-[8px] px-[6px] py-[2px] rounded-full"
                               style={{ background: `${statusColor}22`, color: statusColor }}>
-                          {STATUS_TX[t.status] || t.status}
+                          {STATUS_TX[statusUpper] || t.status}
                         </span>
                       </div>
                     </div>
@@ -1644,36 +1688,45 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {transactions.length === 0 ? (
+                  {displayFeed.length === 0 ? (
                     <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
                       Pa gen okenn tranzaksyon poko.
                     </p>
                   ) : (
-                    transactions.slice(0, 5).map((t: any, idx: number) => {
-                      const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
-                        t.type === 'PAYMENT' || t.type === 'CARD' ||
-                        (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+                    displayFeed.slice(0, 5).map((t: any, idx: number) => {
+                      const isDebit = t.source === 'CARD'
+                        ? t.type === 'AUTHORIZATION'
+                        : t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                          t.type === 'PAYMENT' || t.type === 'CARD' ||
+                          (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
                       const TX_LABELS_D: Record<string, string> = {
                         TRANSFER: 'Virement', PAYMENT: 'Peman', TOPUP: 'Rechajman', WITHDRAWAL: 'Retrè', CARD: 'Kat',
                       };
-                      const txTitleD = t.title ?? (TX_LABELS_D[t.type] || t.type || 'Tranzaksyon');
+                      const txTitleD = txDisplayTitle(t) ?? (TX_LABELS_D[t.type] || t.type || 'Tranzaksyon');
                       const amtNum = Number(t.amount || 0);
-                      const amtDisplay = amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                      const statusColor = t.status === 'COMPLETED' ? colors.success
-                        : (t.status === 'PENDING' || t.status === 'PROCESSING') ? colors.accent : colors.error;
+                      const amtDisplay = t.source === 'CARD'
+                        ? `$${amtNum.toFixed(2)}`
+                        : amtNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      const statusUpperD = (t.status || '').toUpperCase();
+                      const statusColor = statusUpperD === 'COMPLETED' || statusUpperD === 'COMPLETE' ? colors.success
+                        : (statusUpperD === 'PENDING' || statusUpperD === 'PROCESSING') ? colors.accent : colors.error;
                       const STATUS_TX_D: Record<string, string> = {
-                        COMPLETED: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
+                        COMPLETED: 'Konplete', COMPLETE: 'Konplete', PENDING: 'Annatant', PROCESSING: 'Ap trete',
                         FAILED: 'Echwe', REJECTED: 'Refize', CANCELLED: 'Anile',
                       };
                       return (
-                        <div key={idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
+                        <div key={t.id || idx} className="flex items-center justify-between p-4 gap-2 transition-all" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}`, backdropFilter: 'blur(20px)', borderRadius: 20 }}>
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                                 style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
-                              {isDebit
-                                ? <ArrowUpCircle size={18} color="#EF4444" />
-                                : <ArrowDownCircle size={18} color="#22C55E" />}
-                            </div>
+                            {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
+                              <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={40} />
+                            ) : (
+                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                                   style={{ background: isDebit ? 'rgba(239,68,68,.14)' : 'rgba(34,197,94,.14)' }}>
+                                {isDebit
+                                  ? <ArrowUpCircle size={18} color="#EF4444" />
+                                  : <ArrowDownCircle size={18} color="#22C55E" />}
+                              </div>
+                            )}
                             <div className="min-w-0">
                               <p className="font-black italic uppercase text-[11px] tracking-[0.5px] mb-[2px] truncate" style={{ color: colors.textPrimary }}>{txTitleD}</p>
                               <p className="font-medium text-[10px]" style={{ color: glass.textDimmer }}>{t.createdAt ? formatTxDate(t.createdAt) : 'Kounye a'}</p>
@@ -1685,7 +1738,7 @@ export default function Dashboard() {
                             </span>
                             <span className="font-black uppercase text-[8px] px-[6px] py-[2px] rounded-full"
                                   style={{ background: `${statusColor}22`, color: statusColor }}>
-                              {STATUS_TX_D[t.status] || t.status}
+                              {STATUS_TX_D[statusUpperD] || t.status}
                             </span>
                           </div>
                         </div>
@@ -1766,39 +1819,51 @@ export default function Dashboard() {
             </button>
             <h2 className="text-4xl font-black italic uppercase tracking-wide mb-8 text-[var(--oz-text)]">Istorik Konplè</h2>
             <div className="space-y-3">
-              {transactions.length === 0 ? (
+              {displayFeed.length === 0 ? (
                 <p className="text-[var(--oz-text-sec)] text-xs italic text-center py-6 bg-[var(--oz-surface)] rounded-3xl border border-[var(--oz-border)] shadow-sm">
                   Pa gen okenn istwa tranzaksyon.
                 </p>
               ) : (
-                transactions.map((t: any, idx) => {
-                  const isDebit = t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
-                    t.type === 'PAYMENT' || t.type === 'CARD' ||
-                    (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+                displayFeed.map((t: any, idx) => {
+                  const isDebit = t.source === 'CARD'
+                    ? t.type === 'AUTHORIZATION'
+                    : t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
+                      t.type === 'PAYMENT' || t.type === 'CARD' ||
+                      (t.type === 'TRANSFER' && t.senderWallet?.user?.email === user?.email);
+
+                  const title = t.source === 'CARD'
+                    ? (t.type === 'AUTHORIZATION' ? parseMerchant(t.merchant, t.narrative).displayName : 'Rechaj Kat')
+                    : t.type === 'TOPUP' ? (t.method || 'Depot')
+                    : t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè')
+                    : t.type === 'PAYMENT' ? (txDisplayTitle(t) || 'Peman Visa')
+                    : t.type === 'CARD' ? (t.title || 'Viz Kont')
+                    : isDebit
+                      ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
+                      : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User');
 
                   return (
-                    <div key={idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
+                    <div key={t.id || idx} className="flex items-center justify-between p-6 bg-[var(--oz-surface)] border border-[var(--oz-border)] rounded-[28px] shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
-                          {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
-                        </div>
+                        {t.source === 'CARD' && t.type === 'AUTHORIZATION' ? (
+                          <MerchantAvatar merchant={t.merchant} narrative={t.narrative} isDark={isDark} size={48} />
+                        ) : (
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDebit ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                            {isDebit ? <ArrowUp size={18} /> : <ArrowDown size={18} />}
+                          </div>
+                        )}
                         <div>
-<p className="font-black text-sm uppercase italic leading-none tracking-tight text-[var(--oz-text)]">
-  {t.type === 'TOPUP' ? (t.method || 'Depot') :
-   t.type === 'WITHDRAWAL' ? (t.description || t.method || 'Retrè') :
-   t.type === 'PAYMENT' ? (t.title || t.description || 'Peman Visa') :
-   t.type === 'CARD' ? (t.title || 'Viz Kont') :
-   isDebit
-    ? (t.receiverWallet?.user?.name || t.receiverWallet?.user?.email || 'Destinatè')
-    : (t.senderWallet?.user?.name || t.senderWallet?.user?.email || 'Ozama User')}
-</p>
+                          <p className="font-black text-sm uppercase italic leading-none tracking-tight text-[var(--oz-text)]">
+                            {title}
+                          </p>
                           <p className="text-[9px] text-[var(--oz-text-sec)] font-bold uppercase mt-1">
-                            {t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : t.type === 'PAYMENT' ? 'Peman Visa' : t.type === 'CARD' ? 'Viz' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
+                            {t.source === 'CARD' ? (t.type === 'AUTHORIZATION' ? 'Peman Kat' : 'Rechaj Kat') : t.type === 'TOPUP' ? 'Depot' : t.type === 'WITHDRAWAL' ? 'Retrè' : t.type === 'PAYMENT' ? 'Peman Visa' : t.type === 'CARD' ? 'Viz' : (isDebit ? 'Transfè' : 'Depo')} • {t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : ''}
                           </p>
                         </div>
                       </div>
                       <p className={`font-black italic text-base ${isDebit ? 'text-red-500' : 'text-[#00C566]'}`}>
-                        {isDebit ? '-' : '+'}{(t.amount || 0).toLocaleString()} HTG
+                        {t.source === 'CARD'
+                          ? `${isDebit ? '-' : '+'}$${Number(t.amount || 0).toFixed(2)}`
+                          : `${isDebit ? '-' : '+'}${(t.amount || 0).toLocaleString()} HTG`}
                       </p>
                     </div>
                   );
