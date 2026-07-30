@@ -30,6 +30,7 @@ model User {
   serviceRequests ServiceRequest[]
   topups          TopUpRequest[]
   virtualCards    VirtualCard[]
+  cardTransactions CardTransaction[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
   depositAddress  DepositAddress?
@@ -357,6 +358,33 @@ model StrowalletWebhookEvent {
   event       String
   rawPayload  Json
   processedAt DateTime @default(now())
+}
+
+model CardTransaction {
+  id         String              @id @default(uuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id])
+  cardId     String
+  reference  String              @unique
+  type       CardTransactionType
+  amount     Decimal             @db.Decimal(18, 2)
+  currency   String?
+  status     String
+  merchant   String?
+  narrative  String?
+  mcc        String?
+  country    String?
+  occurredAt DateTime
+  createdAt  DateTime            @default(now())
+
+  @@index([userId])
+  @@index([cardId])
+  @@index([occurredAt])
+}
+
+enum CardTransactionType {
+  AUTHORIZATION
+  TOPUP
 }
 
 // ═══════════════════════════════════════════════════════════════

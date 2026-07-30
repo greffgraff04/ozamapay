@@ -12,9 +12,43 @@ import {
 } from "lucide-react";
 import { useTheme } from '../../../contexts/ThemeContext';
 
-type TxType = "Tout" | "TOPUP" | "WITHDRAWAL" | "TRANSFER" | "FINANCE";
+type TxType = "Tout" | "TOPUP" | "WITHDRAWAL" | "TRANSFER" | "FINANCE" | "KAT";
 
-const FILTERS: TxType[] = ["Tout", "TOPUP", "WITHDRAWAL", "TRANSFER", "FINANCE"];
+const FILTERS: TxType[] = ["Tout", "TOPUP", "WITHDRAWAL", "TRANSFER", "FINANCE", "KAT"];
+
+// Best-effort domain extraction from StroWallet's merchant/narrative text
+// (e.g. "SHEIN.COM 137-2105366 DEUS" -> "shein.com") for a Clearbit logo lookup.
+// No match -> caller falls back to a generic icon.
+function extractMerchantDomain(text?: string | null): string | null {
+  if (!text) return null;
+  const match = text.match(/([a-z0-9-]+\.(?:com|net|org|io|co|us|ie|fr|ca|uk))/i);
+  return match ? match[1].toLowerCase() : null;
+}
+
+function MerchantAvatar({ merchant, narrative, isDark }: { merchant?: string | null; narrative?: string | null; isDark: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const domain = extractMerchantDomain(merchant) || extractMerchantDomain(narrative);
+
+  if (!domain || failed) {
+    return (
+      <div
+        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+        style={{ backgroundColor: isDark ? 'rgba(255,122,0,0.15)' : '#FFF7ED' }}
+      >
+        <CreditCard size={20} className="text-[#FF6B00]" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={merchant || 'Machann'}
+      className="w-11 h-11 rounded-2xl object-cover shrink-0 bg-white"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -26,6 +60,9 @@ function formatDate(iso: string) {
 }
 
 function txTitle(t: any, isDebit: boolean) {
+  if (t.source === "CARD") {
+    return t.type === "AUTHORIZATION" ? (t.merchant || t.narrative || "Peman Kat") : "Rechaj Kat";
+  }
   if (t.type === "TOPUP") return t.method || "Depot";
   if (t.type === "WITHDRAWAL") return t.description || t.method || "Retrè";
   if (t.type === "FINANCE") return t.description || "Sèvis Finansyè";
@@ -34,7 +71,19 @@ function txTitle(t: any, isDebit: boolean) {
     : t.senderWallet?.user?.name || t.senderWallet?.user?.email || "Ozama User";
 }
 
-function TxIcon({ type, isDebit, isDark }: { type: string; isDebit: boolean; isDark: boolean }) {
+function TxIcon({ type, isDebit, isDark, source, merchant, narrative }: { type: string; isDebit: boolean; isDark: boolean; source?: string; merchant?: string | null; narrative?: string | null }) {
+  if (source === "CARD" && type === "AUTHORIZATION") {
+    return <MerchantAvatar merchant={merchant} narrative={narrative} isDark={isDark} />;
+  }
+  if (source === "CARD" && type === "TOPUP")
+    return (
+      <div
+        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+        style={{ backgroundColor: isDark ? 'rgba(34,197,94,0.15)' : '#ECFDF5' }}
+      >
+        <CreditCard size={20} className="text-emerald-500" />
+      </div>
+    );
   if (type === "TOPUP")
     return (
       <div
@@ -77,13 +126,16 @@ function TxIcon({ type, isDebit, isDark }: { type: string; isDebit: boolean; isD
 }
 
 function getStatusStyle(status: string, isDark: boolean): React.CSSProperties {
-  if (status === 'COMPLETED') return isDark
+  // StroWallet-sourced CardTransaction rows carry StroWallet's own raw, lowercase
+  // status strings ("completed", "complete") rather than our Transaction enum.
+  const s = (status || '').toUpperCase();
+  if (s === 'COMPLETED' || s === 'COMPLETE') return isDark
     ? { backgroundColor: 'rgba(34,197,94,0.15)', color: '#22C55E' }
     : { backgroundColor: '#ECFDF5', color: '#16A34A' };
-  if (status === 'PENDING') return isDark
+  if (s === 'PENDING') return isDark
     ? { backgroundColor: 'rgba(255,122,0,0.15)', color: '#FF7A00' }
     : { backgroundColor: '#FFF7ED', color: '#FF7A00' };
-  if (status === 'FAILED') return isDark
+  if (s === 'FAILED' || s === 'DECLINED') return isDark
     ? { backgroundColor: 'rgba(239,68,68,0.15)', color: '#EF4444' }
     : { backgroundColor: '#FEF2F2', color: '#DC2626' };
   return isDark
@@ -108,12 +160,14 @@ export default function TransactionsPage() {
     if (!token) { window.location.href = "/login"; return; }
     try {
       const [txRes, meRes] = await Promise.all([
-        fetch(`${backendUrl}/wallet/transactions?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${backendUrl}/v1/cards/history`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (txRes.ok) {
         const data = await txRes.json();
-        setTransactions(Array.isArray(data?.data) ? data.data : []);
+        // /v1/cards/history returns a flat array merging CardTransaction (StroWallet
+        // card activity) and wallet Transaction rows, already sorted by date.
+        setTransactions(Array.isArray(data) ? data : []);
       }
       if (meRes.ok) {
         const me = await meRes.json();
@@ -138,9 +192,11 @@ export default function TransactionsPage() {
     };
   }, []);
 
-  const filtered = transactions.filter(t =>
-    filter === "Tout" ? true : t.type === filter
-  );
+  const filtered = transactions.filter(t => {
+    if (filter === "Tout") return true;
+    if (filter === "KAT") return t.source === "CARD";
+    return t.type === filter && t.source !== "CARD";
+  });
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -217,10 +273,13 @@ export default function TransactionsPage() {
         ) : (
           <div className="space-y-3">
             {visible.map((t: any, idx: number) => {
-              const isDebit =
-                t.type === "WITHDRAWAL" ||
-                t.type === "DEBIT" ||
-                (t.type === "TRANSFER" && t.senderWallet?.user?.email === userEmail);
+              const isDebit = t.source === "CARD"
+                ? t.type === "AUTHORIZATION"
+                : t.type === "WITHDRAWAL" ||
+                  t.type === "DEBIT" ||
+                  (t.type === "TRANSFER" && t.senderWallet?.user?.email === userEmail);
+
+              const dateValue = t.source === "CARD" ? t.date : t.createdAt;
 
               return (
                 <div
@@ -228,14 +287,14 @@ export default function TransactionsPage() {
                   className="rounded-[28px] p-4 flex items-center gap-4"
                   style={{ backgroundColor: colors.surface, border: `1px solid ${colors.border}` }}
                 >
-                  <TxIcon type={t.type} isDebit={isDebit} isDark={isDark} />
+                  <TxIcon type={t.type} isDebit={isDebit} isDark={isDark} source={t.source} merchant={t.merchant} narrative={t.narrative} />
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-black leading-snug truncate" style={{ color: colors.textPrimary }}>
                       {txTitle(t, isDebit)}
                     </p>
                     <p className="text-[10px] mt-0.5 font-medium" style={{ color: colors.textSecondary }}>
-                      {t.createdAt ? formatDate(t.createdAt) : "—"}
+                      {dateValue ? formatDate(dateValue) : "—"}
                     </p>
                     {t.status && (
                       <span
@@ -247,10 +306,17 @@ export default function TransactionsPage() {
                     )}
                   </div>
 
-                  <p className={`text-sm font-black shrink-0 ${isDebit ? "text-red-400" : "text-emerald-400"}`}>
-                    {isDebit ? "−" : "+"}{Number(t.amount || 0).toLocaleString("fr-HT")}
-                    <span className="text-[10px] font-medium" style={{ color: colors.textSecondary }}> HTG</span>
-                  </p>
+                  {t.source === "CARD" ? (
+                    <p className={`text-sm font-black shrink-0 ${isDebit ? "text-red-400" : "text-emerald-400"}`}>
+                      {isDebit ? "−" : "+"}${Number(t.amount || 0).toFixed(2)}
+                      <span className="text-[10px] font-medium" style={{ color: colors.textSecondary }}> {t.currency || "USD"}</span>
+                    </p>
+                  ) : (
+                    <p className={`text-sm font-black shrink-0 ${isDebit ? "text-red-400" : "text-emerald-400"}`}>
+                      {isDebit ? "−" : "+"}{Number(t.amount || 0).toLocaleString("fr-HT")}
+                      <span className="text-[10px] font-medium" style={{ color: colors.textSecondary }}> HTG</span>
+                    </p>
+                  )}
                 </div>
               );
             })}

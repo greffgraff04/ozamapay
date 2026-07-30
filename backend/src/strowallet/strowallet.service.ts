@@ -354,13 +354,58 @@ export class StrowalletService {
   }
 
   // ─── 4. CARD HISTORY ─────────────────────────────────────────────────────────
+  // Merged view of real StroWallet card activity (CardTransaction — populated by
+  // webhook events) + wallet-side HTG movements (Transaction). Replaces the old
+  // call to StroWallet's 'fetch-nfccard-history' endpoint, which no longer exists
+  // (confirmed returning an HTML 404 page instead of JSON) — no reason to keep two
+  // separate paths for what should be one history list.
 
   async getCardHistory(userId: string) {
-    const card = await this.prisma.virtualCard.findFirst({ where: { userId } });
-    if (!card) return [];
+    const [cardTransactions, walletTransactions] = await Promise.all([
+      this.prisma.cardTransaction.findMany({
+        where: { userId },
+        orderBy: { occurredAt: 'desc' },
+        take: 100,
+      }),
+      this.prisma.transaction.findMany({
+        where: {
+          OR: [{ senderWallet: { userId } }, { receiverWallet: { userId } }],
+        },
+        include: {
+          senderWallet: { include: { user: { select: { name: true, email: true } } } },
+          receiverWallet: { include: { user: { select: { name: true, email: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+    ]);
 
-    const data = await this.nfcGet('fetch-nfccard-history', { card_id: card.cardId });
-    return data?.data || data?.history || [];
+    const merged = [
+      ...cardTransactions.map((ct) => ({
+        source: 'CARD' as const,
+        date: ct.occurredAt,
+        id: ct.id,
+        cardId: ct.cardId,
+        reference: ct.reference,
+        type: ct.type,
+        amount: Number(ct.amount),
+        currency: ct.currency,
+        status: ct.status,
+        merchant: ct.merchant,
+        narrative: ct.narrative,
+        mcc: ct.mcc,
+        country: ct.country,
+      })),
+      ...walletTransactions.map((tx) => ({
+        source: 'WALLET' as const,
+        date: tx.createdAt,
+        ...tx,
+      })),
+    ];
+
+    merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return merged;
   }
 
   // ─── 5. LOCAL DATA (with live balance sync) ──────────────────────────────────
