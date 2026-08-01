@@ -13,6 +13,12 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  // Sans sa a, OnModuleDestroy (TronMonitorService.stopped, TrackingService
+  // cleanupTimer) pa janm deklanche lè Render voye SIGTERM pandan yon
+  // redeploy — se sa k te lakòz ansyen pwosesis yo rete vivan konkouran ak
+  // nouvo yo (verifye 2026-08-01, de fwa youn apre lòt sou de deploy).
+  app.enableShutdownHooks();
+
   // Fail fast if the DB schema is behind the Prisma migrations shipped in
   // this build — refuse to serve traffic against a stale schema instead of
   // starting up silently (this is what let the 2026-07-04 incident happen).
