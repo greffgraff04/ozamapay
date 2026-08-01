@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { SweepService } from './sweep.service';
+import { TronUsageService } from './tron-usage.service';
 
 const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
@@ -56,6 +57,7 @@ export class TronMonitorService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly sweepService: SweepService,
+    private readonly tronUsageService: TronUsageService,
   ) {}
 
   onModuleInit(): void {
@@ -154,6 +156,7 @@ export class TronMonitorService implements OnModuleInit, OnModuleDestroy {
         `${TRONGRID_BASE_URL}/v1/accounts/${address}/transactions/trc20?${params.toString()}`,
         { headers: TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': TRONGRID_API_KEY } : {} },
       );
+      await this.tronUsageService.recordCall();
       if (!res.ok) throw new Error(`TronGrid accounts/trc20 HTTP ${res.status}`);
 
       const data = await res.json();

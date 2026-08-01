@@ -463,6 +463,19 @@ enum SweepStatus {
   FAILED
 }
 
+// One row per UTC day — self-resets daily just by being keyed on `date`,
+// survives redeploys (unlike an in-memory counter, which is exactly what
+// lost us accurate quota visibility during the 2026-08-01 incident).
+model TronGridUsage {
+  id               String    @id @default(uuid())
+  date             String    @unique
+  count            Int       @default(0)
+  quotaAlertSentAt DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@index([date])
+}
+
 enum UserRole {
   USER
   AGENT

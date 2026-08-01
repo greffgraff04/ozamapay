@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { getTreasuryAddress } from './hd-wallet.util';
+import { TronUsageService } from './tron-usage.service';
 
 const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
@@ -47,6 +48,7 @@ export class ReconciliationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly tronUsageService: TronUsageService,
   ) {}
 
   @Cron('0 6 * * *')
@@ -139,6 +141,7 @@ export class ReconciliationService {
     const res = await fetch(`${TRONGRID_BASE_URL}/v1/accounts/${address}`, {
       headers: TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': TRONGRID_API_KEY } : {},
     });
+    await this.tronUsageService.recordCall();
     if (!res.ok) throw new Error(`TronGrid accounts HTTP ${res.status}`);
     const data = await res.json();
     const acct = data?.data?.[0];

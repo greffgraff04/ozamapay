@@ -77,5 +77,15 @@ services:
         sync: false
       - key: RECONCILIATION_REQUEST_INTERVAL_MS
         sync: false
+      - key: TRON_HEALTH_MONITOR_STALE_MINUTES
+        sync: false
+      - key: TRON_HEALTH_DEPOSIT_STUCK_HOURS
+        sync: false
+      - key: TRON_HEALTH_SWEEP_STUCK_HOURS
+        sync: false
+      - key: TRONGRID_DAILY_QUOTA
+        sync: false
+      - key: TRONGRID_QUOTA_ALERT_THRESHOLD_PCT
+        sync: false
       - key: NODE_ENV
         value: production

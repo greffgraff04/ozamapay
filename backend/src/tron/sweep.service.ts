@@ -4,6 +4,7 @@ import { TronWeb } from 'tronweb';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { deriveTronPrivateKey, getTreasuryAddress, getTreasuryPrivateKey } from './hd-wallet.util';
+import { TronUsageService } from './tron-usage.service';
 
 const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
@@ -45,6 +46,7 @@ export class SweepService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly tronUsageService: TronUsageService,
   ) {}
 
   // Manual trigger (SweepController, CEO-only) — unchanged behavior: throws
@@ -217,6 +219,7 @@ export class SweepService {
     const res = await fetch(`${TRONGRID_BASE_URL}/v1/accounts/${address}`, {
       headers: TRONGRID_API_KEY ? { 'TRON-PRO-API-KEY': TRONGRID_API_KEY } : {},
     });
+    await this.tronUsageService.recordCall();
     if (!res.ok) throw new Error(`TronGrid accounts HTTP ${res.status}`);
     const data = await res.json();
     const acct = data?.data?.[0];
@@ -242,10 +245,16 @@ export class SweepService {
     throw new Error('TRX finansman gaz la poko rive apre plizyè tantativ — eseye sweep la ankò pita');
   }
 
+  // TronWeb SDK calls internally issue multiple HTTP requests we can't
+  // intercept individually — recordCall() below uses counts empirically
+  // measured 2026-08-01 (build + broadcast for sendTrx; ABI fetch + build +
+  // broadcast for sendUsdt), close enough for quota visibility even though
+  // it can't reflect internal retries exactly.
   private async sendTrx(fromPrivateKey: string, toAddress: string, amountTrx: number): Promise<string> {
     const tronWeb = this.getTronWeb();
     const amountSun = Math.round(amountTrx * 1_000_000);
     const result = await tronWeb.trx.sendTrx(toAddress, amountSun, { privateKey: fromPrivateKey });
+    await this.tronUsageService.recordCall(2);
     if (!result.result) throw new Error(`TRX funding tranzaksyon rejte: ${result.message}`);
     return result.txid;
   }
@@ -254,6 +263,7 @@ export class SweepService {
     const tronWeb = this.getTronWeb(fromPrivateKey);
     const contract: any = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
     const txId: string = await contract.transfer(toAddress, rawAmount.toString()).send({ feeLimit: 50_000_000 });
+    await this.tronUsageService.recordCall(3);
     if (!txId) throw new Error('USDT transfer echwe — pa gen txId retounen');
     return txId;
   }
