@@ -73,5 +73,9 @@ services:
         sync: false
       - key: SWEEP_AUTO_MAX_TOTAL_USDT_PER_CYCLE
         sync: false
+      - key: RECONCILIATION_TOLERANCE_USDT
+        sync: false
+      - key: RECONCILIATION_REQUEST_INTERVAL_MS
+        sync: false
       - key: NODE_ENV
         value: production
