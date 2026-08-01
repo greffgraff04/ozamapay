@@ -61,6 +61,8 @@ services:
         sync: false
       - key: USDT_MIN_CONFIRMATIONS
         sync: false
+      - key: TRON_MONITOR_REQUEST_INTERVAL_MS
+        sync: false
       - key: SWEEP_MASTER_MNEMONIC
         sync: false
       - key: SWEEP_GAS_FUNDING_TRX

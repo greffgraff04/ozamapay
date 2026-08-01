@@ -14,9 +14,22 @@ const TRON_BLOCK_TIME_MS = 3000;
 // Empirically confirmed 2026-07-31: TronGrid rejects bursts above ~15 req/s
 // per key with HTTP 429 "exceeds the frequency limit(15)". This interval
 // paces individual request STARTS (not batches — a Promise.all burst of
-// even 40 requests instantly blows the ceiling) at ~7.7 req/s, leaving
-// headroom shared with SweepService's occasional admin-triggered calls.
-const REQUEST_INTERVAL_MS = 130;
+// even 40 requests instantly blows the ceiling).
+//
+// SEPARATELY confirmed 2026-08-01: the key also enforces a 100,000
+// requests/day quota — once exceeded, TronGrid throttles to 1 req/s
+// regardless of burst pacing (confirmed via a distinct error message:
+// "Exceed the user daily usage (100000)..."). The original 130ms/~7.7 req/s
+// design would burn ~663,000 req/day running continuously — 6.6x over quota
+// — and would hit the daily cap in under 4 hours even with zero extra
+// traffic. Budgeted at ~70,000 req/day for this loop specifically (the rest
+// reserved for SweepService + retries/margin): 86,400,000ms / 70,000 ≈
+// 1234ms; rounded up to 1250ms for a small safety margin (≈69,120 req/day).
+// A full rotation over ~499 addresses now takes ~10.4 minutes instead of
+// ~65s — slower detection, but the only way to stay within quota. Env-
+// adjustable without redeploy — raise it back down if TronGrid grants a
+// higher daily quota.
+const REQUEST_INTERVAL_MS = Number(process.env.TRON_MONITOR_REQUEST_INTERVAL_MS || 1250);
 
 // Always re-query slightly before an address's last-checked watermark so a
 // transaction landing right at the boundary (TronGrid indexing lag, clock
