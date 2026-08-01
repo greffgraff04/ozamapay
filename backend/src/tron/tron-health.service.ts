@@ -16,6 +16,7 @@ const DEPOSIT_STUCK_HOURS = Number(process.env.TRON_HEALTH_DEPOSIT_STUCK_HOURS |
 const SWEEP_STUCK_HOURS = Number(process.env.TRON_HEALTH_SWEEP_STUCK_HOURS || 4);
 const TRONGRID_DAILY_QUOTA = Number(process.env.TRONGRID_DAILY_QUOTA || 100_000);
 const QUOTA_ALERT_THRESHOLD_PCT = Number(process.env.TRONGRID_QUOTA_ALERT_THRESHOLD_PCT || 80);
+const RATE_STALE_HOURS = Number(process.env.TRON_HEALTH_RATE_STALE_HOURS || 24);
 
 @Injectable()
 export class TronHealthService {
@@ -50,6 +51,9 @@ export class TronHealthService {
 
     const quotaProblem = await this.checkQuotaApproaching();
     if (quotaProblem) problems.push(quotaProblem);
+
+    const rateProblem = await this.checkUsdtRateHealth();
+    if (rateProblem) problems.push(rateProblem);
 
     if (problems.length > 0) {
       this.logger.warn(`TronHealthService: ${problems.length} pwoblèm jwenn — voye alèt.`);
@@ -137,5 +141,31 @@ export class TronHealthService {
       `KOTA TRONGRID PRÈSKE FIN: ${usage.count}/${TRONGRID_DAILY_QUOTA} apèl jodi a (${pct.toFixed(1)}%). ` +
       `Redwi trafik oswa kontakte sipò TronGrid anvan n frape mi a.`
     );
+  }
+
+  // Pure visibility — does NOT change TronMonitorService.getUsdtHtgRate()'s
+  // existing silent-fallback-to-140 behavior. A missing rate row is worse
+  // than a stale one (deposits are being credited off a made-up number
+  // right now, not just an old one), so it skips the staleness window
+  // entirely and alerts on every run until someone sets the rate.
+  private async checkUsdtRateHealth(): Promise<string | null> {
+    const rate = await this.prisma.rate.findUnique({ where: { key: 'USDT_HTG' } });
+
+    if (!rate) {
+      return (
+        `TO USDT_HTG PA EGZISTE: depo USDT ap kredite ak fallback silansye $140 HTG/USDT ki ka ` +
+        `pa reflete mache a ditou. Mete yon antre USDT_HTG nan tab Rate a IMEDYATMAN (POST /rates/update).`
+      );
+    }
+
+    const ageHours = (Date.now() - rate.updatedAt.getTime()) / (60 * 60_000);
+    if (ageHours > RATE_STALE_HOURS) {
+      return (
+        `TO USDT_HTG TWÒ ANSYEN: dènye mizajou depi ${Math.round(ageHours)}h (sib: <${RATE_STALE_HOURS}h), ` +
+        `valè aktyèl: ${rate.value} HTG. Verifye si li toujou reflete mache a.`
+      );
+    }
+
+    return null;
   }
 }

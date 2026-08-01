@@ -87,5 +87,7 @@ services:
         sync: false
       - key: TRONGRID_QUOTA_ALERT_THRESHOLD_PCT
         sync: false
+      - key: TRON_HEALTH_RATE_STALE_HOURS
+        sync: false
       - key: NODE_ENV
         value: production
