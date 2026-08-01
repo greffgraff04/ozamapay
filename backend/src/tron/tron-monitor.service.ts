@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { SweepService } from './sweep.service';
 
 const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
@@ -41,6 +42,7 @@ export class TronMonitorService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly sweepService: SweepService,
   ) {}
 
   onModuleInit(): void {
@@ -247,6 +249,14 @@ export class TronMonitorService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.logger.log(`USDT deposit ${depositId} kredite: +${amountHTG} HTG pou userId=${userId}`);
+
+      // Fire-and-forget: consolidate this address's USDT to treasury without
+      // blocking the polling loop's 130ms pacing. Failures are non-fatal —
+      // SweepService's 15-min scheduledSweepSafetyNet() cron retries any
+      // address a sweep attempt misses.
+      this.sweepService
+        .runAutoSweep()
+        .catch((err: any) => this.logger.error(`runAutoSweep (deklanche pa depo ${depositId}) echwe: ${err.message}`));
 
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (user) {

@@ -67,5 +67,9 @@ services:
         sync: false
       - key: SWEEP_MIN_USDT_THRESHOLD
         sync: false
+      - key: SWEEP_AUTO_MAX_USDT_PER_ADDRESS
+        sync: false
+      - key: SWEEP_AUTO_MAX_TOTAL_USDT_PER_CYCLE
+        sync: false
       - key: NODE_ENV
         value: production
