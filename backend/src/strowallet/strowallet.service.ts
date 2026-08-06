@@ -139,6 +139,7 @@ export class StrowalletService {
       dob,
       id_type: 'national_id',
       id_number: user.kyc.idNumber || '00000000',
+      id_image: user.kyc.idImage,
       email: user.email,
       line1: '3401 N. Miami Ave, Ste 230',
       city: 'Miami',
@@ -149,6 +150,7 @@ export class StrowalletService {
       phone: (user.phone && !user.phone.startsWith('509') && !user.phone.startsWith('+509'))
         ? user.phone
         : '3055550100',
+      brand: 'Visa',
     };
 
     const virtualCard = await this.prisma.$transaction(async (tx) => {
@@ -225,6 +227,7 @@ export class StrowalletService {
       dob,
       id_type: 'national_id',
       id_number: user.kyc?.idNumber || '00000000',
+      id_image: user.kyc?.idImage || '',
       email: user.email,
       line1: '3401 N. Miami Ave, Ste 230',
       city: 'Miami',
@@ -235,6 +238,7 @@ export class StrowalletService {
       phone: (user.phone && !user.phone.startsWith('509') && !user.phone.startsWith('+509'))
         ? user.phone
         : '3055550100',
+      brand: 'Visa',
     };
 
     const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
@@ -360,6 +364,24 @@ export class StrowalletService {
     });
 
     return { message: `Kat recharje avèk siksè — $${amountUsd} ajoute` };
+  }
+
+  // ─── 3b. ADMIN: DIRECT CARD OPERATIONS (no wallet involvement) ──────────────
+  // Thin passthroughs to the raw StroWallet endpoints, bypassing the HTG wallet
+  // debit/fee logic in fundVirtualCard. For admin/one-off tooling only (e.g.
+  // manual goodwill compensations funded by OZAMAPAY, not the customer) — never
+  // call these from customer-facing routes.
+
+  async fetchCardDetailByCardId(cardId: string) {
+    return this.nfcGet('fetch-nfccard-detail', { card_id: cardId });
+  }
+
+  async fundCardDirect(cardId: string, amountUsd: number) {
+    return this.nfcPost('fund-withdraw-nfccard', {
+      card_id: cardId,
+      amount: String(amountUsd),
+      type: 'fund',
+    });
   }
 
   // ─── 4. CARD HISTORY ─────────────────────────────────────────────────────────
