@@ -131,7 +131,6 @@ export class StrowalletService {
         })
       : '01/01/1990';
 
-    // Debi wallet + kreye kat nan DB atomikman — nfcPost andedan transaction pou rollback si echèk
     const nfcParams = {
       name: user.name || 'OZAMA USER',
       first_name: firstName,
@@ -153,19 +152,45 @@ export class StrowalletService {
       brand: 'Visa',
     };
 
-    const virtualCard = await this.prisma.$transaction(async (tx) => {
-      // 1. Debi wallet anvan tout — si nfcPost echwe, rollback otomatik
+    // ── Etap 1: Debi wallet sèlman (transaction 1) ──────────────────────────
+    await this.prisma.$transaction(async (tx) => {
       await tx.wallet.update({
         where: { userId },
         data: { balance: { decrement: totalHtg } },
       });
+    });
 
-      // 2. Kreye kat NFC (si sa echwe, DB rollback fèt)
+    // ── Etap 2: Apèl HTTP Strowallet DEYÒ transaction ────────────────────────
+    let cardId: string;
+    try {
       const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
-      const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
+      cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
       if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
+    } catch (err) {
+      // ── Etap 3: Strowallet echwe → renmbi wallet (NOUVO transaction) ────────
+      await this.prisma.$transaction(async (tx) => {
+        await tx.wallet.update({
+          where: { userId },
+          data: { balance: { increment: totalHtg } },
+        });
+        await tx.transaction.create({
+          data: {
+            senderWalletId: user.wallet!.id,
+            type: 'CARD',
+            amount: totalHtg,
+            netAmount: totalHtg,
+            fee: 0,
+            status: 'FAILED',
+            description: `Kreyasyon kat vityèl NFC $${amountUsd} ECHWE — renmbi otomatik fèt`,
+            reference: `CARD-CREATE-FAIL-${Date.now()}`,
+          },
+        });
+      });
+      throw err;
+    }
 
-      // 3. Sove kat nan DB
+    // ── Etap 4: Strowallet siksè → kreye VirtualCard + Transaction (NOUVO transaction) ──
+    const virtualCard = await this.prisma.$transaction(async (tx) => {
       const card = await tx.virtualCard.create({
         data: {
           userId,
@@ -177,7 +202,6 @@ export class StrowalletService {
         },
       });
 
-      // 4. Anrejistre tranzaksyon
       await tx.transaction.create({
         data: {
           senderWalletId: user.wallet!.id,
