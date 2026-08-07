@@ -136,7 +136,10 @@ export class StrowalletService {
       first_name: firstName,
       last_name: lastName,
       dob,
-      id_type: 'national_id',
+      // StroWallet konfime (2026-08-07): pou kliyan Ayisyen, soumèt kat idantite
+      // nasyonal la kòm si se te yon paspò — 'national_id' egzije yon fòma NIN
+      // Nijeryen (11 chif) ki pa matche fòma Ayisyen an.
+      id_type: 'passport',
       id_number: user.kyc.idNumber || '00000000',
       id_image: user.kyc.idImage,
       email: user.email,
@@ -249,7 +252,10 @@ export class StrowalletService {
       first_name: firstName,
       last_name: lastName,
       dob,
-      id_type: 'national_id',
+      // StroWallet konfime (2026-08-07): pou kliyan Ayisyen, soumèt kat idantite
+      // nasyonal la kòm si se te yon paspò — 'national_id' egzije yon fòma NIN
+      // Nijeryen (11 chif) ki pa matche fòma Ayisyen an.
+      id_type: 'passport',
       id_number: user.kyc?.idNumber || '00000000',
       id_image: user.kyc?.idImage || '',
       email: user.email,
