@@ -276,6 +276,113 @@ export class MailService {
     await this.send(email, 'Kat vityèl ou ranplase otomatikman', html);
   }
 
+  // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
+  // sèlman tèm jenerik. Itilize pou kat vityèl ki fèk kreye/finanse pou premye
+  // fwa (pa yon ranplasman — pa gen ansyen kat ki te dezaktive/terminen).
+  async sendCardAvailable(email: string, name: string, amountUsd: number): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Kat Vityèl Ou Disponib!',
+      'Kat Vityèl Disponib',
+      this.badge('KREDITE') +
+      `<div style="height:16px;"></div>` +
+      this.amountBox(`$${amountUsd.toFixed(2)}`, 'Balans disponib') +
+      this.p(`Bonjou ${firstName},`) +
+      this.p(`Bòn nouvèl! Kat vityèl ou a kounye a AKTIF, ak yon balans de $${amountUsd.toFixed(2)} USD deja disponib pou itilize.`) +
+      this.p('Ale nan app OZAMAPAY ou pou wè detay kat ou a e kòmanse fè acha.') +
+      this.p('Mèsi pou pasyans ou pandan nou te rezoud pwoblèm teknik yo.') +
+      this.p('Ekip OZAMAPAY') +
+      this.btn('Wè Kat Ou →', `${this.frontendUrl}/dashboard`),
+    );
+    await this.send(email, 'Kat Vityèl Ou Disponib!', html);
+  }
+
+  async sendCardManualCredit(
+    email: string,
+    name: string,
+    amountUsd: number,
+    reason: string,
+  ): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const now = new Date().toLocaleDateString('fr-HT');
+    const html = this.wrap(
+      'Kat ou kredite',
+      'Kat Ou Kredite',
+      this.badge('KREDITE') +
+      `<div style="height:16px;"></div>` +
+      this.amountBox(`+$${amountUsd.toFixed(2)}`, 'Ajoute sou kat ou') +
+      this.table(
+        this.infoRow('Rezon', reason) +
+        this.infoRow('Dat', now),
+      ) +
+      this.p(`Bonjou ${firstName},`) +
+      this.p(`Nou fèk ajoute $${amountUsd.toFixed(2)} sou kat vityèl ou a.`) +
+      this.accentLine('Kòb la deja disponib — verifye balans kat ou nan app la.') +
+      this.btn('Wè Kat Ou →', `${this.frontendUrl}/dashboard`),
+    );
+    await this.send(email, 'Kat ou kredite', html);
+  }
+
+  // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
+  // sèlman tèm jenerik tankou "bank/founisè k ap jere kat vityèl yo".
+  async sendCardFundingOutageNotice(email: string, name: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Enfòmasyon enpòtan — Rechaj kat vityèl ou',
+      'Enfòmasyon Enpòtan',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('Nou gen yon enteripsyon tanporè bò kote bank/founisè k ap jere kat vityèl yo, ki afekte rechaj kat USD pou kounye a. Nou swiv sitiyasyon an de prè.') +
+      this.accentLine('Kat ou toujou aktif — ou ka kontinye fè acha ak balans ki deja sou li. Sèlman AJOUTE lajan sou kat la ki pa disponib pou kounye a.') +
+      this.p('Nou ap enfòme w imedyatman lè sèvis la retabli. Mèsi pou pasyans ou.') +
+      this.p('Ekip OZAMAPAY'),
+      '#e65100',
+    );
+    await this.send(email, 'Enfòmasyon enpòtan — Rechaj kat vityèl ou', html);
+  }
+
+  // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
+  // sèlman tèm jenerik tankou "bank/founisè k ap jere kat nou yo".
+  async sendMastercardBackupNotice(email: string, name: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Enfòmasyon sou Sèvis Kat Vityèl Ou',
+      'Enfòmasyon Enpòtan',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('N ap ekri w pou n enfòme w sou yon sitiyasyon k ap afekte kat vityèl ou a kounye a.') +
+      this.p('Bank/founisè k ap jere kat nou yo ap rankontre kèk difikilte ak konpayi Visa nan kreyasyon ak rechaj kat VISA yo. N ap swiv sitiyasyon an de prè avèk yo, e n ap fè tout sa nou kapab pou rezoud sa pi vit posib.') +
+      this.accentLine('Bòn nouvèl: Pou moun ki gen ijans, nou mete yon kat backup disponib — yon kat Mastercard — pou w ka kontinye fè tout tranzaksyon ou yo san pwoblèm.') +
+      this.p('Nou mande eskiz pou dezajreman kat ou a te koze w pandan tan sa a.') +
+      this.p('Kòb ki sou kat ou a an sekirite, li pa pèdi ni deplase. Talè konsa, n ap voye w yon lòt mesaj pou eksplike w egzakteman kijan pou w kòmanse itilize nouvo kat Mastercard backup la.') +
+      this.p('Mèsi anpil pou konfyans ak pasyans ou kontinye demontre pou OZAMAPAY.') +
+      this.p('Ak respè,<br>Ekip OZAMAPAY'),
+      '#e65100',
+    );
+    await this.send(email, 'Enfòmasyon sou Sèvis Kat Vityèl Ou', html);
+  }
+
+  async sendCardCreationDelayNotice(email: string, name: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Enfòmasyon sou Kreyasyon Kat Vityèl',
+      'Enfòmasyon Enpòtan',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('N ap enfòme w sou yon sitiyasyon k ap afekte kreyasyon kat vityèl kounye a.') +
+      this.p('Bank/founisè k ap jere kat nou yo ap rankontre kèk difikilte ak konpayi Visa. Sa vle di kreyasyon nouvo kat Visa ka pran plis tan pase nòmal pou kounye a.') +
+      this.accentLine('Bòn nouvèl: Nou mete yon opsyon backup disponib — yon kat Mastercard — pou moun ki bezwen kat ijan.') +
+      this.p('Si w gen yon demand KYC an atant, sa pa chanje anyen pou pwosesis verifikasyon w lan — n ap kontinye trete l nòmalman, e depi w apwouve, w ap gen aksè a opsyon kat (Visa oswa Mastercard backup) menm jan ak tout lòt kliyan.') +
+      this.p('Mèsi pou konfyans ak pasyans ou.') +
+      this.p('Ak respè,<br>Ekip OZAMAPAY'),
+      '#e65100',
+    );
+    await this.send(email, 'Enfòmasyon sou Kreyasyon Kat Vityèl', html);
+  }
+
   async sendCardPendingRecharge(
     email: string,
     name: string,
@@ -299,6 +406,27 @@ export class MailService {
       '#e65100',
     );
     await this.send(email, 'Kat ou dezaktive — rechaje wallet ou pou nouvo kat', html);
+  }
+
+  // Backfill technique sou dosye KYC deja apwouve — jamè mansyone founisè
+  // (ex: StroWallet) nan tèks kliyan wè, menm règ ak lòt notice yo.
+  async sendIdPhotoUpdateRequest(email: string, name: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Aksyon rapid — nou bezwen yon nouvo foto pyès idantite w',
+      'Aksyon Nesesè',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('N ap fè yon mizajou teknik nan sistèm verifikasyon nou an, e nou remake dosye ou pa gen yon foto pyès idantite ki anrejistre kòrèkteman nan fòma nou bezwen kounye a.') +
+      this.accentLine('Sa PA yon nouvo verifikasyon — kont ou rete APWOUVE jan li ye a, e pa gen okenn frè adisyonèl. Nou senpleman bezwen yon kopi teknik pou dosye w.') +
+      this.p('Tanpri reponn dirèkteman a imèl sa a (oswa voye nou l sou WhatsApp) ak yon foto klè pyès idantite w — menm dokiman ou te itilize pou premye verifikasyon an (kat idantite nasyonal, paspò, elatriye).') +
+      this.p('Yon fwa nou resevwa l, n ap mete dosye w ajou san w pa bezwen fè lòt bagay.') +
+      this.p('Mèsi pou konprann ak koperasyon ou.') +
+      this.p('Ak respè,<br>Ekip OZAMAPAY'),
+      '#e65100',
+    );
+    await this.send(email, 'Aksyon rapid — nou bezwen yon nouvo foto pyès idantite w', html);
   }
 
   async sendSystemAlert(error: string, uptime: number): Promise<void> {
