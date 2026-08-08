@@ -344,7 +344,7 @@ export default function Dashboard() {
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
 
   const fetchSecretDetails = async () => {
-    if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
+    if (virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
     setSecretDetailsFailed(false);
     setSecretDetailsLoading(true);
     setShowCardDetails(true);
@@ -358,8 +358,8 @@ export default function Dashboard() {
       if (res.ok) {
         setVirtualCard((prev: any) => ({
           ...prev,
-          cardNumber: data.cardNumber,
-          cvv: data.cvv,
+          cardNumberUrl: data.cardNumberUrl,
+          cvvUrl: data.cvvUrl,
           expiryDate: data.expiryDate,
           cardName: data.cardName,
           balance: data.balance,
@@ -605,8 +605,8 @@ export default function Dashboard() {
         if (cardData) {
           setVirtualCard((prev: any) => ({
             ...cardData,
-            cardNumber: prev?.cardNumber,
-            cvv: prev?.cvv,
+            cardNumberUrl: prev?.cardNumberUrl,
+            cvvUrl: prev?.cvvUrl,
             expiryDate: prev?.expiryDate,
             cardName: prev?.cardName || cardData?.cardName,
             last4: prev?.last4 || cardData?.last4,
@@ -2901,17 +2901,11 @@ export default function Dashboard() {
                         {/* Card number */}
                         <div>
                           <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
-                          <button
-                            onClick={() => { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); }}
-                            className="flex items-center gap-[6px]"
-                          >
-                            <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
-                              {showCardDetails && virtualCard?.cardNumber
-                                ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim()
-                                : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`}
-                            </p>
-                            <Copy size={12} color="rgba(255,255,255,0.5)" />
-                          </button>
+                          <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
+                            {showCardDetails && virtualCard?.last4
+                              ? `•••• •••• •••• ${virtualCard.last4}`
+                              : '•••• •••• •••• ••••'}
+                          </p>
                         </div>
                         {/* Bottom row: cardholder + VISA */}
                         <div className="flex justify-between items-end">
@@ -2939,13 +2933,11 @@ export default function Dashboard() {
                         {[
                           { key: 'info',     label: 'WÈ INFO',  isActive: showCardDetails },
                           { key: 'recharge', label: 'RECHARGE', isActive: false },
-                          { key: 'copy',     label: 'KOPYE',    isActive: false },
                           { key: 'freeze',   label: 'BLOKE',    isActive: virtualCard?.status === 'FROZEN' },
                         ].map((btn) => (
                           <button
                             key={btn.key}
                             onClick={async () => {
-                              if (btn.key === 'copy') { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); return; }
                               if (btn.key === 'recharge') { setShowRechargeModal(true); return; }
                               if (btn.key === 'info') { if (showCardDetails) { setShowCardDetails(false); return; } fetchSecretDetails(); return; }
                               if (btn.key === 'freeze') {
@@ -2976,8 +2968,6 @@ export default function Dashboard() {
                                 ? <Eye size={22} color="#FF7A00" />
                                 : btn.key === 'recharge'
                                 ? <Zap size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
-                                : btn.key === 'copy'
-                                ? <Copy size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
                                 : btn.key === 'freeze' && btn.isActive
                                 ? <Unlock size={22} color="#FFFFFF" />
                                 : <Lock size={22} color="#FF7A00" />
@@ -3031,15 +3021,20 @@ export default function Dashboard() {
                           <div className="flex flex-col gap-1">
                             <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                               <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
-                              </div>
+                              {virtualCard?.cardNumberUrl ? (
+                                <iframe src={virtualCard.cardNumberUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="Nimewo kat" />
+                              ) : (
+                                <p className="font-bold text-[13px] text-white">————</p>
+                              )}
                             </div>
                             <div className="flex gap-1">
                               <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
-                                <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
+                                {virtualCard?.cvvUrl ? (
+                                  <iframe src={virtualCard.cvvUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="CVV" />
+                                ) : (
+                                  <p className="font-bold text-[20px] text-white">———</p>
+                                )}
                               </div>
                               <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Ekspire</span>
@@ -3119,12 +3114,11 @@ export default function Dashboard() {
                             <div />
                             <div>
                               <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
-                              <button onClick={() => { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); }} className="flex items-center gap-[6px]">
-                                <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
-                                  {showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber.replace(/(.{4})/g, '$1 ').trim() : `${virtualCard?.cardId?.slice(0,4).toUpperCase()} •••• •••• ${virtualCard?.cardId?.slice(-4).toUpperCase()}`}
-                                </p>
-                                <Copy size={12} color="rgba(255,255,255,0.5)" />
-                              </button>
+                              <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
+                                {showCardDetails && virtualCard?.last4
+                                  ? `•••• •••• •••• ${virtualCard.last4}`
+                                  : '•••• •••• •••• ••••'}
+                              </p>
                             </div>
                             <div className="flex justify-between items-end">
                               <div>
@@ -3142,11 +3136,9 @@ export default function Dashboard() {
                           {[
                             { key: 'info',     label: 'WÈ INFO',  isActive: showCardDetails },
                             { key: 'recharge', label: 'RECHARGE', isActive: false },
-                            { key: 'copy',     label: 'KOPYE',    isActive: false },
                             { key: 'freeze',   label: 'BLOKE',    isActive: virtualCard?.status === 'FROZEN' },
                           ].map((btn) => (
                             <button key={btn.key} onClick={async () => {
-                              if (btn.key === 'copy') { const num = showCardDetails && virtualCard?.cardNumber ? virtualCard.cardNumber : virtualCard?.cardId; navigator.clipboard.writeText(num || ''); alert('Nimewo kopye!'); return; }
                               if (btn.key === 'recharge') { setShowRechargeModal(true); return; }
                               if (btn.key === 'info') { if (showCardDetails) { setShowCardDetails(false); return; } fetchSecretDetails(); return; }
                               if (btn.key === 'freeze') {
@@ -3169,7 +3161,6 @@ export default function Dashboard() {
                                 : btn.key === 'info' && showCardDetails ? <EyeOff size={22} color="#FFFFFF" />
                                 : btn.key === 'info' ? <Eye size={22} color="#FF7A00" />
                                 : btn.key === 'recharge' ? <Zap size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
-                                : btn.key === 'copy' ? <Copy size={22} color={btn.isActive ? '#FFFFFF' : '#FF7A00'} />
                                 : btn.key === 'freeze' && btn.isActive ? <Unlock size={22} color="#FFFFFF" />
                                 : <Lock size={22} color="#FF7A00" />}
                               </div>
@@ -3215,15 +3206,20 @@ export default function Dashboard() {
                               <div className="flex flex-col gap-1">
                                 <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <p className="font-bold text-[13px] truncate text-white">{virtualCard?.cardNumber?.replace(/(.{4})/g, '$1 ').trim() || '————'}</p>
-                                    <button onClick={() => { navigator.clipboard.writeText(virtualCard?.cardNumber || ''); alert('Nimewo kopye!'); }} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
-                                  </div>
+                                  {virtualCard?.cardNumberUrl ? (
+                                    <iframe src={virtualCard.cardNumberUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="Nimewo kat" />
+                                  ) : (
+                                    <p className="font-bold text-[13px] text-white">————</p>
+                                  )}
                                 </div>
                                 <div className="flex gap-1">
                                   <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                     <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
-                                    <p className="font-bold text-[20px] text-white">{virtualCard?.cvv || '———'}</p>
+                                    {virtualCard?.cvvUrl ? (
+                                      <iframe src={virtualCard.cvvUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="CVV" />
+                                    ) : (
+                                      <p className="font-bold text-[20px] text-white">———</p>
+                                    )}
                                   </div>
                                   <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                     <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Ekspire</span>

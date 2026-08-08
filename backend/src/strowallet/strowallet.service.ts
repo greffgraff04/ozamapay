@@ -299,8 +299,8 @@ export class StrowalletService {
 
     const detail = data?.response?.card_detail;
     return {
-      cardNumber: detail?.card_number,
-      cvv: detail?.cvv,
+      cardNumberUrl: detail?.card_number_url,
+      cvvUrl: detail?.cvv_url,
       expiryDate: detail?.expiry,
       cardName: detail?.card_holder_name,
       balance: detail?.balance,
