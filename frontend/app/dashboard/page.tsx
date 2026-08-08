@@ -2119,7 +2119,8 @@ export default function Dashboard() {
                   <div className="mb-2">
                     <label className="font-black italic uppercase text-[10px] tracking-[1px] mb-2 block" style={{ color: colors.textSecondary }}>Metòd</label>
                     <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-                      {paymentMethods.map((m) => {
+                      {/* USDT retire isit la — redirije sou "USDT Otomatik (TRC20)" pi ba, ki gen adrès pè-itilizatè + deteksyon otomatik. Rete disponib nan Metòd Retrè. */}
+                      {paymentMethods.filter((m) => m.id !== 'usdt').map((m) => {
                         const isSel = selectedMethod === m.id && topUpType === 'MANUAL';
                         return (
                           <button
@@ -2611,8 +2612,8 @@ export default function Dashboard() {
               {/* Scrollable form */}
               <div style={{ height: 'calc(100vh - 240px - env(safe-area-inset-top))', overflowY: 'auto' }} className="pb-24 px-4 space-y-4">
 
-                {/* Account info card — BUY only */}
-                {financeType === 'BUY' && finAcct && (
+                {/* Account info card — BUY only, non-USDT (depo USDT BUY redirije pi ba, pa gen adrès pèsonèl fiks ankò) */}
+                {financeType === 'BUY' && finAcct && !isUsdt && (
                   <div style={{ background: 'rgba(255,122,0,.07)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,122,0,.2)' }}>
                     <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 8 }}>Voye lajan sou kont OZAMAPAY sa a</span>
                     <p className="font-medium" style={{ color: glass.textDim, fontSize: 11, marginBottom: 6 }}>{finAcct.label}</p>
@@ -2633,6 +2634,26 @@ export default function Dashboard() {
                   </div>
                 )}
 
+                {/* Depo USDT (BUY) — pa gen plis opsyon manyèl, redirije sou "USDT Otomatik (TRC20)" (adrès pè-itilizatè, deteksyon otomatik) */}
+                {financeType === 'BUY' && isUsdt && (
+                  <div style={{ background: 'rgba(255,122,0,.07)', borderRadius: 20, padding: 16, border: '1px solid rgba(255,122,0,.2)' }}>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 8 }}>Depo USDT — Itilize Opsyon Otomatik</span>
+                    <p className="font-medium" style={{ color: glass.textDim, fontSize: 12, lineHeight: 1.5 }}>
+                      Pou depo USDT, ale nan &ldquo;USDT Otomatik (TRC20)&rdquo; nan paj Top-up — ou gen yon adrès pèsonèl ki kredite kont ou otomatikman apre ~20 konfimasyon, san atann apwobasyon.
+                    </p>
+                    <button
+                      onClick={() => { setSelectedFinanceService(null); setActiveTab('topup'); }}
+                      className="w-full flex items-center justify-center active:scale-95 transition-all"
+                      style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', borderRadius: 14, paddingTop: 14, paddingBottom: 14, marginTop: 14 }}
+                    >
+                      <span className="font-black italic uppercase text-white" style={{ fontSize: 12, letterSpacing: 1 }}>Ale nan USDT Otomatik →</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Rès fòm lan (Montan, Email/Adrès, Upload, Soumèt) — kache pou Depo USDT (BUY), ki redirije pi wo a */}
+                {!(financeType === 'BUY' && isUsdt) && (
+                <>
                 {/* Amount field */}
                 <div>
                   <span style={{ fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 8 }}>{amountLabel}</span>
@@ -2744,6 +2765,8 @@ export default function Dashboard() {
                     : <span className="font-black italic uppercase text-white" style={{ fontSize: 13, letterSpacing: 1.5 }}>Egzekite Lòd {selectedFinanceService.name}</span>
                   }
                 </button>
+                </>
+                )}
 
               </div>
             </div>
