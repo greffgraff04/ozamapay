@@ -3022,7 +3022,14 @@ export default function Dashboard() {
                             <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                               <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                               {virtualCard?.cardNumberUrl ? (
-                                <iframe src={virtualCard.cardNumberUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="Nimewo kat" />
+                                <div>
+                                  <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                    <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
+                                  </div>
+                                  <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
+                                    <ShieldCheck size={9} /> Sekirize
+                                  </p>
+                                </div>
                               ) : (
                                 <p className="font-bold text-[13px] text-white">————</p>
                               )}
@@ -3031,7 +3038,14 @@ export default function Dashboard() {
                               <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
                                 {virtualCard?.cvvUrl ? (
-                                  <iframe src={virtualCard.cvvUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="CVV" />
+                                  <div>
+                                    <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                      <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
+                                    </div>
+                                    <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
+                                      <ShieldCheck size={9} /> Sekirize
+                                    </p>
+                                  </div>
                                 ) : (
                                   <p className="font-bold text-[20px] text-white">———</p>
                                 )}
@@ -3207,7 +3221,14 @@ export default function Dashboard() {
                                 <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
                                   {virtualCard?.cardNumberUrl ? (
-                                    <iframe src={virtualCard.cardNumberUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="Nimewo kat" />
+                                    <div>
+                                      <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                        <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
+                                      </div>
+                                      <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
+                                        <ShieldCheck size={9} /> Sekirize
+                                      </p>
+                                    </div>
                                   ) : (
                                     <p className="font-bold text-[13px] text-white">————</p>
                                   )}
@@ -3216,7 +3237,14 @@ export default function Dashboard() {
                                   <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                     <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
                                     {virtualCard?.cvvUrl ? (
-                                      <iframe src={virtualCard.cvvUrl} width="100%" height={35} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent' }} title="CVV" />
+                                      <div>
+                                        <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                          <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
+                                        </div>
+                                        <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
+                                          <ShieldCheck size={9} /> Sekirize
+                                        </p>
+                                      </div>
                                     ) : (
                                       <p className="font-bold text-[20px] text-white">———</p>
                                     )}
