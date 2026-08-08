@@ -10,6 +10,10 @@ export class StrowalletService {
   private readonly PUBLIC_KEY: string;
   private readonly MODE = 'live';
 
+  // StroWallet konfime (2026-08-08): "The country must be 3 characters." —
+  // Kyc.country estoke kòd ISO alpha-2 (egzanp "HT"), StroWallet mande alpha-3.
+  private readonly ISO_ALPHA2_TO_ALPHA3: Record<string, string> = { HT: 'HTI' };
+
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
   private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
@@ -50,6 +54,42 @@ export class StrowalletService {
       throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
     return data;
+  }
+
+  // StroWallet konfime (2026-08-08): echèk "Using fake details" — adrès Miami
+  // ak telefòn Ameriken fiktif nou te itilize a se rezon prensipal echèk
+  // create-nfc-card yo. Rezoud vrè non/telefòn kliyan an pou payload StroWallet
+  // — itilize pa createAndFundCard ak createReplacementCard pou yo rete koheran.
+  private resolveNfcIdentity(user: {
+    name: string | null;
+    phone: string | null;
+    kyc: { phoneNumber?: string | null } | null;
+  }) {
+    // last_name se dènye mo non konplè a, first_name se tout rès la ansanm
+    const nameParts = (user.name || 'OZAMA USER').trim().split(/\s+/).filter(Boolean);
+    const lastName = nameParts[nameParts.length - 1] || 'USER';
+    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : lastName;
+
+    // Kyc.phoneNumber se vrè sous done a (kolekte pandan KYC, 93% ranpli);
+    // User.phone se yon chan segondè ki ra ranpli (2.8%), sitou pou nimewo
+    // etranje. Fòma entènasyonal san '+' StroWallet mande.
+    const rawPhone = (user.kyc?.phoneNumber && user.kyc.phoneNumber.trim() !== '')
+      ? user.kyc.phoneNumber
+      : user.phone;
+    if (!rawPhone) {
+      throw new BadRequestException(
+        'Ou dwe genyen yon nimewo telefòn valid nan pwofil ou pou kreye yon kat vityèl. Tanpri mete l ajou.'
+      );
+    }
+    const digits = rawPhone.replace(/[^\d]/g, '');
+    const phone = digits.length === 8 ? `509${digits}` : digits;
+
+    return { firstName, lastName, phone };
+  }
+
+  private resolveNfcCountry(country: string | null | undefined): string {
+    if (!country) return 'Haiti';
+    return this.ISO_ALPHA2_TO_ALPHA3[country.toUpperCase()] || country;
   }
 
   private async nfcGet(endpoint: string, params: Record<string, string>) {
@@ -119,10 +159,7 @@ export class StrowalletService {
       );
     }
 
-    // Parse non itilizatè
-    const nameParts = (user.name || 'OZAMA USER').trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || 'USER';
+    const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
 
     // Fòmate dat nesans KYC (mm/dd/yyyy)
     const dob = user.kyc.dateOfBirth
@@ -143,15 +180,13 @@ export class StrowalletService {
       id_number: user.kyc.idNumber || '00000000',
       id_image: user.kyc.idImage,
       email: user.email,
-      line1: '3401 N. Miami Ave, Ste 230',
-      city: 'Miami',
-      state: 'FL',
-      postal_code: '33127',
-      country: 'USA',
+      line1: user.kyc.line1,
+      city: user.kyc.city,
+      state: user.kyc.state,
+      postal_code: user.kyc.zipCode,
+      country: this.resolveNfcCountry(user.kyc.country),
       amount_usd: String(amountUsd),
-      phone: (user.phone && !user.phone.startsWith('509') && !user.phone.startsWith('+509'))
-        ? user.phone
-        : '3055550100',
+      phone,
       brand: 'Visa',
     };
 
@@ -237,9 +272,7 @@ export class StrowalletService {
     });
     if (!user) throw new NotFoundException('Itilizatè introuvable');
 
-    const nameParts = (user.name || 'OZAMA USER').trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || 'USER';
+    const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
 
     const dob = user.kyc?.dateOfBirth
       ? new Date(user.kyc.dateOfBirth).toLocaleDateString('en-US', {
@@ -259,15 +292,13 @@ export class StrowalletService {
       id_number: user.kyc?.idNumber || '00000000',
       id_image: user.kyc?.idImage || '',
       email: user.email,
-      line1: '3401 N. Miami Ave, Ste 230',
-      city: 'Miami',
-      state: 'FL',
-      postal_code: '33127',
-      country: 'USA',
+      line1: user.kyc?.line1 || '',
+      city: user.kyc?.city || '',
+      state: user.kyc?.state || '',
+      postal_code: user.kyc?.zipCode || '',
+      country: this.resolveNfcCountry(user.kyc?.country),
       amount_usd: String(fundAmountUsd),
-      phone: (user.phone && !user.phone.startsWith('509') && !user.phone.startsWith('+509'))
-        ? user.phone
-        : '3055550100',
+      phone,
       brand: 'Visa',
     };
 
