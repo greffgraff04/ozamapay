@@ -218,6 +218,7 @@ export default function Dashboard() {
   const [secretDetailsFailed, setSecretDetailsFailed] = useState(false);
   const [cardFetchError, setCardFetchError] = useState(false);
   const [cardRetryLoading, setCardRetryLoading] = useState(false);
+  const [cardCreateLoading, setCardCreateLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('moncash');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpType, setTopUpType] = useState<'AUTOMATIC' | 'MANUAL'>('AUTOMATIC');
@@ -2841,8 +2842,10 @@ export default function Dashboard() {
                   </div>
                   <button
                     onClick={async () => {
+                      if (cardCreateLoading) return;
                       const amt = Number(cardCreateAmount);
                       if (!amt || amt < 3) { alert('Montan minim se $3 USD'); return; }
+                      setCardCreateLoading(true);
                       try {
                         const token = localStorage.getItem('token');
                         const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
@@ -2862,12 +2865,18 @@ export default function Dashboard() {
                         }
                       } catch (err) {
                         alert('Sèvè a pa ka jwenn requete a.');
+                      } finally {
+                        setCardCreateLoading(false);
                       }
                     }}
+                    disabled={cardCreateLoading}
                     className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all oz-glowPulse"
-                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
+                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', opacity: cardCreateLoading ? 0.6 : 1 }}
                   >
-                    <Zap size={16} color="#FFFFFF" /> KREYE KAT GRATIS
+                    {cardCreateLoading
+                      ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <><Zap size={16} color="#FFFFFF" /> KREYE KAT GRATIS</>
+                    }
                   </button>
                 </div>
               </div>
