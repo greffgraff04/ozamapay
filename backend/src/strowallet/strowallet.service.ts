@@ -10,9 +10,19 @@ export class StrowalletService {
   private readonly PUBLIC_KEY: string;
   private readonly MODE = 'live';
 
-  // StroWallet konfime (2026-08-08): "The country must be 3 characters." —
-  // Kyc.country estoke kòd ISO alpha-2 (egzanp "HT"), StroWallet mande alpha-3.
-  private readonly ISO_ALPHA2_TO_ALPHA3: Record<string, string> = { HT: 'HTI' };
+  // StroWallet konfime (10 out 2026, tès manyèl Olivier): AVS (Address
+  // Verification System) machann (egzanp TEMU) egzije adrès bòdwo kat la
+  // matche adrès REYÈL StroWallet la (Delaware) — "dépasse la limite de la
+  // carte" te an reyalite yon echèk AVS, pa yon vrè limit tranzaksyon.
+  // Sa aplike pou TOUT kat, PA adrès kliyan an — yon adrès Ayisyen reyèl
+  // ta echwe AVS menm jan ak Miami fiktif la te fè.
+  private readonly STROWALLET_BILLING_ADDRESS = {
+    line1: '1007 N Orange St. 4th Floor',
+    city: 'Wilmington',
+    state: 'Delaware',
+    postal_code: '19801',
+    country: 'US',
+  };
 
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
@@ -85,11 +95,6 @@ export class StrowalletService {
     const phone = digits.length === 8 ? `509${digits}` : digits;
 
     return { firstName, lastName, phone };
-  }
-
-  private resolveNfcCountry(country: string | null | undefined): string {
-    if (!country) return 'Haiti';
-    return this.ISO_ALPHA2_TO_ALPHA3[country.toUpperCase()] || country;
   }
 
   private async nfcGet(endpoint: string, params: Record<string, string>) {
@@ -180,11 +185,7 @@ export class StrowalletService {
       id_number: user.kyc.idNumber || '00000000',
       id_image: user.kyc.idImage,
       email: user.email,
-      line1: user.kyc.line1,
-      city: user.kyc.city,
-      state: user.kyc.state,
-      postal_code: user.kyc.zipCode,
-      country: this.resolveNfcCountry(user.kyc.country),
+      ...this.STROWALLET_BILLING_ADDRESS,
       amount_usd: String(amountUsd),
       phone,
       brand: 'Visa',
@@ -292,11 +293,7 @@ export class StrowalletService {
       id_number: user.kyc?.idNumber || '00000000',
       id_image: user.kyc?.idImage || '',
       email: user.email,
-      line1: user.kyc?.line1 || '',
-      city: user.kyc?.city || '',
-      state: user.kyc?.state || '',
-      postal_code: user.kyc?.zipCode || '',
-      country: this.resolveNfcCountry(user.kyc?.country),
+      ...this.STROWALLET_BILLING_ADDRESS,
       amount_usd: String(fundAmountUsd),
       phone,
       brand: 'Visa',

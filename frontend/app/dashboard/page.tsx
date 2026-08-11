@@ -18,10 +18,10 @@ import { parseMerchant } from '../../lib/merchant';
 import { MerchantAvatar } from '@/components/MerchantAvatar';
  
 const CARD_BILLING = {
-  street: '3401 N. Miami Ave, Ste 230',
-  city: 'Miami',
-  state: 'Florida',
-  zip: '33127',
+  street: '1007 N Orange St. 4th Floor',
+  city: 'Wilmington',
+  state: 'Delaware',
+  zip: '19801',
   country: 'United States',
 };
 
