@@ -16,12 +16,14 @@ export class StrowalletService {
   // carte" te an reyalite yon echèk AVS, pa yon vrè limit tranzaksyon.
   // Sa aplike pou TOUT kat, PA adrès kliyan an — yon adrès Ayisyen reyèl
   // ta echwe AVS menm jan ak Miami fiktif la te fè.
+  // country DWE 3 karaktè (StroWallet konfime deja: "The country must be 3
+  // characters.") — 'US' (alpha-2) echwe, 'USA' (alpha-3) mache.
   private readonly STROWALLET_BILLING_ADDRESS = {
     line1: '1007 N Orange St. 4th Floor',
     city: 'Wilmington',
     state: 'Delaware',
     postal_code: '19801',
-    country: 'US',
+    country: 'USA',
   };
 
   // Fee constants
