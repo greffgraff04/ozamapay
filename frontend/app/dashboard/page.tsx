@@ -293,6 +293,12 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Kòd OTP kat vityèl (StroWallet webhook otp.code) — popup ki parèt lè yon
+  // machann mande yon kòd otorizasyon. seenOtpNotifIds anpeche popup la
+  // reparèt pou menm notifikasyon an chak poll 15s.
+  const [cardOtp, setCardOtp] = useState<{ code: string; last4?: string; expiresInSeconds: number } | null>(null);
+  const seenOtpNotifIds = useRef<Set<string>>(new Set());
+
   // Profile editing
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState('');
@@ -600,6 +606,17 @@ export default function Dashboard() {
       if (Array.isArray(notifData)) {
         setNotifications(notifData);
         setUnreadCount(notifData.filter((n: any) => !n.isRead).length);
+
+        const otpNotif = notifData.find(
+          (n: any) => n.title === 'Kòd otorizasyon rive' && !seenOtpNotifIds.current.has(n.id)
+        );
+        if (otpNotif) {
+          seenOtpNotifIds.current.add(otpNotif.id);
+          fetch(`${API_BASE}/v1/cards/otp`, { headers })
+            .then(r => (r.ok ? r.json() : null))
+            .then(otp => { if (otp?.code) setCardOtp(otp); })
+            .catch(() => {});
+        }
       }
 
       if (!cardFetchFailed) {
@@ -706,6 +723,14 @@ export default function Dashboard() {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
+
+  useEffect(() => {
+    if (!cardOtp) return;
+    const tick = setInterval(() => {
+      setCardOtp(prev => (prev && prev.expiresInSeconds > 1 ? { ...prev, expiresInSeconds: prev.expiresInSeconds - 1 } : null));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [cardOtp]);
 
   useEffect(() => {
     if (activeTab === 'profile') {
@@ -1327,7 +1352,42 @@ export default function Dashboard() {
         );
       })()}
 
- 
+      {/* ── KÒD OTP KAT MODAL ── */}
+      {cardOtp && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="relative w-full max-w-[340px] rounded-3xl p-6 border shadow-2xl flex flex-col items-center" style={{ background: colors.surface, borderColor: colors.border }}>
+            <ShieldCheck size={32} className="text-[#FF7A00] mb-2" />
+            <h3 className="font-black italic text-[15px] uppercase tracking-[1px] mb-1 text-center" style={{ color: colors.textPrimary }}>Kòd Otorizasyon</h3>
+            <p className="font-medium text-[11px] text-center mb-4" style={{ color: colors.textSecondary }}>
+              Yon machann mande yon kòd pou konplete acha ou a{cardOtp.last4 ? ` sou kat ...${cardOtp.last4}` : ''}
+            </p>
+            <div className="w-full rounded-2xl border-2 py-6 mb-3 text-center" style={{ borderColor: '#FF7A00', background: 'rgba(255,122,0,0.08)' }}>
+              <p className="font-black" style={{ fontSize: 40, letterSpacing: 10, color: '#FF7A00', fontFamily: 'monospace' }}>{cardOtp.code}</p>
+            </div>
+            <p className="font-medium text-[11px] mb-5" style={{ color: colors.textSecondary }}>
+              Ekspire nan {Math.floor(cardOtp.expiresInSeconds / 60)}:{String(cardOtp.expiresInSeconds % 60).padStart(2, '0')}
+            </p>
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={() => { navigator.clipboard.writeText(cardOtp.code); }}
+                className="flex-1 font-black italic uppercase text-[12px] rounded-2xl active:scale-95 transition-all py-3.5"
+                style={{ background: colors.background, border: `1px solid ${colors.border}`, color: colors.textPrimary, letterSpacing: '1px' }}
+              >
+                Kopye
+              </button>
+              <button
+                onClick={() => setCardOtp(null)}
+                className="flex-1 font-black italic uppercase text-[12px] text-white rounded-2xl active:scale-95 transition-all py-3.5"
+                style={{ background: colors.accent, letterSpacing: '1px' }}
+              >
+                Fèmen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       <div className="px-4 lg:px-8 lg:max-w-[1400px] lg:mx-auto lg:w-full">
 
         {/* --- HOME SECTION --- */}

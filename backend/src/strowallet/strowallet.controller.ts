@@ -1,15 +1,26 @@
 import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { StrowalletService } from './strowallet.service';
+import { CardOtpService } from './card-otp.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('v1/cards')
 @UseGuards(JwtAuthGuard)
 export class StrowalletController {
-  constructor(private readonly strowalletService: StrowalletService) {}
+  constructor(
+    private readonly strowalletService: StrowalletService,
+    private readonly cardOtpService: CardOtpService,
+  ) {}
 
   @Get('my-card')
   getMyCardLocalData(@Request() req) {
     return this.strowalletService.getMyCardLocalData(req.user.id);
+  }
+
+  // Kòd la restriksyon a sèl pwopriyetè kat la (JwtAuthGuard + rechèch pa
+  // req.user.id) — retounen null si pa gen okenn kòd ki poko ekspire.
+  @Get('otp')
+  getCardOtp(@Request() req) {
+    return this.cardOtpService.get(req.user.id);
   }
 
   @Post('create')

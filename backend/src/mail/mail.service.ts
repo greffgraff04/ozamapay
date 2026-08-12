@@ -323,6 +323,32 @@ export class MailService {
     await this.send(email, 'Kat ou kredite', html);
   }
 
+  async sendCardOtp(
+    email: string,
+    name: string,
+    code: string,
+    last4: string,
+    expiresInMinutes: number,
+  ): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Kòd otorizasyon kat ou',
+      'Kòd Otorizasyon',
+      this.p(`Bonjou ${firstName},`) +
+      this.p(
+        `Yon machann mande yon kòd otorizasyon pou konplete yon acha sou kat ou a` +
+        `${last4 ? ` (...${last4})` : ''}. Itilize kòd sa a:`
+      ) +
+      `<div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:32px;text-align:center;margin:0 0 20px;">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:3px;color:#FF7A00;text-transform:uppercase;">Kòd Otorizasyon</p>
+        <p style="margin:0;font-size:44px;font-weight:900;color:#FF7A00;letter-spacing:10px;font-family:monospace;">${code}</p>
+      </div>` +
+      this.accentLine(`Kòd sa a valid pou ${expiresInMinutes} minit sèlman.`) +
+      this.p('Si w pa t eseye fè yon acha, ou ka inyore imèl sa a an sekirite — kòd la ap ekspire pou kont li.'),
+    );
+    await this.send(email, `Kòd otorizasyon kat ou — ${code}`, html);
+  }
+
   // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
   // sèlman tèm jenerik tankou "bank/founisè k ap jere kat vityèl yo".
   async sendCardFundingOutageNotice(email: string, name: string): Promise<void> {

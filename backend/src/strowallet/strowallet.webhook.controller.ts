@@ -2,6 +2,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Req, Unauthorized
 import { PrismaService } from '../prisma/prisma.service';
 import { CardTerminationService } from './card-termination.service';
 import { CardTransactionService } from './card-transaction.service';
+import { CardOtpService } from './card-otp.service';
+import { MailService } from '../mail/mail.service';
 
 @Controller('v1/webhooks/strowallet')
 export class StrowalletWebhookController {
@@ -11,6 +13,8 @@ export class StrowalletWebhookController {
     private prisma: PrismaService,
     private cardTerminationService: CardTerminationService,
     private cardTransactionService: CardTransactionService,
+    private cardOtpService: CardOtpService,
+    private mailService: MailService,
   ) {}
 
   @Post()
@@ -22,7 +26,13 @@ export class StrowalletWebhookController {
     }
 
     const event = payload?.event as string | undefined;
-    this.logger.log(`[Strowallet] event=${event} | ${JSON.stringify(payload)}`);
+    // 'otp.code' gen yon 'authorizationCode' sansib nan payload la — PA janm
+    // dump payload konplè a pou evènman sa a, menm nan lòg.
+    if (event === 'otp.code') {
+      this.logger.log(`[Strowallet] event=otp.code | cardId=${payload?.cardId} last4=${payload?.last4} reference=${payload?.reference}`);
+    } else {
+      this.logger.log(`[Strowallet] event=${event} | ${JSON.stringify(payload)}`);
+    }
 
     switch (event) {
       case 'virtualcard.transaction.authorization':
@@ -41,6 +51,9 @@ export class StrowalletWebhookController {
         await this.cardTransactionService.recordTopupComplete(payload).catch((err: any) =>
           this.logger.error(`[Strowallet][topup.complete] CardTransaction error: ${err.message}`),
         );
+        break;
+      case 'otp.code':
+        await this.handleOtpCode(payload);
         break;
       default:
         this.logger.warn(`[Strowallet] Unhandled event: ${event}`);
@@ -124,6 +137,51 @@ export class StrowalletWebhookController {
     } catch (err: any) {
       this.logger.error(`[Strowallet][declined] Error: ${err.message}`);
     }
+  }
+
+  // ── otp.code ──────────────────────────────────────────────────────────────
+
+  private async handleOtpCode(payload: any) {
+    const { cardId, authorizationCode, last4, cardBrand, reference } = payload;
+
+    if (!cardId || !authorizationCode) {
+      this.logger.error('[Strowallet][otp] Missing cardId or authorizationCode — skipping');
+      return;
+    }
+
+    const card = await this.prisma.virtualCard.findUnique({
+      where: { cardId },
+      include: { user: true },
+    });
+    if (!card) {
+      this.logger.warn(`[Strowallet][otp] Unknown cardId: ${cardId}`);
+      return;
+    }
+
+    // An memwa sèlman, 10 min TTL — pa gen ekri BDD pou kòd la.
+    this.cardOtpService.set(card.userId, {
+      code: authorizationCode,
+      last4: last4 ?? card.last4 ?? undefined,
+      cardBrand,
+      reference,
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: card.userId,
+        title: 'Kòd otorizasyon rive',
+        message: `Yon machann mande yon kòd pou konplete yon acha sou kat ou a${last4 ? ` (...${last4})` : ''}. Louvri app la pou wè kòd la — li ekspire nan 10 minit.`,
+        type: 'INFO',
+      },
+    }).catch((err: any) => this.logger.error(`[Strowallet][otp] Notification error: ${err.message}`));
+
+    if (card.user?.email) {
+      await this.mailService
+        .sendCardOtp(card.user.email, card.user.name ?? 'Kliyan', authorizationCode, last4 ?? card.last4 ?? '', 10)
+        .catch((err: any) => this.logger.error(`[Strowallet][otp] Email error: ${err.message}`));
+    }
+
+    this.logger.log(`[Strowallet][otp] Delivered OTP notification for userId=${card.userId} cardId=${cardId}`);
   }
 
   // ── terminated ────────────────────────────────────────────────────────────
