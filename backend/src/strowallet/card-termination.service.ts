@@ -138,7 +138,47 @@ export class CardTerminationService {
       });
     }
 
-    const newCard = await this.strowalletService.createReplacementCard(userId, fundAmountUsd);
+    // Opsyon B (menm apwòch ak createAndFundCard()): si apèl StroWallet la echwe
+    // APRE frè a deja dediwi/chaje pi wo a, ranbouse l otomatikman — pa kite
+    // kliyan an peye yon frè pou yon ranplasman ki pa janm livre (bug reyèl jwenn
+    // 2026-08-13 sou kont oliviergreffin20@gmail.com: 1,253 HTG te chaje san
+    // rollback lè create-nfc-card te echwe, kat la rete TERMINATED san ranplasman).
+    let newCard: { id: string };
+    try {
+      newCard = await this.strowalletService.createReplacementCard(userId, fundAmountUsd);
+    } catch (err: any) {
+      this.logger.error(`[CardTermination] createReplacementCard echwe pou cardId=${oldCardId}: ${err?.message}`);
+      if (feeDeductedHtg > 0) {
+        if (!user.wallet) throw new Error(`Pa gen wallet pou userId=${userId}, pa ka ranbouse frè`);
+        await this.prisma.$transaction(async (tx) => {
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { increment: feeDeductedHtg } },
+          });
+          await tx.transaction.create({
+            data: {
+              senderWalletId: user.wallet!.id,
+              type: 'CARD',
+              amount: feeDeductedHtg,
+              netAmount: feeDeductedHtg,
+              fee: 0,
+              status: 'FAILED',
+              description: `Frè ranplasman kat vityèl ECHWE (kreyasyon kat nan StroWallet echwe) — renmbi otomatik fèt`,
+              reference: `CARD-REPL-FEE-${oldCardId}-FAIL-${Date.now()}`,
+            },
+          });
+        });
+        this.logger.warn(`[CardTermination] cardId=${oldCardId} — ${feeDeductedHtg} HTG ranbouse otomatikman apre echèk`);
+      }
+      await this.pushNotification(
+        userId,
+        'Kat ou terminen',
+        'Kat vityèl ou a terminen. Nou rankontre yon pwoblèm pou kreye yon ranplasman otomatik — tout frè ranbouse, tanpri kreye yon nouvo kat nan app la.',
+        'WARNING',
+      );
+      throw err;
+    }
+
     await this.prisma.virtualCard.update({
       where: { cardId: oldCardId },
       data: { status: 'REPLACED', replacedByCardId: newCard.id },
