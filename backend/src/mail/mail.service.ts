@@ -473,6 +473,34 @@ export class MailService {
     await this.send('contact@ozamapay.com', 'URGENCE — Sistèm OZAMAPAY bezwen atansyon', html);
   }
 
+  // Admin-sèlman — sekirize men, konteni an mansyone StroWallet paske sa a
+  // pa janm ale bay kliyan an (kontrèman ak Transaction.description).
+  async sendCardCreationFailureAlert(
+    email: string,
+    name: string | null,
+    userId: string,
+    context: string,
+    errorMessage: string,
+  ): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+    const html = this.wrap(
+      'Kliyan bloke sou kreyasyon kat NFC — OZAMAPAY',
+      'Alèt Kat Vityèl',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p('Kliyan sa a gen 2 echèk konsekitif create-nfc-card — pwobableman ap bezwen yon nouvo email (menm modèl ak ka anvan yo).') +
+      this.table(
+        this.infoRow('Kliyan', `${name || '—'} (${email})`) +
+        this.infoRow('userId', userId) +
+        this.infoRow('Kontèks', context === 'REPLACEMENT' ? 'Ranplasman' : 'Kreyasyon nòmal') +
+        this.infoRow('Dènye erè StroWallet', `<span style="font-family:monospace;font-size:12px;">${errorMessage}</span>`) +
+        this.infoRow('Dat', now),
+      ),
+      '#B71C1C',
+    );
+    await this.send('contact@ozamapay.com', 'Kliyan bloke sou kreyasyon kat NFC — OZAMAPAY', html);
+  }
+
   async sendFinanceConfirmed(
     email: string,
     name: string,
@@ -1107,6 +1135,21 @@ export class MailService {
       '#1565C0',
     );
     await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
+  }
+
+  async sendPasswordChanged(email: string, name: string): Promise<void> {
+    const html = this.wrap(
+      'Modpas ou chanje — OZAMAPAY',
+      'Sekirite Kont Ou',
+      this.badge('KONFIME') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${name},`) +
+      this.p('Modpas kont OZAMAPAY ou a fèk chanje avèk siksè.') +
+      this.accentLine('Si se pa ou ki fè chanjman sa a, kontakte nou imedyatman sou WhatsApp oswa pa email — sekirite kont ou enpòtan pou nou.') +
+      this.btn('Konekte Kounye a →', `${this.frontendUrl}/login`),
+      '#1565C0',
+    );
+    await this.send(email, 'Modpas ou chanje — OZAMAPAY', html);
   }
 
   // ── Team Hub ──────────────────────────────────────────────────────────────

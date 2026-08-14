@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from '../mail/mail.service';
 import axios from 'axios';
 
 @Injectable()
@@ -36,6 +37,7 @@ export class StrowalletService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private mailService: MailService,
   ) {
     this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
   }
@@ -59,13 +61,22 @@ export class StrowalletService {
     } catch (error: any) {
       const detail = error?.response?.data;
       this.logger.error(`Strowallet API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
-      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+      throw this.strowalletFailure(detail ?? error?.message);
     }
     if (data?.success === false || data?.status === false) {
       this.logger.error(`Strowallet error [${endpoint}]: ${JSON.stringify(data)}`);
-      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+      throw this.strowalletFailure(data);
     }
     return data;
+  }
+
+  // Kliyan an toujou wè mesaj jenerik la (BadRequestException.message) — pa
+  // janm mesaj brit StroWallet la. `strowalletDetail` se yon chan siplemantè,
+  // admin-sèlman, pou call site yo ka anrejistre l nan CardCreationFailure.
+  private strowalletFailure(detail: unknown): BadRequestException {
+    const err = new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+    (err as any).strowalletDetail = typeof detail === 'string' ? detail : JSON.stringify(detail);
+    return err;
   }
 
   // StroWallet konfime (2026-08-08): echèk "Using fake details" — adrès Miami
@@ -126,6 +137,35 @@ export class StrowalletService {
       (await this.prisma.virtualCard.findFirst({ where: { userId, status: 'ACTIVE' } })) ??
       (await this.prisma.virtualCard.findFirst({ where: { userId, status: 'FROZEN' } }))
     );
+  }
+
+  // Anrejistre echèk create-nfc-card (admin-sèlman, wè CardCreationFailure nan
+  // schema.prisma) epi alète ekip la lè yon kliyan rive egzakteman 2 echèk
+  // konsekitif san okenn siksè ant yo — pa `>=` pou evite spam si li kontinye
+  // eseye apre premye alèt la.
+  private async recordCardCreationFailure(
+    userId: string,
+    email: string,
+    context: 'CREATE' | 'REPLACEMENT',
+    errorMessage: string,
+  ): Promise<void> {
+    await this.prisma.cardCreationFailure.create({ data: { userId, email, context, errorMessage } });
+
+    const lastCard = await this.prisma.virtualCard.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const consecutiveFailures = await this.prisma.cardCreationFailure.count({
+      where: { userId, ...(lastCard ? { createdAt: { gt: lastCard.createdAt } } : {}) },
+    });
+
+    if (consecutiveFailures === 2) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+      if (user) {
+        await this.mailService.sendCardCreationFailureAlert(user.email, user.name, userId, context, errorMessage);
+      }
+    }
   }
 
   // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
@@ -239,6 +279,7 @@ export class StrowalletService {
           },
         });
       });
+      await this.recordCardCreationFailure(userId, user.email, 'CREATE', (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown');
       throw err;
     }
 
@@ -313,9 +354,15 @@ export class StrowalletService {
       brand: 'Visa',
     };
 
-    const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
-    const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
-    if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id pou kat ranplasman an');
+    let cardId: string;
+    try {
+      const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
+      cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
+      if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id pou kat ranplasman an');
+    } catch (err) {
+      await this.recordCardCreationFailure(userId, user.email, 'REPLACEMENT', (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown');
+      throw err;
+    }
 
     return this.prisma.virtualCard.create({
       data: {
@@ -339,8 +386,8 @@ export class StrowalletService {
 
     const detail = data?.response?.card_detail;
     return {
-      cardNumberUrl: detail?.card_number_url,
-      cvvUrl: detail?.cvv_url,
+      cardNumber: detail?.card_number,
+      cvv: detail?.cvv,
       expiryDate: detail?.expiry,
       cardName: detail?.card_holder_name,
       balance: detail?.balance,

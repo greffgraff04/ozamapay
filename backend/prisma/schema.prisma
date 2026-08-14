@@ -31,6 +31,7 @@ model User {
   topups          TopUpRequest[]
   virtualCards    VirtualCard[]
   cardTransactions CardTransaction[]
+  cardCreationFailures CardCreationFailure[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
   depositAddress  DepositAddress?
@@ -385,6 +386,22 @@ model CardTransaction {
 enum CardTransactionType {
   AUTHORIZATION
   TOPUP
+}
+
+// Admin-only diagnostic log — NEVER expose via customer-facing endpoints.
+// See Transaction.description (customer-facing) for the generic Haitian
+// failure message; this table holds the raw StroWallet error instead.
+model CardCreationFailure {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  email        String
+  context      String
+  errorMessage String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 // ═══════════════════════════════════════════════════════════════

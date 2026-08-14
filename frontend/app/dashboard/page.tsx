@@ -351,7 +351,7 @@ export default function Dashboard() {
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
 
   const fetchSecretDetails = async () => {
-    if (virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
+    if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
     setSecretDetailsFailed(false);
     setSecretDetailsLoading(true);
     setShowCardDetails(true);
@@ -365,8 +365,8 @@ export default function Dashboard() {
       if (res.ok) {
         setVirtualCard((prev: any) => ({
           ...prev,
-          cardNumberUrl: data.cardNumberUrl,
-          cvvUrl: data.cvvUrl,
+          cardNumber: data.cardNumber,
+          cvv: data.cvv,
           expiryDate: data.expiryDate,
           cardName: data.cardName,
           balance: data.balance,
@@ -623,8 +623,8 @@ export default function Dashboard() {
         if (cardData) {
           setVirtualCard((prev: any) => ({
             ...cardData,
-            cardNumberUrl: prev?.cardNumberUrl,
-            cvvUrl: prev?.cvvUrl,
+            cardNumber: prev?.cardNumber,
+            cvv: prev?.cvv,
             expiryDate: prev?.expiryDate,
             cardName: prev?.cardName || cardData?.cardName,
             last4: prev?.last4 || cardData?.last4,
@@ -3113,14 +3113,10 @@ export default function Dashboard() {
                           <div className="flex flex-col gap-1">
                             <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                               <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
-                              {virtualCard?.cardNumberUrl ? (
-                                <div>
-                                  <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
-                                    <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
-                                  </div>
-                                  <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
-                                    <ShieldCheck size={9} /> Sekirize
-                                  </p>
+                              {virtualCard?.cardNumber ? (
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-bold text-[13px] text-white tracking-[1px]">{virtualCard.cardNumber}</p>
+                                  <button onClick={() => copyToClipboard(virtualCard.cardNumber)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                 </div>
                               ) : (
                                 <p className="font-bold text-[13px] text-white">————</p>
@@ -3129,14 +3125,10 @@ export default function Dashboard() {
                             <div className="flex gap-1">
                               <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
-                                {virtualCard?.cvvUrl ? (
-                                  <div>
-                                    <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
-                                      <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
-                                    </div>
-                                    <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
-                                      <ShieldCheck size={9} /> Sekirize
-                                    </p>
+                                {virtualCard?.cvv ? (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="font-bold text-[20px] text-white">{virtualCard.cvv}</p>
+                                    <button onClick={() => copyToClipboard(virtualCard.cvv)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                   </div>
                                 ) : (
                                   <p className="font-bold text-[20px] text-white">———</p>
@@ -3312,14 +3304,10 @@ export default function Dashboard() {
                               <div className="flex flex-col gap-1">
                                 <div className="rounded-[12px] p-3" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>Nimewo Konplè</span>
-                                  {virtualCard?.cardNumberUrl ? (
-                                    <div>
-                                      <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
-                                        <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
-                                      </div>
-                                      <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
-                                        <ShieldCheck size={9} /> Sekirize
-                                      </p>
+                                  {virtualCard?.cardNumber ? (
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="font-bold text-[13px] text-white tracking-[1px]">{virtualCard.cardNumber}</p>
+                                      <button onClick={() => copyToClipboard(virtualCard.cardNumber)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                     </div>
                                   ) : (
                                     <p className="font-bold text-[13px] text-white">————</p>
@@ -3328,14 +3316,10 @@ export default function Dashboard() {
                                 <div className="flex gap-1">
                                   <div className="rounded-[12px] p-3 flex-1" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
                                     <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 3 }}>CVV</span>
-                                    {virtualCard?.cvvUrl ? (
-                                      <div>
-                                        <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
-                                          <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
-                                        </div>
-                                        <p className="flex items-center gap-1 mt-1" style={{ fontSize: 8, color: glass.textDimmer }}>
-                                          <ShieldCheck size={9} /> Sekirize
-                                        </p>
+                                    {virtualCard?.cvv ? (
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="font-bold text-[20px] text-white">{virtualCard.cvv}</p>
+                                        <button onClick={() => copyToClipboard(virtualCard.cvv)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                       </div>
                                     ) : (
                                       <p className="font-bold text-[20px] text-white">———</p>
