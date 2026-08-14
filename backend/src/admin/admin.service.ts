@@ -738,16 +738,10 @@ export class AdminService {
       timeZone: 'America/Port-au-Prince',
     });
 
-    const masterUser = await this.prisma.user.findUnique({
-      where: { id: MASTER_ID },
-      select: { email: true },
-    });
-
-    if (masterUser && masterUser.email !== 'contact@ozamapay.com') {
-      await this.mailService.sendDailyCode(masterUser.email, code, today, expiresAt);
-    }
-
-    // Always send to team contact address
+    // contact@ozamapay.com is the sole delivery address — the master user's
+    // own email is permanently suppressed on Brevo (hard bounce, non-functional
+    // mailbox) so sending to it is a silent no-op that only masked the real
+    // delivery status.
     await this.mailService.sendDailyCode('contact@ozamapay.com', code, today, expiresAt);
 
     await this.prisma.adminActionLog.create({
