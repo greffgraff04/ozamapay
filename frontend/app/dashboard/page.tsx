@@ -17,20 +17,17 @@ import { isBusinessHours, BUSINESS_HOURS_SCHEDULE, AFTER_HOURS_NOTE } from '../l
 import { parseMerchant } from '../../lib/merchant';
 import { MerchantAvatar } from '@/components/MerchantAvatar';
  
-const COUNTRY_NAMES: Record<string, string> = { HT: 'Haiti' };
-
-// Adrès kat la se VRÈ adrès KYC kliyan an (StroWallet konfime 14 out 2026:
-// "It's customer address we requested for and not billing address") — pa
-// yon adrès jenerik fiks.
-function getCardBilling(kyc: { line1?: string | null; city?: string | null; state?: string | null; zipCode?: string | null; country?: string | null } | null | undefined) {
-  return {
-    street: kyc?.line1 || '—',
-    city: kyc?.city || '—',
-    state: kyc?.state || '—',
-    zip: kyc?.zipCode || '—',
-    country: kyc?.country ? (COUNTRY_NAMES[kyc.country.toUpperCase()] || kyc.country) : '—',
-  };
-}
+// StroWallet klarifye (15 out 2026): "Billing Address" AFICHAJ la se adrès
+// StroWallet la (vini ak kat la), PA adrès KYC kliyan an. Payload API a
+// (create-nfc-card, strowallet.service.ts) kontinye voye VRÈ adrès kliyan
+// an — sa a se AFICHAJ sèlman.
+const CARD_BILLING = {
+  street: '1007 N Orange St. 4th Floor',
+  city: 'Wilmington',
+  state: 'Delaware',
+  zip: '19801',
+  country: 'United States',
+};
 
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
@@ -3178,16 +3175,13 @@ export default function Dashboard() {
                         </div>
                         <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Billing Address</p>
                       </div>
-                      {(() => {
-                        const billing = getCardBilling(user?.kyc);
-                        return [
-                          { label: 'Street',  value: billing.street },
-                          { label: 'City',    value: billing.city },
-                          { label: 'State',   value: billing.state },
-                          { label: 'ZIP',     value: billing.zip },
-                          { label: 'Country', value: billing.country },
-                        ] as const;
-                      })().map(({ label, value }, i, arr) => (
+                      {([
+                        { label: 'Street',  value: CARD_BILLING.street },
+                        { label: 'City',    value: CARD_BILLING.city },
+                        { label: 'State',   value: CARD_BILLING.state },
+                        { label: 'ZIP',     value: CARD_BILLING.zip },
+                        { label: 'Country', value: CARD_BILLING.country },
+                      ] as const).map(({ label, value }, i, arr) => (
                         <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${glass.borderSubtle}` : 'none' }}>
                           <div>
                             <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 2 }}>{label}</span>
@@ -3379,16 +3373,13 @@ export default function Dashboard() {
                             </div>
                             <p className="font-bold italic uppercase text-[12px] tracking-[1px] text-white">Billing Address</p>
                           </div>
-                          {(() => {
-                            const billing = getCardBilling(user?.kyc);
-                            return [
-                              { label: 'Street',  value: billing.street },
-                              { label: 'City',    value: billing.city },
-                              { label: 'State',   value: billing.state },
-                              { label: 'ZIP',     value: billing.zip },
-                              { label: 'Country', value: billing.country },
-                            ] as const;
-                          })().map(({ label, value }, i, arr) => (
+                          {([
+                            { label: 'Street',  value: CARD_BILLING.street },
+                            { label: 'City',    value: CARD_BILLING.city },
+                            { label: 'State',   value: CARD_BILLING.state },
+                            { label: 'ZIP',     value: CARD_BILLING.zip },
+                            { label: 'Country', value: CARD_BILLING.country },
+                          ] as const).map(({ label, value }, i, arr) => (
                             <div key={label} className="flex items-center justify-between" style={{ paddingTop: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? `1px solid ${glass.borderSubtle}` : 'none' }}>
                               <div>
                                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 2 }}>{label}</span>
