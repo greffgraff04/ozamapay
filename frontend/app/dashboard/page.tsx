@@ -351,7 +351,7 @@ export default function Dashboard() {
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
 
   const fetchSecretDetails = async () => {
-    if (virtualCard?.cardNumber) { setShowCardDetails(true); return; }
+    if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
     setSecretDetailsFailed(false);
     setSecretDetailsLoading(true);
     setShowCardDetails(true);
@@ -367,6 +367,8 @@ export default function Dashboard() {
           ...prev,
           cardNumber: data.cardNumber,
           cvv: data.cvv,
+          cardNumberUrl: data.cardNumberUrl,
+          cvvUrl: data.cvvUrl,
           expiryDate: data.expiryDate,
           cardName: data.cardName,
           balance: data.balance,
@@ -625,6 +627,8 @@ export default function Dashboard() {
             ...cardData,
             cardNumber: prev?.cardNumber,
             cvv: prev?.cvv,
+            cardNumberUrl: prev?.cardNumberUrl,
+            cvvUrl: prev?.cvvUrl,
             expiryDate: prev?.expiryDate,
             cardName: prev?.cardName || cardData?.cardName,
             last4: prev?.last4 || cardData?.last4,
@@ -3118,6 +3122,10 @@ export default function Dashboard() {
                                   <p className="font-bold text-[13px] text-white tracking-[1px]">{virtualCard.cardNumber}</p>
                                   <button onClick={() => copyToClipboard(virtualCard.cardNumber)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                 </div>
+                              ) : virtualCard?.cardNumberUrl ? (
+                                <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                  <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
+                                </div>
                               ) : (
                                 <p className="font-bold text-[13px] text-white">————</p>
                               )}
@@ -3129,6 +3137,10 @@ export default function Dashboard() {
                                   <div className="flex items-center justify-between gap-2">
                                     <p className="font-bold text-[20px] text-white">{virtualCard.cvv}</p>
                                     <button onClick={() => copyToClipboard(virtualCard.cvv)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
+                                  </div>
+                                ) : virtualCard?.cvvUrl ? (
+                                  <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                    <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
                                   </div>
                                 ) : (
                                   <p className="font-bold text-[20px] text-white">———</p>
@@ -3309,6 +3321,10 @@ export default function Dashboard() {
                                       <p className="font-bold text-[13px] text-white tracking-[1px]">{virtualCard.cardNumber}</p>
                                       <button onClick={() => copyToClipboard(virtualCard.cardNumber)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
                                     </div>
+                                  ) : virtualCard?.cardNumberUrl ? (
+                                    <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                      <iframe src={virtualCard.cardNumberUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="Nimewo kat" />
+                                    </div>
                                   ) : (
                                     <p className="font-bold text-[13px] text-white">————</p>
                                   )}
@@ -3320,6 +3336,10 @@ export default function Dashboard() {
                                       <div className="flex items-center justify-between gap-2">
                                         <p className="font-bold text-[20px] text-white">{virtualCard.cvv}</p>
                                         <button onClick={() => copyToClipboard(virtualCard.cvv)} className="flex-shrink-0"><Copy size={13} color={glass.textDimmer} /></button>
+                                      </div>
+                                    ) : virtualCard?.cvvUrl ? (
+                                      <div className="rounded-[8px]" style={{ background: '#FFFFFF', padding: '5px 8px', filter: 'invert(1)' }}>
+                                        <iframe src={virtualCard.cvvUrl} width="100%" height={26} frameBorder={0} scrolling="no" style={{ border: 'none', background: 'transparent', display: 'block' }} title="CVV" />
                                       </div>
                                     ) : (
                                       <p className="font-bold text-[20px] text-white">———</p>

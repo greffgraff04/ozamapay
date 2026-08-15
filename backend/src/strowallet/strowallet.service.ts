@@ -384,10 +384,17 @@ export class StrowalletService {
 
     const data = await this.nfcGet('fetch-nfccard-detail', { card_id: virtualCard.cardId });
 
+    // StroWallet retounen 2 fòma diferan selon kat la (pa gen relasyon ak dat
+    // kreyasyon — konfime 2026-08-14: yon kat kreye jodi a te toujou nan
+    // ansyen fòma a): swa valè brit (`card_number`/`cvv`) swa lyen iframe
+    // sekirize (`card_number_url`/`cvv_url`). Retounen toulede pou fwontyè a
+    // ka chwazi ki afichaj li itilize pou chak kat.
     const detail = data?.response?.card_detail;
     return {
       cardNumber: detail?.card_number,
       cvv: detail?.cvv,
+      cardNumberUrl: detail?.card_number_url,
+      cvvUrl: detail?.cvv_url,
       expiryDate: detail?.expiry,
       cardName: detail?.card_holder_name,
       balance: detail?.balance,
