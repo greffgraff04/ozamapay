@@ -409,6 +409,7 @@ export class AuthService {
             status: user.kyc.status,
             line1: user.kyc.line1,
             city: user.kyc.city,
+            state: user.kyc.state,
             zipCode: user.kyc.zipCode,
             country: user.kyc.country,
           }

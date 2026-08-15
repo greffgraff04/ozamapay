@@ -11,21 +11,17 @@ export class StrowalletService {
   private readonly PUBLIC_KEY: string;
   private readonly MODE = 'live';
 
-  // StroWallet konfime (10 out 2026, tès manyèl Olivier): AVS (Address
-  // Verification System) machann (egzanp TEMU) egzije adrès bòdwo kat la
-  // matche adrès REYÈL StroWallet la (Delaware) — "dépasse la limite de la
-  // carte" te an reyalite yon echèk AVS, pa yon vrè limit tranzaksyon.
-  // Sa aplike pou TOUT kat, PA adrès kliyan an — yon adrès Ayisyen reyèl
-  // ta echwe AVS menm jan ak Miami fiktif la te fè.
-  // country DWE 3 karaktè (StroWallet konfime deja: "The country must be 3
-  // characters.") — 'US' (alpha-2) echwe, 'USA' (alpha-3) mache.
-  private readonly STROWALLET_BILLING_ADDRESS = {
-    line1: '1007 N Orange St. 4th Floor',
-    city: 'Wilmington',
-    state: 'Delaware',
-    postal_code: '19801',
-    country: 'USA',
-  };
+  // StroWallet konfime (14 out 2026): "It's customer address we requested
+  // for and not billing address" — tès AVS pi bonè (984f6f4) te fè yon move
+  // konklizyon; adrès Wilmington te yon ERÈ. Sèvi ak VRÈ adrès Kyc kliyan an.
+  // country DWE 3 karaktè (StroWallet konfime: "The country must be 3
+  // characters.") — Kyc.country estoke alpha-2 ("HT"), konvèti an alpha-3.
+  private readonly ISO_ALPHA2_TO_ALPHA3: Record<string, string> = { HT: 'HTI' };
+
+  private resolveNfcCountry(country: string | null | undefined): string {
+    if (!country) return 'HTI';
+    return this.ISO_ALPHA2_TO_ALPHA3[country.toUpperCase()] || country;
+  }
 
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
@@ -86,12 +82,26 @@ export class StrowalletService {
   private resolveNfcIdentity(user: {
     name: string | null;
     phone: string | null;
-    kyc: { phoneNumber?: string | null } | null;
+    kyc: { phoneNumber?: string | null; firstName?: string | null; lastName?: string | null } | null;
   }) {
-    // last_name se dènye mo non konplè a, first_name se tout rès la ansanm
-    const nameParts = (user.name || 'OZAMA USER').trim().split(/\s+/).filter(Boolean);
-    const lastName = nameParts[nameParts.length - 1] || 'USER';
-    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : lastName;
+    // StroWallet konfime (14 out 2026): "Name should not have space" pou
+    // last_name — men ~8% kliyan Ayisyen gen non fanmi 2 mo (egzanp "JEAN
+    // PIERRE", "ST FLEUR"). Sèvi ak Kyc.firstName/lastName (verifye pa ajan
+    // kont dokiman ID a pandan revizyon KYC) olye de devine lòd mo nan
+    // user.name, ki ka estoke "SIREN Non1 Non2" (non fanmi DEVAN) pou kèk
+    // kliyan — sa te bay yon last_name FO (yon mo ki soti nan prenon an).
+    let firstName: string;
+    let lastName: string;
+    if (user.kyc?.firstName && user.kyc?.lastName) {
+      firstName = user.kyc.firstName.trim();
+      lastName = user.kyc.lastName.trim().replace(/\s+/g, '-');
+    } else {
+      // Fallback: user.name pa gen okenn garanti lòd, men se sèl sous ki
+      // rete si Kyc pa gen firstName/lastName ranpli.
+      const nameParts = (user.name || 'OZAMA USER').trim().split(/\s+/).filter(Boolean);
+      lastName = nameParts[nameParts.length - 1] || 'USER';
+      firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : lastName;
+    }
 
     // Kyc.phoneNumber se vrè sous done a (kolekte pandan KYC, 93% ranpli);
     // User.phone se yon chan segondè ki ra ranpli (2.8%), sitou pou nimewo
@@ -239,7 +249,11 @@ export class StrowalletService {
       id_number: user.kyc.idNumber || '00000000',
       id_image: user.kyc.idImage,
       email: user.email,
-      ...this.STROWALLET_BILLING_ADDRESS,
+      line1: user.kyc.line1,
+      city: user.kyc.city,
+      state: user.kyc.state,
+      postal_code: user.kyc.zipCode,
+      country: this.resolveNfcCountry(user.kyc.country),
       amount_usd: String(amountUsd),
       phone,
       brand: 'Visa',
@@ -348,7 +362,11 @@ export class StrowalletService {
       id_number: user.kyc?.idNumber || '00000000',
       id_image: user.kyc?.idImage || '',
       email: user.email,
-      ...this.STROWALLET_BILLING_ADDRESS,
+      line1: user.kyc?.line1 || '',
+      city: user.kyc?.city || '',
+      state: user.kyc?.state || '',
+      postal_code: user.kyc?.zipCode || '',
+      country: this.resolveNfcCountry(user.kyc?.country),
       amount_usd: String(fundAmountUsd),
       phone,
       brand: 'Visa',
