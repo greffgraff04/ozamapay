@@ -1,0 +1,110 @@
+/*
+ * OZAMAPAY brand theme for the @n8n/chat support widget.
+ * Full list of variables the package exposes: node_modules/@n8n/chat/README.md
+ * (section "Customization"). Only the ones we actually need to override are
+ * set here; everything else falls back to @n8n/chat's own defaults.
+ *
+ * Import order matters: this file is imported AFTER "@n8n/chat/style.css" in
+ * SupportChatWidget.tsx so these overrides win.
+ */
+
+:root {
+  /* Brand colors — matches the orange/dark theme used across the dashboard
+     (see #FF7A00 / #FF6B00 in app/dashboard/page.tsx, app/login/page.tsx). */
+  --chat--color--primary: #ff7a00;
+  --chat--color--primary-shade-50: #ff6b00;
+  --chat--color--primary--shade-100: #e05c00;
+  --chat--color--secondary: #ff7a00;
+  --chat--color-secondary-shade-50: #ff6b00;
+  --chat--color-white: #ffffff;
+  --chat--color-light: #e7e9f3;
+  --chat--color-light-shade-50: #cfd2e0;
+  --chat--color-light-shade-100: #b3b7c9;
+  --chat--color-medium: #4b5065;
+  --chat--color-dark: #0a0c14;
+  --chat--color-disabled: #4b5065;
+  --chat--color-typing: #9a9fb5;
+
+  --chat--border-radius: 16px;
+  --chat--window--width: 380px;
+  --chat--window--border: 1px solid rgba(255, 122, 0, 0.15);
+  --chat--window--border-radius: 20px;
+
+  /* Header */
+  --chat--header--background: #0f121e;
+  --chat--header--color: #ffffff;
+
+  /* Messages */
+  --chat--message--bot--background: #171a26;
+  --chat--message--bot--color: #ffffff;
+  --chat--message--bot--border: 1px solid rgba(255, 255, 255, 0.06);
+  --chat--message--user--background: #ff7a00;
+  --chat--message--user--color: #ffffff;
+
+  /* Floating toggle bubble */
+  --chat--toggle--background: #0f121e;
+  --chat--toggle--hover--background: #1a1e2e;
+  --chat--toggle--active--background: #05060a;
+  --chat--toggle--color: #ff7a00;
+
+  /* Body / footer */
+  --chat--body--background: #0a0c14;
+  --chat--footer--background: #0a0c14;
+  --chat--footer--color: #9a9fb5;
+
+  /* Input */
+  --chat--input--background: #171a26;
+  --chat--input--text-color: #ffffff;
+
+  /* Buttons */
+  --chat--button--background--primary: #ff7a00;
+  --chat--button--color--primary: #ffffff;
+  --chat--button--background--primary--hover: #ff6b00;
+
+  /* Send button */
+  --chat--input--send--button--background: transparent;
+  --chat--input--send--button--color: #ff7a00;
+  --chat--input--send--button--background-hover: rgba(255, 122, 0, 0.1);
+  --chat--input--send--button--color-hover: #ff6b00;
+}
+
+/* Floating icon: the package renders inline SVGs (chat bubble / close "X")
+   with no config option to replace them, so we hide the SVGs and paint the
+   OZAMAPAY "O" mark as a background-image on the toggle button instead. */
+.chat-window-toggle svg {
+  display: none;
+}
+.chat-window-toggle {
+  background-image: url('/logoicon.png');
+  background-size: 55%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/*
+ * Hide the "Powered by n8n" footer badge (class "chat-powered-by").
+ * There is no official createChat() option for this — it's rendered
+ * unconditionally by the PoweredBy component.
+ *
+ * CAUTION: n8n's Sustainable Use License (node_modules/@n8n/chat/LICENSE.md)
+ * states you "may not alter, remove, or obscure any licensing, copyright, or
+ * other notices of the licensor in the software." This badge/link is
+ * arguably such a notice. Hiding it via CSS is a compliance decision, not
+ * just a styling one — confirm this is acceptable (or get an n8n Enterprise/
+ * white-label license) before relying on it in production.
+ */
+.chat-powered-by {
+  display: none;
+}
+
+/* Mobile: the floating toggle + window share the same --chat--window--bottom
+   offset, so raising it moves both above the floating bottom nav
+   (Home/Finance/Cards/Gifts), which sits `14px + 70px tall` off-screen plus
+   the safe-area inset — see the <nav> in app/dashboard/page.tsx. */
+@media (max-width: 1023px) {
+  :root {
+    --chat--window--bottom: calc(96px + env(safe-area-inset-bottom));
+    --chat--window--right: 14px;
+    --chat--window--height: min(600px, calc(100vh - 190px));
+  }
+}

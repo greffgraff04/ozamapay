@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "@n8n/chat/style.css";
+import "./SupportChatWidget.css";
 import type { ChatApp } from "@n8n/chat";
 
 const N8N_WEBHOOK_URL =
@@ -46,6 +47,19 @@ export default function SupportChatWidget() {
         mode: "window",
         showWelcomeScreen: false,
         metadata: { email },
+        initialMessages: [
+          "Bonjou! 👋 Mwen se Oza, asistan OZAMAPAY. Kijan m ka ede w jodi a?",
+        ],
+        i18n: {
+          en: {
+            title: "Bonjou! 👋",
+            subtitle: "Nou la pou ede w 24/7.",
+            footer: "",
+            getStarted: "Kòmanse yon konvèsasyon",
+            inputPlaceholder: "Ekri mesaj ou a...",
+            closeButtonTooltip: "Fèmen chat la",
+          },
+        },
       });
     }
 
