@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import "@n8n/chat/style.css";
-import { createChat } from "@n8n/chat";
+import type { ChatApp } from "@n8n/chat";
 
 const N8N_WEBHOOK_URL =
   "https://ozamapay.app.n8n.cloud/webhook/3a976bd9-cc66-41f4-bc9d-7412bcdeadb9/chat";
@@ -14,7 +14,7 @@ const BACKEND_URL =
 // (React StrictMode double-invoke, route changes) can unmount it cleanly
 // instead of mounting a second instance into the same target.
 export default function SupportChatWidget() {
-  const chatAppRef = useRef<ReturnType<typeof createChat> | null>(null);
+  const chatAppRef = useRef<ChatApp | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +37,9 @@ export default function SupportChatWidget() {
       }
 
       if (cancelled || !email) return;
+
+      const { createChat } = await import("@n8n/chat");
+      if (cancelled) return;
 
       chatAppRef.current = createChat({
         webhookUrl: N8N_WEBHOOK_URL,
