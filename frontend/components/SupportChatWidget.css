@@ -100,11 +100,27 @@
 /* Mobile: the floating toggle + window share the same --chat--window--bottom
    offset, so raising it moves both above the floating bottom nav
    (Home/Finance/Cards/Gifts), which sits `14px + 70px tall` off-screen plus
-   the safe-area inset — see the <nav> in app/dashboard/page.tsx. */
+   the safe-area inset — see the <nav> in app/dashboard/page.tsx.
+   Height uses dvh (with a vh fallback for older browsers) because mobile
+   Safari/Chrome's collapsing address bar makes 100vh taller than what's
+   actually visible, which otherwise lets the bottom of the window (i.e. the
+   input box) render past the real visible viewport. */
 @media (max-width: 1023px) {
   :root {
     --chat--window--bottom: calc(96px + env(safe-area-inset-bottom));
     --chat--window--right: 14px;
-    --chat--window--height: min(600px, calc(100vh - 190px));
+    --chat--window--height: calc(100vh - 220px);
+    --chat--window--height: calc(100dvh - 220px);
   }
+}
+
+/* Keep the header and the message-input row (.chat-footer, which contains
+   .chat-inputs) at their natural size no matter how short the window gets —
+   only the scrollable message list (.chat-body, flex:1) should shrink.
+   @n8n/chat doesn't set flex-shrink on .chat-footer, so without this, any
+   height deficit gets distributed onto the input row too and it visually
+   collapses to an unusable sliver instead of the message list just scrolling. */
+.chat-layout .chat-header,
+.chat-layout .chat-footer {
+  flex-shrink: 0;
 }
