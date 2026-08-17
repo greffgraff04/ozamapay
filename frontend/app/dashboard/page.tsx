@@ -831,6 +831,12 @@ export default function Dashboard() {
   const token =
     localStorage.getItem('token');
 
+  if (!token) {
+    showToast('Sesyon ou ekspire. Tanpri rafrechi paj la epi konekte ankò pou soumèt demann ou an.', 'error');
+    if (moncashTab) moncashTab.close();
+    return;
+  }
+
   // 🔥 Agent ID récupéré localement
   const agentId =
     localStorage.getItem(
@@ -922,6 +928,18 @@ export default function Dashboard() {
           setTopUpAmount('');
           setReceipt(null);
           fetchData();
+        } else if (res.status === 401) {
+          // Distinguished from the generic branch below: a raw "Unauthorized"
+          // toast here reads as "the deposit failed" when what actually
+          // happened is the request never reached the server logic at all
+          // (JwtAuthGuard rejects auth before the controller runs) — tell the
+          // user what to actually do instead of showing the backend's bare
+          // 401 text. Form state (amount/receipt) is intentionally left
+          // untouched so they don't have to redo the upload after logging in.
+          setToast({
+            message: 'Sesyon ou ekspire. Tanpri rafrechi paj la epi konekte ankò, apre sa reeseye soumèt demann ou an.',
+            type: 'error',
+          });
         } else {
           const data = await res.json().catch(() => ({}));
           setToast({ message: data.message || 'Erè nan voye demann manuel la', type: 'error' });
