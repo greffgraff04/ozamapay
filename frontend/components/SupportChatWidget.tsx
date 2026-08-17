@@ -1,0 +1,59 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import "@n8n/chat/style.css";
+import { createChat } from "@n8n/chat";
+
+const N8N_WEBHOOK_URL =
+  "https://ozamapay.app.n8n.cloud/webhook/3a976bd9-cc66-41f4-bc9d-7412bcdeadb9/chat";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
+
+// n8n Chat mounts an imperative Vue app; keep a handle so effect cleanup
+// (React StrictMode double-invoke, route changes) can unmount it cleanly
+// instead of mounting a second instance into the same target.
+export default function SupportChatWidget() {
+  const chatAppRef = useRef<ReturnType<typeof createChat> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function mountIfAuthenticated() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      let email: string | undefined;
+      try {
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        email = data?.email;
+      } catch (err) {
+        console.error("SupportChatWidget: pa t kapab jwenn itilizatè a", err);
+        return;
+      }
+
+      if (cancelled || !email) return;
+
+      chatAppRef.current = createChat({
+        webhookUrl: N8N_WEBHOOK_URL,
+        mode: "window",
+        showWelcomeScreen: false,
+        metadata: { email },
+      });
+    }
+
+    mountIfAuthenticated();
+
+    return () => {
+      cancelled = true;
+      chatAppRef.current?.unmount();
+      chatAppRef.current = null;
+    };
+  }, []);
+
+  return null;
+}
