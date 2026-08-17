@@ -12,7 +12,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <ThemeProvider>
       {children}
-      <SupportChatWidget />
+      {/* Temporarily disabled: close-button reopen bug being fixed — re-enable once verified. */}
+      {/* <SupportChatWidget /> */}
     </ThemeProvider>
   );
 }
