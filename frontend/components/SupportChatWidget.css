@@ -41,11 +41,13 @@
   --chat--message--user--background: #ff7a00;
   --chat--message--user--color: #ffffff;
 
-  /* Floating toggle bubble */
-  --chat--toggle--background: #0f121e;
-  --chat--toggle--hover--background: #1a1e2e;
-  --chat--toggle--active--background: #05060a;
-  --chat--toggle--color: #ff7a00;
+  /* Floating toggle bubble — orange avatar, so hover/active stay in the
+     same orange family instead of flashing to the old dark navy/black
+     (those only applied to n8n's default background-image icon). */
+  --chat--toggle--background: #ff7a00;
+  --chat--toggle--hover--background: #ff6b00;
+  --chat--toggle--active--background: #e05c00;
+  --chat--toggle--color: #ffffff;
 
   /* Body / footer */
   --chat--body--background: #0a0c14;
@@ -69,16 +71,38 @@
 }
 
 /* Floating icon: the package renders inline SVGs (chat bubble / close "X")
-   with no config option to replace them, so we hide the SVGs and paint the
-   OZAMAPAY "O" mark as a background-image on the toggle button instead. */
+   with no config option to replace them, so we hide the SVGs and render an
+   "Oza" contact avatar instead — an orange circle with the initial "O" plus
+   a WhatsApp/Messenger-style green "online" dot — so the floating button
+   reads as a person/assistant to chat with, not a plain logo bug.
+   .chat-window-toggle is already display:inline-flex + border-radius:50%
+   from n8n's own base CSS, so it only needs a background + the two
+   pseudo-elements below; `position: relative` anchors the online dot. */
 .chat-window-toggle svg {
   display: none;
 }
 .chat-window-toggle {
-  background-image: url('/logoicon.png');
-  background-size: 55%;
-  background-position: center;
-  background-repeat: no-repeat;
+  position: relative;
+  background: linear-gradient(135deg, #ff8a24, #ff6b00);
+}
+.chat-window-toggle::before {
+  content: "O";
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+.chat-window-toggle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #ffffff;
 }
 
 /*
@@ -95,6 +119,25 @@
  */
 .chat-powered-by {
   display: none;
+}
+
+/* Header close button ("X"): @n8n/chat only renders ".chat-close-button" at
+   all when createChat() is given `showWindowCloseButton: true` (see
+   SupportChatWidget.tsx) — with that off it's not hidden by CSS, it simply
+   isn't in the DOM. Its own base rule sets no color, so it inherits
+   --chat--header--color (white) and already turns brand-orange on
+   :hover via n8n's own `.chat-close-button:hover` fallback to
+   --chat--color--primary — this just adds a rounded hover backdrop so the
+   orange feels like a deliberate touch target, not just a text color change. */
+.chat-close-button {
+  color: #ffffff;
+  padding: 4px;
+  border-radius: 999px;
+  transition: background var(--chat--transition-duration) ease,
+    color var(--chat--transition-duration) ease;
+}
+.chat-close-button:hover {
+  background: rgba(255, 122, 0, 0.15);
 }
 
 /* Mobile: the floating toggle + window share the same --chat--window--bottom

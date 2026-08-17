@@ -180,6 +180,14 @@ function makeToggleDraggable(toggleEl: HTMLElement): () => void {
   };
 }
 
+function wireCloseButton(closeButtonEl: HTMLElement, toggleEl: HTMLElement): () => void {
+  function onClick() {
+    toggleEl.click();
+  }
+  closeButtonEl.addEventListener("click", onClick);
+  return () => closeButtonEl.removeEventListener("click", onClick);
+}
+
 // n8n Chat mounts an imperative Vue app; keep a handle so effect cleanup
 // (React StrictMode double-invoke, route changes) can unmount it cleanly
 // instead of mounting a second instance into the same target.
@@ -216,6 +224,7 @@ export default function SupportChatWidget() {
         webhookUrl: N8N_WEBHOOK_URL,
         mode: "window",
         showWelcomeScreen: false,
+        showWindowCloseButton: true,
         metadata: { email },
         initialMessages: [
           "Bonjou! 👋 Mwen se Oza, asistan OZAMAPAY. Kijan m ka ede w jodi a?",
@@ -233,11 +242,25 @@ export default function SupportChatWidget() {
       });
 
       const toggleEl = document.querySelector<HTMLElement>(".chat-window-toggle");
-      if (toggleEl) {
-        cleanupDragRef.current = makeToggleDraggable(toggleEl);
-      } else {
+      const dragCleanup = toggleEl ? makeToggleDraggable(toggleEl) : null;
+      if (!toggleEl) {
         console.error("SupportChatWidget: pa jwenn .chat-window-toggle pou fè l deplasab");
       }
+
+      // @n8n/chat's own close button only emits a "close" event internally —
+      // nothing in this package version actually listens for it, so clicking
+      // it does nothing on its own. Reuse the toggle's real open/close click
+      // handler instead, which is what actually flips the panel shut.
+      const closeButtonEl = document.querySelector<HTMLElement>(".chat-close-button");
+      const closeCleanup = closeButtonEl && toggleEl ? wireCloseButton(closeButtonEl, toggleEl) : null;
+      if (!closeButtonEl) {
+        console.error("SupportChatWidget: pa jwenn .chat-close-button");
+      }
+
+      cleanupDragRef.current = () => {
+        dragCleanup?.();
+        closeCleanup?.();
+      };
     }
 
     mountIfAuthenticated();
