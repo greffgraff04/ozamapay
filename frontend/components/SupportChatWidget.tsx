@@ -119,14 +119,20 @@ function makeToggleDraggable(toggleEl: HTMLElement): () => void {
     window.removeEventListener("pointercancel", onPointerUp);
 
     if (moved) {
-      // A real drag happened — swallow the click Vue's own listener would
-      // otherwise receive next, so it doesn't also toggle the chat open/shut.
-      justDragged = true;
       const rect = toggleEl.getBoundingClientRect();
       saveTogglePosition({
         leftPct: rect.left / window.innerWidth,
         topPct: rect.top / window.innerHeight,
       });
+      // Only a genuine "pointerup" is followed by a browser-synthesized
+      // click on this element — "pointercancel" (scroll takeover, app
+      // switch, multi-touch, etc.) never produces one. Arming the swallow
+      // flag on cancel too would leave it stuck true with no click ever
+      // coming to reset it, silently eating some unrelated future click on
+      // the toggle — including the close button's forwarded click below.
+      if (e.type === "pointerup") {
+        justDragged = true;
+      }
     }
     pointerId = null;
     moved = false;
@@ -180,10 +186,44 @@ function makeToggleDraggable(toggleEl: HTMLElement): () => void {
   };
 }
 
-function wireCloseButton(closeButtonEl: HTMLElement, toggleEl: HTMLElement): () => void {
+const CLOSE_BUTTON_LOCK_MS = 300;
+
+// @n8n/chat's own close button only emits an internal "close" event —
+// nothing in this package version (1.33.5) actually listens for it anywhere
+// in the bundle, so clicking it natively does nothing. The only thing that
+// really flips the panel shut is toggleEl's own Vue click handler, so this
+// forwards the click there instead.
+//
+// That forwarding is guarded two ways against a *second*, unwanted toggle
+// landing on top of it and reopening the panel:
+//   1. Idempotent check — read .chat-window's actual current `display`
+//      (the real DOM state @n8n/chat's v-show maintains) and only forward
+//      the click if the panel is genuinely open right now. A duplicate or
+//      delayed close click that arrives after the first one already closed
+//      it becomes a no-op instead of toggling it back open.
+//   2. A short time lock, as a second, independent safety net in case some
+//      other stray event reaches the close button itself within the same
+//      window.
+function wireCloseButton(
+  closeButtonEl: HTMLElement,
+  toggleEl: HTMLElement,
+  chatWindowEl: HTMLElement,
+): () => void {
+  let locked = false;
+
   function onClick() {
-    toggleEl.click();
+    if (locked) return;
+    locked = true;
+    setTimeout(() => {
+      locked = false;
+    }, CLOSE_BUTTON_LOCK_MS);
+
+    const isOpen = getComputedStyle(chatWindowEl).display !== "none";
+    if (isOpen) {
+      toggleEl.click();
+    }
   }
+
   closeButtonEl.addEventListener("click", onClick);
   return () => closeButtonEl.removeEventListener("click", onClick);
 }
@@ -247,14 +287,14 @@ export default function SupportChatWidget() {
         console.error("SupportChatWidget: pa jwenn .chat-window-toggle pou fè l deplasab");
       }
 
-      // @n8n/chat's own close button only emits a "close" event internally —
-      // nothing in this package version actually listens for it, so clicking
-      // it does nothing on its own. Reuse the toggle's real open/close click
-      // handler instead, which is what actually flips the panel shut.
       const closeButtonEl = document.querySelector<HTMLElement>(".chat-close-button");
-      const closeCleanup = closeButtonEl && toggleEl ? wireCloseButton(closeButtonEl, toggleEl) : null;
-      if (!closeButtonEl) {
-        console.error("SupportChatWidget: pa jwenn .chat-close-button");
+      const chatWindowEl = document.querySelector<HTMLElement>(".chat-window");
+      const closeCleanup =
+        closeButtonEl && toggleEl && chatWindowEl
+          ? wireCloseButton(closeButtonEl, toggleEl, chatWindowEl)
+          : null;
+      if (!closeButtonEl || !chatWindowEl) {
+        console.error("SupportChatWidget: pa jwenn .chat-close-button oswa .chat-window");
       }
 
       cleanupDragRef.current = () => {
