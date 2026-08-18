@@ -20,7 +20,7 @@ const FEES = {
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
-const INTERNATIONAL_METHODS = ['ZELLE', 'CASHAPP', 'WISE', 'MERU', 'BANK', 'USDT'];
+const INTERNATIONAL_METHODS = ['ZELLE', 'CASHAPP', 'MERU', 'BANK', 'USDT'];
 const isInternational = (method: string) => INTERNATIONAL_METHODS.includes(method.toUpperCase());
 
 @Injectable()
@@ -560,6 +560,15 @@ export class WalletService {
     details: string,
     proofImage?: string,
   ) {
+    // Wise was retired as a service option — reject new requests even if
+    // called directly (the UI no longer offers it, but nothing else here
+    // validated serviceType against the enum before this). Existing WISE
+    // ServiceRequest rows are untouched and still processed normally by
+    // admin — this only blocks *new* ones.
+    if (serviceType === 'WISE') {
+      throw new BadRequestException('Sèvis sa a pa disponib ankò');
+    }
+
     await this.checkKyc(userId);
     // HTG services get 2% fee, USD/USDT services get 6% fee
     const isHtgService = serviceType === 'NATCASH';

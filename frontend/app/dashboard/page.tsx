@@ -32,7 +32,6 @@ const CARD_BILLING = {
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
   bank_htg: { acc: "000-000-000", name: "Ralph Olivier Greffin", bank: "Capital Bank (Gourdes)" },
-  wise: { acc: "contact@ozamapay.com", name: "OzamaPay Business" },
   meru: { acc: "oliou04@gmail.com", name: "Ralph Olivier Greffin" },
   zelle: { acc: "786 868 6782", name: "Ralph Olivier Greffin" },
   cashapp: { acc: "$Pascoue93", name: "Ralph Olivier Greffin" },
@@ -41,7 +40,6 @@ const PAYMENT_INFO = {
 };
 
 const FINANCE_ACCOUNTS: Record<string, { label: string; info: string; warning?: string }> = {
-  wise:    { label: 'Email Wise',     info: 'contact@ozamapay.com' },
   meru:    { label: 'Email Meru',     info: 'oliou04@gmail.com' },
   zelle:   { label: 'Nimewo Zelle',   info: '786 868 6782' },
   cashapp: { label: 'CashApp Tag',    info: '$Pascoue93' },
@@ -328,15 +326,9 @@ export default function Dashboard() {
   const [gcOrderLoading, setGcOrderLoading] = useState(false);
   const [gcOrderResult, setGcOrderResult] = useState<any>(null);
   const [gcOrders, setGcOrders] = useState<any[]>([]);
-  // Airtime (Kredi) sub-section
+  // Airtime purchasing was retired — only order-history state remains so
+  // past purchasers can still see their receipts (see "Istorik Airtime").
   const [gcSection, setGcSection] = useState<'gifts' | 'airtime'>('gifts');
-  const [atOperators, setAtOperators] = useState<any[]>([]);
-  const [atOpLoading, setAtOpLoading] = useState(false);
-  const [atSelectedOp, setAtSelectedOp] = useState<any>(null);
-  const [atAmount, setAtAmount] = useState<number | null>(null);
-  const [atPhone, setAtPhone] = useState('');
-  const [atLoading, setAtLoading] = useState(false);
-  const [atResult, setAtResult] = useState<any>(null);
   const [atOrders, setAtOrders] = useState<any[]>([]);
   const [atOrdersLoading, setAtOrdersLoading] = useState(false);
   // Gift card buy modal
@@ -396,7 +388,7 @@ export default function Dashboard() {
     { id: 'bank', label: 'Capital Bank', img: 'capitalbank.png', info: "1920222", name: "Ralph Olivier Greffin" },
     { id: 'usdt', label: 'USDT', img: 'usdt.png', info: PAYMENT_INFO.usdt.acc, name: "Adrès USDT TRC20" }
   ];
-  const INTL_METHODS = ['zelle', 'cashapp', 'wise', 'meru', 'bank', 'usdt'];
+  const INTL_METHODS = ['zelle', 'cashapp', 'meru', 'bank', 'usdt'];
   const topupIsIntl = INTL_METHODS.includes(selectedMethod.toLowerCase());
   const withdrawIsIntl = INTL_METHODS.includes(withdrawMethod.toLowerCase());
   const topupHTG = topupIsIntl ? Math.round(Number(topUpAmount) * exchangeRate) : Number(topUpAmount);
@@ -765,14 +757,6 @@ export default function Dashboard() {
     if (gcSection !== 'airtime') return;
     const token = localStorage.getItem('token');
     if (!token) return;
-    if (atOperators.length === 0 && !atOpLoading) {
-      setAtOpLoading(true);
-      fetch(`${backendUrl}/airtime/operators`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json())
-        .then(ops => setAtOperators(Array.isArray(ops) ? ops : []))
-        .catch(() => {})
-        .finally(() => setAtOpLoading(false));
-    }
     setAtOrdersLoading(true);
     fetch(`${backendUrl}/airtime/orders`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -2606,7 +2590,7 @@ export default function Dashboard() {
             </div>
             <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
               <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
-                Echanj lajan ak Wise, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
+                Echanj lajan ak Meru, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
               <div className="flex items-center justify-between gap-2 mb-5">
                 <p className="font-medium text-[11px]" style={{ color: glass.textDimmer }}>Kijan pou jere finans ou?</p>
@@ -2614,7 +2598,6 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col" style={{ gap: 10 }}>
                 {[
-                  { id: 'wise',    name: 'Wise',         desc: 'USD Transfer',     img: 'wise.png' },
                   { id: 'meru',    name: 'Meru',         desc: 'USD Transfer',     img: 'meru.png' },
                   { id: 'zelle',   name: 'Zelle',        desc: 'USD Transfer',     img: 'zelle.png' },
                   { id: 'cashapp', name: 'CashApp',      desc: 'USD Transfer',     img: 'cashapp.png' },
@@ -4061,31 +4044,6 @@ export default function Dashboard() {
           finally { setGcOrderLoading(false); }
         };
 
-        const handleAirtimeTopup = async () => {
-          if (!atSelectedOp) return;
-          if (!atPhone.trim()) { showToast('Tanpri antre nimewo telefòn nan.', 'error'); return; }
-          const amtNum = parseFloat(String(atAmount));
-          if (isNaN(amtNum) || amtNum <= 0) { showToast('Tanpri antre yon montan valid.', 'error'); return; }
-          setAtLoading(true);
-          try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${backendUrl}/airtime/topup`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ operatorId: atSelectedOp.operatorId, amount: amtNum, phoneNumber: atPhone.trim() }),
-            });
-            const data = await res.json();
-            if (!res.ok) { showToast(data.message || 'Erè pandan rechaj la', 'error'); return; }
-            setAtResult(data);
-            setAtSelectedOp(null);
-            const t = localStorage.getItem('token');
-            if (t) fetch(`${backendUrl}/airtime/orders`, { headers: { Authorization: `Bearer ${t}` } })
-              .then(r => r.json()).then(o => setAtOrders(Array.isArray(o) ? o : [])).catch(() => {});
-            fetchData();
-          } catch { showToast('Erè rezo', 'error'); }
-          finally { setAtLoading(false); }
-        };
-
         return (
           <div className="oz-fadeUp pb-2" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
@@ -4214,62 +4172,8 @@ export default function Dashboard() {
             {/* ── AIRTIME sub-tab ── */}
             {gcSection === 'airtime' && (
               <>
-                {/* Airtime success card */}
-                {atResult && (
-                  <div className="oz-glass-strong rounded-3xl p-5 text-center mb-5">
-                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(34,197,94,.14)' }}>
-                      <CheckCircle2 size={28} color="#22C55E" />
-                    </div>
-                    <p className="font-black italic uppercase text-base text-white">Kredi Voye!</p>
-                    <p className="text-sm mt-1" style={{ color: glass.textDim }}>{atResult.amount} HTG → +509 {atResult.phoneNumber}</p>
-                    <p className="text-xs mt-0.5" style={{ color: glass.textDimmer }}>{atResult.operatorName}</p>
-                    <div className="mt-4 rounded-2xl p-4" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDimmer, display: 'block', marginBottom: 4 }}>Peye</span>
-                      <p className="font-black text-xl text-white">{Number(atResult.htgPaid).toFixed(2)} HTG</p>
-                    </div>
-                    <button onClick={() => { setAtResult(null); setAtPhone(''); setAtAmount(null); }} className="mt-4 text-sm underline" style={{ color: glass.textDimmer }}>Fèmen</button>
-                  </div>
-                )}
-
-                {/* Operators section title */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 10 }}>Operatè</span>
-
-                {atOpLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : atOperators.length === 0 ? (
-                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn pwodwi disponib kounye a.</p>
-                  </div>
-                ) : (
-                  atOperators.map((op: any) => (
-                    <button
-                      key={op.operatorId}
-                      onClick={() => {
-                        setAtSelectedOp(op);
-                        setAtAmount(op.denominationType === 'FIXED' && op.localFixedAmounts?.length ? op.localFixedAmounts[0] : (op.minAmount ?? null));
-                        setAtPhone('');
-                      }}
-                      className="oz-glass w-full flex items-center rounded-3xl p-4 mb-3 active:scale-[0.98] transition-all"
-                    >
-                      {op.logoUrls?.[0] ? (
-                        <img src={op.logoUrls[0]} alt={op.name} className="w-11 h-11 rounded-lg object-contain mr-4 flex-shrink-0" />
-                      ) : (
-                        <div className="w-11 h-11 rounded-lg mr-4 flex-shrink-0" style={{ background: glass.bgStrong }} />
-                      )}
-                      <div className="flex-1 text-left">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] mb-0.5 text-white">{op.name}</p>
-                        <p className="text-[11px]" style={{ color: glass.textDimmer }}>
-                          {op.denominationType === 'FIXED' && op.localFixedAmounts?.length
-                            ? op.localFixedAmounts.map((a: number) => `${a} HTG`).join(' · ')
-                            : `${op.minAmount ?? 0}–${op.maxAmount ?? '?'} HTG`}
-                        </p>
-                      </div>
-                      <span className="text-[22px] ml-3" style={{ color: glass.textDimmer }}>›</span>
-                    </button>
-                  ))
-                )}
+                {/* Airtime purchasing has been retired — order history stays visible below
+                    for past purchasers; no way to start a new order remains. */}
 
                 {/* Airtime order history */}
                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Airtime</span>
@@ -4360,85 +4264,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* ── AIRTIME TOPUP MODAL ── */}
-            {atSelectedOp && (
-              <div
-                className="fixed inset-0 z-[60] flex items-end"
-                style={{ background: 'rgba(0,0,0,0.65)' }}
-                onClick={() => !atLoading && setAtSelectedOp(null)}
-              >
-                <div
-                  className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
-                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)' }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
-                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
-                    {atSelectedOp.name}
-                  </p>
-
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Nimewo Telefòn</span>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder="ex: 36001234"
-                    value={atPhone}
-                    onChange={e => setAtPhone(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none placeholder:text-white/30"
-                    style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
-                  />
-
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 14 }}>Montan (HTG)</span>
-                  {atSelectedOp.denominationType === 'FIXED' && atSelectedOp.localFixedAmounts?.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {atSelectedOp.localFixedAmounts.map((a: number) => (
-                        <button
-                          key={a}
-                          onClick={() => setAtAmount(a)}
-                          className="rounded-xl px-4 py-2 text-[13px] font-bold transition-all active:scale-95"
-                          style={atAmount === a
-                            ? { background: 'rgba(255,122,0,.15)', border: '1.5px solid rgba(255,122,0,.5)', color: '#FF7A00' }
-                            : { background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
-                        >
-                          {a} HTG
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        value={atAmount ?? ''}
-                        onChange={e => setAtAmount(parseFloat(e.target.value) || null)}
-                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
-                        style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
-                      />
-                      <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
-                        Min {atSelectedOp.minAmount} — Max {atSelectedOp.maxAmount} HTG
-                      </p>
-                    </>
-                  )}
-
-                  <button
-                    onClick={handleAirtimeTopup}
-                    disabled={atLoading}
-                    className="w-full py-4 text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40 oz-glowPulse"
-                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
-                  >
-                    {atLoading ? 'Pwosesis...' : 'Achte Kredi'}
-                  </button>
-                  <button
-                    onClick={() => { if (!atLoading) setAtSelectedOp(null); }}
-                    disabled={atLoading}
-                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
-                    style={{ background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
-                  >
-                    Anile
-                  </button>
-                </div>
-              </div>
-            )}
 
           </div>
         );

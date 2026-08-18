@@ -168,7 +168,7 @@ export class MailService {
       this.p('Kont ou kounye a gen aksè konplè. Sa vle di ou ka:') +
       this.list([
         'Achte sou Amazon, Netflix, ak tout sit entènasyonal',
-        'Resevwa Zelle, CashApp, Wise — dirèkteman nan kont ou',
+        'Resevwa Zelle, CashApp, Meru — dirèkteman nan kont ou',
         'Voye ak resevwa kòb san limit',
       ]) +
       this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +

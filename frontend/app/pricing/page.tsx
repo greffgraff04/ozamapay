@@ -25,7 +25,7 @@ const fees = [
   },
   {
     label: 'Topup Entènasyonal',
-    sub: 'Zelle · CashApp · Wise · Meru',
+    sub: 'Zelle · CashApp · Meru',
     value: '6%',
     note: 'konvèti + frè',
     icon: '↑',

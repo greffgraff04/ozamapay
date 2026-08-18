@@ -19,7 +19,7 @@ import { isBusinessHours, BUSINESS_HOURS_LABEL } from '../lib/businessHours';
 const FAQ_ITEMS = [
   {
     q: 'Kijan mwen ka topup kont mwen?',
-    a: 'Ou ka topup via MonCash, Zelle, CashApp, Wise ak lòt metòd. Ale nan tab TOPUP nan dashboard ou.',
+    a: 'Ou ka topup via MonCash, Zelle, CashApp ak lòt metòd. Ale nan tab TOPUP nan dashboard ou.',
   },
   {
     q: 'Konbyen tan KYC pran?',
