@@ -549,6 +549,14 @@ export default function Dashboard() {
         fetch(`${API_BASE}/v1/cards/history`, { headers }).catch(() => null),
       ]);
 
+      if (meRes && meRes.status === 401) {
+        // /auth/me is the definitive session check — a valid token never gets
+        // 401 here. Without this, the 15s poll below would keep hammering
+        // the API with the same expired token forever.
+        signOut();
+        return;
+      }
+
       const [txData, meData, ratesData, notifData, bizData, cardHistoryData] = await Promise.all([
         txRes?.ok ? txRes.json().catch(() => null) : null,
         meRes?.ok ? meRes.json().catch(() => null) : null,
