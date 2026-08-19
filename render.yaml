@@ -5,7 +5,7 @@ services:
     rootDir: backend
     autoDeploy: true
     buildCommand: npm ci && npx prisma generate && npm run build && npx prisma migrate deploy && npx prisma db seed
-    startCommand: node dist/main
+    startCommand: NODE_OPTIONS=--max-old-space-size=384 node dist/main
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -91,5 +91,3 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
-      - key: NODE_OPTIONS
-        value: --max-old-space-size=384
