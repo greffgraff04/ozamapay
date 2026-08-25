@@ -16,7 +16,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
   async validate(accessToken: string, refreshToken: string, profile: any) {
     try {
-      const email = profile.emails[0].value;
+      const email = profile.emails[0].value.toLowerCase();
       const googleId = profile.id;
 
       let user = await this.prisma.user.findUnique({ where: { email } });

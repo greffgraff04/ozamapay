@@ -235,6 +235,12 @@ export class AuthService {
       );
     }
 
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'Kont sa a te kreye ak Google. Klike sou "Konekte ak Google", oswa itilize "Mo Pas Bliye" pou defini yon modpas.',
+      );
+    }
+
     const passwordMatch =
       await bcrypt.compare(
         dto.password,
