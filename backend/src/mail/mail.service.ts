@@ -409,6 +409,68 @@ export class MailService {
     await this.send(email, 'Enfòmasyon sou Kreyasyon Kat Vityèl', html);
   }
 
+  // ── Kanpay 24 out 2026 (3 gwoup) — tèks egzat apwouve, pa modifye san apwobasyon ──
+
+  private campaignContact(): string {
+    return this.p('Pou kesyon, kontakte nou:<br>WhatsApp: +509 31 91 99 91<br>Apèl/SMS entènasyonal: +1 904 943 3430') +
+      this.p('Ekip OZAMAPAY');
+  }
+
+  async sendWithdrawalNetworkResolvedNotice(email: string): Promise<void> {
+    const subject = 'Mizajou sou demann retrè ou a';
+    const html = this.wrap(
+      subject,
+      'Mizajou Enpòtan',
+      this.p('Bonjou,') +
+      this.p('Nou eskize nou pou reta a sou demann retrè ou a. Nou te fè eksperyans yon pwoblèm rezo teknik ak founisè MonCash/NatCash ki te anpeche nou trete demann yo alè.') +
+      this.p('Bòn nouvèl: pwoblèm nan rezoud, e nou kòmanse trete demann retrè yo KOUNYE A.') +
+      this.p('Ou ap resevwa konfimasyon depi retrè ou a trete.') +
+      this.p('Mèsi pou pasyans ou.') +
+      this.campaignContact(),
+      '#2e7d32',
+    );
+    await this.send(email, subject, html);
+  }
+
+  // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
+  // sèlman "founisè kat nou an", menm règ ak lòt notice yo.
+  async sendCardCreationProviderDelayNotice(email: string): Promise<void> {
+    const subject = 'Estati kreyasyon kat ou a';
+    const html = this.wrap(
+      subject,
+      'Estati Kreyasyon Kat',
+      this.p('Bonjou,') +
+      this.p('Nou konfime KYC ou apwouve san pwoblèm.') +
+      this.p('Konsènan kreyasyon kat vityèl la: nou fè eksperyans yon pwoblèm teknik ki soti bò kote founisè kat nou an, ki afekte tout kliyan kounye a (pa yon bagay ou fè mal). Ekip nou an ap travay aktivman pou rezoud sa.') +
+      this.p('Nou mande w yon ti pasyans pandan tan sa a — n ap kontakte w imedyatman depi sèvis la retabli pou ou ka kreye kat ou san pwoblèm.') +
+      this.p('Rasire w: pa gen okenn frè chaje pou tantativ ki echwe.') +
+      this.p('Mèsi pou konprann ou.') +
+      this.campaignContact(),
+      '#e65100',
+    );
+    await this.send(email, subject, html);
+  }
+
+  // Pa janm mansyone non founisè kat la (ex: StroWallet) nan tèks kliyan wè —
+  // sèlman "founisè kat vityèl nou an", menm règ ak lòt notice yo.
+  async sendCardServiceProviderMaintenanceNotice(email: string): Promise<void> {
+    const subject = 'Mizajou enpòtan sou sèvis kat vityèl OZAMAPAY';
+    const html = this.wrap(
+      subject,
+      'Mizajou Sèvis Kat Vityèl',
+      this.p('Bonjou fanmi OZAMAPAY,') +
+      this.p('Nou vle pran yon moman pou eksplike w sitiyasyon aktyèl la ak sa n ap fè pou kontinye amelyore sèvis nou an.') +
+      this.p('Sak pase: Founisè kat vityèl nou an ap fè kèk ajisteman teknik nan sistèm yo, ki afekte plizyè operasyon kounye a — enkli kreyasyon nouvo kat, rechaj, ak kèk fonksyon sou kat ki deja aktif yo.') +
+      this.p('Rasire w: pa gen okenn lajan ki pèdi. Tout tantativ ki echwe ranbouse otomatikman, e balans ou rete an sekirite pandan tout tan sa a.') +
+      this.p('Sa n ap fè: Nou swiv sitiyasyon an chak jou, e nou anplis ap devlope plizyè patenarya siplemantè pou ranfòse fyabilite sèvis nou pou tout tan alavni.') +
+      this.p('Pwochèn etap yo: N ap kontinye enfòme w chak fwa gen yon devlopman enpòtan.') +
+      this.p('Mèsi pou pasyans ak konfyans ou nan OZAMAPAY.') +
+      this.campaignContact(),
+      '#e65100',
+    );
+    await this.send(email, subject, html);
+  }
+
   async sendCardPendingRecharge(
     email: string,
     name: string,
