@@ -535,6 +535,29 @@ export class MailService {
     await this.send('contact@ozamapay.com', 'URGENCE — Sistèm OZAMAPAY bezwen atansyon', html);
   }
 
+  async sendRateStaleAlert(key: string, value: number, lastUpdatedAt: Date): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+    const lastUpdatedFmt = lastUpdatedAt.toLocaleDateString('fr-HT');
+    const daysStale = Math.floor((Date.now() - lastUpdatedAt.getTime()) / (24 * 60 * 60 * 1000));
+    const html = this.wrap(
+      `Rapèl — to ${key} poko mete ajou`,
+      'Rapèl To Chanj',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`To "${key}" pa mete ajou depi ${daysStale} jou — verifye si li toujou kòrèk parapò ak to mache reyèl la.`) +
+      this.table(
+        this.infoRow('Kle', key) +
+        this.infoRow('Valè aktyèl', String(value)) +
+        this.infoRow('Dènye MAJ', lastUpdatedFmt) +
+        this.infoRow('Jou san chanjman', String(daysStale)) +
+        this.infoRow('Dat', now),
+      ) +
+      this.p('Si to a toujou kòrèk, ou pa bezwen fè anyen. Si li bezwen chanje, mete l ajou via /rates/update.'),
+      '#e65100',
+    );
+    await this.send('contact@ozamapay.com', `Rapèl — to ${key} poko mete ajou`, html);
+  }
+
   // Admin-sèlman — sekirize men, konteni an mansyone StroWallet paske sa a
   // pa janm ale bay kliyan an (kontrèman ak Transaction.description).
   async sendCardCreationFailureAlert(
