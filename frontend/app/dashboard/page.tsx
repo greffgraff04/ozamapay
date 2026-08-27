@@ -29,6 +29,46 @@ const CARD_BILLING = {
   country: 'United States',
 };
 
+class GiftCardModalErrorBoundary extends React.Component<
+  { onError: (message: string) => void; children: React.ReactNode },
+  { hasError: boolean; message: string }
+> {
+  constructor(props: { onError: (message: string) => void; children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, message: error?.message || String(error) };
+  }
+
+  componentDidCatch(error: any, info: React.ErrorInfo) {
+    console.error('[GiftCardModal] render error:', error, info.componentStack);
+    this.props.onError(error?.message || String(error));
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.78)' }}>
+          <div className="rounded-3xl p-6 text-center max-w-sm w-full" style={{ background: '#0F121E', border: '1px solid rgba(255,122,0,0.25)' }}>
+            <p className="font-black uppercase text-white mb-2">Yon erè rive</p>
+            <p className="text-[12px] mb-4 break-words" style={{ color: '#FF7A00' }}>{this.state.message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-3 rounded-xl font-bold text-[13px] uppercase"
+              style={{ background: '#FF7A00', color: '#0F121E' }}
+            >
+              Rechaje paj la
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
   bank_htg: { acc: "000-000-000", name: "Ralph Olivier Greffin", bank: "Capital Bank (Gourdes)" },
@@ -4224,6 +4264,7 @@ export default function Dashboard() {
 
             {/* ── GIFT CARD BUY MODAL ── */}
             {gcSelectedProduct && (
+              <GiftCardModalErrorBoundary onError={(msg) => showToast(`Erè modal gift card: ${msg}`, 'error')}>
               <div
                 className="fixed inset-0 z-[60] flex items-end"
                 style={{ background: 'rgba(0,0,0,0.65)' }}
@@ -4296,6 +4337,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+              </GiftCardModalErrorBoundary>
             )}
 
 
