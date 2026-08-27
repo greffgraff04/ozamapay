@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -13,6 +14,18 @@ export class KycService {
   constructor(
     private prisma: PrismaService,
   ) {}
+
+  async assertApproved(userId: string) {
+    const kyc = await this.prisma.kyc.findUnique({ where: { userId } });
+
+    if (!kyc) {
+      throw new ForbiddenException('Ou dwe fè KYC avan');
+    }
+
+    if (kyc.status !== 'APPROVED') {
+      throw new ForbiddenException(`KYC ou an ${kyc.status}`);
+    }
+  }
 
   async submitKyc(
     userId: string,

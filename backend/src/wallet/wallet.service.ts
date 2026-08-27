@@ -2,12 +2,12 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 
 import { Prisma, TransactionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { KycService } from '../kyc/kyc.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,31 +31,12 @@ export class WalletService {
   constructor(
     private prisma: PrismaService,
     private trackingService: TrackingService,
+    private kycService: KycService,
   ) {}
 
   // ======================================================
   // HELPERS
   // ======================================================
-
-  private async checkKyc(userId: string) {
-    const kyc = await this.prisma.kyc.findUnique({
-      where: {
-        userId,
-      },
-    });
-
-    if (!kyc) {
-      throw new ForbiddenException(
-        'Ou dwe fè KYC avan',
-      );
-    }
-
-    if (kyc.status !== 'APPROVED') {
-      throw new ForbiddenException(
-        `KYC ou an ${kyc.status}`,
-      );
-    }
-  }
 
   private round(value: number) {
     return Math.round(value * 100) / 100;
@@ -154,7 +135,7 @@ export class WalletService {
     pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a
   ) {
     // 1. Verifye si moun k ap voye a gen KYC approved
-    await this.checkKyc(senderId);
+    await this.kycService.assertApproved(senderId);
 
     // 2. 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
     const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
@@ -263,7 +244,7 @@ export class WalletService {
     amount: number,
     pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a tou
   ) {
-    await this.checkKyc(senderId);
+    await this.kycService.assertApproved(senderId);
 
     // 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
     const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
@@ -519,7 +500,7 @@ export class WalletService {
     method: string,
     accountInfo: string,
   ) {
-    await this.checkKyc(userId);
+    await this.kycService.assertApproved(userId);
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) throw new NotFoundException('Wallet pa jwenn');
@@ -587,7 +568,7 @@ export class WalletService {
       throw new BadRequestException('Sèvis sa a pa disponib ankò');
     }
 
-    await this.checkKyc(userId);
+    await this.kycService.assertApproved(userId);
     // HTG services get 2% fee, USD/USDT services get 6% fee
     const isHtgService = serviceType === 'NATCASH';
     const feeRate = isHtgService ? FEES.WITHDRAW : FEES.TOPUP;

@@ -4,6 +4,8 @@ import { KycController } from './kyc.controller';
 
 import { KycService } from './kyc.service';
 
+import { KycApprovedGuard } from './kyc-approved.guard';
+
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { AuthModule } from '../auth/auth.module';
@@ -22,6 +24,8 @@ import { ImageKitModule } from '../imagekit/imagekit.module';
 
   controllers: [KycController],
 
-  providers: [KycService],
+  providers: [KycService, KycApprovedGuard],
+
+  exports: [KycService, KycApprovedGuard],
 })
 export class KycModule {}

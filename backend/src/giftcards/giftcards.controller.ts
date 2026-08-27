@@ -5,6 +5,7 @@ import {
 import { SkipThrottle } from '@nestjs/throttler';
 import { GiftCardsService } from './giftcards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 
 @Controller('giftcards')
 export class GiftCardsController {
@@ -23,7 +24,7 @@ export class GiftCardsController {
   }
 
   @Post('order')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, KycApprovedGuard)
   async orderGiftCard(
     @Req() req: any,
     @Body('productId') productId: number,
