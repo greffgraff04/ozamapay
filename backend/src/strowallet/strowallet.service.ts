@@ -199,6 +199,11 @@ export class StrowalletService {
   // ─── 1. CREATE NFC CARD (otomatik, pa bezwen compliance review) ─────────────
 
   async createAndFundCard(userId: string, amountUsd: number) {
+    amountUsd = Number(amountUsd);
+    if (!Number.isFinite(amountUsd) || amountUsd < 3 || amountUsd > 500) {
+      throw new BadRequestException('Montan dwe ant $3 ak $500');
+    }
+
     // Verifye pa gen kat ki poko rezoud — ACTIVE/FROZEN (kat ki egziste toujou) oswa
     // PENDING_RECHARGE (CardTerminationService ap toujou veye l, pa dwe gen 2 kreyasyon
     // pou menm kliyan an). TERMINATED/REPLACED san sa yo vle di lifecycle a fin rezoud,
@@ -423,6 +428,11 @@ export class StrowalletService {
   // ─── 3. FUND CARD (recharje) ─────────────────────────────────────────────────
 
   async fundVirtualCard(userId: string, amountUsd: number) {
+    amountUsd = Number(amountUsd);
+    if (!Number.isFinite(amountUsd) || amountUsd < 3 || amountUsd > 500) {
+      throw new BadRequestException('Montan dwe ant $3 ak $500');
+    }
+
     const card = await this.findActiveOrFrozenCard(userId);
     if (!card) throw new NotFoundException('Ou pa gen yon kat vityèl');
     if (card.status !== 'ACTIVE') throw new BadRequestException('Kat ou a pa aktif');

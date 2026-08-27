@@ -25,8 +25,7 @@ export class StrowalletController {
 
   @Post('create')
   createAndFundCard(@Request() req, @Body() body: { amount_usd: number }) {
-    const amount = Number(body.amount_usd) || 5;
-    return this.strowalletService.createAndFundCard(req.user.id, amount);
+    return this.strowalletService.createAndFundCard(req.user.id, Number(body.amount_usd));
   }
 
   @Post('recharge')

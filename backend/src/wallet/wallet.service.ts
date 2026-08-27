@@ -23,6 +23,9 @@ const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 const INTERNATIONAL_METHODS = ['ZELLE', 'CASHAPP', 'MERU', 'BANK', 'USDT'];
 const isInternational = (method: string) => INTERNATIONAL_METHODS.includes(method.toUpperCase());
 
+const DOMESTIC_TOPUP_METHODS = ['MONCASH', 'NATCASH'];
+const INTL_DEPOSIT_METHODS = ['BANK', 'ZELLE', 'CASHAPP', 'MERU', 'USDT'];
+
 @Injectable()
 export class WalletService {
   constructor(
@@ -404,6 +407,17 @@ export class WalletService {
     agentId?: string,
     proofImage?: string,
   ) {
+    const methodUpper = method.toUpperCase();
+    if (DOMESTIC_TOPUP_METHODS.includes(methodUpper)) {
+      if (!Number.isFinite(amount) || amount < 50 || amount > 30000) {
+        throw new BadRequestException('Montan depo dwe ant 50 ak 30,000 HTG');
+      }
+    } else if (INTL_DEPOSIT_METHODS.includes(methodUpper)) {
+      if (!Number.isFinite(amount) || amount < 10 || amount > 1000) {
+        throw new BadRequestException('Montan depo dwe ant $10 ak $1,000 USD');
+      }
+    }
+
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) throw new NotFoundException('Wallet pa jwenn');
 
@@ -513,6 +527,10 @@ export class WalletService {
     const amountHTG = isInternational(method)
       ? this.round(amount * await this.getUsdHtgRate())
       : amount;
+
+    if (!Number.isFinite(amountHTG) || amountHTG < 50 || amountHTG > 10000) {
+      throw new BadRequestException('Montan retrè dwe ant 50 ak 10,000 HTG');
+    }
 
     const fee = this.round(amountHTG * FEES.WITHDRAW);
     const totalDebit = this.round(amountHTG + fee);
