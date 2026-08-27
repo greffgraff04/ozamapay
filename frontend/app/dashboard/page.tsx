@@ -4266,19 +4266,24 @@ export default function Dashboard() {
             {gcSelectedProduct && (
               <GiftCardModalErrorBoundary onError={(msg) => showToast(`Erè modal gift card: ${msg}`, 'error')}>
               <div
-                className="fixed inset-0 z-[60] flex items-end"
-                style={{ background: 'rgba(0,0,0,0.65)' }}
+                className="fixed inset-0 z-[60] flex items-end justify-center"
+                style={{ background: 'rgba(0,0,0,0.6)' }}
                 onClick={() => !gcOrderLoading && setGcSelectedProduct(null)}
               >
                 <div
-                  className="w-full rounded-t-3xl p-6 pb-8 oz-slideUp"
-                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)' }}
+                  className="w-full max-h-[90vh] overflow-y-auto oz-slideUp"
+                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 32 }}
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
-                  <p className="font-black italic uppercase text-[16px] tracking-[0.04em] mb-4 text-center text-white">
-                    {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
-                  </p>
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">
+                      {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
+                    </p>
+                    <button onClick={() => !gcOrderLoading && setGcSelectedProduct(null)} disabled={gcOrderLoading}>
+                      <X size={20} color={glass.textDim} />
+                    </button>
+                  </div>
                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
                   {gcIsRange(gcSelectedProduct) ? (
                     <>
@@ -4326,14 +4331,6 @@ export default function Dashboard() {
                     style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
                     {gcOrderLoading ? 'Pwosesis...' : 'Achte'}
-                  </button>
-                  <button
-                    onClick={() => { if (!gcOrderLoading) setGcSelectedProduct(null); }}
-                    disabled={gcOrderLoading}
-                    className="w-full py-4 font-black uppercase rounded-2xl tracking-widest text-sm mt-3 disabled:opacity-40"
-                    style={{ background: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim }}
-                  >
-                    Anile
                   </button>
                 </div>
               </div>
