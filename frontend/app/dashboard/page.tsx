@@ -4024,6 +4024,9 @@ export default function Dashboard() {
         const gcIsRange = (p: any) =>
           p.denominationType === 'RANGE' || (p.senderFaceValue == null && p.minSenderDenomination != null);
 
+        const gcFixedAmounts = (p: any): number[] =>
+          Array.isArray(p?.fixedSenderDenominations) ? p.fixedSenderDenominations : [];
+
         const gcStatusColor = (s: string) =>
           s === 'COMPLETED' ? '#22c55e' : (s === 'PROCESSING' || s === 'PENDING') ? '#FF7A00' : '#ef4444';
 
@@ -4128,7 +4131,7 @@ export default function Dashboard() {
                         key={p.productId}
                         onClick={() => {
                           setGcSelectedProduct(p);
-                          setGcBuyAmount(gcIsRange(p) ? String(p.minSenderDenomination ?? '') : String(p.senderFaceValue ?? ''));
+                          setGcBuyAmount(gcIsRange(p) ? String(p.minSenderDenomination ?? '') : String(gcFixedAmounts(p)[0] ?? ''));
                         }}
                         className="oz-glass rounded-2xl p-3 flex flex-col items-center active:scale-[0.97] transition-all"
                       >
@@ -4141,7 +4144,7 @@ export default function Dashboard() {
                           {p.brand?.brandName ?? p.productName}
                         </p>
                         <p className="font-black text-[12px]" style={{ color: '#FF7A00' }}>
-                          {gcIsRange(p) ? `$${p.minSenderDenomination}–$${p.maxSenderDenomination}` : `$${p.senderFaceValue}`}
+                          {gcIsRange(p) ? `$${p.minSenderDenomination}–$${p.maxSenderDenomination}` : `Depi $${gcFixedAmounts(p)[0] ?? '—'}`}
                         </p>
                       </button>
                     ))}
@@ -4236,28 +4239,48 @@ export default function Dashboard() {
                     {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
                   </p>
                   <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
-                    style={{
-                      background: glass.inputBg,
-                      border: `1px solid ${glass.border}`,
-                      color: colors.textPrimary,
-                      opacity: !gcIsRange(gcSelectedProduct) ? 0.6 : 1,
-                    }}
-                    value={gcBuyAmount}
-                    onChange={e => setGcBuyAmount(e.target.value)}
-                    readOnly={!gcIsRange(gcSelectedProduct)}
-                  />
-                  {gcIsRange(gcSelectedProduct) && (
-                    <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
-                      Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
+                  {gcIsRange(gcSelectedProduct) ? (
+                    <>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
+                        style={{
+                          background: glass.inputBg,
+                          border: `1px solid ${glass.border}`,
+                          color: colors.textPrimary,
+                        }}
+                        value={gcBuyAmount}
+                        onChange={e => setGcBuyAmount(e.target.value)}
+                      />
+                      <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
+                        Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
+                      </p>
+                    </>
+                  ) : gcFixedAmounts(gcSelectedProduct).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {gcFixedAmounts(gcSelectedProduct).map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setGcBuyAmount(String(amt))}
+                          className="px-4 py-2.5 rounded-xl text-[14px] font-black transition-all"
+                          style={gcBuyAmount === String(amt)
+                            ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
+                            : { background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
+                        >
+                          ${amt}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] italic" style={{ color: glass.textDimmer }}>
+                      Pa gen montan disponib pou pwodwi sa a kounye a.
                     </p>
                   )}
                   <button
                     onClick={handleBuyGift}
-                    disabled={gcOrderLoading}
+                    disabled={gcOrderLoading || !gcBuyAmount}
                     className="w-full py-4 text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40 oz-glowPulse"
                     style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
