@@ -752,9 +752,11 @@ export default function Dashboard() {
       if (!token) return;
       setGcLoading(true);
       Promise.all([
-        fetch(`${backendUrl}/giftcards/products`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      ]).then(([products, orders]) => {
+        fetch(`${backendUrl}/giftcards/products`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]).then(async ([productsRes, ordersRes]) => {
+        if (productsRes.status === 401 || ordersRes.status === 401) { signOut(); return; }
+        const [products, orders] = await Promise.all([productsRes.json(), ordersRes.json()]);
         setGcProducts(Array.isArray(products?.content) ? products.content : (Array.isArray(products) ? products : []));
         setGcOrders(Array.isArray(orders) ? orders : []);
       }).catch(() => {}).finally(() => setGcLoading(false));
@@ -4040,6 +4042,7 @@ export default function Dashboard() {
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ productId: gcSelectedProduct.productId, unitPrice }),
             });
+            if (res.status === 401) { signOut(); return; }
             const data = await res.json();
             if (!res.ok) { showToast(data.message || 'Erè pandan kòmand lan', 'error'); return; }
             setGcOrderResult(data);
