@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   Home, Send, PlusCircle, Banknote, CreditCard, History, User, Landmark, ChevronLeft,
   Smartphone, Bitcoin, Gamepad2, CheckCircle2, Upload, Info, ChevronRight,
@@ -28,46 +29,6 @@ const CARD_BILLING = {
   zip: '19801',
   country: 'United States',
 };
-
-class GiftCardModalErrorBoundary extends React.Component<
-  { onError: (message: string) => void; children: React.ReactNode },
-  { hasError: boolean; message: string }
-> {
-  constructor(props: { onError: (message: string) => void; children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, message: '' };
-  }
-
-  static getDerivedStateFromError(error: any) {
-    return { hasError: true, message: error?.message || String(error) };
-  }
-
-  componentDidCatch(error: any, info: React.ErrorInfo) {
-    console.error('[GiftCardModal] render error:', error, info.componentStack);
-    this.props.onError(error?.message || String(error));
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.78)' }}>
-          <div className="rounded-3xl p-6 text-center max-w-sm w-full" style={{ background: '#0F121E', border: '1px solid rgba(255,122,0,0.25)' }}>
-            <p className="font-black uppercase text-white mb-2">Yon erè rive</p>
-            <p className="text-[12px] mb-4 break-words" style={{ color: '#FF7A00' }}>{this.state.message}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 rounded-xl font-bold text-[13px] uppercase"
-              style={{ background: '#FF7A00', color: '#0F121E' }}
-            >
-              Rechaje paj la
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
@@ -363,17 +324,8 @@ export default function Dashboard() {
   const [gcLoading, setGcLoading] = useState(false);
   const [gcSelectedBrand, setGcSelectedBrand] = useState<string | null>(null);
   const [gcSelectedDenom, setGcSelectedDenom] = useState<number | null>(null);
-  const [gcOrderLoading, setGcOrderLoading] = useState(false);
-  const [gcOrderResult, setGcOrderResult] = useState<any>(null);
   const [gcOrders, setGcOrders] = useState<any[]>([]);
-  // Airtime purchasing was retired — only order-history state remains so
-  // past purchasers can still see their receipts (see "Istorik Airtime").
-  const [gcSection, setGcSection] = useState<'gifts' | 'airtime'>('gifts');
-  const [atOrders, setAtOrders] = useState<any[]>([]);
-  const [atOrdersLoading, setAtOrdersLoading] = useState(false);
-  // Gift card buy modal
-  const [gcSelectedProduct, setGcSelectedProduct] = useState<any>(null);
-  const [gcBuyAmount, setGcBuyAmount] = useState('');
+  const [gcSection, setGcSection] = useState<'gifts' | 'history'>('gifts');
   // Profile PIN form
   const [profilePinValue, setProfilePinValue] = useState('');
   const [profilePinVisible, setProfilePinVisible] = useState(false);
@@ -385,6 +337,7 @@ export default function Dashboard() {
 
   const { colors, glass, isDark, toggleTheme } = useTheme();
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
+  const router = useRouter();
 
   const fetchSecretDetails = async () => {
     if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
@@ -802,18 +755,6 @@ export default function Dashboard() {
       }).catch(() => {}).finally(() => setGcLoading(false));
     }
   }, [activeTab]);
-
-  useEffect(() => {
-    if (gcSection !== 'airtime') return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    setAtOrdersLoading(true);
-    fetch(`${backendUrl}/airtime/orders`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(orders => setAtOrders(Array.isArray(orders) ? orders : []))
-      .catch(() => {})
-      .finally(() => setAtOrdersLoading(false));
-  }, [gcSection]);
 
   useEffect(() => {
     if (activeTab !== 'home') return;
@@ -4073,30 +4014,30 @@ export default function Dashboard() {
         const gcStatusLabel = (s: string) =>
           ({ COMPLETED: 'Konplete', PROCESSING: 'Ap trete', PENDING: 'Annatant', FAILED: 'Echwe' } as any)[s] ?? s;
 
-        const handleBuyGift = async () => {
-          if (!gcSelectedProduct) return;
-          const unitPrice = parseFloat(gcBuyAmount);
-          if (isNaN(unitPrice) || unitPrice <= 0) { showToast('Tanpri antre yon montan valid.', 'error'); return; }
-          setGcOrderLoading(true);
-          try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${backendUrl}/giftcards/order`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productId: gcSelectedProduct.productId, unitPrice }),
-            });
-            if (res.status === 401) { signOut(); return; }
-            const data = await res.json();
-            if (!res.ok) { showToast(data.message || 'Erè pandan kòmand lan', 'error'); return; }
-            setGcOrderResult(data);
-            setGcSelectedProduct(null);
-            const t = localStorage.getItem('token');
-            if (t) fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${t}` } })
-              .then(r => r.json()).then(o => setGcOrders(Array.isArray(o) ? o : [])).catch(() => {});
-            fetchData();
-          } catch { showToast('Erè rezo', 'error'); }
-          finally { setGcOrderLoading(false); }
-        };
+        const gcOrderCard = (o: any) => (
+          <div key={o.id} className="oz-glass rounded-3xl p-4 mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate text-white">{o.productName}</p>
+              <span className="text-[9px] font-black uppercase rounded-full px-2 py-0.5"
+                style={{ background: `${gcStatusColor(o.status)}22`, color: gcStatusColor(o.status) }}>
+                {gcStatusLabel(o.status)}
+              </span>
+            </div>
+            <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
+              ${parseFloat(o.unitPrice).toFixed(2)} · {parseFloat(o.htgPaid).toFixed(2)} HTG
+            </p>
+            {o.redeemCode && (
+              <div className="rounded-[10px] px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
+                <p className="font-black text-[#FF7A00] text-[14px] tracking-[0.1em]">{o.redeemCode}</p>
+                <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00] ml-2"><Copy size={14} /></button>
+              </div>
+            )}
+            <p className="text-[10px] mt-1" style={{ color: glass.textDimmer }}>{formatTxDate(o.createdAt)}</p>
+          </div>
+        );
+
+        const gcOrdersSuccess = gcOrders.filter((o: any) => o.status === 'COMPLETED');
+        const gcOrdersOther = gcOrders.filter((o: any) => o.status !== 'COMPLETED');
 
         return (
           <div className="oz-fadeUp pb-2" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -4118,41 +4059,19 @@ export default function Dashboard() {
                 Gift Cards
               </button>
               <button
-                onClick={() => setGcSection('airtime')}
+                onClick={() => setGcSection('history')}
                 className="flex-1 py-[9px] rounded-[10px] font-black italic uppercase text-[11px] tracking-[0.04em] transition-all"
-                style={gcSection === 'airtime'
+                style={gcSection === 'history'
                   ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
                   : { color: glass.textDimmer }}
               >
-                Airtime
+                Mes Gift Cards
               </button>
             </div>
 
             {/* ── GIFT CARDS sub-tab ── */}
             {gcSection === 'gifts' && (
               <>
-                {/* Purchase result card */}
-                {gcOrderResult && (
-                  <div className="oz-glass-strong rounded-3xl p-5 text-center mb-5">
-                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(255,122,0,.14)' }}>
-                      <CheckCircle2 size={28} color="#FF7A00" />
-                    </div>
-                    <p className="font-black italic uppercase text-base tracking-tight text-white">{gcOrderResult.productName}</p>
-                    <p className="text-sm mt-1" style={{ color: glass.textDim }}>${gcOrderResult.unitPrice} USD · {gcOrderResult.htgPaid} HTG</p>
-                    {gcOrderResult.redeemCode ? (
-                      <div className="mt-4 rounded-[12px] px-4 py-3" style={{ background: glass.bg, border: `1px solid ${glass.border}` }}>
-                        <p className="font-black text-[#FF7A00] text-xl tracking-[0.1em] break-all">{gcOrderResult.redeemCode}</p>
-                        <button onClick={() => copyToClipboard(gcOrderResult.redeemCode)} className="mt-3 flex items-center gap-2 mx-auto text-white px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
-                          <Copy size={15} /> Kopye Kòd la
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="font-bold text-sm mt-3" style={{ color: '#FF7A00' }}>Kòmand an pwosesis — w ap resevwa kòd la pa imel.</p>
-                    )}
-                    <button onClick={() => setGcOrderResult(null)} className="mt-4 text-sm underline" style={{ color: glass.textDimmer }}>Fèmen</button>
-                  </div>
-                )}
-
                 {/* Products section title */}
                 <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginBottom: 10 }}>Pwodwi Disponib</span>
 
@@ -4169,10 +4088,7 @@ export default function Dashboard() {
                     {gcProducts.map((p: any) => (
                       <button
                         key={p.productId}
-                        onClick={() => {
-                          setGcSelectedProduct(p);
-                          setGcBuyAmount(gcIsRange(p) ? String(p.minSenderDenomination ?? '') : String(gcFixedAmounts(p)[0] ?? ''));
-                        }}
+                        onClick={() => router.push(`/dashboard/gifts/${p.productId}`)}
                         className="oz-glass rounded-2xl p-3 flex flex-col items-center active:scale-[0.97] transition-all"
                       >
                         {p.logoUrls?.[0] ? (
@@ -4190,153 +4106,29 @@ export default function Dashboard() {
                     ))}
                   </div>
                 )}
-
-                {/* Gift card order history */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Gift Cards</span>
-                {gcOrders.length === 0 ? (
-                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn achte poko.</p>
-                  </div>
-                ) : (
-                  gcOrders.map((o: any) => (
-                    <div key={o.id} className="oz-glass rounded-3xl p-4 mb-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate text-white">{o.productName}</p>
-                        <span className="text-[9px] font-black uppercase rounded-full px-2 py-0.5"
-                          style={{ background: `${gcStatusColor(o.status)}22`, color: gcStatusColor(o.status) }}>
-                          {gcStatusLabel(o.status)}
-                        </span>
-                      </div>
-                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
-                        ${parseFloat(o.unitPrice).toFixed(2)} · {parseFloat(o.htgPaid).toFixed(2)} HTG
-                      </p>
-                      {o.redeemCode && (
-                        <div className="rounded-[10px] px-3 py-1.5 my-1.5 flex items-center justify-between" style={{ background: glass.bg, border: `1px solid ${glass.borderSubtle}` }}>
-                          <p className="font-black text-[#FF7A00] text-[14px] tracking-[0.1em]">{o.redeemCode}</p>
-                          <button onClick={() => copyToClipboard(o.redeemCode)} className="text-[#FF7A00] ml-2"><Copy size={14} /></button>
-                        </div>
-                      )}
-                      <p className="text-[10px] mt-1" style={{ color: glass.textDimmer }}>{formatTxDate(o.createdAt)}</p>
-                    </div>
-                  ))
-                )}
               </>
             )}
 
-            {/* ── AIRTIME sub-tab ── */}
-            {gcSection === 'airtime' && (
+            {/* ── MES GIFT CARDS sub-tab (istorik kòmand) ── */}
+            {gcSection === 'history' && (
               <>
-                {/* Airtime purchasing has been retired — order history stays visible below
-                    for past purchasers; no way to start a new order remains. */}
-
-                {/* Airtime order history */}
-                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Istorik Airtime</span>
-                {atOrdersLoading ? (
-                  <div className="flex justify-center py-4">
-                    <div className="w-6 h-6 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : atOrders.length === 0 ? (
+                <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 8, marginBottom: 10 }}>Reyisi</span>
+                {gcOrdersSuccess.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
-                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn achte poko.</p>
+                    <p className="italic text-[13px]" style={{ color: glass.textDimmer }}>Pa gen okenn achte reyisi poko.</p>
                   </div>
                 ) : (
-                  atOrders.map((o: any) => (
-                    <div key={o.id} className="oz-glass rounded-3xl p-4 mb-3">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-black italic uppercase text-[12px] tracking-[0.03em] flex-1 mr-3 truncate text-white">{o.operatorName}</p>
-                        <span className="text-[9px] font-black uppercase rounded-full px-2 py-0.5"
-                          style={{ background: `${gcStatusColor(o.status)}22`, color: gcStatusColor(o.status) }}>
-                          {gcStatusLabel(o.status)}
-                        </span>
-                      </div>
-                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
-                        {parseFloat(o.amount).toFixed(2)} HTG → {o.phoneNumber}
-                      </p>
-                      <p className="text-[11px] mb-1" style={{ color: glass.textDimmer }}>
-                        Debite: {parseFloat(o.htgPaid).toFixed(2)} HTG
-                      </p>
-                      <p className="text-[10px] mt-1" style={{ color: glass.textDimmer }}>{formatTxDate(o.createdAt)}</p>
-                    </div>
-                  ))
+                  gcOrdersSuccess.map(gcOrderCard)
+                )}
+
+                {gcOrdersOther.length > 0 && (
+                  <>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 10, color: glass.textDim, display: 'block', marginTop: 24, marginBottom: 10 }}>Annatant / Echwe</span>
+                    {gcOrdersOther.map(gcOrderCard)}
+                  </>
                 )}
               </>
             )}
-
-            {/* ── GIFT CARD BUY MODAL ── */}
-            {gcSelectedProduct && (
-              <GiftCardModalErrorBoundary onError={(msg) => showToast(`Erè modal gift card: ${msg}`, 'error')}>
-              <div
-                className="fixed inset-0 z-[60] flex items-end justify-center"
-                style={{ background: 'rgba(0,0,0,0.6)' }}
-                onClick={() => !gcOrderLoading && setGcSelectedProduct(null)}
-              >
-                <div
-                  className="w-full max-h-[90vh] overflow-y-auto oz-slideUp"
-                  style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 32 }}
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">
-                      {gcSelectedProduct.brand?.brandName ?? gcSelectedProduct.productName}
-                    </p>
-                    <button onClick={() => !gcOrderLoading && setGcSelectedProduct(null)} disabled={gcOrderLoading}>
-                      <X size={20} color={glass.textDim} />
-                    </button>
-                  </div>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6, marginTop: 12 }}>Montan ($USD)</span>
-                  {gcIsRange(gcSelectedProduct) ? (
-                    <>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        className="w-full rounded-xl px-4 py-[13px] text-[15px] outline-none"
-                        style={{
-                          background: glass.inputBg,
-                          border: `1px solid ${glass.border}`,
-                          color: colors.textPrimary,
-                        }}
-                        value={gcBuyAmount}
-                        onChange={e => setGcBuyAmount(e.target.value)}
-                      />
-                      <p className="text-[11px] mt-1" style={{ color: glass.textDimmer }}>
-                        Min ${gcSelectedProduct.minSenderDenomination} — Max ${gcSelectedProduct.maxSenderDenomination}
-                      </p>
-                    </>
-                  ) : gcFixedAmounts(gcSelectedProduct).length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {gcFixedAmounts(gcSelectedProduct).map((amt) => (
-                        <button
-                          key={amt}
-                          type="button"
-                          onClick={() => setGcBuyAmount(String(amt))}
-                          className="px-4 py-2.5 rounded-xl text-[14px] font-black transition-all"
-                          style={gcBuyAmount === String(amt)
-                            ? { background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', color: '#fff' }
-                            : { background: glass.inputBg, border: `1px solid ${glass.border}`, color: colors.textPrimary }}
-                        >
-                          ${amt}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[12px] italic" style={{ color: glass.textDimmer }}>
-                      Pa gen montan disponib pou pwodwi sa a kounye a.
-                    </p>
-                  )}
-                  <button
-                    onClick={handleBuyGift}
-                    disabled={gcOrderLoading || !gcBuyAmount}
-                    className="w-full py-4 text-white font-black uppercase rounded-2xl tracking-widest text-sm mt-6 active:scale-[0.98] transition-all disabled:opacity-40 oz-glowPulse"
-                    style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
-                  >
-                    {gcOrderLoading ? 'Pwosesis...' : 'Achte'}
-                  </button>
-                </div>
-              </div>
-              </GiftCardModalErrorBoundary>
-            )}
-
 
           </div>
         );
