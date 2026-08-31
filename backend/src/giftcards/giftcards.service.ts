@@ -112,7 +112,7 @@ export class GiftCardsService {
       });
 
       if (result.transactionId) {
-        const cards = await this.reloadlyGet(`/orders/${result.transactionId}/cards`);
+        const cards = await this.reloadlyGet(`/orders/transactions/${result.transactionId}/cards`);
         redeemCode = cards?.[0]?.cardNumber ?? cards?.[0]?.pinCode ?? null;
       }
       finalStatus = redeemCode ? 'COMPLETED' : 'PROCESSING';
@@ -137,7 +137,7 @@ export class GiftCardsService {
   // ─── History ──────────────────────────────────────────────────────────────
 
   async getOrderReloadly(transactionId: string) {
-    return this.reloadlyGet(`/orders/${transactionId}/cards`);
+    return this.reloadlyGet(`/orders/transactions/${transactionId}/cards`);
   }
 
   async getUserOrders(userId: string) {
@@ -187,7 +187,7 @@ export class GiftCardsService {
       let redeemCode: string | null = null;
       if (reloadlyTxId) {
         try {
-          const cards = await this.reloadlyGet(`/orders/${reloadlyTxId}/cards`);
+          const cards = await this.reloadlyGet(`/orders/transactions/${reloadlyTxId}/cards`);
           redeemCode = cards?.[0]?.cardNumber ?? cards?.[0]?.pinCode ?? null;
         } catch (err: any) {
           this.logger.warn(`Could not fetch redeem code for tx ${reloadlyTxId}: ${err.message}`);
