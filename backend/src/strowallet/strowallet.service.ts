@@ -137,15 +137,20 @@ export class StrowalletService {
     return data;
   }
 
-  // Yon itilizatè pa ta dwe janm gen 2 kat ki kalifye pou ACTIVE/FROZEN an
-  // menm tan, men sa rive (egzanp: race condition doub-kreyasyon, 8 out) —
-  // `findFirst` san orderBy sou yon enum PA garanti ki ranje l retounen,
-  // kidonk yon kat FROZEN "fantom" ka parèt olye vrè kat ACTIVE la. Toujou
-  // priyorize ACTIVE anvan FROZEN pou anpeche sa.
+  // Yon itilizatè pa ta dwe janm gen 2 kat StroWallet ki kalifye pou
+  // ACTIVE/FROZEN an menm tan, men sa rive (egzanp: race condition
+  // doub-kreyasyon, 8 out) — `findFirst` san orderBy sou yon enum PA garanti
+  // ki ranje l retounen, kidonk yon kat FROZEN "fantom" ka parèt olye vrè
+  // kat ACTIVE la. Toujou priyorize ACTIVE anvan FROZEN pou anpeche sa.
+  //
+  // 31 out 2026 — filtre pa provider: yon itilizatè ka gen 1 kat StroWallet
+  // + 1 kat BSICards an menm tan kounye a (wè BSICardsService pou menm
+  // chanjman an). San filt sa a, yon aksyon StroWallet (freeze, fund, get
+  // secret details) ta ka pran kat BSICards la pa erè.
   private async findActiveOrFrozenCard(userId: string) {
     return (
-      (await this.prisma.virtualCard.findFirst({ where: { userId, status: 'ACTIVE' } })) ??
-      (await this.prisma.virtualCard.findFirst({ where: { userId, status: 'FROZEN' } }))
+      (await this.prisma.virtualCard.findFirst({ where: { userId, provider: 'STROWALLET_NFC', status: 'ACTIVE' } })) ??
+      (await this.prisma.virtualCard.findFirst({ where: { userId, provider: 'STROWALLET_NFC', status: 'FROZEN' } }))
     );
   }
 
@@ -204,12 +209,13 @@ export class StrowalletService {
       throw new BadRequestException('Montan dwe ant $3 ak $500');
     }
 
-    // Verifye pa gen kat ki poko rezoud — ACTIVE/FROZEN (kat ki egziste toujou) oswa
+    // Verifye pa gen kat StroWallet ki poko rezoud — ACTIVE/FROZEN (kat ki egziste toujou) oswa
     // PENDING_RECHARGE (CardTerminationService ap toujou veye l, pa dwe gen 2 kreyasyon
     // pou menm kliyan an). TERMINATED/REPLACED san sa yo vle di lifecycle a fin rezoud,
-    // OK pou kliyan an kreye yon nouvo kat li menm.
+    // OK pou kliyan an kreye yon nouvo kat li menm. Filtre pa provider (31 out 2026) —
+    // yon kat BSICards aktif pa dwe bloke kreyasyon yon kat StroWallet.
     const existing = await this.prisma.virtualCard.findFirst({
-      where: { userId, status: { in: ['ACTIVE', 'FROZEN', 'PENDING_RECHARGE'] } },
+      where: { userId, provider: 'STROWALLET_NFC', status: { in: ['ACTIVE', 'FROZEN', 'PENDING_RECHARGE'] } },
     });
     if (existing) throw new BadRequestException('Ou genyen yon kat vityèl deja');
 
