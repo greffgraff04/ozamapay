@@ -39,6 +39,14 @@ services:
         sync: false
       - key: STROWALLET_WEBHOOK_SECRET
         sync: false
+      - key: BSICARDS_BASE_URL
+        sync: false
+      - key: BSICARDS_PUBLIC_KEY
+        sync: false
+      - key: BSICARDS_SECRET_KEY
+        sync: false
+      - key: BSICARDS_RESELLER_KEY
+        sync: false
       - key: IMAGEKIT_PUBLIC_KEY
         sync: false
       - key: IMAGEKIT_PRIVATE_KEY
