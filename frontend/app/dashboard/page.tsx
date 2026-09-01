@@ -351,7 +351,10 @@ export default function Dashboard() {
   const router = useRouter();
 
   const fetchSecretDetails = async () => {
-    if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl || virtualCard?.secureEmbedUrl) { setShowCardDetails(true); return; }
+    // NÒT: secureEmbedUrl (BSICards) PA antre nan chèk sa a espre — authToken
+    // li a ekspire nan 2 minit, kidonk chak klik sou "Wè Info" dwe refè yon
+    // apèl backend fre, pa reyitilize yon ansyen URL an kachèt.
+    if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
     setSecretDetailsFailed(false);
     setSecretDetailsLoading(true);
     setShowCardDetails(true);

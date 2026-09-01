@@ -79,7 +79,7 @@ export class BSICardsMastercardEuroService {
     // Fòm repons lan konfime pa yon vrè tès (31 out 2026): { data: { data:
     // { uri } } } — URL iframe la nan `data.data.uri`. Gade plizyè lòt fòm
     // posib tou kòm filè sekirite si BSICards chanje l pita.
-    const url =
+    const scriptUrl =
       raw?.data?.data?.uri ||
       raw?.response?.data?.uri ||
       raw?.response?.url ||
@@ -87,17 +87,31 @@ export class BSICardsMastercardEuroService {
       raw?.url ||
       raw?.response?.iframe_url ||
       raw?.data?.iframe_url;
-    if (!url) {
+    if (!scriptUrl) {
       this.logger.error(`BSICards mastercard-euro: pa jwenn URL nan repons — ${JSON.stringify(raw)}`);
+      throw new BadRequestException('Nou pa ka chaje detay kat la kounye a. Eseye ankò.');
     }
 
-    // 1 sept 2026 — `secureEmbedUrl` (pa `cardNumberUrl`/`cvvUrl` StroWallet
-    // yo) espre: BSICards retounen YON SÈL iframe konbine ki montre nimewo +
-    // CVV + ekspirasyon ansanm (carddetails.cardnumber/cvv toujou null nan
-    // repons lan — done sa yo SÈLMAN vizib nan iframe a). Fwontyè a dwe
-    // afiche sa kòm YON iframe plen-laj, pa eseye ranpli yon grid 3-bwat.
+    // 1 sept 2026 — KONFIME: `scriptUrl` la PA yon paj HTML pou yon iframe,
+    // se yon SCRIPT JS (Content-Type: application/javascript) ki, si l
+    // egzekite nan navigatè a, kreye limenm yon iframe ak vrè URL detay kat
+    // la (yon domèn separe, business.4payments.io/.../sensitive?authToken=…,
+    // ki ekspire nan 2 minit). Nou PA janm egzekite script sa a — nou li
+    // TÈKS brit li sèlman, epi ekstrè URL anndan `var url = "..."` ak yon
+    // regex. Sa evite egzekite JS deyò nan kontèks aplikasyon nou an.
+    const scriptRes = await axios.get(scriptUrl, { responseType: 'text', transformResponse: (r) => r });
+    const match = String(scriptRes.data).match(/var\s+url\s*=\s*"([^"]+)"/);
+    if (!match) {
+      this.logger.error(`BSICards mastercard-euro: pa jwenn URL anndan script la — ${String(scriptRes.data).slice(0, 500)}`);
+      throw new BadRequestException('Nou pa ka chaje detay kat la kounye a. Eseye ankò.');
+    }
+
+    // Chak URL sa a gen yon authToken ki ekspire nan 2 minit (konfime pa JWT
+    // claim "expire":"2m") — PA kachte valè sa a. Chak apèl getSecretDetails
+    // dwe refè tout chèn nan (get-sensitive-card + fetch script) pou jwenn
+    // yon URL FRESH.
     return {
-      secureEmbedUrl: url,
+      secureEmbedUrl: match[1],
       last4: card.last4,
       balance: Number(card.balance),
     };
