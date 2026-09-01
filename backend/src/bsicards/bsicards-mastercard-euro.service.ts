@@ -90,7 +90,7 @@ export class BSICardsMastercardEuroService {
   async createCard(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { kyc: true },
+      include: { kyc: true, wallet: true },
     });
     if (!user) throw new NotFoundException('Itilizatè introuvable');
     if (!user.kyc || user.kyc.status !== 'APPROVED') {
@@ -99,6 +99,25 @@ export class BSICardsMastercardEuroService {
 
     const existing = await this.findEuroCard(userId);
     if (existing) throw new BadRequestException('Ou genyen yon kat Mastercard EUR deja');
+
+    // BSICards bay chak kat Mastercard EUR yon balans inisyal GRATIS €3.00
+    // (konfime nan dokimantasyon: "Cards are issued with an initial provider
+    // balance of EUR 3.00"). Desizyon biznis (1 sept 2026, konfime ak
+    // itilizatè a): OZAMAPAY fè kliyan an peye pou €3.00 sa a tou (kòm yon
+    // depo minimòm nou egzije), PA yon bonus gratis — €7.50 emisyon BSICards
+    // la menm rete yon depans ENTÈN OZAMAPAY, li PA touche wallet kliyan an.
+    //
+    // Verifye balans AVAN rele BSICards — si kliyan an pa gen ase, pa gen
+    // rezon depanse vrè €7.50 BSICards la pou yon kat li pa ka peye pou li.
+    const rate = await this.getEurHtgRate();
+    const INITIAL_DEPOSIT_EUR = 3.0;
+    const htgCost = Math.ceil(INITIAL_DEPOSIT_EUR * rate);
+    const wallet = user.wallet;
+    if (!wallet || Number(wallet.balance) < htgCost) {
+      throw new BadRequestException(
+        `Balans ensifizan pou depo minimòm €${INITIAL_DEPOSIT_EUR.toFixed(2)} (${htgCost} HTG). Ou bezwen ${htgCost} HTG nan wallet ou.`,
+      );
+    }
 
     const { firstname, lastname } = this.resolveIdentity(user);
 
@@ -120,21 +139,61 @@ export class BSICardsMastercardEuroService {
       throw err;
     }
 
-    const virtualCard = await this.prisma.virtualCard.create({
-      data: {
-        userId,
-        cardId,
-        balance: 0,
-        currency: 'EUR',
-        brand: 'MASTERCARD',
-        provider: PROVIDER,
-        status: 'ACTIVE',
-      },
-    });
+    // BSICards deja bay siksè (kat la egziste vrèman kounye a, ak €3.00 sou
+    // li) — apati isit la se ekri lokal sèlman, kidonk yo tout ka rantre nan
+    // YON SÈL transaction atomik (pa gen apèl API deyò ki ka echwe pi lwen).
+    const walletBalanceBefore = Number(wallet.balance);
+    const walletBalanceAfter = walletBalanceBefore - htgCost;
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: htgCost } },
+      });
+
+      const virtualCard = await tx.virtualCard.create({
+        data: {
+          userId,
+          cardId,
+          balance: INITIAL_DEPOSIT_EUR,
+          currency: 'EUR',
+          brand: 'MASTERCARD',
+          provider: PROVIDER,
+          status: 'ACTIVE',
+        },
+      });
+
+      const transaction = await tx.transaction.create({
+        data: {
+          reference: `BSICARDS-EUR-CREATE-DEPOSIT-${cardId}`,
+          senderWalletId: wallet.id,
+          amount: htgCost,
+          fee: 0,
+          netAmount: htgCost,
+          type: 'CARD',
+          status: 'COMPLETED',
+          title: 'Depo inisyal kat Mastercard EUR',
+          description: `Depo minimòm €${INITIAL_DEPOSIT_EUR.toFixed(2)} (${htgCost} HTG, to ${rate}) pou kreyasyon kat Mastercard EUR BSICards ${cardId}.`,
+        },
+      });
+
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          transactionId: transaction.id,
+          type: 'DEBIT',
+          amount: htgCost,
+          balanceBefore: walletBalanceBefore,
+          balanceAfter: walletBalanceAfter,
+          description: `Depo inisyal €${INITIAL_DEPOSIT_EUR.toFixed(2)} kat Mastercard EUR (${cardId})`,
+        },
+      });
+
+      return { virtualCard, transaction };
+    }, { isolationLevel: 'Serializable' });
 
     return {
       message: 'Kat Mastercard EUR BSICards kreye.',
-      card: virtualCard,
+      card: result.virtualCard,
       raw: raw?.response ?? raw?.data ?? raw,
     };
   }
