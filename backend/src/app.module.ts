@@ -14,6 +14,7 @@ import { RatesModule } from './rates/rates.module';
 import { PaymentsModule } from './payments/payments.module';
 import { StrowalletModule } from './strowallet/strowallet.module';
 import { BSICardsModule } from './bsicards/bsicards.module';
+import { CardsModule } from './cards/cards.module';
 import { AgentsModule } from './agents/agents.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { MailModule } from './mail/mail.module';
@@ -49,6 +50,7 @@ import { TronModule } from './tron/tron.module';
     PaymentsModule,
     StrowalletModule,
     BSICardsModule,
+    CardsModule,
     AgentsModule,
     CommissionsModule,
     HealthModule,

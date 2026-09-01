@@ -598,17 +598,6 @@ export class StrowalletService {
   // ─── 5. LOCAL DATA (with live balance sync) ──────────────────────────────────
 
   async getMyCardLocalData(userId: string) {
-    // 31 out 2026 — ANULASYON TANPORÈ pou 1 SÈL kont tès
-    // (oliviergreffin20@gmail.com) — montre kat BSICards EUR li a olye kat
-    // StroWallet la sou dashboard kliyan an. PA yon chanjman jeneral: branch
-    // sa a deklanche SÈLMAN pou ID sa a. RETIRE apre nou ranplase l ak yon
-    // vrè endpoint "my-cards" pliryèl (planifye, poko fèt).
-    if (userId === 'f695f5a1-613c-4d64-a4ef-687f04d6b15f') {
-      return this.prisma.virtualCard.findFirst({
-        where: { userId, provider: 'BSICARDS_MASTERCARD_EUR', status: 'ACTIVE' },
-      });
-    }
-
     const card = await this.findActiveOrFrozenCard(userId);
     if (!card) return null;
 
