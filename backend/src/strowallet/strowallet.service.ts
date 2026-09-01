@@ -547,10 +547,10 @@ export class StrowalletService {
   // (confirmed returning an HTML 404 page instead of JSON) — no reason to keep two
   // separate paths for what should be one history list.
 
-  async getCardHistory(userId: string) {
+  async getCardHistory(userId: string, cardId?: string) {
     const [cardTransactions, walletTransactions] = await Promise.all([
       this.prisma.cardTransaction.findMany({
-        where: { userId },
+        where: cardId ? { userId, cardId } : { userId },
         orderBy: { occurredAt: 'desc' },
         take: 100,
       }),

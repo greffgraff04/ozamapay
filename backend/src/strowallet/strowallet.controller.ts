@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { StrowalletService } from './strowallet.service';
 import { CardOtpService } from './card-otp.service';
 import { CardsService } from '../cards/cards.service';
@@ -21,6 +21,12 @@ export class StrowalletController {
     return this.cardsService.getMyCard(req.user.id);
   }
 
+  // Lis TOUT kat ACTIVE/FROZEN kliyan an (kèlkeswa provider) — pou UI switcher.
+  @Get('my-cards')
+  getMyCards(@Request() req) {
+    return this.cardsService.getMyCards(req.user.id);
+  }
+
   // Kòd la restriksyon a sèl pwopriyetè kat la (JwtAuthGuard + rechèch pa
   // req.user.id) — retounen null si pa gen okenn kòd ki poko ekspire.
   @Get('otp')
@@ -28,33 +34,35 @@ export class StrowalletController {
     return this.cardOtpService.get(req.user.id);
   }
 
+  // `provider` opsyonèl — defo STROWALLET_NFC pou konpatibilite ak aparèy
+  // ki poko voye l (app mobil la).
   @Post('create')
-  createAndFundCard(@Request() req, @Body() body: { amount_usd: number }) {
-    return this.strowalletService.createAndFundCard(req.user.id, Number(body.amount_usd));
+  createCard(@Request() req, @Body() body: { amount_usd?: number; provider?: string }) {
+    return this.cardsService.createCard(req.user.id, body.provider ?? 'STROWALLET_NFC', Number(body.amount_usd));
   }
 
   @Post('recharge')
-  fundVirtualCard(@Request() req, @Body() body: { amount_usd: number }) {
-    return this.cardsService.fundCard(req.user.id, Number(body.amount_usd));
+  fundVirtualCard(@Request() req, @Body() body: { amount_usd: number; cardId?: string }) {
+    return this.cardsService.fundCard(req.user.id, Number(body.amount_usd), body.cardId);
   }
 
   @Post('secret-details')
-  getCardSecretDetails(@Request() req) {
-    return this.cardsService.getSecretDetails(req.user.id);
+  getCardSecretDetails(@Request() req, @Body() body: { cardId?: string }) {
+    return this.cardsService.getSecretDetails(req.user.id, body?.cardId);
   }
 
   @Get('history')
-  getCardHistory(@Request() req) {
-    return this.strowalletService.getCardHistory(req.user.id);
+  getCardHistory(@Request() req, @Query('cardId') cardId?: string) {
+    return this.strowalletService.getCardHistory(req.user.id, cardId);
   }
 
   @Post('freeze')
-  freezeCard(@Request() req) {
-    return this.cardsService.freezeCard(req.user.id);
+  freezeCard(@Request() req, @Body() body: { cardId?: string }) {
+    return this.cardsService.freezeCard(req.user.id, body?.cardId);
   }
 
   @Post('unfreeze')
-  unfreezeCard(@Request() req) {
-    return this.cardsService.unfreezeCard(req.user.id);
+  unfreezeCard(@Request() req, @Body() body: { cardId?: string }) {
+    return this.cardsService.unfreezeCard(req.user.id, body?.cardId);
   }
 }

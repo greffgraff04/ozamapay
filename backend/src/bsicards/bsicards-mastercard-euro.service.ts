@@ -62,6 +62,83 @@ export class BSICardsMastercardEuroService {
     return Number(rate.value);
   }
 
+  private resolveIdentity(user: {
+    name: string | null;
+    kyc: { firstName?: string | null; lastName?: string | null } | null;
+  }) {
+    if (user.kyc?.firstName && user.kyc?.lastName) {
+      return { firstname: user.kyc.firstName.trim(), lastname: user.kyc.lastName.trim() };
+    }
+    const nameParts = (user.name || 'OZAMA USER').trim().split(/\s+/).filter(Boolean);
+    const lastname = nameParts[nameParts.length - 1] || 'USER';
+    const firstname = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : lastname;
+    return { firstname, lastname };
+  }
+
+  private async recordCardCreationFailure(userId: string, email: string, errorMessage: string): Promise<void> {
+    await this.prisma.cardCreationFailure.create({
+      data: { userId, email, context: 'BSICARDS_EUR_CREATE', errorMessage },
+    });
+  }
+
+  // ─── 0. KREYE KAT (customer-facing, san depo — kat kreye vid, rechaje apre) ──
+  // Pa gen "billing address" pou pwodwi sa a (verifye nan API a) ni etap fonn
+  // konbine kreye+rechaje — kontrèman ak StroWallet, `create-card` la sèlman
+  // bezwen idantite (useremail/firstname/lastname). Kliyan rechaje apre atravè
+  // fundCard() pi ba.
+
+  async createCard(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { kyc: true },
+    });
+    if (!user) throw new NotFoundException('Itilizatè introuvable');
+    if (!user.kyc || user.kyc.status !== 'APPROVED') {
+      throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
+    }
+
+    const existing = await this.findEuroCard(userId);
+    if (existing) throw new BadRequestException('Ou genyen yon kat Mastercard EUR deja');
+
+    const { firstname, lastname } = this.resolveIdentity(user);
+
+    let cardId: string;
+    let raw: any;
+    try {
+      raw = await this.bsicardsPost('mastercard-euro/create-card', {
+        useremail: user.email,
+        firstname,
+        lastname,
+      });
+      cardId = raw?.response?.cardid || raw?.data?.cardid || raw?.cardid || raw?.response?.card_id || raw?.data?.card_id || raw?.card_id;
+      if (!cardId) {
+        this.logger.error(`BSICards mastercard-euro: pa jwenn cardid nan repons — ${JSON.stringify(raw)}`);
+        throw new BadRequestException('BSICards pa retounen cardid');
+      }
+    } catch (err) {
+      await this.recordCardCreationFailure(userId, user.email, (err as any)?.bsicardsDetail ?? (err as any)?.message ?? 'unknown');
+      throw err;
+    }
+
+    const virtualCard = await this.prisma.virtualCard.create({
+      data: {
+        userId,
+        cardId,
+        balance: 0,
+        currency: 'EUR',
+        brand: 'MASTERCARD',
+        provider: PROVIDER,
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      message: 'Kat Mastercard EUR BSICards kreye.',
+      card: virtualCard,
+      raw: raw?.response ?? raw?.data ?? raw,
+    };
+  }
+
   // ─── 1. WÈ INFO (detay sansib, iframe sekirize) ─────────────────────────────
 
   async getSecretDetails(userId: string) {

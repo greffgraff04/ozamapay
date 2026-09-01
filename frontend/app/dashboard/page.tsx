@@ -30,6 +30,11 @@ const CARD_BILLING = {
   country: 'United States',
 };
 
+const CARD_PROVIDER_OPTIONS: { key: 'STROWALLET_NFC' | 'BSICARDS_MASTERCARD_EUR'; label: string; sublabel: string }[] = [
+  { key: 'STROWALLET_NFC', label: 'Visa (StroWallet)', sublabel: 'USD · depo minim $3' },
+  { key: 'BSICARDS_MASTERCARD_EUR', label: 'Mastercard (BSICards)', sublabel: 'EUR · kreye vid, rechaje apre' },
+];
+
 const PAYMENT_INFO = {
   bank_usd: { acc: "1920222", name: "Ralph Olivier Greffin", bank: "Capital Bank (USD)" },
   bank_htg: { acc: "000-000-000", name: "Ralph Olivier Greffin", bank: "Capital Bank (Gourdes)" },
@@ -225,7 +230,21 @@ export default function Dashboard() {
   const [amount, setAmount] = useState('');
  
 
-  const [virtualCard, setVirtualCard] = useState<any>(null);
+  const [myCards, setMyCards] = useState<any[]>([]);
+  const [selectedCardIndex, setSelectedCardIndex] = useState(0);
+  const virtualCard = myCards[selectedCardIndex] ?? null;
+  // Patch the currently-selected card in place (freeze/unfreeze status,
+  // secret-details fill-in, live balance sync) without touching the others.
+  const updateVirtualCard = (updater: (prev: any) => any) => {
+    setMyCards((prev) => {
+      if (selectedCardIndex < 0 || selectedCardIndex >= prev.length) return prev;
+      const copy = [...prev];
+      copy[selectedCardIndex] = updater(copy[selectedCardIndex]);
+      return copy;
+    });
+  };
+  const [selectedCreateProvider, setSelectedCreateProvider] = useState<'STROWALLET_NFC' | 'BSICARDS_MASTERCARD_EUR'>('STROWALLET_NFC');
+  const [showAddCardFlow, setShowAddCardFlow] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState<boolean>(false);
   const [secretDetailsLoading, setSecretDetailsLoading] = useState(false);
   const [secretDetailsFailed, setSecretDetailsFailed] = useState(false);
@@ -362,11 +381,12 @@ export default function Dashboard() {
       const token = localStorage.getItem('token');
       const res = await fetch(`${backendUrl}/v1/cards/secret-details`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId: virtualCard?.cardId }),
       });
       const data = await res.json();
       if (res.ok) {
-        setVirtualCard((prev: any) => ({
+        updateVirtualCard((prev: any) => ({
           ...prev,
           cardNumber: data.cardNumber,
           cvv: data.cvv,
@@ -552,7 +572,7 @@ export default function Dashboard() {
         fetch(`${API_BASE}/auth/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/rates`).catch(() => null),
         fetch(`${API_BASE}/wallet/notifications`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/v1/cards/my-card`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
+        fetch(`${API_BASE}/v1/cards/my-cards`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
         fetch(`${API_BASE}/business/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/v1/cards/history`, { headers }).catch(() => null),
       ]);
@@ -580,13 +600,14 @@ export default function Dashboard() {
       // don't want to touch the existing HTG-only aggregate math that reads `transactions`.
       setCardActivity(Array.isArray(cardHistoryData) ? cardHistoryData.filter((t: any) => t.source === 'CARD') : []);
 
-      // Kat vityèl la trete apa: yon echèk rezo/500 pa dwe konfonn ak yon
+      // Kat vityèl yo trete apa: yon echèk rezo/500 pa dwe konfonn ak yon
       // repons 200 ki konfime (DB) itilizatè a pa gen kat.
-      let cardData: any = null;
+      let cardsData: any[] = [];
       let cardFetchFailed = false;
       if (cardRes && cardRes.ok) {
         try {
-          cardData = await cardRes.json();
+          const raw = await cardRes.json();
+          cardsData = Array.isArray(raw) ? raw : (raw ? [raw] : []);
         } catch {
           cardFetchFailed = true;
         }
@@ -636,21 +657,21 @@ export default function Dashboard() {
       }
 
       if (!cardFetchFailed) {
-        if (cardData) {
-          setVirtualCard((prev: any) => ({
-            ...cardData,
+        setMyCards((prevCards) => cardsData.map((cd: any) => {
+          const prev = prevCards.find((p: any) => p.cardId === cd.cardId);
+          return {
+            ...cd,
             cardNumber: prev?.cardNumber,
             cvv: prev?.cvv,
             cardNumberUrl: prev?.cardNumberUrl,
             cvvUrl: prev?.cvvUrl,
             secureEmbedUrl: prev?.secureEmbedUrl,
             expiryDate: prev?.expiryDate,
-            cardName: prev?.cardName || cardData?.cardName,
-            last4: prev?.last4 || cardData?.last4,
-          }));
-        } else {
-          setVirtualCard(null);
-        }
+            cardName: prev?.cardName || cd?.cardName,
+            last4: prev?.last4 || cd?.last4,
+          };
+        }));
+        setSelectedCardIndex((prevIdx) => (prevIdx < cardsData.length ? prevIdx : 0));
       }
 
     } catch (e) {
@@ -2883,7 +2904,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-            ) : !virtualCard?.cardId ? (
+            ) : myCards.length === 0 ? (
               /* ===== NO CARD — CREATION FORM (DB konfime pa gen kat, oswa fetch echwe san okenn kat konfime anvan) ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Vityèl</p>
@@ -2891,38 +2912,63 @@ export default function Dashboard() {
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
                 </div>
+                {/* Chwazi tip kat */}
+                <div className="flex gap-3 mb-4">
+                  {CARD_PROVIDER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setSelectedCreateProvider(opt.key)}
+                      className="flex-1 text-left active:scale-95 transition-all"
+                      style={{
+                        borderRadius: 20,
+                        padding: 14,
+                        background: selectedCreateProvider === opt.key ? 'rgba(255,122,0,.12)' : glass.inputBg,
+                        border: `1.5px solid ${selectedCreateProvider === opt.key ? '#FF7A00' : glass.border}`,
+                      }}
+                    >
+                      <p className="font-bold text-[12px] text-white mb-[2px]">{opt.label}</p>
+                      <p className="font-medium text-[10px]" style={{ color: glass.textDim }}>{opt.sublabel}</p>
+                    </button>
+                  ))}
+                </div>
                 {/* Create form */}
                 <div className="oz-glass-strong mb-4" style={{ borderRadius: 24, padding: 16 }}>
                   <div className="flex justify-between items-center mb-2">
-                    <p className="font-bold text-[14px] text-white">KREYE KAT VISA</p>
+                    <p className="font-bold text-[14px] text-white">{selectedCreateProvider === 'STROWALLET_NFC' ? 'KREYE KAT VISA' : 'KREYE KAT MASTERCARD EUR'}</p>
                     <span className="font-bold text-[10px] px-[10px] py-[3px] rounded-full" style={{ background: '#B8E832', color: '#000000' }}>GRATIS</span>
                   </div>
                   <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: '#FF7A00' }}>
-                    Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!
+                    {selectedCreateProvider === 'STROWALLET_NFC'
+                      ? 'Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!'
+                      : 'Kreye kat Mastercard EUR ou GRATIS — kat la kreye vid, ou rechaje l apre.'}
                   </p>
                   <div className="flex items-center justify-between gap-2 mb-4">
-                    <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou kreye kat VISA ou?</p>
+                    <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou kreye kat ou?</p>
                     <VideoGuideBadge phrase="Kijan pou kreye kat VISA ou?" />
                   </div>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
-                  <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
-                    <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
-                    <input
-                      type="number"
-                      min="3"
-                      value={cardCreateAmount}
-                      onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                      className="flex-1 outline-none font-bold text-[18px]"
-                      style={{ background: 'transparent', color: colors.textPrimary }}
-                      placeholder="3"
-                    />
-                    <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
-                  </div>
+                  {selectedCreateProvider === 'STROWALLET_NFC' && (
+                    <>
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
+                      <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
+                        <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
+                        <input
+                          type="number"
+                          min="3"
+                          value={cardCreateAmount}
+                          onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
+                          className="flex-1 outline-none font-bold text-[18px]"
+                          style={{ background: 'transparent', color: colors.textPrimary }}
+                          placeholder="3"
+                        />
+                        <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
+                      </div>
+                    </>
+                  )}
                   <button
                     onClick={async () => {
                       if (cardCreateLoading) return;
                       const amt = Number(cardCreateAmount);
-                      if (!amt || amt < 3) { alert('Montan minim se $3 USD'); return; }
+                      if (selectedCreateProvider === 'STROWALLET_NFC' && (!amt || amt < 3)) { alert('Montan minim se $3 USD'); return; }
                       setCardCreateLoading(true);
                       try {
                         const token = localStorage.getItem('token');
@@ -2930,13 +2976,11 @@ export default function Dashboard() {
                         const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
                           method: 'POST',
                           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ amount_usd: amt }),
+                          body: JSON.stringify({ provider: selectedCreateProvider, amount_usd: amt }),
                         });
                         const contentType = res.headers.get('content-type');
                         if (res.ok && contentType?.includes('application/json')) {
-                          const data = await res.json();
-                          setVirtualCard(data.card || data);
-                          fetchData();
+                          await fetchData();
                         } else {
                           const errorData = contentType?.includes('application/json') ? await res.json() : null;
                           alert(toErrorMsg(errorData?.message, 'Erè pandan kreyasyon kat la.'));
@@ -2983,7 +3027,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setVirtualCard(null)}
+                    onClick={() => setMyCards((prev) => prev.filter((_, i) => i !== selectedCardIndex))}
                     className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all oz-glowPulse"
                     style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}
                   >
@@ -3001,6 +3045,36 @@ export default function Dashboard() {
                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
                     {/* Page title */}
                     <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Vityèl</p>
+
+                    {/* Card switcher: yon tab pa kat, + bouton "ajoute" si gen yon lòt provider disponib */}
+                    {myCards.length > 0 && (
+                      <div className="flex items-center gap-2 px-5 mt-3 mb-1 overflow-x-auto">
+                        {myCards.length > 1 && myCards.map((c, i) => (
+                          <button
+                            key={c.cardId}
+                            onClick={() => { setSelectedCardIndex(i); setShowCardDetails(false); }}
+                            className="flex-shrink-0 rounded-full font-bold text-[10px] uppercase tracking-[1px] px-3 py-[6px] transition-all"
+                            style={{
+                              background: i === selectedCardIndex ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : glass.inputBg,
+                              color: i === selectedCardIndex ? '#FFFFFF' : glass.textDim,
+                              border: `1px solid ${i === selectedCardIndex ? 'transparent' : glass.border}`,
+                            }}
+                          >
+                            {getCardBrandLabel(c.brand)}
+                          </button>
+                        ))}
+                        {myCards.length < CARD_PROVIDER_OPTIONS.length && (
+                          <button
+                            onClick={() => setShowAddCardFlow(true)}
+                            className="flex-shrink-0 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                            style={{ width: 26, height: 26, background: glass.inputBg, border: `1px solid ${glass.border}` }}
+                            title="Ajoute yon lòt kat"
+                          >
+                            <PlusCircle size={14} color={glass.textDim} />
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* Card image: marginHorizontal 20, borderRadius 0 */}
                     <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
@@ -3055,9 +3129,9 @@ export default function Dashboard() {
                                   const token = localStorage.getItem('token');
                                   const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
                                   const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ cardId: virtualCard?.cardId }) });
                                   const data = await res.json();
-                                  if (res.ok) { setVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
+                                  if (res.ok) { updateVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
                                   else { alert(data.message || 'Erè'); }
                                 } catch { alert('Erè koneksyon'); }
                               }
@@ -3235,6 +3309,35 @@ export default function Dashboard() {
                     <div className="flex gap-10 items-start">
                       {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
+                        {/* Card switcher: yon tab pa kat, + bouton "ajoute" si gen yon lòt provider disponib */}
+                        {myCards.length > 0 && (
+                          <div className="flex items-center gap-2 overflow-x-auto">
+                            {myCards.length > 1 && myCards.map((c, i) => (
+                              <button
+                                key={c.cardId}
+                                onClick={() => { setSelectedCardIndex(i); setShowCardDetails(false); }}
+                                className="flex-shrink-0 rounded-full font-bold text-[10px] uppercase tracking-[1px] px-3 py-[6px] transition-all"
+                                style={{
+                                  background: i === selectedCardIndex ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : glass.inputBg,
+                                  color: i === selectedCardIndex ? '#FFFFFF' : glass.textDim,
+                                  border: `1px solid ${i === selectedCardIndex ? 'transparent' : glass.border}`,
+                                }}
+                              >
+                                {getCardBrandLabel(c.brand)}
+                              </button>
+                            ))}
+                            {myCards.length < CARD_PROVIDER_OPTIONS.length && (
+                              <button
+                                onClick={() => setShowAddCardFlow(true)}
+                                className="flex-shrink-0 rounded-full flex items-center justify-center active:scale-90 transition-all"
+                                style={{ width: 26, height: 26, background: glass.inputBg, border: `1px solid ${glass.border}` }}
+                                title="Ajoute yon lòt kat"
+                              >
+                                <PlusCircle size={14} color={glass.textDim} />
+                              </button>
+                            )}
+                          </div>
+                        )}
                         {/* Card image: borderRadius 0 */}
                         <div className="relative overflow-hidden" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                           <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -3274,9 +3377,9 @@ export default function Dashboard() {
                                   const token = localStorage.getItem('token');
                                   const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
                                   const endpoint = virtualCard?.status === 'FROZEN' ? 'unfreeze' : 'freeze';
-                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                                  const res = await fetch(`${currentBackendUrl}/v1/cards/${endpoint}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ cardId: virtualCard?.cardId }) });
                                   const data = await res.json();
-                                  if (res.ok) { setVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
+                                  if (res.ok) { updateVirtualCard((prev: any) => ({ ...prev, status: endpoint === 'freeze' ? 'FROZEN' : 'ACTIVE' })); alert(endpoint === 'freeze' ? 'Kat bloke!' : 'Kat debloke!'); }
                                   else { alert(data.message || 'Erè'); }
                                 } catch { alert('Erè koneksyon'); }
                               }
@@ -3543,7 +3646,7 @@ export default function Dashboard() {
                             const res = await fetch(`${currentBackendUrl}/v1/cards/recharge`, {
                               method: 'POST',
                               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ amount_usd: Number(rechargeAmount) })
+                              body: JSON.stringify({ amount_usd: Number(rechargeAmount), cardId: virtualCard?.cardId })
                             });
                             const data = await res.json();
                             if (res.ok) { setShowRechargeModal(false); setRechargeAmount(''); fetchData(); }
@@ -3559,6 +3662,97 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
+
+                {/* ADD ANOTHER CARD MODAL */}
+                {showAddCardFlow && (() => {
+                  const availableProviders = CARD_PROVIDER_OPTIONS.filter((opt) => !myCards.some((c) => c.provider === opt.key));
+                  const activeProvider = availableProviders.some((o) => o.key === selectedCreateProvider) ? selectedCreateProvider : (availableProviders[0]?.key ?? selectedCreateProvider);
+                  return (
+                    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+                      <div className="w-full max-h-[90vh] overflow-y-auto oz-slideUp" style={{ background: glass.sheetBgStrong, borderTop: `1px solid ${glass.border}`, backdropFilter: 'blur(28px)', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingLeft: 22, paddingRight: 22, paddingTop: 14, paddingBottom: 48 }}>
+                        <div className="mx-auto mb-5" style={{ width: 40, height: 4, background: glass.bg, borderRadius: 2 }} />
+                        <div className="flex justify-between items-center mb-4">
+                          <p className="font-bold italic uppercase text-[18px] tracking-[1px] text-white">Ajoute Yon Lòt Kat</p>
+                          <button onClick={() => setShowAddCardFlow(false)}><X size={20} color={glass.textDim} /></button>
+                        </div>
+                        <div className="flex gap-3 mb-4">
+                          {availableProviders.map((opt) => (
+                            <button
+                              key={opt.key}
+                              onClick={() => setSelectedCreateProvider(opt.key)}
+                              className="flex-1 text-left active:scale-95 transition-all"
+                              style={{
+                                borderRadius: 20,
+                                padding: 14,
+                                background: activeProvider === opt.key ? 'rgba(255,122,0,.12)' : glass.inputBg,
+                                border: `1.5px solid ${activeProvider === opt.key ? '#FF7A00' : glass.border}`,
+                              }}
+                            >
+                              <p className="font-bold text-[12px] text-white mb-[2px]">{opt.label}</p>
+                              <p className="font-medium text-[10px]" style={{ color: glass.textDim }}>{opt.sublabel}</p>
+                            </button>
+                          ))}
+                        </div>
+                        {activeProvider === 'STROWALLET_NFC' && (
+                          <>
+                            <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
+                            <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
+                              <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
+                              <input
+                                type="number"
+                                min="3"
+                                value={cardCreateAmount}
+                                onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
+                                className="flex-1 outline-none font-bold text-[18px]"
+                                style={{ background: 'transparent', color: colors.textPrimary }}
+                                placeholder="3"
+                              />
+                              <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
+                            </div>
+                          </>
+                        )}
+                        <button
+                          disabled={cardCreateLoading}
+                          onClick={async () => {
+                            if (cardCreateLoading) return;
+                            const amt = Number(cardCreateAmount);
+                            if (activeProvider === 'STROWALLET_NFC' && (!amt || amt < 3)) { alert('Montan minim se $3 USD'); return; }
+                            setCardCreateLoading(true);
+                            try {
+                              const token = localStorage.getItem('token');
+                              const currentBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || backendUrl;
+                              const res = await fetch(`${currentBackendUrl}/v1/cards/create`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ provider: activeProvider, amount_usd: amt }),
+                              });
+                              const contentType = res.headers.get('content-type');
+                              if (res.ok && contentType?.includes('application/json')) {
+                                setShowAddCardFlow(false);
+                                setSelectedCardIndex(myCards.length);
+                                await fetchData();
+                              } else {
+                                const errorData = contentType?.includes('application/json') ? await res.json() : null;
+                                alert(toErrorMsg(errorData?.message, 'Erè pandan kreyasyon kat la.'));
+                              }
+                            } catch {
+                              alert('Sèvè a pa ka jwenn requete a.');
+                            } finally {
+                              setCardCreateLoading(false);
+                            }
+                          }}
+                          className="w-full rounded-2xl font-black italic uppercase text-[13px] text-white tracking-[2px] py-4 flex items-center justify-center gap-2 active:scale-95 transition-all oz-glowPulse"
+                          style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', opacity: cardCreateLoading ? 0.6 : 1 }}
+                        >
+                          {cardCreateLoading
+                            ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            : <><Zap size={16} color="#FFFFFF" /> KREYE KAT</>
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
               </>
             )}
