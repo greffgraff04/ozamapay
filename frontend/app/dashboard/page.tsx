@@ -139,6 +139,134 @@ function VideoGuideBadge({ phrase }: { phrase: string }) {
   );
 }
 
+// Pil kat vityèl — peek-stack: kat aktif la devan, lòt(y) kat yo parèt an pati
+// dèyè li. Tap/swipe kat devan an pou avanse; tap yon kat dèyè pou mennen l
+// devan. Kat dèyè yo montre MWENS pase kat devan an (jis OZAMAPAY + estati) —
+// pa gen nimewo/CVV/non pou okenn kat, kèlkeswa pozisyon li nan pil la.
+function CardStackView({
+  cards, activeIndex, onSelectIndex, peek, radius, showCardDetails,
+}: {
+  cards: any[];
+  activeIndex: number;
+  onSelectIndex: (i: number) => void;
+  peek: number;
+  radius: number;
+  showCardDetails: boolean;
+}) {
+  const n = cards.length;
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  if (n === 0) return null;
+  const active = ((activeIndex % n) + n) % n;
+
+  const advance = (dir: number) => onSelectIndex(((active + dir) % n + n) % n);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStart.current) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const dy = e.clientY - pointerStart.current.y;
+    pointerStart.current = null;
+    if (Math.abs(dx) > 44 || Math.abs(dy) > 34) advance(dy < 0 || dx < 0 ? 1 : -1);
+  };
+
+  return (
+    <>
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        style={{ position: 'relative', width: '100%', height: 0, paddingBottom: `calc(${(100 / 1.586).toFixed(4)}% + ${peek * (n - 1)}px)`, touchAction: 'none', userSelect: 'none' }}
+      >
+        {cards.map((c, i) => {
+          const depth = (i - active + n) % n;
+          const front = depth === 0;
+          const frozen = c?.status === 'FROZEN';
+          return (
+            <div
+              key={c.cardId ?? i}
+              onClick={() => (front ? advance(1) : onSelectIndex(i))}
+              style={{
+                position: 'absolute', left: 0, right: 0, top: peek * (n - 1),
+                aspectRatio: '1.586', borderRadius: radius, overflow: 'hidden', cursor: 'pointer',
+                transformOrigin: 'top center',
+                transform: `translateY(${-peek * depth}px) scale(${1 - depth * 0.048})`,
+                zIndex: 40 - depth,
+                filter: front ? 'none' : `brightness(${1 - depth * 0.16}) saturate(${1 - depth * 0.12})`,
+                boxShadow: front
+                  ? '0 26px 54px -18px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.14) inset'
+                  : '0 -6px 22px -6px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.10) inset',
+                transition: 'transform 0.5s cubic-bezier(0.22,0.9,0.25,1), filter 0.4s ease, box-shadow 0.4s ease',
+              }}
+            >
+              <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={frozen ? { filter: 'grayscale(0.4)' } : {}} />
+              <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
+                {front ? (
+                  <>
+                    <div />
+                    <div>
+                      <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
+                      <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
+                        {showCardDetails && c?.last4 ? `•••• •••• •••• ${c.last4}` : '•••• •••• •••• ••••'}
+                      </p>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="font-medium text-[10px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Cardholder</p>
+                        <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (c?.cardName || 'OZAMA USER') : 'OZAMA USER'}</p>
+                        <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
+                        <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (c?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
+                      </div>
+                      <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{getCardBrandLabel(c?.brand)}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-[11px] tracking-[0.16em]" style={{ color: '#FFFFFF' }}>OZAMAPAY</span>
+                      <span
+                        className="font-bold text-[9px] uppercase tracking-[0.06em] px-[9px] py-[3px] rounded-full"
+                        style={{
+                          background: frozen ? 'rgba(239,68,68,.25)' : 'rgba(255,255,255,0.16)',
+                          border: `1px solid ${frozen ? 'rgba(239,68,68,.45)' : 'rgba(255,255,255,0.24)'}`,
+                          color: '#FFFFFF',
+                        }}
+                      >
+                        {frozen ? 'BLOKE' : 'AKTIF'}
+                      </span>
+                    </div>
+                    <div />
+                  </>
+                )}
+              </div>
+              {front && frozen && (
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                  <Lock size={28} color="rgba(255,255,255,0.6)" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {n > 1 && (
+        <div className="flex items-center justify-center gap-[7px] mt-2">
+          {cards.map((c, i) => (
+            <button
+              key={c.cardId ?? i}
+              onClick={() => onSelectIndex(i)}
+              style={{
+                width: i === active ? 22 : 7, height: 7, borderRadius: 999, border: 'none', padding: 0,
+                cursor: 'pointer', background: i === active ? '#FF7A00' : 'rgba(245,243,241,0.22)',
+                transition: 'width 0.35s ease, background 0.35s ease',
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 function BusinessHoursNotice() {
   const status = isBusinessHours();
   const meta = {
@@ -3046,67 +3174,25 @@ export default function Dashboard() {
                     {/* Page title */}
                     <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Vityèl</p>
 
-                    {/* Card switcher: yon tab pa kat, + bouton "ajoute" si gen yon lòt provider disponib */}
-                    {myCards.length > 0 && (
-                      <div className="flex items-center gap-2 px-5 mt-3 mb-1 overflow-x-auto">
-                        {myCards.length > 1 && myCards.map((c, i) => (
-                          <button
-                            key={c.cardId}
-                            onClick={() => { setSelectedCardIndex(i); setShowCardDetails(false); }}
-                            className="flex-shrink-0 rounded-full font-bold text-[10px] uppercase tracking-[1px] px-3 py-[6px] transition-all"
-                            style={{
-                              background: i === selectedCardIndex ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : glass.inputBg,
-                              color: i === selectedCardIndex ? '#FFFFFF' : glass.textDim,
-                              border: `1px solid ${i === selectedCardIndex ? 'transparent' : glass.border}`,
-                            }}
-                          >
-                            {getCardBrandLabel(c.brand)}
-                          </button>
-                        ))}
-                        {myCards.length < CARD_PROVIDER_OPTIONS.length && (
-                          <button
-                            onClick={() => setShowAddCardFlow(true)}
-                            className="flex-shrink-0 rounded-full flex items-center justify-center active:scale-90 transition-all"
-                            style={{ width: 26, height: 26, background: glass.inputBg, border: `1px solid ${glass.border}` }}
-                            title="Ajoute yon lòt kat"
-                          >
-                            <PlusCircle size={14} color={glass.textDim} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Card image: marginHorizontal 20, borderRadius 0 */}
-                    <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
-                      <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={virtualCard?.status === 'FROZEN' ? { filter: 'grayscale(0.4)' } : {}} />
-                      {/* Overlay: paddingHorizontal 20, paddingVertical 18 */}
-                      <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
-                        <div />
-                        {/* Card number */}
-                        <div>
-                          <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
-                          <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
-                            {showCardDetails && virtualCard?.last4
-                              ? `•••• •••• •••• ${virtualCard.last4}`
-                              : '•••• •••• •••• ••••'}
-                          </p>
-                        </div>
-                        {/* Bottom row: cardholder + VISA */}
-                        <div className="flex justify-between items-end">
-                          <div>
-                            <p className="font-medium text-[10px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Cardholder</p>
-                            <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}</p>
-                            <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
-                            <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
-                          </div>
-                          <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{getCardBrandLabel(virtualCard?.brand)}</p>
-                        </div>
-                      </div>
-                      {/* Frozen dimmer */}
-                      {virtualCard?.status === 'FROZEN' && (
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
-                          <Lock size={28} color="rgba(255,255,255,0.6)" />
-                        </div>
+                    {/* Pil kat: kat aktif la devan, lòt(y) kat parèt an pati dèyè li — tap/swipe pou chanje */}
+                    <div className="mx-5 mt-2 mb-4">
+                      <CardStackView
+                        cards={myCards}
+                        activeIndex={selectedCardIndex}
+                        onSelectIndex={(i) => { setSelectedCardIndex(i); setShowCardDetails(false); }}
+                        peek={12}
+                        radius={0}
+                        showCardDetails={showCardDetails}
+                      />
+                      {myCards.length < CARD_PROVIDER_OPTIONS.length && (
+                        <button
+                          onClick={() => setShowAddCardFlow(true)}
+                          className="flex items-center justify-center gap-[6px] mx-auto mt-3 active:scale-95 transition-all"
+                          style={{ padding: '7px 14px', borderRadius: 999, background: glass.inputBg, border: `1px solid ${glass.border}` }}
+                        >
+                          <PlusCircle size={13} color={glass.textDim} />
+                          <span className="font-bold text-[10px] uppercase tracking-[1px]" style={{ color: glass.textDim }}>Ajoute yon lòt kat</span>
+                        </button>
                       )}
                     </div>
 
@@ -3309,59 +3395,25 @@ export default function Dashboard() {
                     <div className="flex gap-10 items-start">
                       {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
-                        {/* Card switcher: yon tab pa kat, + bouton "ajoute" si gen yon lòt provider disponib */}
-                        {myCards.length > 0 && (
-                          <div className="flex items-center gap-2 overflow-x-auto">
-                            {myCards.length > 1 && myCards.map((c, i) => (
-                              <button
-                                key={c.cardId}
-                                onClick={() => { setSelectedCardIndex(i); setShowCardDetails(false); }}
-                                className="flex-shrink-0 rounded-full font-bold text-[10px] uppercase tracking-[1px] px-3 py-[6px] transition-all"
-                                style={{
-                                  background: i === selectedCardIndex ? 'linear-gradient(135deg,#FF7A00,#FF6B00)' : glass.inputBg,
-                                  color: i === selectedCardIndex ? '#FFFFFF' : glass.textDim,
-                                  border: `1px solid ${i === selectedCardIndex ? 'transparent' : glass.border}`,
-                                }}
-                              >
-                                {getCardBrandLabel(c.brand)}
-                              </button>
-                            ))}
-                            {myCards.length < CARD_PROVIDER_OPTIONS.length && (
-                              <button
-                                onClick={() => setShowAddCardFlow(true)}
-                                className="flex-shrink-0 rounded-full flex items-center justify-center active:scale-90 transition-all"
-                                style={{ width: 26, height: 26, background: glass.inputBg, border: `1px solid ${glass.border}` }}
-                                title="Ajoute yon lòt kat"
-                              >
-                                <PlusCircle size={14} color={glass.textDim} />
-                              </button>
-                            )}
-                          </div>
+                        {/* Pil kat: kat aktif la devan, lòt(y) kat parèt an pati dèyè li — tap/swipe pou chanje */}
+                        <CardStackView
+                          cards={myCards}
+                          activeIndex={selectedCardIndex}
+                          onSelectIndex={(i) => { setSelectedCardIndex(i); setShowCardDetails(false); }}
+                          peek={14}
+                          radius={0}
+                          showCardDetails={showCardDetails}
+                        />
+                        {myCards.length < CARD_PROVIDER_OPTIONS.length && (
+                          <button
+                            onClick={() => setShowAddCardFlow(true)}
+                            className="flex items-center justify-center gap-[6px] mx-auto active:scale-95 transition-all"
+                            style={{ padding: '7px 14px', borderRadius: 999, background: glass.inputBg, border: `1px solid ${glass.border}` }}
+                          >
+                            <PlusCircle size={13} color={glass.textDim} />
+                            <span className="font-bold text-[10px] uppercase tracking-[1px]" style={{ color: glass.textDim }}>Ajoute yon lòt kat</span>
+                          </button>
                         )}
-                        {/* Card image: borderRadius 0 */}
-                        <div className="relative overflow-hidden" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
-                          <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 flex flex-col justify-between" style={{ padding: '18px 20px' }}>
-                            <div />
-                            <div>
-                              <p className="font-medium text-[10px] mb-[2px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Card Number</p>
-                              <p className="font-bold text-[15px] tracking-[2px]" style={{ color: '#FFFFFF' }}>
-                                {showCardDetails && virtualCard?.last4
-                                  ? `•••• •••• •••• ${virtualCard.last4}`
-                                  : '•••• •••• •••• ••••'}
-                              </p>
-                            </div>
-                            <div className="flex justify-between items-end">
-                              <div>
-                                <p className="font-medium text-[10px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Cardholder</p>
-                                <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.cardName || 'OZAMA USER') : 'OZAMA USER'}</p>
-                                <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
-                                <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
-                              </div>
-                              <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{getCardBrandLabel(virtualCard?.brand)}</p>
-                            </div>
-                          </div>
-                        </div>
                         {/* Action buttons */}
                         <div className="flex gap-3">
                           {[
