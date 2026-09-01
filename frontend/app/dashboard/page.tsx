@@ -197,7 +197,7 @@ function CardStackView({
         style={{
           position: 'relative', width: '100%',
           height: cardHeight ? cardHeight + peek * (n - 1) : 0,
-          background: '#0A0A0C', borderRadius: radius,
+          background: 'transparent', borderRadius: radius,
           touchAction: 'none', userSelect: 'none',
         }}
       >
