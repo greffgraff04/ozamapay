@@ -31,8 +31,8 @@ const CARD_BILLING = {
 };
 
 const CARD_PROVIDER_OPTIONS: { key: 'STROWALLET_NFC' | 'BSICARDS_MASTERCARD_EUR'; label: string; sublabel: string }[] = [
-  { key: 'STROWALLET_NFC', label: 'Visa (StroWallet)', sublabel: 'USD · depo minim $3' },
-  { key: 'BSICARDS_MASTERCARD_EUR', label: 'Mastercard (BSICards)', sublabel: 'EUR · kreye vid, rechaje apre' },
+  { key: 'STROWALLET_NFC', label: 'Visa', sublabel: 'USD · depo minim $3' },
+  { key: 'BSICARDS_MASTERCARD_EUR', label: 'Mastercard', sublabel: 'EUR · kreye vid, rechaje apre' },
 ];
 
 const PAYMENT_INFO = {
