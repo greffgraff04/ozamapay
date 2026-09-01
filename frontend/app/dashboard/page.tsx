@@ -81,6 +81,16 @@ const signOut = async () => {
   window.location.replace("/login");
 };
 
+const getCardBrandLabel = (brand?: string | null) => {
+  if ((brand || '').toLowerCase().includes('mastercard')) return 'MASTERCARD';
+  return 'VISA';
+};
+
+const getCurrencySymbol = (currency?: string | null) => {
+  if (currency === 'EUR') return '€';
+  return '$';
+};
+
 function VideoGuideBadge({ phrase }: { phrase: string }) {
   const [open, setOpen] = useState(false);
   return (
@@ -264,6 +274,7 @@ export default function Dashboard() {
   const financeFileInputRef = useRef<HTMLInputElement>(null);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number>(135);
+  const [eurExchangeRate, setEurExchangeRate] = useState<number>(152);
 
   // --- NEW KYC STATES ---
   const [showKycForm, setShowKycForm] = useState(false);
@@ -340,7 +351,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   const fetchSecretDetails = async () => {
-    if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl) { setShowCardDetails(true); return; }
+    if (virtualCard?.cardNumber || virtualCard?.cardNumberUrl || virtualCard?.secureEmbedUrl) { setShowCardDetails(true); return; }
     setSecretDetailsFailed(false);
     setSecretDetailsLoading(true);
     setShowCardDetails(true);
@@ -362,6 +373,7 @@ export default function Dashboard() {
           cardName: data.cardName,
           balance: data.balance,
           last4: data.last4,
+          secureEmbedUrl: data.secureEmbedUrl,
         }));
       } else {
         setSecretDetailsFailed(true);
@@ -600,6 +612,8 @@ export default function Dashboard() {
       if (ratesData) {
         const rate = Array.isArray(ratesData) ? ratesData.find((r: any) => r.key === 'USD_HTG')?.value : ratesData.value;
         setExchangeRate(Number(rate || 135));
+        const eurRate = Array.isArray(ratesData) ? ratesData.find((r: any) => r.key === 'EUR_HTG')?.value : null;
+        if (eurRate) setEurExchangeRate(Number(eurRate));
       }
 
       if (Array.isArray(notifData)) {
@@ -626,6 +640,7 @@ export default function Dashboard() {
             cvv: prev?.cvv,
             cardNumberUrl: prev?.cardNumberUrl,
             cvvUrl: prev?.cvvUrl,
+            secureEmbedUrl: prev?.secureEmbedUrl,
             expiryDate: prev?.expiryDate,
             cardName: prev?.cardName || cardData?.cardName,
             last4: prev?.last4 || cardData?.last4,
@@ -2839,7 +2854,7 @@ export default function Dashboard() {
             {virtualCard?.cardId && cardFetchError ? (
               /* ===== FETCH ERROR — DB te konfime yon kat egziste, men fetch aktyèl la echwe ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Vityèl</p>
                 <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
                   <div className="flex items-start gap-3 mb-6">
                     <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,.12)' }}>
@@ -2868,7 +2883,7 @@ export default function Dashboard() {
             ) : !virtualCard?.cardId ? (
               /* ===== NO CARD — CREATION FORM (DB konfime pa gen kat, oswa fetch echwe san okenn kat konfime anvan) ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Visa</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Vityèl</p>
                 {/* Card image: borderRadius 0 per spec */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -2943,7 +2958,7 @@ export default function Dashboard() {
             ) : virtualCard?.status === 'TERMINATED' ? (
               /* ===== TERMINATED CARD ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Visa</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Vityèl</p>
                 {/* Card image: dim + terminated overlay */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
@@ -2982,7 +2997,7 @@ export default function Dashboard() {
                   {/* FIXED TOP SECTION */}
                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
                     {/* Page title */}
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Visa</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Vityèl</p>
 
                     {/* Card image: marginHorizontal 20, borderRadius 0 */}
                     <div className="mx-5 mt-2 mb-4 relative" style={{ aspectRatio: '1.586', borderRadius: 0, overflow: 'hidden' }}>
@@ -3007,7 +3022,7 @@ export default function Dashboard() {
                             <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
                             <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
                           </div>
-                          <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>VISA</p>
+                          <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{getCardBrandLabel(virtualCard?.brand)}</p>
                         </div>
                       </div>
                       {/* Frozen dimmer */}
@@ -3074,8 +3089,8 @@ export default function Dashboard() {
                         <div>
                           <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                           <p>
-                            <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                            <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> USD</span>
+                            <span className="font-bold text-[28px] text-white">{getCurrencySymbol(virtualCard?.currency)}{Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                            <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> {virtualCard?.currency || 'USD'}</span>
                           </p>
                         </div>
                         <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
@@ -3108,6 +3123,10 @@ export default function Dashboard() {
                           <div className="flex flex-col items-center gap-3 py-4">
                             <p className="font-medium text-[13px] text-center" style={{ color: glass.textDim }}>Echèk chajman detay kat</p>
                             <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
+                          </div>
+                        ) : virtualCard?.secureEmbedUrl ? (
+                          <div className="rounded-[12px] overflow-hidden" style={{ background: '#FFFFFF', filter: 'invert(1)' }}>
+                            <iframe src={virtualCard.secureEmbedUrl} width="100%" height={220} frameBorder={0} style={{ border: 'none', background: 'transparent', display: 'block' }} title="Detay kat sekirize" />
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
@@ -3209,7 +3228,7 @@ export default function Dashboard() {
                 {/* ── DESKTOP LAYOUT ── */}
                 <div className="hidden lg:block oz-fadeUp">
                   <div className="max-w-[1400px] mx-auto px-8 py-10">
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6 text-white">Kat Visa</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6 text-white">Kat Vityèl</p>
                     <div className="flex gap-10 items-start">
                       {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
@@ -3233,7 +3252,7 @@ export default function Dashboard() {
                                 <p className="font-medium text-[10px] mt-[5px] mb-[1px]" style={{ color: 'rgba(255,255,255,0.6)' }}>Expires</p>
                                 <p className="font-bold text-[12px]" style={{ color: '#FFFFFF' }}>{showCardDetails ? (virtualCard?.expiryDate || 'MM/AA') : 'MM/AA'}</p>
                               </div>
-                              <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>VISA</p>
+                              <p className="font-bold text-[18px] tracking-[4px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{getCardBrandLabel(virtualCard?.brand)}</p>
                             </div>
                           </div>
                         </div>
@@ -3282,8 +3301,8 @@ export default function Dashboard() {
                           <div>
                             <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: '#FF7A00', display: 'block', marginBottom: 4 }}>Balans Kat</span>
                             <p>
-                              <span className="font-bold text-[28px] text-white">${Number(virtualCard?.balance || 0).toFixed(2)}</span>
-                              <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> USD</span>
+                              <span className="font-bold text-[28px] text-white">{getCurrencySymbol(virtualCard?.currency)}{Number(virtualCard?.balance || 0).toFixed(2)}</span>
+                              <span className="font-medium text-[14px]" style={{ color: glass.textDim }}> {virtualCard?.currency || 'USD'}</span>
                             </p>
                           </div>
                           <div className="flex items-center justify-center" style={{ width: 48, height: 48, borderRadius: 24, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>
@@ -3307,6 +3326,10 @@ export default function Dashboard() {
                               <div className="flex flex-col items-center gap-3 py-4">
                                 <p className="font-medium text-[13px] text-center" style={{ color: glass.textDim }}>Echèk chajman detay kat</p>
                                 <button onClick={fetchSecretDetails} className="px-4 py-2 rounded-[12px] font-bold uppercase text-[10px] tracking-[1px] text-white active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg,#FF7A00,#FF6B00)' }}>Eseye Ankò</button>
+                              </div>
+                            ) : virtualCard?.secureEmbedUrl ? (
+                              <div className="rounded-[12px] overflow-hidden" style={{ background: '#FFFFFF', filter: 'invert(1)' }}>
+                                <iframe src={virtualCard.secureEmbedUrl} width="100%" height={220} frameBorder={0} style={{ border: 'none', background: 'transparent', display: 'block' }} title="Detay kat sekirize" />
                               </div>
                             ) : (
                               <div className="flex flex-col gap-1">
@@ -3416,18 +3439,18 @@ export default function Dashboard() {
                         <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(''); }}><X size={20} color={glass.textDim} /></button>
                       </div>
                       <div className="flex items-center justify-between gap-2 mb-4">
-                        <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou recharge kat VISA ou?</p>
-                        <VideoGuideBadge phrase="Kijan pou recharge kat VISA ou?" />
+                        <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>Kijan pou recharge kat ou?</p>
+                        <VideoGuideBadge phrase="Kijan pou recharge kat ou?" />
                       </div>
                       {/* Balance */}
                       <p className="font-medium text-[13px] mb-4" style={{ color: glass.textDim }}>
                         Balans aktyèl:{' '}
-                        <span className="font-bold" style={{ color: '#FF7A00' }}>${Number(virtualCard?.balance || 0).toFixed(2)} USD</span>
+                        <span className="font-bold" style={{ color: '#FF7A00' }}>{getCurrencySymbol(virtualCard?.currency)}{Number(virtualCard?.balance || 0).toFixed(2)} {virtualCard?.currency || 'USD'}</span>
                       </p>
-                      {/* Input label */}
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Montan (USD)</span>
+                      {/* Input label — kat EUR itilize HTG kòm sous konvèsyon (pa yon montan EUR sib), wè BSICardsMastercardEuroService.fundCard */}
+                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>{virtualCard?.currency === 'EUR' ? 'Montan (HTG)' : 'Montan (USD)'}</span>
                       <div className="flex items-center rounded-2xl mb-2" style={{ background: glass.inputBg, border: `1px solid ${glass.border}`, padding: '12px 16px' }}>
-                        <span className="font-bold text-[20px] mr-[6px]" style={{ color: '#FF7A00' }}>$</span>
+                        {virtualCard?.currency !== 'EUR' && <span className="font-bold text-[20px] mr-[6px]" style={{ color: '#FF7A00' }}>$</span>}
                         <input
                           type="number"
                           min="1"
@@ -3438,10 +3461,26 @@ export default function Dashboard() {
                           placeholder="0.00"
                           autoFocus
                         />
-                        <span className="font-medium text-[14px]" style={{ color: glass.textDimmer }}>USD</span>
+                        <span className="font-medium text-[14px]" style={{ color: glass.textDimmer }}>{virtualCard?.currency === 'EUR' ? 'HTG' : 'USD'}</span>
                       </div>
-                      {/* Fee box */}
-                      {rechargeAmount && Number(rechargeAmount) > 0 && (() => {
+                      {/* Fee box — kat EUR pa gen frè (jis konvèsyon HTG→EUR, wè
+                          BSICardsMastercardEuroService.fundCard), kontrèman ak StroWallet */}
+                      {rechargeAmount && Number(rechargeAmount) > 0 && virtualCard?.currency === 'EUR' ? (() => {
+                        const totalHtg = Number(rechargeAmount);
+                        const amountEur = Math.round((totalHtg / eurExchangeRate) * 100) / 100;
+                        return (
+                          <div className="rounded-2xl mb-4 flex flex-col" style={{ background: 'rgba(255,122,0,.08)', border: '1px solid rgba(255,122,0,.2)', padding: 14, gap: 5 }}>
+                            <div className="flex justify-between items-center">
+                              <p className="font-bold text-[12px] text-white">Total HTG debite</p>
+                              <p className="font-bold text-[16px] text-white">{totalHtg.toLocaleString()} HTG</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="font-medium text-[11px]" style={{ color: glass.textDim }}>≈ ap ajoute sou kat ou</p>
+                              <p className="font-bold text-[12px]" style={{ color: '#FF7A00' }}>€{amountEur.toFixed(2)}</p>
+                            </div>
+                          </div>
+                        );
+                      })() : rechargeAmount && Number(rechargeAmount) > 0 && (() => {
                         const amt = Number(rechargeAmount);
                         const serviceFee = 1.90 + amt * 0.019;
                         const ozamapayFee = Math.round(amt * 0.02 * 100) / 100;

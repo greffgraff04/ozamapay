@@ -91,7 +91,16 @@ export class BSICardsMastercardEuroService {
       this.logger.error(`BSICards mastercard-euro: pa jwenn URL nan repons — ${JSON.stringify(raw)}`);
     }
 
-    return { url, raw: raw?.response ?? raw?.data ?? raw };
+    // 1 sept 2026 — `secureEmbedUrl` (pa `cardNumberUrl`/`cvvUrl` StroWallet
+    // yo) espre: BSICards retounen YON SÈL iframe konbine ki montre nimewo +
+    // CVV + ekspirasyon ansanm (carddetails.cardnumber/cvv toujou null nan
+    // repons lan — done sa yo SÈLMAN vizib nan iframe a). Fwontyè a dwe
+    // afiche sa kòm YON iframe plen-laj, pa eseye ranpli yon grid 3-bwat.
+    return {
+      secureEmbedUrl: url,
+      last4: card.last4,
+      balance: Number(card.balance),
+    };
   }
 
   // ─── 2. RECHAJE (soti nan wallet HTG kliyan an, PA depo kripto) ─────────────
