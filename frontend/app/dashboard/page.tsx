@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -155,6 +155,23 @@ function CardStackView({
 }) {
   const n = cards.length;
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [cardHeight, setCardHeight] = useState(0);
+
+  // Mezire lajè reyèl la an px epi kalkile wotè kat la ($lajè / 1.586) — pi
+  // fyab pase CSS aspectRatio sou yon eleman absolute-positioned ki gen
+  // transform:scale() sou li (ka mal rezoud nan sèten navigatè, kite yon
+  // vid ki montre fon BLAN tèm klè a dèyè li — wè ThemeContext glass.headerBg).
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setCardHeight(el.clientWidth / 1.586);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (n === 0) return null;
   const active = ((activeIndex % n) + n) % n;
 
@@ -174,11 +191,17 @@ function CardStackView({
   return (
     <>
       <div
+        ref={containerRef}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        style={{ position: 'relative', width: '100%', height: 0, paddingBottom: `calc(${(100 / 1.586).toFixed(4)}% + ${peek * (n - 1)}px)`, touchAction: 'none', userSelect: 'none' }}
+        style={{
+          position: 'relative', width: '100%',
+          height: cardHeight ? cardHeight + peek * (n - 1) : 0,
+          background: '#0A0A0C', borderRadius: radius,
+          touchAction: 'none', userSelect: 'none',
+        }}
       >
-        {cards.map((c, i) => {
+        {cardHeight > 0 && cards.map((c, i) => {
           const depth = (i - active + n) % n;
           const front = depth === 0;
           const frozen = c?.status === 'FROZEN';
@@ -187,8 +210,8 @@ function CardStackView({
               key={c.cardId ?? i}
               onClick={() => (front ? advance(1) : onSelectIndex(i))}
               style={{
-                position: 'absolute', left: 0, right: 0, top: peek * (n - 1),
-                aspectRatio: '1.586', borderRadius: radius, overflow: 'hidden', cursor: 'pointer',
+                position: 'absolute', left: 0, right: 0, top: peek * (n - 1), height: cardHeight,
+                background: '#0A0A0C', borderRadius: radius, overflow: 'hidden', cursor: 'pointer',
                 transformOrigin: 'top center',
                 transform: `translateY(${-peek * depth}px) scale(${1 - depth * 0.048})`,
                 zIndex: 40 - depth,
@@ -239,6 +262,16 @@ function CardStackView({
                   </>
                 )}
               </div>
+              {!front && (
+                <div
+                  style={{
+                    position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', pointerEvents: 'none',
+                    backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)',
+                    maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.95) 65%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.95) 65%)',
+                  }}
+                />
+              )}
               {front && frozen && (
                 <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
                   <Lock size={28} color="rgba(255,255,255,0.6)" />
