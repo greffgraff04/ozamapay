@@ -361,6 +361,16 @@ model StrowalletWebhookEvent {
   processedAt DateTime @default(now())
 }
 
+// Menm rezon ak StrowalletWebhookEvent — idempotence pou webhook BSICards
+// (eventId = data.id nan payload la, wè bsicards.webhook.controller.ts).
+model BsicardsWebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  event       String
+  rawPayload  Json
+  processedAt DateTime @default(now())
+}
+
 model CardTransaction {
   id         String              @id @default(uuid())
   userId     String

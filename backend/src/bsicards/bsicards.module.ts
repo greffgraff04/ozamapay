@@ -5,11 +5,12 @@ import { BSICardsController } from './bsicards.controller';
 import { BSICardsMastercardService } from './bsicards-mastercard.service';
 import { BSICardsMastercardController } from './bsicards-mastercard.controller';
 import { BSICardsMastercardEuroService } from './bsicards-mastercard-euro.service';
+import { BSICardsWebhookController } from './bsicards.webhook.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   imports: [ConfigModule.forRoot()],
-  controllers: [BSICardsController, BSICardsMastercardController],
+  controllers: [BSICardsController, BSICardsMastercardController, BSICardsWebhookController],
   providers: [BSICardsService, BSICardsMastercardService, BSICardsMastercardEuroService, PrismaService],
   exports: [BSICardsService, BSICardsMastercardService, BSICardsMastercardEuroService],
 })
