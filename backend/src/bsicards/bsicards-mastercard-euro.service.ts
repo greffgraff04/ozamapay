@@ -62,6 +62,21 @@ export class BSICardsMastercardEuroService {
     return Number(rate.value);
   }
 
+  // Lekti sèlman, pa gen frè — vrè balans BSICards la kounye a (itilize pa
+  // BSICardsBalanceSyncService pou detekte/korije "drift" pandan n ap tann
+  // konfimasyon webhook la fonksyone).
+  async getCardBalance(userEmail: string, cardId: string): Promise<number> {
+    const raw = await this.bsicardsPost('mastercard-euro/get-card', {
+      useremail: userEmail,
+      cardid: cardId,
+    });
+    const value = raw?.data?.data?.balance?.value;
+    if (typeof value !== 'number') {
+      throw new BadRequestException(`Pa jwenn balans nan repons get-card la pou ${cardId}`);
+    }
+    return value;
+  }
+
   private resolveIdentity(user: {
     name: string | null;
     kyc: { firstName?: string | null; lastName?: string | null } | null;

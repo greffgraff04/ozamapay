@@ -558,6 +558,34 @@ export class MailService {
     await this.send('contact@ozamapay.com', `Rapèl — to ${key} poko mete ajou`, html);
   }
 
+  // Rezime yon sikl BSICardsBalanceSyncService — cron tanporè k ap tann
+  // konfimasyon webhook BSICards fonksyone (wè bsicards-balance-sync.service.ts).
+  async sendBsicardsBalanceDriftAlert(
+    drifts: { cardId: string; email: string; name: string | null; oldBalance: number; newBalance: number; diff: number }[],
+  ): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+    const rows = drifts
+      .map((d) =>
+        this.infoRow(
+          `${d.name ?? d.email} (${d.cardId.slice(0, 8)}…)`,
+          `€${d.oldBalance.toFixed(2)} → €${d.newBalance.toFixed(2)} (diferans €${d.diff.toFixed(2)})`,
+        ),
+      )
+      .join('');
+    const html = this.wrap(
+      'Balans kat BSICards senkwonize otomatikman — OZAMAPAY',
+      'Drift Balans BSICards',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Cron tanporè a jwenn ${drifts.length} kat Mastercard EUR kote balans lokal la pa t matche vrè balans BSICards la, e li korije yo otomatikman (senkwonizasyon afichaj sèlman, pa gen chaj/ranbousman).`) +
+      this.table(rows) +
+      this.p(`Dat: ${now}`) +
+      this.accentLine('Sa a se yon mekanis TANPORÈ pandan n ap tann konfimasyon webhook BSICards fonksyone pou vre — si ou wè alèt sa yo souvan, sa vle di gen anpil aktivite kat oswa webhook la poko pare.'),
+      '#e65100',
+    );
+    await this.send('contact@ozamapay.com', `Balans kat BSICards senkwonize otomatikman (${drifts.length} kat)`, html);
+  }
+
   // Admin-sèlman — sekirize men, konteni an mansyone StroWallet paske sa a
   // pa janm ale bay kliyan an (kontrèman ak Transaction.description).
   async sendCardCreationFailureAlert(
