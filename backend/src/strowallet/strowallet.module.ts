@@ -6,6 +6,7 @@ import { StrowalletWebhookController } from './strowallet.webhook.controller';
 import { CardTerminationService } from './card-termination.service';
 import { CardTransactionService } from './card-transaction.service';
 import { CardOtpService } from './card-otp.service';
+import { ZiiropayCorrelationService } from './ziiropay-correlation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailModule } from '../mail/mail.module';
 
@@ -18,7 +19,7 @@ import { MailModule } from '../mail/mail.module';
     StrowalletWebhookController,
     StrowalletHealthController,
   ],
-  providers: [StrowalletService, CardTerminationService, CardTransactionService, CardOtpService, PrismaService],
+  providers: [StrowalletService, CardTerminationService, CardTransactionService, CardOtpService, ZiiropayCorrelationService, PrismaService],
   exports: [StrowalletService, CardOtpService],
 })
 export class StrowalletModule {}

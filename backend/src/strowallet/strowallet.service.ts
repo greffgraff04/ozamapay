@@ -2,14 +2,45 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
+import { ZiiropayCorrelationService } from './ziiropay-correlation.service';
 import axios from 'axios';
 
 @Injectable()
 export class StrowalletService {
   private readonly logger = new Logger(StrowalletService.name);
-  private readonly BASE_URL = 'https://strowallet.com/api/bitvcard';
+  private readonly BASE_URL_STROWALLET = 'https://strowallet.com/api/bitvcard';
+  private readonly BASE_URL_ZIIROPAY = 'https://ziiropay.com/api/bitvcard';
   private readonly PUBLIC_KEY: string;
   private readonly MODE = 'live';
+
+  // Migrasyon ZiiroPay (sept 2026) — 1 sèl flag pou routing pwogresif +
+  // rollback. 'off' (default) = kòmpòtman idantik jodi a. 'read' = sèlman
+  // fetch-nfccard-detail deplase. 'full' = fetch-nfccard-detail +
+  // fund-withdraw-nfccard + freezeactivate-nfc deplase. create-nfc-card pa
+  // JANM deplase, menm nan 'full' — dokiman readme.io toujou montre l sou
+  // strowallet.com sèlman (wè konvèsasyon migrasyon).
+  private readonly ZIIROPAY_ROUTING_STAGE: 'off' | 'read' | 'full';
+  private readonly ZIIROPAY_ENDPOINTS_READ = new Set(['fetch-nfccard-detail']);
+  private readonly ZIIROPAY_ENDPOINTS_FULL = new Set([
+    'fetch-nfccard-detail',
+    'fund-withdraw-nfccard',
+    'freezeactivate-nfc',
+  ]);
+
+  private resolveBaseUrl(endpoint: string): string {
+    if (endpoint === 'create-nfc-card') return this.BASE_URL_STROWALLET;
+    if (this.ZIIROPAY_ROUTING_STAGE === 'full' && this.ZIIROPAY_ENDPOINTS_FULL.has(endpoint)) {
+      return this.BASE_URL_ZIIROPAY;
+    }
+    if (this.ZIIROPAY_ROUTING_STAGE === 'read' && this.ZIIROPAY_ENDPOINTS_READ.has(endpoint)) {
+      return this.BASE_URL_ZIIROPAY;
+    }
+    return this.BASE_URL_STROWALLET;
+  }
+
+  private isRoutedToZiiropay(endpoint: string): boolean {
+    return this.resolveBaseUrl(endpoint) === this.BASE_URL_ZIIROPAY;
+  }
 
   // StroWallet konfime (14 out 2026): "It's customer address we requested
   // for and not billing address" — tès AVS pi bonè (984f6f4) te fè yon move
@@ -34,8 +65,11 @@ export class StrowalletService {
     private prisma: PrismaService,
     private config: ConfigService,
     private mailService: MailService,
+    private ziiropayCorrelationService: ZiiropayCorrelationService,
   ) {
     this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
+    const stage = this.config.get<string>('ZIIROPAY_ROUTING_STAGE');
+    this.ZIIROPAY_ROUTING_STAGE = stage === 'read' || stage === 'full' ? stage : 'off';
   }
 
   // ─── HELPER ────────────────────────────────────────────────────────────────
@@ -49,7 +83,7 @@ export class StrowalletService {
   }
 
   private async nfcPost(endpoint: string, params: Record<string, string>) {
-    const url = `${this.BASE_URL}/${endpoint}/`;
+    const url = `${this.resolveBaseUrl(endpoint)}/${endpoint}/`;
     const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
@@ -121,7 +155,7 @@ export class StrowalletService {
   }
 
   private async nfcGet(endpoint: string, params: Record<string, string>) {
-    const url = `${this.BASE_URL}/${endpoint}/`;
+    const url = `${this.resolveBaseUrl(endpoint)}/${endpoint}/`;
     const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
@@ -186,7 +220,7 @@ export class StrowalletService {
   // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
 
   async checkHealth(): Promise<{ status: 'ok' | 'error'; message?: string }> {
-    const url = `${this.BASE_URL}/fetch-nfccard-detail/`;
+    const url = `${this.resolveBaseUrl('fetch-nfccard-detail')}/fetch-nfccard-detail/`;
     try {
       await axios.get(url, {
         params: { public_key: this.PUBLIC_KEY, mode: this.MODE, card_id: 'health-check' },
@@ -472,6 +506,13 @@ export class StrowalletService {
         amount: String(amountUsd),
         type: 'fund',
       });
+      // ziiropay.com pa gen webhook topup.complete konfime — anrejistre yon
+      // chèk atann pou ZiiropayCorrelationService verifye nan 15 min.
+      if (this.isRoutedToZiiropay('fund-withdraw-nfccard')) {
+        await this.ziiropayCorrelationService
+          .recordExpectedFundConfirmation(card.cardId, userId, amountUsd)
+          .catch((err: any) => this.logger.error(`[ZiiropayCorrelation] recordExpectedFundConfirmation echwe: ${err.message}`));
+      }
     } catch (err) {
       // ── Etap 3: Strowallet echwe → renmbi wallet (NOUVO transaction) ────────
       await this.prisma.$transaction(async (tx) => {
@@ -628,6 +669,12 @@ export class StrowalletService {
       status: 'frozen',
     });
 
+    if (this.isRoutedToZiiropay('freezeactivate-nfc')) {
+      await this.ziiropayCorrelationService
+        .recordExpectedStatusChange(card.cardId, userId, 'FREEZE', 'frozen')
+        .catch((err: any) => this.logger.error(`[ZiiropayCorrelation] recordExpectedStatusChange echwe: ${err.message}`));
+    }
+
     await this.prisma.virtualCard.update({
       where: { cardId: card.cardId },
       data: { status: 'FROZEN' },
@@ -644,6 +691,12 @@ export class StrowalletService {
       card_id: card.cardId,
       status: 'active',
     });
+
+    if (this.isRoutedToZiiropay('freezeactivate-nfc')) {
+      await this.ziiropayCorrelationService
+        .recordExpectedStatusChange(card.cardId, userId, 'UNFREEZE', 'active')
+        .catch((err: any) => this.logger.error(`[ZiiropayCorrelation] recordExpectedStatusChange echwe: ${err.message}`));
+    }
 
     await this.prisma.virtualCard.update({
       where: { cardId: card.cardId },

@@ -393,6 +393,27 @@ model CardTransaction {
   @@index([occurredAt])
 }
 
+// ZiiroPay migration (sept 2026) — ziiropay.com pa gen webhook pou tout
+// evènman tankou strowallet.com (pa gen freeze/unfreeze, pa gen "withdraw"
+// separe). Sa a se yon "chèk atann" ki kreye apre yon operasyon fund/freeze/
+// unfreeze ki route sou ziiropay.com, epi verifye pa ZiiropayCorrelationService
+// (cron chak 5 min, wè ziiropay-correlation.service.ts) — FUND kont
+// CardTransaction ki soti nan webhook egzistan an, FREEZE/UNFREEZE via
+// poll-verify (nouvo GET fetch-nfccard-detail).
+model ZiiropayOperationCheck {
+  id            String    @id @default(uuid())
+  cardId        String
+  userId        String
+  operationType String // 'FUND' | 'FREEZE' | 'UNFREEZE'
+  expectedValue String? // amount (FUND) or target card_status (FREEZE/UNFREEZE)
+  checkAfter    DateTime
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([resolvedAt, checkAfter])
+  @@index([cardId])
+}
+
 enum CardTransactionType {
   AUTHORIZATION
   TOPUP
