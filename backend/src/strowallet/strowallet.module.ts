@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { StrowalletService } from './strowallet.service';
 import { StrowalletHealthController } from './strowallet.health.controller';
 import { StrowalletWebhookController } from './strowallet.webhook.controller';
+import { ZiiropayTestWebhookController } from './ziiropay-test.webhook.controller';
 import { CardTerminationService } from './card-termination.service';
 import { CardTransactionService } from './card-transaction.service';
 import { CardOtpService } from './card-otp.service';
@@ -18,6 +19,7 @@ import { MailModule } from '../mail/mail.module';
   controllers: [
     StrowalletWebhookController,
     StrowalletHealthController,
+    ZiiropayTestWebhookController,
   ],
   providers: [StrowalletService, CardTerminationService, CardTransactionService, CardOtpService, ZiiropayCorrelationService, PrismaService],
   exports: [StrowalletService, CardOtpService],
