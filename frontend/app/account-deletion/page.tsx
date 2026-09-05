@@ -48,8 +48,8 @@ export default function AccountDeletionPage() {
               <p className="text-white/70 leading-relaxed">
                 Pour demander la suppression de votre compte OZAMAPAY et des données associées,
                 envoyez un e-mail à{' '}
-                <a href="mailto:[email protected]" className="text-[#FF7A00] underline">
-                  [email protected]
+                <a href="mailto:contact@ozamapay.com" className="text-[#FF7A00] underline">
+                  contact@ozamapay.com
                 </a>{' '}
                 depuis l'adresse e-mail associée à votre compte, avec pour objet
                 «&nbsp;Demande de suppression de compte&nbsp;».
