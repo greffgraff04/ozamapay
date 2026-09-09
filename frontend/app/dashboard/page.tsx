@@ -1595,7 +1595,7 @@ export default function Dashboard() {
         {activeTab === 'home' && (
           <>
           {/* ── Mobile layout (hidden on desktop) ── */}
-          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(366px + env(safe-area-inset-top))' }}>
+          <div className="lg:hidden animate-in fade-in duration-500" style={{ paddingTop: 'calc(292px + env(safe-area-inset-top))' }}>
             {/* FIXED HERO: header + balance card + action buttons */}
             <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
               <header className="px-4 pt-2 pb-2 flex justify-between items-center">
@@ -1683,7 +1683,7 @@ export default function Dashboard() {
               </header>
               <div className="px-4 pb-4">
               {/* BALANCE CARD — glass + glow + sparkline */}
-              <div className="relative w-full overflow-hidden oz-glass-strong" style={{ borderRadius: 30, padding: 22 }}>
+              <div className="relative w-full overflow-hidden oz-glass-strong" style={{ borderRadius: 30, padding: 18 }}>
                 {/* orange glow blob */}
                 <div aria-hidden style={{ position: 'absolute', top: -30, right: -10, width: 160, height: 160, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 70%)', pointerEvents: 'none' }} />
                 {/* label row */}
@@ -1707,17 +1707,6 @@ export default function Dashboard() {
                     </p>
                   );
                 })()}
-                {/* sparkline */}
-                <svg width="100%" height="56" viewBox="0 0 320 56" preserveAspectRatio="none" style={{ display: 'block', marginTop: 10 }}>
-                  <defs>
-                    <linearGradient id="spk-m" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor="#FF7A00" stopOpacity=".38" />
-                      <stop offset="1" stopColor="#FF7A00" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12 L320 56 L0 56 Z" fill="url(#spk-m)" />
-                  <path d="M0 40 C30 36 48 22 76 26 S122 10 150 18 S206 38 236 16 S294 6 320 12" fill="none" stroke="#FF7A00" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="600" strokeDashoffset="600" style={{ animation: 'dash 1.4s ease-out .2s forwards' }} />
-                </svg>
               </div>
 
               {/* QUICK ACTIONS */}
@@ -1789,15 +1778,15 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div style={{ height: 'calc(100vh - 396px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24 pt-2">
- 
+            <div className="pb-24 pt-2">
+
             <div className="space-y-2">
               {displayFeed.length === 0 ? (
                 <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
                   Pa gen okenn tranzaksyon poko.
                 </p>
               ) : (
-                displayFeed.slice(0, 5).map((t: any, idx) => {
+                displayFeed.slice(0, 3).map((t: any, idx) => {
                   const isDebit = t.source === 'CARD'
                     ? t.type === 'AUTHORIZATION'
                     : t.type === 'WITHDRAWAL' || t.type === 'DEBIT' || t.type === 'sent' ||
@@ -1859,6 +1848,25 @@ export default function Dashboard() {
                   );
                 })
               )}
+            </div>
+
+            <div className="px-4 mt-4 mb-2">
+              <h3 className="font-black italic uppercase text-[13px] tracking-[1px] mb-3"
+                  style={{ color: colors.textPrimary }}>PWOMOSYON</h3>
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4 }}>
+                {[1, 2, 3].map((n) => (
+                  <div key={n} style={{
+                    minWidth: '85%', height: 140, borderRadius: 20, flexShrink: 0,
+                    scrollSnapAlign: 'start',
+                    background: `linear-gradient(135deg, #FF7A00, #FF6B00)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>
+                      Pwomosyon {n}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
             </div>
           </div>
