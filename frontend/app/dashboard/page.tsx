@@ -9,7 +9,7 @@ import {
   ShieldCheck, Zap, Clock, Copy, QrCode, ArrowLeftRight, ShieldEllipsis, Activity, FileText, Camera, X,
   Shield, BadgeCheck, Briefcase, TrendingUp, Star, Pencil, Download, Share2,
   HelpCircle, CreditCard as CardIcon, Eye, EyeOff, Lock, Unlock, ShoppingCart, Phone,
-  Sun, Moon, ChevronDown, RefreshCw, AlertTriangle, PlayCircle,
+  ChevronDown, RefreshCw, AlertTriangle, PlayCircle,
   MessageCircle, Wrench, XCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -526,7 +526,7 @@ export default function Dashboard() {
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   'http://localhost:10000';// IP Backend ou a
 
-  const { colors, glass, isDark, toggleTheme } = useTheme();
+  const { colors, glass, isDark } = useTheme();
   const accentMuted = isDark ? '#FF7A001A' : '#FF7A0033';
   const router = useRouter();
 
@@ -3039,7 +3039,7 @@ export default function Dashboard() {
             {virtualCard?.cardId && cardFetchError ? (
               /* ===== FETCH ERROR — DB te konfime yon kat egziste, men fetch aktyèl la echwe ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Vityèl</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                 <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
                   <div className="flex items-start gap-3 mb-6">
                     <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,.12)' }}>
@@ -3068,7 +3068,7 @@ export default function Dashboard() {
             ) : myCards.length === 0 ? (
               /* ===== NO CARD — CREATION FORM (DB konfime pa gen kat, oswa fetch echwe san okenn kat konfime anvan) ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6 text-white">Kat Vityèl</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                 {/* Card image: borderRadius 0 per spec */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" />
@@ -3166,7 +3166,7 @@ export default function Dashboard() {
             ) : virtualCard?.status === 'TERMINATED' ? (
               /* ===== TERMINATED CARD ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
-                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6 text-white">Kat Vityèl</p>
+                <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                 {/* Card image: dim + terminated overlay */}
                 <div className="relative w-full mb-4" style={{ aspectRatio: '1.586', borderRadius: 0 }}>
                   <img src="/carte_for_the_app.png" alt="OZAMA Card" className="w-full h-full object-cover" style={{ opacity: 0.4 }} />
@@ -3205,7 +3205,7 @@ export default function Dashboard() {
                   {/* FIXED TOP SECTION */}
                   <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', paddingTop: 'env(safe-area-inset-top)' }}>
                     {/* Page title */}
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0 text-white">Kat Vityèl</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] px-5 pt-6 pb-0" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
 
                     {/* Pil kat: kat aktif la devan, lòt(y) kat parèt an pati dèyè li — tap/swipe pou chanje */}
                     <div className="mx-5 mt-2 mb-4">
@@ -3424,7 +3424,7 @@ export default function Dashboard() {
                 {/* ── DESKTOP LAYOUT ── */}
                 <div className="hidden lg:block oz-fadeUp">
                   <div className="max-w-[1400px] mx-auto px-8 py-10">
-                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6 text-white">Kat Vityèl</p>
+                    <p className="font-black italic uppercase text-[24px] tracking-[1.5px] mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                     <div className="flex gap-10 items-start">
                       {/* Left: card + actions */}
                       <div className="flex flex-col gap-5 flex-shrink-0" style={{ width: '420px' }}>
@@ -4242,20 +4242,6 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* Row 5 — Theme (inside menu card) */}
-                  <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: colors.border }}>
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.background, border: `1px solid ${colors.border}` }}>
-                      {isDark ? <Moon size={18} color={colors.accent} /> : <Sun size={18} color={colors.accent} />}
-                    </div>
-                    <p className="font-black italic uppercase text-[12px] flex-1" style={{ color: colors.textPrimary, letterSpacing: 0.5 }}>Mòd Eskran</p>
-                    <button onClick={toggleTheme}
-                      className="relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0"
-                      style={{ backgroundColor: isDark ? colors.accent : colors.border }}>
-                      <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow transition-transform duration-200"
-                        style={{ backgroundColor: colors.surface, transform: isDark ? 'translateX(24px)' : 'translateX(0)' }} />
-                    </button>
-                  </div>
-
                   {/* Row 6 — Biometric (web placeholder) */}
                   <div className="flex items-center gap-3 px-4 py-4">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.background, border: `1px solid ${colors.border}` }}>
@@ -4364,7 +4350,7 @@ export default function Dashboard() {
           <div className="oz-fadeUp pb-2" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
             {/* Page title */}
-            <h1 className="font-black italic uppercase text-[24px] mt-6 mb-4 text-white" style={{ letterSpacing: 1.5 }}>
+            <h1 className="font-black italic uppercase text-[24px] mt-6 mb-4" style={{ letterSpacing: 1.5, color: colors.textPrimary }}>
               Kado &amp; Kredi
             </h1>
 
