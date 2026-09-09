@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 
 type ThemeMode = 'dark' | 'light';
 
@@ -94,34 +94,23 @@ const LIGHT_GLASS: GlassTokens = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  colors:      DARK_COLORS,
-  glass:       DARK_GLASS,
-  isDark:      true,
+  colors:      LIGHT_COLORS,
+  glass:       LIGHT_GLASS,
+  isDark:      false,
   toggleTheme: () => {},
-  mode:        'dark',
+  mode:        'light',
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>('dark');
+  // Mòd la fòse rete 'light' — toggleTheme se yon no-op, DARK_COLORS/DARK_GLASS
+  // kenbe pou referans men yo pa itilize ankò.
+  const mode: ThemeMode = 'light';
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ozamapay-dashboard-theme') as ThemeMode | null;
-    if (saved === 'dark' || saved === 'light') {
-      setMode(saved);
-    }
-  }, []);
+  const toggleTheme = () => {};
 
-  const toggleTheme = () => {
-    setMode(prev => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('ozamapay-dashboard-theme', next);
-      return next;
-    });
-  };
-
-  const isDark = mode === 'dark';
-  const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
-  const glass  = isDark ? DARK_GLASS  : LIGHT_GLASS;
+  const isDark = false;
+  const colors = LIGHT_COLORS;
+  const glass  = LIGHT_GLASS;
 
   const cssVars: React.CSSProperties = {
     '--oz-bg':           colors.background,
