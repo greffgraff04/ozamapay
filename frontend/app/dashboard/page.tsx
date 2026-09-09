@@ -4502,12 +4502,12 @@ export default function Dashboard() {
           bottom: 'calc(14px + env(safe-area-inset-bottom))',
           left: 14, right: 14,
           height: 70,
-          background: glass.sheetBg,
+          background: 'linear-gradient(135deg, rgba(255,122,0,.92), rgba(255,107,0,.92))',
           backdropFilter: 'blur(26px)',
           WebkitBackdropFilter: 'blur(26px)',
           borderRadius: 26,
-          border: `1px solid ${glass.borderSubtle}`,
-          boxShadow: '0 8px 32px rgba(0,0,0,.45)',
+          border: '1px solid rgba(255,255,255,.25)',
+          boxShadow: '0 12px 40px rgba(255,107,0,.35)',
         }}
       >
         {[
@@ -4526,14 +4526,14 @@ export default function Dashboard() {
               style={{ flex: 1, height: '100%', gap: 3 }}
             >
               {isActive ? (
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'rgba(255,122,0,.15)', borderRadius: 16, padding: '6px 14px' }}>
-                  <span style={{ color: '#FF7A00' }}>{item.icon}</span>
-                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: '#FF7A00', textTransform: 'uppercase' }}>{item.label}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'rgba(255,255,255,.22)', borderRadius: 16, padding: '6px 14px' }}>
+                  <span style={{ color: '#FFFFFF' }}>{item.icon}</span>
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: '#FFFFFF', textTransform: 'uppercase' }}>{item.label}</span>
                 </span>
               ) : (
                 <>
-                  <span style={{ color: glass.textDimmer }}>{item.icon}</span>
-                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: glass.textDimmer, textTransform: 'uppercase' }}>{item.label}</span>
+                  <span style={{ color: 'rgba(255,255,255,.65)' }}>{item.icon}</span>
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.1em', color: 'rgba(255,255,255,.65)', textTransform: 'uppercase' }}>{item.label}</span>
                 </>
               )}
             </button>
