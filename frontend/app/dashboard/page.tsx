@@ -882,10 +882,66 @@ export default function Dashboard() {
     }
   };
 
+  // Retry the CARD fetch only — not the full 7-endpoint fetchData(). The old
+  // code called fetchData() here, so every "ESEYE ANKÒ" click re-hit every
+  // poll endpoint (including /wallet/transactions, unrelated to the card
+  // error being retried). Combined with the 15s auto-poll already hitting
+  // the same routes, repeated clicks during an outage were enough to trip
+  // the per-route rate limit (100 req/60s) on /v1/cards/my-cards AND
+  // /wallet/transactions — a self-inflicted "retry storm" that kept both
+  // stuck in the error state long after the real blip had passed.
+  const refreshCards = async () => {
+    const localToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!localToken) return;
+    const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
+
+    let cardFetchFailed = false;
+    let cardsData: any[] = [];
+    try {
+      const cardRes = await fetch(`${API_BASE}/v1/cards/my-cards`, { headers: { Authorization: `Bearer ${localToken}` } });
+      if (cardRes.status === 401) { signOut(); return; }
+      if (cardRes.ok) {
+        const raw = await cardRes.json();
+        cardsData = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+      } else {
+        cardFetchFailed = true;
+      }
+    } catch {
+      cardFetchFailed = true;
+    }
+
+    if (cardFetchFailed) {
+      cardFailCountRef.current += 1;
+      if (!hasLoadedCardsRef.current || cardFailCountRef.current >= 2) {
+        setCardFetchError(true);
+      }
+    } else {
+      cardFailCountRef.current = 0;
+      hasLoadedCardsRef.current = true;
+      setCardFetchError(false);
+      setMyCards((prevCards) => cardsData.map((cd: any) => {
+        const prev = prevCards.find((p: any) => p.cardId === cd.cardId);
+        return {
+          ...cd,
+          cardNumber: prev?.cardNumber,
+          cvv: prev?.cvv,
+          cardNumberUrl: prev?.cardNumberUrl,
+          cvvUrl: prev?.cvvUrl,
+          secureEmbedUrl: prev?.secureEmbedUrl,
+          expiryDate: prev?.expiryDate,
+          cardName: prev?.cardName || cd?.cardName,
+          last4: prev?.last4 || cd?.last4,
+        };
+      }));
+      setSelectedCardIndex((prevIdx) => (prevIdx < cardsData.length ? prevIdx : 0));
+    }
+    setCardsFetchAttempted(true);
+  };
+
   const handleCardRetry = async () => {
     setCardRetryLoading(true);
     try {
-      await fetchData();
+      await refreshCards();
     } finally {
       setCardRetryLoading(false);
     }
@@ -955,7 +1011,9 @@ export default function Dashboard() {
     } else {
       signOut();
     }
-    const interval = setInterval(fetchData, 15000);
+    // 25s (was 15s) — cuts baseline poll load ~40% across all 7 endpoints,
+    // more headroom under the per-route rate limit (100 req/60s/IP).
+    const interval = setInterval(fetchData, 25000);
     return () => clearInterval(interval);
   }, []);
 

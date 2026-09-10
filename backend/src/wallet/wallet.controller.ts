@@ -61,7 +61,10 @@ export class WalletController {
   // ======================================================
   // RALE TRANZAKSYON YO
   // ======================================================
+  // Poll dashboard la (chak 25s) rele wout sa a souvan — lekti sèlman, san
+  // risk finansye, donk limit pi laj pase default (100/60s) la.
   @Get('transactions')
+  @Throttle({ short: { limit: 300, ttl: 60000 } })
   async getTransactions(
     @Req() req: any,
     @Query('limit') limit?: string,

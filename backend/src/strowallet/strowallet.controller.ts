@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { StrowalletService } from './strowallet.service';
 import { CardOtpService } from './card-otp.service';
 import { CardsService } from '../cards/cards.service';
@@ -22,7 +23,10 @@ export class StrowalletController {
   }
 
   // Lis TOUT kat ACTIVE/FROZEN kliyan an (kèlkeswa provider) — pou UI switcher.
+  // Poll dashboard la (chak 25s) + retry manyèl rele wout sa a souvan — lekti
+  // sèlman, san risk finansye, donk limit pi laj pase default (100/60s) la.
   @Get('my-cards')
+  @Throttle({ short: { limit: 300, ttl: 60000 } })
   getMyCards(@Request() req) {
     return this.cardsService.getMyCards(req.user.id);
   }
