@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { BSICardsMastercardEuroService } from './bsicards-mastercard-euro.service';
+import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_EUR';
 const DRIFT_TOLERANCE_EUR = 0.01; // evite fo-pozitif ki soti nan awondi Decimal
@@ -25,6 +26,7 @@ export class BSICardsBalanceSyncService {
     private prisma: PrismaService,
     private mailService: MailService,
     private bsicardsEuroService: BSICardsMastercardEuroService,
+    private alertCooldown: AlertCooldownService,
   ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
@@ -91,10 +93,16 @@ export class BSICardsBalanceSyncService {
         }
       }
 
+      // Senkwonizasyon/koreksyon balans lan anwo a rete san cooldown — SÈLMAN
+      // imèl notifikasyon an gate (global, pa pè-kat, paske yon sèl imèl
+      // deja agrege tout kat ki drift yo).
       if (drifts.length > 0) {
-        await this.mailService.sendBsicardsBalanceDriftAlert(drifts).catch((err: any) =>
-          this.logger.error(`[BSICardsBalanceSync] Alèt email echwe: ${err.message}`),
-        );
+        const canSend = await this.alertCooldown.shouldSend('bsicards-drift');
+        if (canSend) {
+          await this.mailService.sendBsicardsBalanceDriftAlert(drifts).catch((err: any) =>
+            this.logger.error(`[BSICardsBalanceSync] Alèt email echwe: ${err.message}`),
+          );
+        }
       }
     } catch (err: any) {
       this.logger.error(`[BSICardsBalanceSync] Sik konplè echwe: ${err.message}`);

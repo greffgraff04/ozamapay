@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 
 @Injectable()
 export class RatesService {
@@ -10,6 +11,7 @@ export class RatesService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
+    private alertCooldown: AlertCooldownService,
   ) {}
 
   async getAllRates() {
@@ -36,14 +38,19 @@ export class RatesService {
 
   // Chak to nan tab Rate riske rete estal san pesonn pa remake l — sa a se
   // egzakteman sa k te rive ak USD_HTG (135 depi 2 jiyè, 8 semèn san chanje,
-  // san alèt). Rapèl chak jou pou tout to yo, pa sèlman USD_HTG.
+  // san alèt). Rapèl chak jou pou tout to yo, pa sèlman USD_HTG. Cron lan deja
+  // 1x/jou, men cooldown la ajoute pou konsistans ak lòt alèt yo epi pwoteje
+  // si cadans cron lan ta chanje pita.
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async checkRateStaleness() {
     const rates = await this.prisma.rate.findMany();
     const staleMs = this.STALE_DAYS * 24 * 60 * 60 * 1000;
     for (const rate of rates) {
       if (Date.now() - rate.updatedAt.getTime() > staleMs) {
-        await this.mailService.sendRateStaleAlert(rate.key, Number(rate.value), rate.updatedAt);
+        const canSend = await this.alertCooldown.shouldSend(`rate-stale:${rate.key}`);
+        if (canSend) {
+          await this.mailService.sendRateStaleAlert(rate.key, Number(rate.value), rate.updatedAt);
+        }
       }
     }
   }

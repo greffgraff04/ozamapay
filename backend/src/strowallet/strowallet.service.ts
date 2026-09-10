@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { ZiiropayCorrelationService } from './ziiropay-correlation.service';
+import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 import axios from 'axios';
 
 @Injectable()
@@ -66,6 +67,7 @@ export class StrowalletService {
     private config: ConfigService,
     private mailService: MailService,
     private ziiropayCorrelationService: ZiiropayCorrelationService,
+    private alertCooldown: AlertCooldownService,
   ) {
     this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
     const stage = this.config.get<string>('ZIIROPAY_ROUTING_STAGE');
@@ -189,9 +191,10 @@ export class StrowalletService {
   }
 
   // Anrejistre echèk create-nfc-card (admin-sèlman, wè CardCreationFailure nan
-  // schema.prisma) epi alète ekip la lè yon kliyan rive egzakteman 2 echèk
-  // konsekitif san okenn siksè ant yo — pa `>=` pou evite spam si li kontinye
-  // eseye apre premye alèt la.
+  // schema.prisma) epi alète ekip la lè yon kliyan rive omwen 2 echèk
+  // konsekitif san okenn siksè ant yo. Cooldown pa itilizatè (3h) ranplase
+  // ansyen `=== 2` a (ki te voye YON SÈL alèt pou tout tan, menm si pwoblèm
+  // nan te kontinye) — kounye a li re-alète chak 3h si echèk yo pèsiste.
   private async recordCardCreationFailure(
     userId: string,
     email: string,
@@ -209,10 +212,13 @@ export class StrowalletService {
       where: { userId, ...(lastCard ? { createdAt: { gt: lastCard.createdAt } } : {}) },
     });
 
-    if (consecutiveFailures === 2) {
-      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-      if (user) {
-        await this.mailService.sendCardCreationFailureAlert(user.email, user.name, userId, context, errorMessage);
+    if (consecutiveFailures >= 2) {
+      const canSend = await this.alertCooldown.shouldSend(`card-creation-failure:${userId}`);
+      if (canSend) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+        if (user) {
+          await this.mailService.sendCardCreationFailureAlert(user.email, user.name, userId, context, errorMessage);
+        }
       }
     }
   }

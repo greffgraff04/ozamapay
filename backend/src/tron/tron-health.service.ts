@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { TronUsageService } from './tron-usage.service';
+import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 
 // Alert only, never mutates anything — a lightweight "is the crypto
 // pipeline actually alive" check on top of HealthService (which only
@@ -26,6 +27,7 @@ export class TronHealthService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly tronUsageService: TronUsageService,
+    private readonly alertCooldown: AlertCooldownService,
   ) {}
 
   @Cron('*/15 * * * *')
@@ -37,29 +39,46 @@ export class TronHealthService {
     }
   }
 
+  // Chak chèk (sof kota, ki gen pwòp dedup li deja) gen yon cooldown pa
+  // kondisyon (3h) — sa a se egzakteman sous "URGENCE" ki te reprezante 45%
+  // nan tout volim Brevo (odit 10 sept 2026): san cooldown, yon sèl pwoblèm
+  // ki pèsiste te fè re-voye MENM imèl la chak 15 min, endefiniman. `problems`
+  // (retounen + log) rete KONPLÈ san filtre — se sèlman IMÈL la ki throttle,
+  // pou pa pèdi vizibilite nan lòg/API.
   async runHealthCheck(): Promise<string[]> {
-    const problems: string[] = [];
+    const checks: { key: string; problem: string | null }[] = [
+      { key: 'monitor-stale', problem: await this.checkMonitorStale() },
+      { key: 'deposit-stuck', problem: await this.checkDepositsStuck() },
+      { key: 'sweep-stuck', problem: await this.checkSweepStuck() },
+      { key: 'quota-approaching', problem: await this.checkQuotaApproaching() },
+      { key: 'rate-stale', problem: await this.checkUsdtRateHealth() },
+    ];
 
-    const monitorProblem = await this.checkMonitorStale();
-    if (monitorProblem) problems.push(monitorProblem);
+    const problems = checks.map((c) => c.problem).filter((p): p is string => !!p);
 
-    const depositProblem = await this.checkDepositsStuck();
-    if (depositProblem) problems.push(depositProblem);
-
-    const sweepProblem = await this.checkSweepStuck();
-    if (sweepProblem) problems.push(sweepProblem);
-
-    const quotaProblem = await this.checkQuotaApproaching();
-    if (quotaProblem) problems.push(quotaProblem);
-
-    const rateProblem = await this.checkUsdtRateHealth();
-    if (rateProblem) problems.push(rateProblem);
+    const alertable: string[] = [];
+    for (const { key, problem } of checks) {
+      if (!problem) continue;
+      // Kota deja gen pwòp dedup li (quotaAlertSentAt, reset chak jou) —
+      // pa doub-throttle li, senpleman kite l pase.
+      if (key === 'quota-approaching') {
+        alertable.push(problem);
+        continue;
+      }
+      const canSend = await this.alertCooldown.shouldSend(`tron-health:${key}`);
+      if (canSend) alertable.push(problem);
+    }
 
     if (problems.length > 0) {
-      this.logger.warn(`TronHealthService: ${problems.length} pwoblèm jwenn — voye alèt.`);
+      this.logger.warn(
+        `TronHealthService: ${problems.length} pwoblèm jwenn (${alertable.length} nan cooldown ki disponib pou alète).`,
+      );
+    }
+
+    if (alertable.length > 0) {
       try {
         await this.mailService.sendSystemAlert(
-          `Verifikasyon sante Tron/USDT jwenn ${problems.length} pwoblèm:\n\n${problems.join('\n\n')}`,
+          `Verifikasyon sante Tron/USDT jwenn ${problems.length} pwoblèm:\n\n${alertable.join('\n\n')}`,
           Math.round(process.uptime()),
         );
       } catch {}

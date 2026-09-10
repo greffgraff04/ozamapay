@@ -328,6 +328,16 @@ model Rate {
   updatedAt DateTime @updatedAt
 }
 
+// Cooldown jenerik pou nenpòt alèt ki riske repete twò souvan (rate stale,
+// echèk kreyasyon kat, drift balans, alèt sante Tron, elatriye) — `key` se
+// yon idantifyan lib chak sit apèl chwazi (egzanp "rate-stale:USD_HTG").
+// PA gen @updatedAt expresyon — separe de Rate.updatedAt pou evite kraze
+// deteksyon "stale" si nou ta make yon alèt sou menm liy Rate la.
+model AlertCooldown {
+  key        String   @id
+  lastSentAt DateTime @default(now())
+}
+
 model VirtualCard {
   id                   String     @id @default(uuid())
   userId               String

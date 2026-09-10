@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AlertCooldownModule } from './common/alert-cooldown/alert-cooldown.module';
 import { WalletModule } from './wallet/wallet.module';
 import { KycModule } from './kyc/kyc.module';
 import { AdminModule } from './admin/admin.module';
@@ -40,6 +41,7 @@ import { TronModule } from './tron/tron.module';
       { name: 'apiDaily', ttl: 86400000, limit: 1000 },
     ]),
     PrismaModule,
+    AlertCooldownModule,
     UsersModule,
     AuthModule,
     WalletModule,
