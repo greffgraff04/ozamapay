@@ -18,6 +18,12 @@ type TxType = "Tout" | "TOPUP" | "WITHDRAWAL" | "TRANSFER" | "FINANCE" | "KAT";
 
 const FILTERS: TxType[] = ["Tout", "TOPUP", "WITHDRAWAL", "TRANSFER", "FINANCE", "KAT"];
 
+const signOut = () => {
+  localStorage.clear();
+  document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  window.location.replace("/login");
+};
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("fr-FR", {
@@ -131,6 +137,12 @@ export default function TransactionsPage() {
         fetch(`${backendUrl}/v1/cards/history`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${backendUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+      if (txRes.status === 401 || meRes.status === 401) {
+        // Sesyon ekspire (jwt expired) — san sa a, paj la te rete afiche "Pa
+        // gen tranzaksyon" pou toujou olye de mande kliyan an rekonekte.
+        signOut();
+        return;
+      }
       if (txRes.ok) {
         const data = await txRes.json();
         // /v1/cards/history returns a flat array merging CardTransaction (StroWallet

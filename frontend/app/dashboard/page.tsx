@@ -343,6 +343,13 @@ export default function Dashboard() {
   const [myBusinesses, setMyBusinesses] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [cardActivity, setCardActivity] = useState<any[]>([]);
+  // 15s poll (fetchData) must never wipe visible data on a single transient
+  // failure — refs (not state) because the interval below closes over the
+  // mount-time fetchData, so any state read inside it would be stale.
+  const txFailCountRef = useRef(0);
+  const hasLoadedTxRef = useRef(false);
+  const cardFailCountRef = useRef(0);
+  const hasLoadedCardsRef = useRef(false);
 
   // Merged, date-sorted feed for display only — `transactions` itself stays
   // wallet-only so the existing HTG ANTRE/SOTI aggregate math isn't affected.
@@ -410,6 +417,11 @@ export default function Dashboard() {
   const [secretDetailsLoading, setSecretDetailsLoading] = useState(false);
   const [secretDetailsFailed, setSecretDetailsFailed] = useState(false);
   const [cardFetchError, setCardFetchError] = useState(false);
+  // GET /v1/cards/my-cards se sous verite a — tank premye apèl la poko fini
+  // (echwe oswa reyisi), nou pa ka konkli "kliyan pa gen kat" (sa ta bay yon
+  // "flash" fòm kreyasyon pou kliyan ki gen kat aktif deja si premye fetch la
+  // echwe/pran tan).
+  const [cardsFetchAttempted, setCardsFetchAttempted] = useState(false);
   const [cardRetryLoading, setCardRetryLoading] = useState(false);
   const [cardCreateLoading, setCardCreateLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState('moncash');
@@ -775,11 +787,39 @@ export default function Dashboard() {
       } else {
         cardFetchFailed = true;
       }
-      setCardFetchError(cardFetchFailed);
+      if (cardFetchFailed) {
+        cardFailCountRef.current += 1;
+        // Premye tantativ (pa gen done konfime ankò): yon sèl echèk ase pou
+        // montre eta erè a — nou pa ka konkli "pa gen kat" san konfimasyon.
+        // Yon fwa nou gen done konfime, mande 2 echèk KONSEKITIF anvan nou
+        // kache kat kliyan an dèyè yon erè (evite flash sou yon senp blip
+        // rezo pandan poll 15s la — menm apwòch ak HealthService bò backend).
+        if (!hasLoadedCardsRef.current || cardFailCountRef.current >= 2) {
+          setCardFetchError(true);
+        }
+      } else {
+        cardFailCountRef.current = 0;
+        hasLoadedCardsRef.current = true;
+        setCardFetchError(false);
+      }
+      setCardsFetchAttempted(true);
 
       setMyBusinesses(bizData);
 
-      setTransactions(Array.isArray(txData?.data) ? txData.data : []);
+      const txFetchFailed = !(txRes && txRes.ok);
+      if (txFetchFailed) {
+        txFailCountRef.current += 1;
+        // Menm apwòch ak kat yo: pa efase istorik tranzaksyon ki deja afiche
+        // a sou yon sèl echèk poll ki echwe — mande 2 konsekitif si nou gen
+        // done konfime deja.
+        if (!hasLoadedTxRef.current || txFailCountRef.current >= 2) {
+          setTransactions([]);
+        }
+      } else {
+        txFailCountRef.current = 0;
+        hasLoadedTxRef.current = true;
+        setTransactions(Array.isArray(txData?.data) ? txData.data : []);
+      }
 
       if (meData) {
         setUser(meData);
@@ -3044,8 +3084,15 @@ export default function Dashboard() {
         {/* --- CARDS SECTION --- */}
         {activeTab === 'cards' && (
           <div className="oz-fadeUp px-5 lg:px-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-            {virtualCard?.cardId && cardFetchError ? (
-              /* ===== FETCH ERROR — DB te konfime yon kat egziste, men fetch aktyèl la echwe ===== */
+            {!cardsFetchAttempted ? (
+              /* ===== PREMYE CHAJMAN — GET /v1/cards/my-cards poko reponn, pa
+                 konkli anyen sou kat kliyan an ankò (evite flash "kreye kat") ===== */
+              <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 flex items-center justify-center" style={{ minHeight: 320 }}>
+                <span className="w-9 h-9 border-[3px] border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : cardFetchError ? (
+              /* ===== FETCH ECHWE — kèlkeswa si nou te deja konnen yon kat, my-cards
+                 rete sous verite a: nou pa afiche fòm kreyasyon sou yon echèk rezo ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10 oz-fadeUp">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                 <div className="oz-glass mb-4" style={{ borderRadius: 24, padding: 24, borderColor: 'rgba(239,68,68,.35)' }}>
@@ -3074,7 +3121,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : myCards.length === 0 ? (
-              /* ===== NO CARD — CREATION FORM (DB konfime pa gen kat, oswa fetch echwe san okenn kat konfime anvan) ===== */
+              /* ===== NO CARD — CREATION FORM (my-cards konfime, san erè: kliyan an vrèman pa gen kat) ===== */
               <div className="pt-0 lg:max-w-[700px] lg:mx-auto lg:py-10">
                 <p className="font-black italic uppercase text-[24px] tracking-[1.5px] pt-6 pb-0 mb-6" style={{ color: colors.textPrimary }}>Kat Vityèl</p>
                 {/* Card image: borderRadius 0 per spec */}
