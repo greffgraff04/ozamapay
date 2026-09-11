@@ -1547,10 +1547,6 @@ export default function Dashboard() {
  
   return (
     <main className="min-h-screen font-space-grotesk overflow-x-hidden relative pb-32 lg:pb-0 lg:pl-64" style={{ background: glass.pageGradient }}>
-      {/* atmosphere orbs */}
-      <div aria-hidden style={{ position: 'fixed', top: -60, left: '50%', transform: 'translateX(-50%)', width: 420, height: 340, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,122,0,.22),transparent 68%)', filter: 'blur(24px)', pointerEvents: 'none', zIndex: 0 }} />
-      <div aria-hidden style={{ position: 'fixed', bottom: 60, right: -60, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(120,90,255,.14),transparent 70%)', filter: 'blur(24px)', animation: 'floatA 14s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
-      
       {/* TOAST NOTIFICATION */}
       {toast && (
         <div
@@ -2894,12 +2890,8 @@ export default function Dashboard() {
 
         {/* --- GLOBAL FINANCE SECTION --- */}
         {activeTab === 'finance' && !selectedFinanceService && (
-          <div className="oz-fadeUp px-4" style={{ paddingTop: 'calc(102px + env(safe-area-inset-top))' }}>
-            {/* fixed header */}
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, background: glass.headerBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: `1px solid ${glass.borderSubtle}`, paddingTop: 'env(safe-area-inset-top)' }} className="px-4 pt-4 pb-3">
-              <p className="font-black italic uppercase text-white" style={{ fontSize: 24, letterSpacing: 1.5, marginTop: 16, marginBottom: 16 }}>Ozama Exchange</p>
-            </div>
-            <div style={{ height: 'calc(100vh - 190px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
+          <div className="oz-fadeUp px-4" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}>
+            <div style={{ height: 'calc(100vh - 112px - env(safe-area-inset-top))', overflowY: 'auto', position: 'relative' }} className="pb-24">
               <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
                 Echanj lajan ak Meru, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
@@ -2923,7 +2915,7 @@ export default function Dashboard() {
                         <img src={`/${item.img}`} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
                       </div>
                       <div>
-                        <p className="font-black italic uppercase text-white" style={{ fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
+                        <p className="font-black italic uppercase" style={{ color: colors.textPrimary, fontSize: 14, letterSpacing: 0.5, marginBottom: 3 }}>{item.name}</p>
                         <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12 }}>{item.desc}</p>
                       </div>
                     </div>
@@ -2965,7 +2957,7 @@ export default function Dashboard() {
                   <div style={{ width: 34, height: 34, borderRadius: 11, background: glass.bgStrong, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${glass.border}`, marginLeft: 8, marginRight: 8, flexShrink: 0 }}>
                     <img src={`/${selectedFinanceService.img}`} alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} />
                   </div>
-                  <p className="font-black italic uppercase flex-1 text-white" style={{ fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
+                  <p className="font-black italic uppercase flex-1" style={{ color: colors.textPrimary, fontSize: 15, letterSpacing: 1 }}>{selectedFinanceService.name}</p>
                 </div>
                 {/* BUY / SELL segmented control */}
                 <div className="flex" style={{ background: glass.bg, borderRadius: 12, padding: 4, border: `1px solid ${glass.border}` }}>
