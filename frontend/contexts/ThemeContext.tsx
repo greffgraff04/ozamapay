@@ -85,7 +85,7 @@ const LIGHT_GLASS: GlassTokens = {
   inputBg:       'rgba(15,18,30,.03)',
   textDim:       'rgba(15,18,30,.55)',
   textDimmer:    'rgba(15,18,30,.45)',
-  pageGradient:  'radial-gradient(130% 80% at 50% -10%, #f3e9ff 0%, #f7f7fa 55%)',
+  pageGradient:  '#FFFFFF',
   headerBg:      'rgba(255,255,255,.88)',
   sheetBg:       'rgba(255,255,255,.92)',
   sheetBgStrong: 'rgba(255,255,255,.94)',

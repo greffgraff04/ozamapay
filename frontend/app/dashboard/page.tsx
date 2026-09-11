@@ -1824,7 +1824,7 @@ export default function Dashboard() {
                 ].map((item) => (
                   <button key={item.id} onClick={item.action} className="flex-1 flex flex-col items-center gap-[7px] active:scale-95 transition-all">
                     <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
-                      ? { width: 52, height: 52, borderRadius: 18, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
+                      ? { width: 52, height: 52, borderRadius: 18, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }
                       : { width: 52, height: 52, borderRadius: 18, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }
                     }>
                       {item.icon}
@@ -2057,7 +2057,7 @@ export default function Dashboard() {
                 ].map((item) => (
                   <button key={item.id} onClick={item.action} className="flex flex-col items-center gap-[7px] hover:scale-105 transition-all">
                     <div className={(item as any).primary ? 'oz-glowPulse' : ''} style={(item as any).primary
-                      ? { width: 56, height: 56, borderRadius: 19, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0A0C14' }
+                      ? { width: 56, height: 56, borderRadius: 19, background: 'linear-gradient(135deg,#FF7A00,#FF6B00)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }
                       : { width: 56, height: 56, borderRadius: 19, background: glass.bg, border: `1px solid ${glass.border}`, backdropFilter: 'blur(20px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textPrimary }
                     }>
                       {item.icon}
@@ -2903,10 +2903,6 @@ export default function Dashboard() {
               <p className="font-medium" style={{ color: glass.textDimmer, fontSize: 12, lineHeight: '18px', marginBottom: 20 }}>
                 Echanj lajan ak Meru, Zelle, USDT, ak plis ankò. Chwazi yon sèvis pou kòmanse.
               </p>
-              <div className="flex items-center justify-between gap-2 mb-5">
-                <p className="font-medium text-[11px]" style={{ color: glass.textDimmer }}>Kijan pou jere finans ou?</p>
-                <VideoGuideBadge phrase="Kijan pou jere finans ou?" />
-              </div>
               <div className="flex flex-col" style={{ gap: 10 }}>
                 {[
                   { id: 'meru',    name: 'Meru',         desc: 'USD Transfer',     img: 'meru.png' },
