@@ -127,3 +127,12 @@
   background-size: 200% 200%;
   animation: ozpGradientShift 12s ease-in-out infinite;
 }
+
+/* ── Utility: hide scrollbar while keeping the element scrollable ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

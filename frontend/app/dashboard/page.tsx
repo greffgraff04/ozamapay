@@ -1948,10 +1948,16 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="px-4 mt-4 mb-2">
-              <h3 className="font-black italic uppercase text-[13px] tracking-[1px] mb-3"
+            <div className="mt-4 mb-2">
+              <h3 className="font-black italic uppercase text-[13px] tracking-[1px] mb-3 px-4"
                   style={{ color: colors.textPrimary }}>PWOMOSYON</h3>
-              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 4 }}>
+              <div className="scrollbar-hide" style={{
+                display: 'flex', gap: 12, overflowX: 'auto',
+                scrollSnapType: 'x mandatory', paddingBottom: 4,
+                paddingLeft: 16, paddingRight: 16,
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
+              }}>
                 {[1, 2, 3].map((n) => (
                   <div key={n} style={{
                     minWidth: '85%', height: 140, borderRadius: 20, flexShrink: 0,
