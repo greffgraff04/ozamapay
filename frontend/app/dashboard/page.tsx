@@ -52,6 +52,13 @@ const FINANCE_ACCOUNTS: Record<string, { label: string; info: string; warning?: 
   usdt:    { label: 'Adrès TRC20',    info: 'TBVM2M4UgjF4aWfseHVDuW1ZTKc7dTTWbi', warning: '⚠️ Sèlman rezo TRC20!' },
   natcash: { label: 'Nimewo NatCash', info: '1920222' },
 };
+
+const promos = [
+  { src: '/promo-1.jpg', alt: 'Yon pwodwi nasyonal' },
+  { src: '/promo-2.jpg', alt: 'Yon kat pou tout tranzaksyon' },
+  { src: '/promo-3.jpg', alt: 'Verifye jodi a, sekirize pou toujou' },
+];
+const loopedPromos = [...promos, ...promos]; // doublike pou boukle san koupi
  
 const formatTimeAgo = (dateString: string) => {
   if (!dateString) return "Kounye a";
@@ -1952,24 +1959,25 @@ export default function Dashboard() {
               <h3 className="font-black italic uppercase text-[13px] tracking-[1px] mb-3 px-4"
                   style={{ color: colors.textPrimary }}>PWOMOSYON</h3>
               <div className="scrollbar-hide" style={{
-                display: 'flex', gap: 12, overflowX: 'auto',
-                scrollSnapType: 'x mandatory', paddingBottom: 4,
+                overflowX: 'auto',
                 paddingLeft: 16, paddingRight: 16,
                 WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
                 maskImage: 'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
               }}>
-                {[1, 2, 3].map((n) => (
-                  <div key={n} style={{
-                    minWidth: '85%', height: 140, borderRadius: 20, flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    background: `linear-gradient(135deg, #FF7A00, #FF6B00)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>
-                      Pwomosyon {n}
-                    </span>
-                  </div>
-                ))}
+                <div
+                  className="promo-track"
+                  style={{ display: 'flex', gap: 12, width: 'max-content' }}
+                >
+                  {loopedPromos.map((promo, i) => (
+                    <div key={i} style={{
+                      width: 320, height: 140, borderRadius: 20, flexShrink: 0,
+                      overflow: 'hidden', position: 'relative',
+                    }}>
+                      <img src={promo.src} alt={promo.alt}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             </div>

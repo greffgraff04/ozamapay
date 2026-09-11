@@ -136,3 +136,16 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Promo carousel: infinite auto-scroll, paused on hover/touch ── */
+@keyframes promoScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.promo-track {
+  animation: promoScroll 10s linear infinite;
+}
+.promo-track:hover,
+.promo-track:active {
+  animation-play-state: paused;
+}
