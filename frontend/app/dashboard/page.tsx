@@ -4077,8 +4077,8 @@ export default function Dashboard() {
             ) : (
               /* PROFILE VIEW */
               <div className="lg:max-w-[700px] lg:mx-auto">
-                {/* ── HERO CARD — uses glass.innerDark so it adapts with the theme ── */}
-                <div className="rounded-2xl p-4 mt-4 mb-4" style={{ background: glass.innerDark }}>
+                {/* ── HERO CARD — fixed orange gradient, matches the balance card ── */}
+                <div className="rounded-2xl p-4 mt-4 mb-4" style={{ background: 'linear-gradient(135deg, #FF7A00, #FF6B00)' }}>
                   <div className="flex items-center gap-4">
                     <div className="relative flex-shrink-0">
                       {profilePhoto ? (
@@ -4092,7 +4092,7 @@ export default function Dashboard() {
                         onClick={() => profilePhotoInputRef.current?.click()}
                         disabled={profilePhotoUploading}
                         className="absolute flex items-center justify-center rounded-full transition disabled:opacity-60"
-                        style={{ width: 26, height: 26, bottom: -2, right: -2, backgroundColor: colors.accent, border: `2px solid ${glass.innerDark}` }}
+                        style={{ width: 26, height: 26, bottom: -2, right: -2, backgroundColor: colors.accent, border: '2px solid #FF6B00' }}
                       >
                         {profilePhotoUploading
                           ? <div className="w-[10px] h-[10px] border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -4131,17 +4131,17 @@ export default function Dashboard() {
                               <Pencil size={10} />
                             </button>
                           </div>
-                          {user?.email && <p className="text-[11px] mt-[3px] truncate" style={{ color: glass.textDimmer }}>{user.email}</p>}
+                          {user?.email && <p className="text-[11px] mt-[3px] truncate" style={{ color: 'rgba(255,255,255,.85)' }}>{user.email}</p>}
                           <div className="flex flex-row gap-1.5 mt-1.5 flex-wrap">
                             {user?.kyc?.status === 'APPROVED' ? (
-                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.18)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', letterSpacing: 0.5 }}>✓ Verifye</span>
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.32)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', letterSpacing: 0.5 }}>✓ Verifye</span>
                             ) : user?.kyc?.status === 'PENDING' ? (
-                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c', letterSpacing: 0.5 }}>⏳ Annatant</span>
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.32)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c', letterSpacing: 0.5 }}>⏳ Annatant</span>
                             ) : (
-                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: glass.bg, border: `1px solid ${glass.border}`, color: glass.textDim, letterSpacing: 0.5 }}>Pa Verifye</span>
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.35)', color: '#FFFFFF', letterSpacing: 0.5 }}>Pa Verifye</span>
                             )}
                             {(user?.role === 'AGENT' || user?.role === 'SUPER_ADMIN' || user?.agent?.status === 'ACTIVE' || user?.agent?.status === 'APPROVED') && (
-                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: accentMuted, border: `1px solid ${colors.accent}44`, color: colors.accent, letterSpacing: 0.5 }}>⚡ Ajan</span>
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,.9)', border: 'none', color: colors.accent, letterSpacing: 0.5 }}>⚡ Ajan</span>
                             )}
                           </div>
                         </>
