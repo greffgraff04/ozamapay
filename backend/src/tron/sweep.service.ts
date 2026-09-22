@@ -225,14 +225,18 @@ export class SweepService {
     const acct = data?.data?.[0];
     const trxBalanceSun = Number(acct?.balance || 0);
 
-    let usdtBalanceRaw = 0n;
-    const trc20List: Array<Record<string, string>> = acct?.trc20 || [];
-    for (const entry of trc20List) {
-      if (entry[USDT_TRC20_CONTRACT]) {
-        usdtBalanceRaw = BigInt(entry[USDT_TRC20_CONTRACT]);
-        break;
-      }
-    }
+    // /v1/accounts' indexed `trc20` field is empty for any address that has
+    // never received TRX (never "activated" at the account level), even
+    // when it genuinely holds TRC20 tokens — confirmed 2026-09-21 against
+    // two real stuck deposit addresses (data: [] entirely, despite $37 and
+    // $16.99 USDT actually sitting there per the token contract itself).
+    // Read the balance straight from the USDT contract instead, which is
+    // unaffected by the depositing address's own activation state.
+    const tronWeb = this.getTronWeb();
+    tronWeb.setAddress(address);
+    const contract: any = await tronWeb.contract().at(USDT_TRC20_CONTRACT);
+    const usdtBalanceRaw: bigint = BigInt(await contract.balanceOf(address).call());
+
     return { trxBalanceSun, usdtBalanceRaw };
   }
 
