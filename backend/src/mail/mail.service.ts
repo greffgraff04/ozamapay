@@ -416,6 +416,28 @@ export class MailService {
       this.p('Ekip OZAMAPAY');
   }
 
+  // Avis officiel — pann tanporè Mastercard (25 sept 2026). Tèks egzat
+  // apwouve pa CEO, pa modifye san apwobasyon.
+  async sendMastercardTemporaryOutageNotice(email: string): Promise<void> {
+    const subject = 'Avis important : interruption temporaire de service sur les cartes Mastercard OZAMAPAY';
+    const html = this.wrap(
+      subject,
+      'Avis Important',
+      this.p('Madame, Monsieur,') +
+      this.p("Nous tenons à vous informer d'une interruption temporaire affectant certaines opérations liées aux cartes Mastercard émises via la plateforme OZAMAPAY.") +
+      this.p("Cet incident trouve son origine chez notre partenaire bancaire émetteur et n'affecte en aucun cas la sécurité de vos fonds ni l'intégrité de votre compte OZAMAPAY. Nos équipes techniques, en coordination étroite avec celles de notre partenaire, sont pleinement mobilisées pour rétablir un fonctionnement normal dans les plus brefs délais.") +
+      this.p("Durant cette période, vous pourriez rencontrer des difficultés lors de transactions, de rechargements ou de consultations relatives à votre carte Mastercard. Nous vous invitons à ne pas multiplier les tentatives, celles-ci n'ayant aucune incidence sur le délai de résolution et pouvant générer des messages d'erreur récurrents.") +
+      this.p("Nous sommes pleinement conscients de la gêne que cette situation peut occasionner dans votre usage quotidien, et vous prions de bien vouloir nous en excuser. La confiance que vous accordez à OZAMAPAY constitue le fondement de notre engagement, et nous mettons tout en œuvre pour vous garantir un service à la hauteur de vos attentes.") +
+      this.p("Une communication vous sera adressée dès le rétablissement complet du service, ainsi qu'un point d'étape si la résolution venait à requérir davantage de temps que prévu.") +
+      this.p('Notre équipe de support demeure à votre entière disposition pour toute question.') +
+      this.p('Nous vous remercions de votre compréhension et de la confiance que vous continuez de nous témoigner.') +
+      this.p("Veuillez agréer, Madame, Monsieur, l'expression de nos salutations distinguées.") +
+      this.p("L'équipe OZAMAPAY"),
+      '#e65100',
+    );
+    await this.send(email, subject, html);
+  }
+
   async sendWithdrawalNetworkResolvedNotice(email: string): Promise<void> {
     const subject = 'Mizajou sou demann retrè ou a';
     const html = this.wrap(
