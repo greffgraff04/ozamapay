@@ -12,7 +12,13 @@ export class StrowalletService {
   private readonly logger = new Logger(StrowalletService.name);
   private readonly BASE_URL_STROWALLET = 'https://strowallet.com/api/bitvcard';
   private readonly BASE_URL_ZIIROPAY = 'https://ziiropay.com/api/bitvcard';
+  // 2 oct 2026 — FAZ 0 reparasyon: STROWALLET_PUBLIC_KEY (fòma "pub_...",
+  // kle strowallet.com) pa menm kle ak dashboard ziiropay a (fòma hex 40
+  // karaktè san prefiks) — konfime AN LIVE: ziiropay.com rejte cardkyc ak
+  // "Invalid public key." lè STROWALLET_PUBLIC_KEY voye. 2 chan separe pou
+  // 2 pwovidè yo.
   private readonly PUBLIC_KEY: string;
+  private readonly ZIIROPAY_PUBLIC_KEY: string;
   private readonly MODE = 'live';
 
   // Migrasyon ZiiroPay (sept 2026) — 1 sèl flag pou routing pwogresif +
@@ -87,6 +93,7 @@ export class StrowalletService {
     private alertCooldown: AlertCooldownService,
   ) {
     this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
+    this.ZIIROPAY_PUBLIC_KEY = this.config.get<string>('ZIIROPAY_PUBLIC_KEY') ?? '';
     const stage = this.config.get<string>('ZIIROPAY_ROUTING_STAGE');
     this.ZIIROPAY_ROUTING_STAGE = stage === 'read' || stage === 'full' ? stage : 'off';
   }
@@ -115,7 +122,7 @@ export class StrowalletService {
     // yo tout, pa sèlman cardkyc, pou rete koheran ak sa ki konfime.
     const payload =
       base === this.BASE_URL_ZIIROPAY
-        ? { public_key: this.PUBLIC_KEY, ...params }
+        ? { public_key: this.ZIIROPAY_PUBLIC_KEY, ...params }
         : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
@@ -219,7 +226,7 @@ export class StrowalletService {
     // Menm rezon ak nfcPost() — "mode" omèt pou wout ziiropay.com yo.
     const payload =
       base === this.BASE_URL_ZIIROPAY
-        ? { public_key: this.PUBLIC_KEY, ...params }
+        ? { public_key: this.ZIIROPAY_PUBLIC_KEY, ...params }
         : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
@@ -288,10 +295,15 @@ export class StrowalletService {
   // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
 
   async checkHealth(): Promise<{ status: 'ok' | 'error'; message?: string }> {
+    // 2 oct 2026 — resolveBaseUrl('fetch-nfccard-detail') toujou retounen
+    // ziiropay.com kounye a (ZIIROPAY_ALWAYS_ENDPOINTS), kidonk kle a dwe
+    // ZIIROPAY_PUBLIC_KEY — pa STROWALLET_PUBLIC_KEY, menmsi non fonksyon
+    // sa a ta sijere strowallet.com. Trailing-slash/mode PA touche isit la
+    // (menm egzansyon ak ziiropay-correlation.service.ts — tikè separe).
     const url = `${this.resolveBaseUrl('fetch-nfccard-detail')}/fetch-nfccard-detail/`;
     try {
       await axios.get(url, {
-        params: { public_key: this.PUBLIC_KEY, mode: this.MODE, card_id: 'health-check' },
+        params: { public_key: this.ZIIROPAY_PUBLIC_KEY, mode: this.MODE, card_id: 'health-check' },
         timeout: 10000,
       });
       return { status: 'ok' };

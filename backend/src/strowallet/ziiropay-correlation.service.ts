@@ -17,14 +17,17 @@ const BASE_URL_ZIIROPAY = 'https://ziiropay.com/api/bitvcard';
 @Injectable()
 export class ZiiropayCorrelationService {
   private readonly logger = new Logger(ZiiropayCorrelationService.name);
-  private readonly PUBLIC_KEY: string;
+  // 2 oct 2026 — FAZ 0 reparasyon: STROWALLET_PUBLIC_KEY pa menm kle ak
+  // dashboard ziiropay a (konfime AN LIVE, wè strowallet.service.ts) — sèvis
+  // sa a rele SÈLMAN ziiropay.com, kidonk li bezwen ZIIROPAY_PUBLIC_KEY.
+  private readonly ZIIROPAY_PUBLIC_KEY: string;
   private isChecking = false;
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
-    this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
+    this.ZIIROPAY_PUBLIC_KEY = this.config.get<string>('ZIIROPAY_PUBLIC_KEY') ?? '';
   }
 
   async recordExpectedFundConfirmation(cardId: string, userId: string, amountUsd: number): Promise<void> {
@@ -57,8 +60,10 @@ export class ZiiropayCorrelationService {
   }
 
   private async fetchZiiropayCardStatus(cardId: string): Promise<string | undefined> {
+    // Trailing-slash/mode='live' PA touche isit la sou demand — menm egzansyon
+    // ak checkHealth() nan strowallet.service.ts, tikè separe pou FAZ 0.
     const { data } = await axios.get(`${BASE_URL_ZIIROPAY}/fetch-nfccard-detail/`, {
-      params: { public_key: this.PUBLIC_KEY, mode: 'live', card_id: cardId },
+      params: { public_key: this.ZIIROPAY_PUBLIC_KEY, mode: 'live', card_id: cardId },
       timeout: 10000,
     });
     return data?.response?.card_detail?.card_status;
