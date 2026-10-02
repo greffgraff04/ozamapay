@@ -5,6 +5,7 @@ import { MailService } from '../mail/mail.service';
 import { ZiiropayCorrelationService } from './ziiropay-correlation.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 import axios from 'axios';
+import sharp from 'sharp';
 
 @Injectable()
 export class StrowalletService {
@@ -15,11 +16,9 @@ export class StrowalletService {
   private readonly MODE = 'live';
 
   // Migrasyon ZiiroPay (sept 2026) — 1 sèl flag pou routing pwogresif +
-  // rollback. 'off' (default) = kòmpòtman idantik jodi a. 'read' = sèlman
-  // fetch-nfccard-detail deplase. 'full' = fetch-nfccard-detail +
-  // fund-withdraw-nfccard + freezeactivate-nfc deplase. create-nfc-card pa
-  // JANM deplase, menm nan 'full' — dokiman readme.io toujou montre l sou
-  // strowallet.com sèlman (wè konvèsasyon migrasyon).
+  // rollback pou wout ki PA ankò konfime (ex: create_litecard, cardkycstatus).
+  // 'off' (default) = kòmpòtman idantik jodi a pou wout sa yo. 'read'/'full'
+  // elaji sa yo si/lè yo konfime.
   private readonly ZIIROPAY_ROUTING_STAGE: 'off' | 'read' | 'full';
   private readonly ZIIROPAY_ENDPOINTS_READ = new Set(['fetch-nfccard-detail']);
   private readonly ZIIROPAY_ENDPOINTS_FULL = new Set([
@@ -28,8 +27,26 @@ export class StrowalletService {
     'freezeactivate-nfc',
   ]);
 
+  // 2 oct 2026 — FAZ 0 (koreksyon ijan, konfime AN LIVE): cardkyc sou
+  // strowallet.com mouri (405 Method Not Allowed, pa gen altènativ ki mache).
+  // create-nfc-card bezwen menm customer_id ki kreye pa cardkyc, kidonk 2 wout
+  // sa yo DWE rete ansanm sou ziiropay.com — pa gen "altènativ strowallet.com"
+  // ki fonksyonèl ankò pou flow kreyasyon kat la. fetch-nfccard-detail/
+  // fund-withdraw-nfccard/freezeactivate-nfc swiv menm bò a: kat ki kreye sou
+  // ziiropay.com pa rekonèt sou strowallet.com (404/erè konfime live), kidonk
+  // yo DWE ziiropay.com tou pou kat yo ka itilizab apre kreyasyon. Sa a bypass
+  // ZIIROPAY_ROUTING_STAGE pou 5 wout sa yo espesifikman — STAGE a rete pou
+  // lòt wout bitvcard ki pa ankò konfime (pa gen chanjman valè STAGE a).
+  private readonly ZIIROPAY_ALWAYS_ENDPOINTS = new Set([
+    'cardkyc',
+    'create-nfc-card',
+    'fetch-nfccard-detail',
+    'fund-withdraw-nfccard',
+    'freezeactivate-nfc',
+  ]);
+
   private resolveBaseUrl(endpoint: string): string {
-    if (endpoint === 'create-nfc-card') return this.BASE_URL_STROWALLET;
+    if (this.ZIIROPAY_ALWAYS_ENDPOINTS.has(endpoint)) return this.BASE_URL_ZIIROPAY;
     if (this.ZIIROPAY_ROUTING_STAGE === 'full' && this.ZIIROPAY_ENDPOINTS_FULL.has(endpoint)) {
       return this.BASE_URL_ZIIROPAY;
     }
@@ -85,8 +102,21 @@ export class StrowalletService {
   }
 
   private async nfcPost(endpoint: string, params: Record<string, string>) {
-    const url = `${this.resolveBaseUrl(endpoint)}/${endpoint}/`;
-    const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
+    const base = this.resolveBaseUrl(endpoint);
+    // ziiropay.com 301-redirects trailing-slash URLs to the slash-less form —
+    // Axios follows 301s by converting POST to GET, which silently corrupts
+    // the request. strowallet.com needs the trailing slash; ziiropay.com must
+    // not have one.
+    const url = base === this.BASE_URL_ZIIROPAY ? `${base}/${endpoint}` : `${base}/${endpoint}/`;
+    // ziiropay.com konfime AN LIVE (2 oct 2026): "mode" fè cardkyc rejte nèt
+    // ({"errors":{"mode":["The selected mode is invalid."]}}) — chan an pa
+    // itilize sou ziiropay.com ditou (kle dashboard la detèmine live/sandbox).
+    // Tout 5 wout "always ziiropay" yo teste AN LIVE san "mode" — omèt li pou
+    // yo tout, pa sèlman cardkyc, pou rete koheran ak sa ki konfime.
+    const payload =
+      base === this.BASE_URL_ZIIROPAY
+        ? { public_key: this.PUBLIC_KEY, ...params }
+        : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
       ({ data } = await axios.post(url, null, { params: payload }));
@@ -156,9 +186,41 @@ export class StrowalletService {
     return { firstName, lastName, phone };
   }
 
+  // cardkyc (ziiropay.com) mande id_front_image an Base64 BRIT, e se yon
+  // paramèt QUERY STRING — pa gen opsyon body/multipart (konfime pa dokiman
+  // readme.io). Yon foto ID orijinal (souvan 300-700KB) bay yon URL tèlman
+  // long li lakòz EPIPE/414 nan sèvè a. Redwi a max 220px lajè / JPEG kalite
+  // 25% (sèy konfime AN LIVE 2 oct 2026 — pi gwo pase sa te bay 414, pi piti
+  // te rete lizib) si rezilta a depase ~8000 karaktè base64; anba sèy la,
+  // kenbe orijinal la san chanje kalite pou pa degrade imaj san rezon.
+  private readonly ID_FRONT_IMAGE_BASE64_THRESHOLD = 8000;
+
+  private async resolveIdFrontImageBase64(imageUrl: string): Promise<string> {
+    const imageResp = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const originalBuffer = Buffer.from(imageResp.data as ArrayBuffer);
+    const originalBase64 = originalBuffer.toString('base64');
+    if (originalBase64.length <= this.ID_FRONT_IMAGE_BASE64_THRESHOLD) {
+      return originalBase64;
+    }
+    const resizedBuffer = await sharp(originalBuffer)
+      .resize({ width: 220, withoutEnlargement: true })
+      .jpeg({ quality: 25 })
+      .toBuffer();
+    const resizedBase64 = resizedBuffer.toString('base64');
+    this.logger.log(`id_front_image konprese: ${originalBase64.length} -> ${resizedBase64.length} karaktè base64`);
+    return resizedBase64;
+  }
+
   private async nfcGet(endpoint: string, params: Record<string, string>) {
-    const url = `${this.resolveBaseUrl(endpoint)}/${endpoint}/`;
-    const payload = { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
+    const base = this.resolveBaseUrl(endpoint);
+    // Same trailing-slash 301 quirk as nfcPost() — harmless for GET (method
+    // is preserved across the redirect) but kept consistent for both.
+    const url = base === this.BASE_URL_ZIIROPAY ? `${base}/${endpoint}` : `${base}/${endpoint}/`;
+    // Menm rezon ak nfcPost() — "mode" omèt pou wout ziiropay.com yo.
+    const payload =
+      base === this.BASE_URL_ZIIROPAY
+        ? { public_key: this.PUBLIC_KEY, ...params }
+        : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
     try {
       ({ data } = await axios.get(url, { params: payload }));
@@ -281,33 +343,47 @@ export class StrowalletService {
 
     const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
 
-    // Fòmate dat nesans KYC (mm/dd/yyyy)
-    const dob = user.kyc.dateOfBirth
-      ? new Date(user.kyc.dateOfBirth).toLocaleDateString('en-US', {
-          month: '2-digit', day: '2-digit', year: 'numeric',
-        })
-      : '01/01/1990';
+    // Fòmate dat nesans KYC an ISO (YYYY-MM-DD) — fòma cardkyc dokiman
+    // readme.io mande ("Date of birth in YYY-MM-DD").
+    const isoDob = user.kyc.dateOfBirth
+      ? new Date(user.kyc.dateOfBirth).toISOString().slice(0, 10)
+      : '1990-01-01';
 
-    const nfcParams = {
-      name: user.name || 'OZAMA USER',
+    // 2 oct 2026 — FAZ 0: id_front_image dwe Base64 (pa URL), konprese si
+    // twò gwo pou URL/query string (wè resolveIdFrontImageBase64()).
+    const idFrontImageBase64 = await this.resolveIdFrontImageBase64(user.kyc.idImage);
+
+    const cardkycParams = {
       first_name: firstName,
       last_name: lastName,
-      dob,
       // StroWallet konfime (2026-08-07): pou kliyan Ayisyen, soumèt kat idantite
       // nasyonal la kòm si se te yon paspò — 'national_id' egzije yon fòma NIN
       // Nijeryen (11 chif) ki pa matche fòma Ayisyen an.
       id_type: 'passport',
       id_number: user.kyc.idNumber || '00000000',
-      id_image: user.kyc.idImage,
+      id_front_image: idFrontImageBase64,
       email: user.email,
+      // Fòma entènasyonal san '+' (dokiman readme.io) — `phone` deja nan fòma
+      // sa a (509XXXXXXXX) pa resolveNfcIdentity().
+      phone_number: phone,
+      date_of_birth: isoDob,
+      // App la sèvi sèlman kliyan Ayisyen jodi a (menm sipozisyon ak id_type/
+      // country ki anba a) — kòd peyi fiks.
+      dial_code: '+509',
       line1: user.kyc.line1,
       city: user.kyc.city,
       state: user.kyc.state,
       postal_code: user.kyc.zipCode,
       country: this.resolveNfcCountry(user.kyc.country),
-      amount_usd: String(amountUsd),
-      phone,
-      brand: 'Visa',
+      // Chan biznis cardkyc egzije (konfime AN LIVE 2 oct 2026) ki Kyc nou an
+      // pa kolekte jodi a — valè jenerik validé AN LIVE (statu "approved"
+      // resevwa ak menm valè sa yo), pa done pèsonalize pou chak kliyan.
+      occupation: 'Business Owner',
+      employment_status: 'self_employed',
+      account_purpose: 'personal_use',
+      annual_salary: '50000',
+      expected_monthly_volume: '5000',
+      place_of_birth: user.kyc.city || 'Port-au-Prince',
     };
 
     // ── Etap 1: Debi wallet sèlman (transaction 1) ──────────────────────────
@@ -318,12 +394,28 @@ export class StrowalletService {
       });
     });
 
-    // ── Etap 2: Apèl HTTP Strowallet DEYÒ transaction ────────────────────────
+    // ── Etap 2: Apèl HTTP ziiropay.com DEYÒ transaction — 2 etap: cardkyc
+    // (jwenn/kreye customer_id) epi create-nfc-card (ak customer_id sa a).
+    // Restriktire 2 oct 2026 (FAZ 0) — ansyen flow 1-apèl la (tout chan KYC
+    // dirèkteman nan create-nfc-card) pa fonksyone ankò: cardkyc sou
+    // strowallet.com mouri (405), e create-nfc-card bezwen yon customer_id
+    // ki kreye pa cardkyc sou ziiropay.com. Flow sa a konfime AN LIVE.
     let cardId: string;
     try {
-      const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
+      const kycResponse = await this.nfcPost('cardkyc', cardkycParams);
+      const customerId =
+        kycResponse?.response?.customer_id || kycResponse?.data?.customer_id || kycResponse?.customer_id;
+      const kycStatus = kycResponse?.response?.status || kycResponse?.data?.status || kycResponse?.status;
+      if (!customerId) throw this.strowalletFailure('cardkyc pa retounen customer_id');
+      if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+
+      const cardResponse = await this.nfcPost('create-nfc-card', {
+        customer_id: customerId,
+        name: user.name || 'OZAMA USER',
+        amount: String(amountUsd),
+      });
       cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
-      if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id');
+      if (!cardId) throw this.strowalletFailure('create-nfc-card pa retounen card_id');
     } catch (err) {
       // ── Etap 3: Strowallet echwe → renmbi wallet (NOUVO transaction) ────────
       await this.prisma.$transaction(async (tx) => {
@@ -395,41 +487,63 @@ export class StrowalletService {
 
     const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
 
-    const dob = user.kyc?.dateOfBirth
-      ? new Date(user.kyc.dateOfBirth).toLocaleDateString('en-US', {
-          month: '2-digit', day: '2-digit', year: 'numeric',
-        })
-      : '01/01/1990';
+    // 2 oct 2026 — FAZ 0: menm restriktirasyon 2-etap ak createAndFundCard()
+    // (cardkyc -> create-nfc-card ak customer_id), menm rezon (wè pli wo).
+    const isoDob = user.kyc?.dateOfBirth
+      ? new Date(user.kyc.dateOfBirth).toISOString().slice(0, 10)
+      : '1990-01-01';
 
-    const nfcParams = {
-      name: user.name || 'OZAMA USER',
+    const idFrontImageBase64 = await this.resolveIdFrontImageBase64(user.kyc?.idImage || '');
+
+    const cardkycParams = {
       first_name: firstName,
       last_name: lastName,
-      dob,
       // StroWallet konfime (2026-08-07): pou kliyan Ayisyen, soumèt kat idantite
       // nasyonal la kòm si se te yon paspò — 'national_id' egzije yon fòma NIN
       // Nijeryen (11 chif) ki pa matche fòma Ayisyen an.
       id_type: 'passport',
       id_number: user.kyc?.idNumber || '00000000',
-      id_image: user.kyc?.idImage || '',
+      id_front_image: idFrontImageBase64,
       email: user.email,
+      phone_number: phone,
+      date_of_birth: isoDob,
+      dial_code: '+509',
       line1: user.kyc?.line1 || '',
       city: user.kyc?.city || '',
       state: user.kyc?.state || '',
       postal_code: user.kyc?.zipCode || '',
       country: this.resolveNfcCountry(user.kyc?.country),
-      amount_usd: String(fundAmountUsd),
-      phone,
-      brand: 'Visa',
+      occupation: 'Business Owner',
+      employment_status: 'self_employed',
+      account_purpose: 'personal_use',
+      annual_salary: '50000',
+      expected_monthly_volume: '5000',
+      place_of_birth: user.kyc?.city || 'Port-au-Prince',
     };
 
     let cardId: string;
     try {
-      const cardResponse = await this.nfcPost('create-nfc-card', nfcParams);
+      const kycResponse = await this.nfcPost('cardkyc', cardkycParams);
+      const customerId =
+        kycResponse?.response?.customer_id || kycResponse?.data?.customer_id || kycResponse?.customer_id;
+      const kycStatus = kycResponse?.response?.status || kycResponse?.data?.status || kycResponse?.status;
+      if (!customerId) throw this.strowalletFailure('cardkyc pa retounen customer_id');
+      if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+
+      const cardResponse = await this.nfcPost('create-nfc-card', {
+        customer_id: customerId,
+        name: user.name || 'OZAMA USER',
+        amount: String(fundAmountUsd),
+      });
       cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
-      if (!cardId) throw new BadRequestException('Strowallet pa retounen card_id pou kat ranplasman an');
+      if (!cardId) throw this.strowalletFailure('create-nfc-card pa retounen card_id pou kat ranplasman an');
     } catch (err) {
-      await this.recordCardCreationFailure(userId, user.email, 'REPLACEMENT', (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown');
+      await this.recordCardCreationFailure(
+        userId,
+        user.email,
+        'REPLACEMENT',
+        (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown',
+      );
       throw err;
     }
 
