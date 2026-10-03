@@ -215,11 +215,23 @@ export class StrowalletService {
   // cardkyc (ziiropay.com) mande id_front_image an Base64 BRIT, e se yon
   // paramèt QUERY STRING — pa gen opsyon body/multipart (konfime pa dokiman
   // readme.io). Yon foto ID orijinal (souvan 300-700KB) bay yon URL tèlman
-  // long li lakòz EPIPE/414 nan sèvè a. Redwi a max 220px lajè / JPEG kalite
-  // 25% (sèy konfime AN LIVE 2 oct 2026 — pi gwo pase sa te bay 414, pi piti
-  // te rete lizib) si rezilta a depase ~8000 karaktè base64; anba sèy la,
-  // kenbe orijinal la san chanje kalite pou pa degrade imaj san rezon.
+  // long li lakòz EPIPE/414 nan sèvè a (sèy anpirik konfime AN LIVE 2 oct
+  // 2026: 8,456 karaktè bay 414, 6,232 pase san erè teknik). Redwi si rezilta
+  // a depase ~8000 karaktè base64; anba sèy la, kenbe orijinal la san chanje
+  // kalite pou pa degrade imaj san rezon.
   private readonly ID_FRONT_IMAGE_BASE64_THRESHOLD = 8000;
+
+  // 3 oct 2026 — 220px/kalite 25% (premye valè FAZ 0, ki te pase anba sèy
+  // la san erè teknik) te lakòz ziiropay/Sumsub rejte ak "DATANOTREADABLE"
+  // (konfime AN LIVE pou kont oliviergreffin20@gmail.com — menm kategori
+  // rejè ak "PHOTOS_INSATISFAISANTES" nou wè pou lòt kliyan nan dashboard
+  // la) — imaj la te rete lizib pou yon je imen, men twò degrade pou OCR
+  // otomatik Sumsub lan li chan yo ak konfyans. 240px/kalite 30% bay yon
+  // rezilta pi lejè konprese (~7,800 karaktè, teste), verifye vizyèlman
+  // toujou lizib, epi rete anba sèy 414 la (8,456) ak sèy nou an (8,000)
+  // ak yon ti maj sekirite.
+  private readonly ID_FRONT_IMAGE_RESIZE_WIDTH = 240;
+  private readonly ID_FRONT_IMAGE_JPEG_QUALITY = 30;
 
   private async resolveIdFrontImageBase64(imageUrl: string): Promise<string> {
     const imageResp = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -229,8 +241,8 @@ export class StrowalletService {
       return originalBase64;
     }
     const resizedBuffer = await sharp(originalBuffer)
-      .resize({ width: 220, withoutEnlargement: true })
-      .jpeg({ quality: 25 })
+      .resize({ width: this.ID_FRONT_IMAGE_RESIZE_WIDTH, withoutEnlargement: true })
+      .jpeg({ quality: this.ID_FRONT_IMAGE_JPEG_QUALITY })
       .toBuffer();
     const resizedBase64 = resizedBuffer.toString('base64');
     this.logger.log(`id_front_image konprese: ${originalBase64.length} -> ${resizedBase64.length} karaktè base64`);
