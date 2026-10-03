@@ -189,8 +189,27 @@ export class StrowalletService {
     }
     const digits = rawPhone.replace(/[^\d]/g, '');
     const phone = digits.length === 8 ? `509${digits}` : digits;
+    const dialCode = this.resolveDialCode(digits);
 
-    return { firstName, lastName, phone };
+    return { firstName, lastName, phone, dialCode };
+  }
+
+  // 2 oct 2026 — FAZ 0: dial_code te hardcode '+509' pou TOUT kliyan, menm
+  // lè nimewo telefòn yo se yon vrè nimewo etranje (ex: kliyan dyaspora ak
+  // yon selilè Ameriken) — sa voye yon enkoyerans bay cardkyc (dial_code
+  // ≠ peyi vrè nimewo a), ki ka kontribye nan yon rejè. Menm sipozisyon ak
+  // rès `resolveNfcIdentity()`: 8 chif = nimewo lokal ayisyen san kòd peyi
+  // (509 ajoute separeman pi wo). Lòt longè sipoze gen pwòp kòd peyi li deja
+  // ladan — dedwi l nan yon lis prefiks rekonèt, PI LONG anvan pi kout (pou
+  // '1' pa match anvan '33' pa egzanp). Lis la pa egzostif — ajoute plis
+  // kòd si lòt peyi parèt nan baz kliyan nou an. '+509' rete defo si pa gen
+  // match (prezève ansyen kòmpòtman pou ka ki pa idantifye).
+  private readonly KNOWN_DIAL_CODE_PREFIXES = ['509', '33', '49', '44', '34', '55', '56', '1'];
+
+  private resolveDialCode(digits: string): string {
+    if (digits.length === 8) return '+509';
+    const match = this.KNOWN_DIAL_CODE_PREFIXES.find((code) => digits.startsWith(code));
+    return match ? `+${match}` : '+509';
   }
 
   // cardkyc (ziiropay.com) mande id_front_image an Base64 BRIT, e se yon
@@ -353,7 +372,7 @@ export class StrowalletService {
       );
     }
 
-    const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
+    const { firstName, lastName, phone, dialCode } = this.resolveNfcIdentity(user);
 
     // Fòmate dat nesans KYC an ISO (YYYY-MM-DD) — fòma cardkyc dokiman
     // readme.io mande ("Date of birth in YYY-MM-DD").
@@ -379,9 +398,8 @@ export class StrowalletService {
       // sa a (509XXXXXXXX) pa resolveNfcIdentity().
       phone_number: phone,
       date_of_birth: isoDob,
-      // App la sèvi sèlman kliyan Ayisyen jodi a (menm sipozisyon ak id_type/
-      // country ki anba a) — kòd peyi fiks.
-      dial_code: '+509',
+      // 2 oct 2026 — FAZ 0: dedwi (pa hardcode) — wè resolveDialCode().
+      dial_code: dialCode,
       line1: user.kyc.line1,
       city: user.kyc.city,
       state: user.kyc.state,
@@ -497,7 +515,7 @@ export class StrowalletService {
     });
     if (!user) throw new NotFoundException('Itilizatè introuvable');
 
-    const { firstName, lastName, phone } = this.resolveNfcIdentity(user);
+    const { firstName, lastName, phone, dialCode } = this.resolveNfcIdentity(user);
 
     // 2 oct 2026 — FAZ 0: menm restriktirasyon 2-etap ak createAndFundCard()
     // (cardkyc -> create-nfc-card ak customer_id), menm rezon (wè pli wo).
@@ -519,7 +537,8 @@ export class StrowalletService {
       email: user.email,
       phone_number: phone,
       date_of_birth: isoDob,
-      dial_code: '+509',
+      // 2 oct 2026 — FAZ 0: dedwi (pa hardcode) — wè resolveDialCode().
+      dial_code: dialCode,
       line1: user.kyc?.line1 || '',
       city: user.kyc?.city || '',
       state: user.kyc?.state || '',
