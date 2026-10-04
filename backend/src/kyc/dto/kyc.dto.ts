@@ -62,3 +62,30 @@ export class CreateKycDto {
   @IsNotEmpty()
   country: string;
 }
+
+// 4 oct 2026 — PATCH /kyc/address: kont KYC APPROVED yo pa ka re-soumèt
+// (KycService.submitKyc jete yon erè), men gen bezwen korije sèlman chan
+// adrès yo (egzanp line1 twò kout, wè StrowalletService.isAddressTooShort()).
+// Sèlman line1 obligatwa — rès yo opsyonèl pou pèmèt yon ti korije san
+// egzije tout chan adrès yo ankò.
+export class UpdateAddressDto {
+  @IsString()
+  @IsNotEmpty()
+  line1: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+}

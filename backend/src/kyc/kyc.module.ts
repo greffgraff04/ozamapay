@@ -14,12 +14,18 @@ import { CommissionsModule } from '../commissions/commissions.module';
 
 import { ImageKitModule } from '../imagekit/imagekit.module';
 
+import { StrowalletModule } from '../strowallet/strowallet.module';
+
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     CommissionsModule,
     ImageKitModule,
+    // 4 oct 2026 — applyCorrectedAddress() rele StrowalletService dirèkteman
+    // pou relanse createAndFundCard()/createReplacementCard() otomatikman
+    // apre yon adrès korije (wè CardCreationAddressBlock).
+    StrowalletModule,
   ],
 
   controllers: [KycController],

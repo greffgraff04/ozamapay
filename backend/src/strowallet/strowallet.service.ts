@@ -91,6 +91,18 @@ export class StrowalletService {
     return this.ISO_ALPHA2_TO_ALPHA3[country.toUpperCase()] || country;
   }
 
+  // 4 oct 2026 — StroWallet rejte cardkyc ak "address1 is too short" (konfime
+  // AN LIVE, field="address1", rule="address_length") san bay yon sèy
+  // dokimante. Done reyèl: "PAUP" (4 karaktè) rejte, "Lamandou" (8 karaktè)
+  // apwouve — 8 chwazi kòm sèy pridan, pa egzak limit StroWallet la (ki rete
+  // enkoni ant 5-7). Piblik pou KycService.applyCorrectedAddress() ka reyitilize
+  // menm verifikasyon an lè yon kliyan soumèt yon adrès korije.
+  readonly MIN_ADDRESS_LENGTH = 8;
+
+  isAddressTooShort(line1: string | null | undefined): boolean {
+    return !line1 || line1.trim().length < this.MIN_ADDRESS_LENGTH;
+  }
+
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
   private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
@@ -396,6 +408,22 @@ export class StrowalletService {
       throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
     }
 
+    // 4 oct 2026 — tcheke anvan nenpòt apèl/debi, pa apre — evite yon rejè
+    // cardkyc garanti ("address1 is too short") ki ta gaspiye yon tantativ
+    // KYC san rezon. Wè recordAddressBlock() ak isAddressTooShort().
+    if (this.isAddressTooShort(user.kyc.line1)) {
+      await this.recordAddressBlockAndNotify({
+        userId,
+        email: user.email,
+        name: user.name || 'OZAMA USER',
+        amountUsd,
+        context: 'CREATE',
+      });
+      throw new BadRequestException(
+        'Adrès ou nan pwofil la twò kout/enkonplè pou n kreye kat la. Nou voye yon imèl ba ou ak enstriksyon pou korije l — pa gen okenn frè, KYC ou rete apwouve.',
+      );
+    }
+
     // Kalkile total an HTG — frè $2.50 kreyasyon absòbe pa OZAMAPAY, pa itilizatè
     const exchangeRate = await this.getExchangeRate();
     const totalHtg = Math.ceil(amountUsd * exchangeRate);
@@ -657,7 +685,33 @@ export class StrowalletService {
     });
   }
 
-  // ─── 1c. CARDKYC "PENDING" — polling asenkwòn (4 oct 2026) ──────────────────
+  // ─── 1c. ADRÈS TWÒ KOUT — deteksyon pwoaktif (4 oct 2026) ───────────────────
+  // Yon sèl CardCreationAddressBlock pa rezoud pou chak (userId, context) —
+  // evite voye plizyè imèl si kliyan an eseye kreye kat la plizyè fwa anvan
+  // li korije adrès la. Wè KycService.applyCorrectedAddress() pou relanse a.
+  async recordAddressBlockAndNotify(data: {
+    userId: string;
+    email: string;
+    name: string;
+    amountUsd: number;
+    context: 'CREATE' | 'REPLACEMENT';
+    oldCardId?: string;
+  }): Promise<void> {
+    const existing = await this.prisma.cardCreationAddressBlock.findFirst({
+      where: { userId: data.userId, context: data.context, resolvedAt: null },
+    });
+    if (existing) {
+      this.logger.log(`[CardCreationAddressBlock] Deja egziste pou userId=${data.userId} context=${data.context} — pa reenvwaye imèl.`);
+      return;
+    }
+    await this.prisma.cardCreationAddressBlock.create({ data });
+    await this.mailService.sendAddressTooShortNotice(data.email, data.name).catch((err: any) => {
+      this.logger.error(`[CardCreationAddressBlock] Echèk voye imèl pou ${data.email}: ${err?.message}`);
+    });
+    this.logger.log(`[CardCreationAddressBlock] Anrejistre + imèl voye pou userId=${data.userId} context=${data.context}`);
+  }
+
+  // ─── 1d. CARDKYC "PENDING" — polling asenkwòn (4 oct 2026) ──────────────────
   // Wè kòmantè pi wo nan createAndFundCard()/createReplacementCard() ak
   // schema.prisma (CardCreationPending) pou kontèks konplè.
 

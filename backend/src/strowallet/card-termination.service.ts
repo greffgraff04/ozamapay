@@ -10,7 +10,12 @@ const MIN_NEW_CARD_BALANCE_USD = 3;
 const TOTAL_FEES_USD = CARD_CREATION_FEE_USD + CARD_TERMINATION_PENALTY_USD; // 7.5
 const TOTAL_NEEDED_USD = TOTAL_FEES_USD + MIN_NEW_CARD_BALANCE_USD; // 10.5
 
-type UserWithWallet = { email: string; name: string | null; wallet: { id: string; balance: any } | null };
+type UserWithWallet = {
+  email: string;
+  name: string | null;
+  wallet: { id: string; balance: any } | null;
+  kyc: { line1: string | null } | null;
+};
 
 @Injectable()
 export class CardTerminationService {
@@ -63,7 +68,7 @@ export class CardTerminationService {
 
     const card = await this.prisma.virtualCard.findUnique({
       where: { cardId },
-      include: { user: { include: { wallet: true } } },
+      include: { user: { include: { wallet: true, kyc: true } } },
     });
     if (!card) {
       this.logger.warn(`[CardTermination] Kat enkoni cardId=${cardId}`);
@@ -116,6 +121,30 @@ export class CardTerminationService {
     feeDeductedHtg: number,
     user: UserWithWallet,
   ): Promise<void> {
+    // 4 oct 2026 — menm deteksyon ak createAndFundCard(): tcheke AVAN nenpòt
+    // dediksyon frè, pa apre — evite chaje kliyan an pou yon tantativ ki
+    // garanti rejte pa cardkyc ("address1 is too short"). Wè
+    // StrowalletService.isAddressTooShort()/recordAddressBlockAndNotify()
+    // (ekspoze piblik espesifikman pou sèvis sa a).
+    if (this.strowalletService.isAddressTooShort(user.kyc?.line1)) {
+      this.logger.warn(`[CardTermination] cardId=${oldCardId} — adrès twò kout, cardkyc PA soumèt, zewo frè dediwi`);
+      await this.strowalletService.recordAddressBlockAndNotify({
+        userId,
+        email: user.email,
+        name: user.name || 'OZAMA USER',
+        amountUsd: fundAmountUsd,
+        context: 'REPLACEMENT',
+        oldCardId,
+      });
+      await this.pushNotification(
+        userId,
+        'Kreyasyon kat ap tann korije adrès',
+        'Nou voye yon imèl ba ou — adrès ou nan pwofil la twò kout pou n kreye kat ou. Pa gen okenn frè, KYC ou rete apwouve.',
+        'INFO',
+      );
+      return;
+    }
+
     if (feeDeductedHtg > 0) {
       if (!user.wallet) throw new Error(`Pa gen wallet pou userId=${userId}, pa ka dediwi frè`);
       await this.prisma.$transaction(async (tx) => {
@@ -227,7 +256,7 @@ export class CardTerminationService {
     try {
       const pendingCards = await this.prisma.virtualCard.findMany({
         where: { status: 'PENDING_RECHARGE' },
-        include: { user: { include: { wallet: true } } },
+        include: { user: { include: { wallet: true, kyc: true } } },
       });
 
       for (const card of pendingCards) {

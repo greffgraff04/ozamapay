@@ -6,13 +6,15 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateKycDto } from './dto/kyc.dto';
+import { CreateKycDto, UpdateAddressDto } from './dto/kyc.dto';
 import { COMMISSION_AGENT_KYC } from '../common/constants';
+import { StrowalletService } from '../strowallet/strowallet.service';
 
 @Injectable()
 export class KycService {
   constructor(
     private prisma: PrismaService,
+    private strowalletService: StrowalletService,
   ) {}
 
   async assertApproved(userId: string) {
@@ -300,6 +302,65 @@ export class KycService {
         'KYC rejte',
 
       data: kyc,
+    };
+  }
+
+  // 4 oct 2026 — kont KYC APPROVED pa ka re-soumèt (gade submitKyc() pi wo),
+  // men gen bezwen korije sèlman adrès (line1) yo pou cardkyc ka pase (wè
+  // StrowalletService.isAddressTooShort()). Si yon demand kreyasyon kat te
+  // bloke pou menm rezon an (CardCreationAddressBlock), relanse l
+  // otomatikman — kliyan an pa bezwen refè okenn demand/peman.
+  async applyCorrectedAddress(userId: string, dto: UpdateAddressDto) {
+    const kyc = await this.prisma.kyc.findUnique({ where: { userId } });
+    if (!kyc) throw new NotFoundException('KYC introuvable');
+    if (kyc.status !== 'APPROVED') {
+      throw new BadRequestException(`KYC ou an ${kyc.status} — adrès la ka korije sèlman apre KYC apwouve`);
+    }
+    if (this.strowalletService.isAddressTooShort(dto.line1)) {
+      throw new BadRequestException(
+        `Adrès la toujou twò kout (minimòm ${this.strowalletService.MIN_ADDRESS_LENGTH} karaktè) — tanpri bay plis detay (non lari, nimewo, katye).`,
+      );
+    }
+
+    const updatedKyc = await this.prisma.kyc.update({
+      where: { userId },
+      data: {
+        line1: dto.line1,
+        ...(dto.city !== undefined ? { city: dto.city } : {}),
+        ...(dto.state !== undefined ? { state: dto.state } : {}),
+        ...(dto.zipCode !== undefined ? { zipCode: dto.zipCode } : {}),
+        ...(dto.country !== undefined ? { country: dto.country } : {}),
+      },
+    });
+
+    const block = await this.prisma.cardCreationAddressBlock.findFirst({
+      where: { userId, resolvedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!block) {
+      return { success: true, message: 'Adrès mete ajou avèk siksè.', kyc: updatedKyc };
+    }
+
+    let cardCreationResult: unknown = null;
+    let resumeError: string | null = null;
+    try {
+      cardCreationResult = block.context === 'REPLACEMENT'
+        ? await this.strowalletService.createReplacementCard(userId, Number(block.amountUsd), block.oldCardId ?? undefined, 0)
+        : await this.strowalletService.createAndFundCard(userId, Number(block.amountUsd));
+    } catch (err: any) {
+      resumeError = err?.message ?? 'Erè enkoni pandan relans kreyasyon kat la';
+    }
+
+    await this.prisma.cardCreationAddressBlock.update({ where: { id: block.id }, data: { resolvedAt: new Date() } });
+
+    return {
+      success: true,
+      message: resumeError
+        ? `Adrès mete ajou, men kreyasyon kat la echwe pou yon lòt rezon: ${resumeError}`
+        : 'Adrès mete ajou e kreyasyon kat la relanse otomatikman.',
+      kyc: updatedKyc,
+      cardCreationResult,
     };
   }
 }

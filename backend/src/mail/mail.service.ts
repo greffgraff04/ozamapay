@@ -561,6 +561,31 @@ export class MailService {
     await this.send(email, 'Aksyon rapid — nou bezwen yon nouvo foto pyès idantite w', html);
   }
 
+  // 4 oct 2026 — StroWallet rejte cardkyc si adrès (line1) a twò kout/enkomplè
+  // ("address1 is too short", konfime AN LIVE). Menm apwòch ak
+  // sendIdPhotoUpdateRequest(): kont rete APWOUVE, pa gen frè adisyonèl,
+  // kliyan reponn ak adrès konplè, StrowalletService.pollPendingCardCreations-
+  // style otomatizasyon pa aplikab isit la (se KycService.applyCorrectedAddress()
+  // ki relanse kreyasyon kat la otomatikman yon fwa admin mete adrès la ajou).
+  async sendAddressTooShortNotice(email: string, name: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Aksyon rapid — nou bezwen konplete adrès ou',
+      'Aksyon Nesesè',
+      this.badge('IJAN') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p('N ap fè yon mizajou teknik nan sistèm kreyasyon kat vityèl nou an, e nou remake adrès ki nan dosye KYC ou a twò kout/enkonplè pou nouvo egzijans sistèm nan.') +
+      this.accentLine('Sa PA yon nouvo verifikasyon — KYC ou rete APWOUVE jan li ye a, e pa gen okenn frè adisyonèl. Nou senpleman bezwen adrès konplè w (non lari, nimewo, katye) pou n ka konplete pwosesis kreyasyon kat vityèl la pou ou.') +
+      this.p('Tanpri reponn dirèkteman a imèl sa a (oswa voye nou l sou WhatsApp: +509 31 91 99 91) ak adrès konplè ou.') +
+      this.p('Yon fwa nou mete l ajou, n ap kontinye/kreye kat ou otomatikman, san ou pa bezwen fè lòt demand.') +
+      this.p('Mèsi pou konprann ak koperasyon ou.') +
+      this.p('Ak respè,<br>Ekip OZAMAPAY'),
+      '#e65100',
+    );
+    await this.send(email, 'Aksyon rapid — nou bezwen konplete adrès ou', html);
+  }
+
   async sendSystemAlert(error: string, uptime: number): Promise<void> {
     const now = new Date().toLocaleDateString('fr-HT');
     const html = this.wrap(

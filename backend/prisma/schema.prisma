@@ -33,6 +33,7 @@ model User {
   cardTransactions CardTransaction[]
   cardCreationFailures CardCreationFailure[]
   cardCreationPendings CardCreationPending[]
+  cardCreationAddressBlocks CardCreationAddressBlock[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
   depositAddress  DepositAddress?
@@ -481,6 +482,31 @@ model CardCreationPending {
 
   @@index([resolvedAt])
   @@index([userId])
+}
+
+// 4 oct 2026 — cardkyc rejte "address1 is too short" (konfime AN LIVE pou
+// Dave Angelo Pierre, line1="PAUP" 4 karaktè) — StroWallet pa gen yon sèy
+// dokimante, men "Lamandou" (8 karaktè) te apwouve. Olye soumèt cardkyc epi
+// resevwa yon rejè garanti, StrowalletService.isAddressTooShort() tcheke
+// AVAN nenpòt apèl — tab sa a kenbe tras demand kreyasyon kat ki bloke pou
+// rezon sa a, pou KycService.applyCorrectedAddress() ka relanse yo
+// otomatikman yon fwa adrès la korije (wè kòmantè nan strowallet.service.ts
+// ak card-termination.service.ts pou pwen enjeksyon yo).
+model CardCreationAddressBlock {
+  id         String  @id @default(uuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id])
+  email      String
+  name       String
+  amountUsd  Decimal @db.Decimal(18, 2)
+  context    String // 'CREATE' | 'REPLACEMENT'
+  oldCardId  String? // REPLACEMENT sèlman — kat ki t ap ranplase a
+
+  emailSentAt DateTime  @default(now())
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, resolvedAt])
 }
 
 // ═══════════════════════════════════════════════════════════════

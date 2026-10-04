@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Get,
   Body,
   UseGuards,
@@ -13,7 +14,9 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { KycApprovedGuard } from './kyc-approved.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
+import { UpdateAddressDto } from './dto/kyc.dto';
 
 @Controller('kyc')
 @UseGuards(JwtAuthGuard)
@@ -78,5 +81,14 @@ export class KycController {
   @Get('status')
   getStatus(@Request() req: any) {
     return this.kycService.getKycStatus(req.user.id);
+  }
+
+  // 4 oct 2026 — fondasyon pou self-service pita (pa gen UI mobil/web ki
+  // itilize l kounye a, admin/script rele l dirèkteman). KycApprovedGuard
+  // garanti sèlman kont APPROVED ka korije adrès yo san re-soumèt tout KYC a.
+  @Patch('address')
+  @UseGuards(KycApprovedGuard)
+  updateAddress(@Request() req: any, @Body() dto: UpdateAddressDto) {
+    return this.kycService.applyCorrectedAddress(req.user.id, dto);
   }
 }
