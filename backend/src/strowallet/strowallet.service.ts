@@ -115,6 +115,15 @@ export class StrowalletService {
     // the request. strowallet.com needs the trailing slash; ziiropay.com must
     // not have one.
     const url = base === this.BASE_URL_ZIIROPAY ? `${base}/${endpoint}` : `${base}/${endpoint}/`;
+    // 4 oct 2026 — id_front_image (base64, jiska ~1MB konfime pa StroWallet)
+    // PA DWE janm ale nan URL/query string la (sa a se egzakteman sa ki te
+    // lakòz 414 "Request-URI Too Large" nou te wè pi bonè). Retire l apa epi
+    // voye l nan kò (body) requête POST la kòm form-urlencoded — tout lòt chan
+    // yo rete nan query string tankou avan, paske sa deja teste AN LIVE san
+    // pwoblèm pou tout lòt wout yo (fund-withdraw-nfccard, create-nfc-card,
+    // elatriye). Laravel (backend StroWallet/ZiiroPay) li chan ni nan body ni
+    // nan query san distenksyon, kidonk separasyon sa a san danje.
+    const { id_front_image, ...restParams } = params;
     // ziiropay.com konfime AN LIVE (2 oct 2026): "mode" fè cardkyc rejte nèt
     // ({"errors":{"mode":["The selected mode is invalid."]}}) — chan an pa
     // itilize sou ziiropay.com ditou (kle dashboard la detèmine live/sandbox).
@@ -122,11 +131,12 @@ export class StrowalletService {
     // yo tout, pa sèlman cardkyc, pou rete koheran ak sa ki konfime.
     const payload =
       base === this.BASE_URL_ZIIROPAY
-        ? { public_key: this.ZIIROPAY_PUBLIC_KEY, ...params }
-        : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
+        ? { public_key: this.ZIIROPAY_PUBLIC_KEY, ...restParams }
+        : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...restParams };
+    const body = id_front_image !== undefined ? new URLSearchParams({ id_front_image }) : null;
     let data: any;
     try {
-      ({ data } = await axios.post(url, null, { params: payload }));
+      ({ data } = await axios.post(url, body, { params: payload }));
     } catch (error: any) {
       const detail = error?.response?.data;
       this.logger.error(`Strowallet API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
@@ -212,26 +222,25 @@ export class StrowalletService {
     return match ? `+${match}` : '+509';
   }
 
-  // cardkyc (ziiropay.com) mande id_front_image an Base64 BRIT, e se yon
-  // paramèt QUERY STRING — pa gen opsyon body/multipart (konfime pa dokiman
-  // readme.io). Yon foto ID orijinal (souvan 300-700KB) bay yon URL tèlman
-  // long li lakòz EPIPE/414 nan sèvè a (sèy anpirik konfime AN LIVE 2 oct
-  // 2026: 8,456 karaktè bay 414, 6,232 pase san erè teknik). Redwi si rezilta
-  // a depase ~8000 karaktè base64; anba sèy la, kenbe orijinal la san chanje
-  // kalite pou pa degrade imaj san rezon.
-  private readonly ID_FRONT_IMAGE_BASE64_THRESHOLD = 8000;
+  // cardkyc (ziiropay.com) mande id_front_image an Base64. 4 oct 2026 —
+  // StroWallet konfime OFISYÈLMAN (pa sipò) ke vrè sèy la se yon string
+  // base64 ki PA depase 1MB (~1,398,000 karaktè), PA 8,000 karaktè nou te
+  // sipoze a pi bonè. 8,000 te yon sèy fo bati sou erè 414 nou te wè AN
+  // LIVE 2 oct 2026 — erè sa a te lakòz pa yon BUG SEPARE (id_front_image
+  // ki t ap pase nan URL/query string olye kò/body requête a, wè nfcPost())
+  // ki te konprese imaj la SAN rezon jiska 25-30% kalite, sa ki te lakòz
+  // ziiropay/Sumsub rejte ak "DATANOTREADABLE" (konfime AN LIVE pou kont
+  // oliviergreffin20@gmail.com) — menm kategori rejè ak "PHOTOS_INSATISFAISANTES"
+  // nou wè pou lòt kliyan nan dashboard la. Kounye a id_front_image ale nan
+  // body (pa URL), kidonk pa gen limit pratik liye ak longè URL ankò — sèy la
+  // se vrè limit StroWallet la (1MB), ak yon maj sekirite.
+  private readonly ID_FRONT_IMAGE_BASE64_THRESHOLD = 1_200_000;
 
-  // 3 oct 2026 — 220px/kalite 25% (premye valè FAZ 0, ki te pase anba sèy
-  // la san erè teknik) te lakòz ziiropay/Sumsub rejte ak "DATANOTREADABLE"
-  // (konfime AN LIVE pou kont oliviergreffin20@gmail.com — menm kategori
-  // rejè ak "PHOTOS_INSATISFAISANTES" nou wè pou lòt kliyan nan dashboard
-  // la) — imaj la te rete lizib pou yon je imen, men twò degrade pou OCR
-  // otomatik Sumsub lan li chan yo ak konfyans. 240px/kalite 30% bay yon
-  // rezilta pi lejè konprese (~7,800 karaktè, teste), verifye vizyèlman
-  // toujou lizib, epi rete anba sèy 414 la (8,456) ak sèy nou an (8,000)
-  // ak yon ti maj sekirite.
-  private readonly ID_FRONT_IMAGE_RESIZE_WIDTH = 240;
-  private readonly ID_FRONT_IMAGE_JPEG_QUALITY = 30;
+  // 4 oct 2026 — itilize sèlman nan ka ra kote imaj orijinal la (anvan menm
+  // konvèsyon) depase 1MB base64 (~900KB done brit). 800px/kalite 85% bay yon
+  // imaj klè, byen lizib pou OCR Sumsub, pandan li rete byen anba sèy 1MB la.
+  private readonly ID_FRONT_IMAGE_RESIZE_WIDTH = 800;
+  private readonly ID_FRONT_IMAGE_JPEG_QUALITY = 85;
 
   private async resolveIdFrontImageBase64(imageUrl: string): Promise<string> {
     const imageResp = await axios.get(imageUrl, { responseType: 'arraybuffer' });
@@ -392,8 +401,9 @@ export class StrowalletService {
       ? new Date(user.kyc.dateOfBirth).toISOString().slice(0, 10)
       : '1990-01-01';
 
-    // 2 oct 2026 — FAZ 0: id_front_image dwe Base64 (pa URL), konprese si
-    // twò gwo pou URL/query string (wè resolveIdFrontImageBase64()).
+    // 2 oct 2026 — FAZ 0: id_front_image dwe Base64 (pa URL — li ale nan body
+    // requête a, wè nfcPost()); konprese sèlman si li depase vrè limit
+    // StroWallet la (1MB, wè resolveIdFrontImageBase64()).
     const idFrontImageBase64 = await this.resolveIdFrontImageBase64(user.kyc.idImage);
 
     const cardkycParams = {
