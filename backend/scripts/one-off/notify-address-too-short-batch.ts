@@ -23,9 +23,17 @@
  *   npx ts-node --transpile-only --compiler-options '{"module":"CommonJS","moduleResolution":"node","resolvePackageJsonExports":false}' scripts/one-off/notify-address-too-short-batch.ts --confirm  # live
  */
 
+import { Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { StrowalletModule } from '../../src/strowallet/strowallet.module';
 import { MailService } from '../../src/mail/mail.service';
+import { PrismaModule } from '../../src/prisma/prisma.module';
+import { AlertCooldownModule } from '../../src/common/alert-cooldown/alert-cooldown.module';
+
+// StrowalletService depann sou AlertCooldownService — pa fè pati
+// StrowalletModule, kidonk bezwen yon ti module bootstrap ki enpòte tou de.
+@Module({ imports: [PrismaModule, AlertCooldownModule, StrowalletModule] })
+class NotifyBatchBootstrapModule {}
 
 const RECIPIENTS: { userId: string; name: string; email: string; line1: string }[] = [
   { userId: '5f0cba43-0fa6-4558-a5f3-9b2cee9b2219', name: 'Jubelcky Prophete', email: 'jubelcky.prophete2003@gmail.com', line1: 'Haiti' },
@@ -44,7 +52,7 @@ const RECIPIENTS: { userId: string; name: string; email: string; line1: string }
 async function main() {
   const confirm = process.argv.includes('--confirm');
 
-  const app = await NestFactory.createApplicationContext(StrowalletModule, { logger: ['error', 'warn'] });
+  const app = await NestFactory.createApplicationContext(NotifyBatchBootstrapModule, { logger: ['error', 'warn'] });
   const mailService = app.get(MailService);
 
   try {
