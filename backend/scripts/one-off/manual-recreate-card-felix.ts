@@ -79,6 +79,10 @@ async function main() {
 
     console.log('\n[LIVE] Kreye kat la kounye a via StroWallet...');
     const newCard = await strowalletService.createReplacementCard(user.id, INITIAL_BALANCE_USD);
+    if (!('cardId' in newCard)) {
+      console.error(`✗ cardkyc reponn "pending" — script sa a pa jere ka sa a, tanpri eseye ankò pita.`);
+      return;
+    }
     console.log(`  ✓ Nouvo kat kreye: id=${newCard.id} cardId=${newCard.cardId}`);
 
     if (oldCard) {

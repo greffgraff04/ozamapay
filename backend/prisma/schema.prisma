@@ -32,6 +32,7 @@ model User {
   virtualCards    VirtualCard[]
   cardTransactions CardTransaction[]
   cardCreationFailures CardCreationFailure[]
+  cardCreationPendings CardCreationPending[]
   wallet          Wallet?
   withdrawals     WithdrawalRequest[]
   depositAddress  DepositAddress?
@@ -443,6 +444,43 @@ model CardCreationFailure {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// 4 oct 2026 — cardkyc sou ziiropay.com ka reponn status="pending" (eta
+// tranzitwa konfime AN LIVE: li rezoud tèt li "approved" kèk minit pita,
+// san okenn aksyon) olye "approved"/"rejected" imedya. Anvan, "pending" te
+// trete kòm yon echèk definitif, ki te fè kliyan an pèdi yon demand kat ki
+// t ap pase si nou te annik tann. Tab sa a kenbe tras demand "pending" yo
+// pandan StrowalletService.pollPendingCardCreations() (chak 30s) tcheke
+// cardkycstatus jiskaske li rezoud (approved → kreye kat/ranplasman,
+// rejected → flow echèk/ranbouse ki egziste deja a).
+model CardCreationPending {
+  id         String @id @default(uuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id])
+  email      String
+  customerId String
+  name       String
+  amountUsd  Decimal @db.Decimal(18, 2)
+  context    String // 'CREATE' | 'REPLACEMENT'
+
+  // CREATE sèlman — montan HTG egzak ki te deja debite, pou ranbouse si
+  // cardkyc evantyèlman rejte apre peryòd "pending" la.
+  totalHtg Decimal? @db.Decimal(18, 2)
+
+  // REPLACEMENT sèlman — kat ki t ap ranplase a + frè ki te dediwi, pou
+  // CardTerminationService.finalizeReplacement() ka konplete (make REPLACED)
+  // oswa ranbouse si sa rejte, menm jan ak chemen senkwòn ki egziste deja a.
+  oldCardId      String?
+  feeDeductedHtg Decimal? @db.Decimal(18, 2)
+
+  attempts         Int       @default(0)
+  adminAlertSentAt DateTime?
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([resolvedAt])
+  @@index([userId])
 }
 
 // ═══════════════════════════════════════════════════════════════

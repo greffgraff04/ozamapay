@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
@@ -6,6 +7,12 @@ import { ZiiropayCorrelationService } from './ziiropay-correlation.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 import axios from 'axios';
 import sharp from 'sharp';
+import type { CardCreationPending } from '@prisma/client';
+
+// 4 oct 2026 — tèks egzak Mr. Greffin bay pou kliyan an pandan cardkyc rete
+// "pending" (pa yon echèk — wè pollPendingCardCreations()).
+const PENDING_VERIFICATION_MESSAGE = 'Kreyasyon kat ankou...';
+const PENDING_ADMIN_ALERT_AFTER_MS = 60 * 60 * 1000; // 1è
 
 @Injectable()
 export class StrowalletService {
@@ -43,8 +50,14 @@ export class StrowalletService {
   // yo DWE ziiropay.com tou pou kat yo ka itilizab apre kreyasyon. Sa a bypass
   // ZIIROPAY_ROUTING_STAGE pou 5 wout sa yo espesifikman — STAGE a rete pou
   // lòt wout bitvcard ki pa ankò konfime (pa gen chanjman valè STAGE a).
+  // 4 oct 2026 — 'cardkycstatus' manke nan lis sa a: san li, nfcGet()
+  // rezoud sou strowallet.com, ki pa konnen anyen sou customer ki kreye pa
+  // cardkyc sou ziiropay.com (konfime AN LIVE — menm kategori pwoblèm ak
+  // fetch-nfccard-detail/fund-withdraw-nfccard/freezeactivate-nfc pi wo a).
+  // Obligatwa pou pollPendingCardCreations() ka mache kòrèkteman.
   private readonly ZIIROPAY_ALWAYS_ENDPOINTS = new Set([
     'cardkyc',
+    'cardkycstatus',
     'create-nfc-card',
     'fetch-nfccard-detail',
     'fund-withdraw-nfccard',
@@ -459,6 +472,22 @@ export class StrowalletService {
         kycResponse?.response?.customer_id || kycResponse?.data?.customer_id || kycResponse?.customer_id;
       const kycStatus = kycResponse?.response?.status || kycResponse?.data?.status || kycResponse?.status;
       if (!customerId) throw this.strowalletFailure('cardkyc pa retounen customer_id');
+      // 4 oct 2026 — "pending" se yon eta TRANZITWA konfime AN LIVE (rezoud
+      // tèt li "approved" kèk minit pita san okenn aksyon) — PA yon echèk.
+      // Kenbe wallet debite a, kite pollPendingCardCreations() (chak 30s)
+      // konplete kreyasyon an lè cardkyc finalman rezoud.
+      if (kycStatus === 'pending') {
+        await this.recordPendingCardCreation({
+          userId,
+          email: user.email,
+          customerId,
+          name: user.name || 'OZAMA USER',
+          amountUsd,
+          context: 'CREATE',
+          totalHtg,
+        });
+        return { status: 'PENDING_VERIFICATION' as const, message: PENDING_VERIFICATION_MESSAGE };
+      }
       if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
 
       const cardResponse = await this.nfcPost('create-nfc-card', {
@@ -530,7 +559,10 @@ export class StrowalletService {
   // ─── 1b. CREATE REPLACEMENT CARD (apre terminasyon, deja finanse) ───────────
   // Itilize pa CardTerminationService: pa gen verifikasyon "kat deja egziste",
   // ni debi wallet — lajan an soti nan pool StroWallet (balans ranbouse a).
-  async createReplacementCard(userId: string, fundAmountUsd: number) {
+  // 4 oct 2026 — oldCardId/feeDeductedHtg ajoute pou pollPendingCardCreations()
+  // ka konplete (make REPLACED) oswa ranbouse frè a pita si cardkyc reyèlman
+  // rejte apre yon peryòd "pending" (wè CardTerminationService.finalizeReplacement()).
+  async createReplacementCard(userId: string, fundAmountUsd: number, oldCardId?: string, feeDeductedHtg: number = 0) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { kyc: true },
@@ -581,6 +613,19 @@ export class StrowalletService {
         kycResponse?.response?.customer_id || kycResponse?.data?.customer_id || kycResponse?.customer_id;
       const kycStatus = kycResponse?.response?.status || kycResponse?.data?.status || kycResponse?.status;
       if (!customerId) throw this.strowalletFailure('cardkyc pa retounen customer_id');
+      if (kycStatus === 'pending') {
+        await this.recordPendingCardCreation({
+          userId,
+          email: user.email,
+          customerId,
+          name: user.name || 'OZAMA USER',
+          amountUsd: fundAmountUsd,
+          context: 'REPLACEMENT',
+          oldCardId,
+          feeDeductedHtg,
+        });
+        return { status: 'PENDING_VERIFICATION' as const, message: PENDING_VERIFICATION_MESSAGE };
+      }
       if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
 
       const cardResponse = await this.nfcPost('create-nfc-card', {
@@ -610,6 +655,217 @@ export class StrowalletService {
         status: 'ACTIVE',
       },
     });
+  }
+
+  // ─── 1c. CARDKYC "PENDING" — polling asenkwòn (4 oct 2026) ──────────────────
+  // Wè kòmantè pi wo nan createAndFundCard()/createReplacementCard() ak
+  // schema.prisma (CardCreationPending) pou kontèks konplè.
+
+  private async recordPendingCardCreation(data: {
+    userId: string;
+    email: string;
+    customerId: string;
+    name: string;
+    amountUsd: number;
+    context: 'CREATE' | 'REPLACEMENT';
+    totalHtg?: number;
+    oldCardId?: string;
+    feeDeductedHtg?: number;
+  }): Promise<void> {
+    await this.prisma.cardCreationPending.create({ data });
+    this.logger.log(`[CardCreationPending] Anrejistre id=${data.customerId} userId=${data.userId} context=${data.context} — cardkyc "pending"`);
+  }
+
+  private isPollingPendingCardCreations = false;
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async pollPendingCardCreations(): Promise<void> {
+    if (this.isPollingPendingCardCreations) return;
+    this.isPollingPendingCardCreations = true;
+
+    try {
+      const pending = await this.prisma.cardCreationPending.findMany({ where: { resolvedAt: null } });
+      for (const p of pending) {
+        try {
+          await this.resolvePendingCardCreation(p);
+        } catch (err: any) {
+          this.logger.error(`[CardCreationPending] Echèk tcheke id=${p.id}: ${err?.message}`);
+        }
+      }
+    } finally {
+      this.isPollingPendingCardCreations = false;
+    }
+  }
+
+  private async resolvePendingCardCreation(p: CardCreationPending): Promise<void> {
+    const statusResponse = await this.nfcGet('cardkycstatus', { email: p.email });
+    const kycStatus =
+      statusResponse?.data?.status || statusResponse?.response?.status || statusResponse?.status;
+
+    await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { attempts: { increment: 1 } } });
+
+    if (kycStatus === 'approved') {
+      const customerId =
+        statusResponse?.data?.customer_id || statusResponse?.response?.customer_id || p.customerId;
+      try {
+        const cardResponse = await this.nfcPost('create-nfc-card', {
+          customer_id: customerId,
+          name: p.name,
+          amount: String(p.amountUsd),
+        });
+        const cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
+        if (!cardId) throw this.strowalletFailure('create-nfc-card pa retounen card_id (background apre pending)');
+
+        if (p.context === 'REPLACEMENT') {
+          await this.completeReplacementPendingSuccess(p, cardId);
+        } else {
+          await this.completeCreatePendingSuccess(p, cardId);
+        }
+        await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { resolvedAt: new Date() } });
+        this.logger.log(`[CardCreationPending] Rezoud APWOUVE id=${p.id} cardId=${cardId}`);
+      } catch (err: any) {
+        await this.handlePendingCreationFailure(p, err?.strowalletDetail ?? err?.message ?? 'unknown');
+      }
+      return;
+    }
+
+    if (kycStatus && kycStatus !== 'pending') {
+      // Rejte (oswa nenpòt lòt estati final ki pa "approved"/"pending").
+      await this.handlePendingCreationFailure(p, `cardkyc status="${kycStatus}" (background poll)`);
+      return;
+    }
+
+    // Toujou "pending" — alète admin yon sèl fwa si sa depase 1è, san deklare
+    // okenn echèk bay kliyan an (sou demand Mr. Greffin, 4 oct 2026).
+    const ageMs = Date.now() - p.createdAt.getTime();
+    if (ageMs > PENDING_ADMIN_ALERT_AFTER_MS && !p.adminAlertSentAt) {
+      const user = await this.prisma.user.findUnique({ where: { id: p.userId }, select: { name: true, email: true } });
+      if (user) {
+        await this.mailService.sendCardCreationPendingStuckAlert(
+          user.email,
+          user.name,
+          p.userId,
+          p.customerId,
+          p.context,
+          Math.round(ageMs / 60000),
+        );
+      }
+      await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { adminAlertSentAt: new Date() } });
+    }
+  }
+
+  private async completeCreatePendingSuccess(p: CardCreationPending, cardId: string): Promise<void> {
+    const amountUsd = Number(p.amountUsd);
+    const totalHtg = Number(p.totalHtg ?? 0);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.virtualCard.create({
+        data: {
+          userId: p.userId,
+          cardId,
+          balance: amountUsd,
+          currency: 'USD',
+          provider: 'STROWALLET_NFC',
+          status: 'ACTIVE',
+        },
+      });
+      const wallet = await tx.wallet.findUnique({ where: { userId: p.userId } });
+      await tx.transaction.create({
+        data: {
+          senderWalletId: wallet!.id,
+          type: 'CARD',
+          amount: totalHtg,
+          netAmount: totalHtg,
+          fee: 0,
+          status: 'COMPLETED',
+          description: `Kreye kat vityèl NFC — $${amountUsd} (apre verifikasyon "pending")`,
+          reference: `CARD-CREATE-${cardId}`,
+        },
+      });
+    });
+  }
+
+  private async completeReplacementPendingSuccess(p: CardCreationPending, cardId: string): Promise<void> {
+    await this.prisma.virtualCard.create({
+      data: {
+        userId: p.userId,
+        cardId,
+        balance: Number(p.amountUsd),
+        currency: 'USD',
+        provider: 'STROWALLET_NFC',
+        status: 'ACTIVE',
+      },
+    });
+    if (p.oldCardId) {
+      await this.prisma.virtualCard.update({
+        where: { cardId: p.oldCardId },
+        data: { status: 'REPLACED', replacedByCardId: cardId },
+      });
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: p.userId }, select: { email: true, name: true } });
+    if (user) {
+      const feeDeductedHtg = Number(p.feeDeductedHtg ?? 0);
+      await this.mailService
+        .sendCardReplaced(user.email, user.name ?? 'Kliyan', Number(p.amountUsd), feeDeductedHtg || undefined)
+        .catch(() => {});
+      const message = feeDeductedHtg > 0
+        ? `Kat ranplase, ${feeDeductedHtg} HTG dediwi nan wallet ou pou frè yo`
+        : `Kat ou ranplase otomatikman, nouvo balans: $${p.amountUsd}`;
+      await this.prisma.notification.create({ data: { userId: p.userId, title: 'Kat ou ranplase', message, type: 'SUCCESS' } }).catch(() => {});
+    }
+  }
+
+  private async handlePendingCreationFailure(p: CardCreationPending, errorMessage: string): Promise<void> {
+    if (p.context === 'CREATE' && p.totalHtg) {
+      const totalHtg = Number(p.totalHtg);
+      await this.prisma.$transaction(async (tx) => {
+        const wallet = await tx.wallet.findUnique({ where: { userId: p.userId } });
+        await tx.wallet.update({ where: { userId: p.userId }, data: { balance: { increment: totalHtg } } });
+        await tx.transaction.create({
+          data: {
+            senderWalletId: wallet!.id,
+            type: 'CARD',
+            amount: totalHtg,
+            netAmount: totalHtg,
+            fee: 0,
+            status: 'FAILED',
+            description: `Kreyasyon kat vityèl NFC $${p.amountUsd} ECHWE apre verifikasyon "pending" — renmbi otomatik fèt`,
+            reference: `CARD-CREATE-FAIL-${Date.now()}`,
+          },
+        });
+      });
+    } else if (p.context === 'REPLACEMENT' && Number(p.feeDeductedHtg ?? 0) > 0) {
+      const feeDeductedHtg = Number(p.feeDeductedHtg);
+      await this.prisma.$transaction(async (tx) => {
+        const wallet = await tx.wallet.findUnique({ where: { userId: p.userId } });
+        await tx.wallet.update({ where: { userId: p.userId }, data: { balance: { increment: feeDeductedHtg } } });
+        await tx.transaction.create({
+          data: {
+            senderWalletId: wallet!.id,
+            type: 'CARD',
+            amount: feeDeductedHtg,
+            netAmount: feeDeductedHtg,
+            fee: 0,
+            status: 'FAILED',
+            description: `Frè ranplasman kat vityèl ECHWE apre verifikasyon "pending" — renmbi otomatik fèt`,
+            reference: `CARD-REPL-FEE-FAIL-${Date.now()}`,
+          },
+        });
+      });
+      if (p.oldCardId) {
+        await this.prisma.notification
+          .create({
+            data: {
+              userId: p.userId,
+              title: 'Kat ou terminen',
+              message: 'Nou rankontre yon pwoblèm pou kreye yon ranplasman otomatik. Tout frè ranbouse, tanpri kreye yon nouvo kat nan app la.',
+              type: 'WARNING',
+            },
+          })
+          .catch(() => {});
+      }
+    }
+    await this.recordCardCreationFailure(p.userId, p.email, p.context as 'CREATE' | 'REPLACEMENT', errorMessage);
+    await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { resolvedAt: new Date() } });
   }
 
   // ─── 2. SECRET DETAILS (nimewo konplè, CVV, dat ekspirasyon) ────────────────

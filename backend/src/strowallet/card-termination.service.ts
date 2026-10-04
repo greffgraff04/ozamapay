@@ -143,9 +143,9 @@ export class CardTerminationService {
     // kliyan an peye yon frè pou yon ranplasman ki pa janm livre (bug reyèl jwenn
     // 2026-08-13 sou kont oliviergreffin20@gmail.com: 1,253 HTG te chaje san
     // rollback lè create-nfc-card te echwe, kat la rete TERMINATED san ranplasman).
-    let newCard: { id: string };
+    let newCard: { id: string } | { status: 'PENDING_VERIFICATION'; message: string };
     try {
-      newCard = await this.strowalletService.createReplacementCard(userId, fundAmountUsd);
+      newCard = await this.strowalletService.createReplacementCard(userId, fundAmountUsd, oldCardId, feeDeductedHtg);
     } catch (err: any) {
       this.logger.error(`[CardTermination] createReplacementCard echwe pou cardId=${oldCardId}: ${err?.message}`);
       if (feeDeductedHtg > 0) {
@@ -179,6 +179,16 @@ export class CardTerminationService {
       throw err;
     }
 
+    // 4 oct 2026 — cardkyc reponn "pending" (eta tranzitwa, pa yon echèk —
+    // wè StrowalletService.pollPendingCardCreations()). Pa make oldCard
+    // REPLACED touswit — pa gen nouvo kat ki egziste ankò; background poll la
+    // ap konplete sa (REPLACED + imèl + notifikasyon) lè cardkyc rezoud.
+    if ('status' in newCard) {
+      this.logger.log(`[CardTermination] cardId=${oldCardId} — cardkyc "pending", background poll ap kontinye`);
+      await this.pushNotification(userId, 'Kreyasyon kat ap kontinye', newCard.message, 'INFO');
+      return;
+    }
+
     await this.prisma.virtualCard.update({
       where: { cardId: oldCardId },
       data: { status: 'REPLACED', replacedByCardId: newCard.id },
@@ -203,7 +213,7 @@ export class CardTerminationService {
     userId: string,
     title: string,
     message: string,
-    type: 'SUCCESS' | 'WARNING',
+    type: 'SUCCESS' | 'WARNING' | 'INFO',
   ): Promise<void> {
     await this.prisma.notification.create({ data: { userId, title, message, type } }).catch(() => {});
   }

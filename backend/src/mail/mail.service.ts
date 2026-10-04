@@ -59,12 +59,13 @@ export class MailService {
     </div>`;
   }
 
-  private badge(type: 'KREDITE' | 'KONFIME' | 'REJTE' | 'IJAN'): string {
+  private badge(type: 'KREDITE' | 'KONFIME' | 'REJTE' | 'IJAN' | 'ATANSYON'): string {
     const s: Record<string, { bg: string; color: string; text: string }> = {
-      KREDITE: { bg: '#e8f5e9', color: '#2e7d32', text: 'KREDITE ✓' },
-      KONFIME: { bg: '#e8f5e9', color: '#2e7d32', text: 'KONFIME ✓' },
-      REJTE:   { bg: '#ffebee', color: '#c62828', text: 'REJTE ✗' },
-      IJAN:    { bg: '#fff3e0', color: '#e65100', text: 'AKSYON NESESÈ' },
+      KREDITE:  { bg: '#e8f5e9', color: '#2e7d32', text: 'KREDITE ✓' },
+      KONFIME:  { bg: '#e8f5e9', color: '#2e7d32', text: 'KONFIME ✓' },
+      REJTE:    { bg: '#ffebee', color: '#c62828', text: 'REJTE ✗' },
+      IJAN:     { bg: '#fff3e0', color: '#e65100', text: 'AKSYON NESESÈ' },
+      ATANSYON: { bg: '#fff3e0', color: '#e65100', text: 'REVIZYON MANYÈL' },
     };
     const { bg, color, text } = s[type];
     return `<span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;background:${bg};color:${color};letter-spacing:0.5px;">${text}</span>`;
@@ -246,6 +247,27 @@ export class MailService {
       '#1565C0',
     );
     await this.send(email, `Retrè ou konfime — ${amountFmt} HTG`, html);
+  }
+
+  async sendWithdrawalReversedAdminError(email: string, name: string, amount: number, method: string): Promise<void> {
+    const amountFmt = Number(amount).toLocaleString('fr-HT');
+    const html = this.wrap(
+      `Retrè ${amountFmt} HTG anile — lajan retounen`,
+      'Erè Admin — Kòrije',
+      this.p(`Bonjou ${name},`) +
+      this.badge('REJTE') +
+      `<div style="height:16px;"></div>` +
+      this.amountBox(`${amountFmt} HTG`, 'Montan retounen sou balans ou') +
+      this.table(
+        this.infoRow('Metòd', method || 'N/A'),
+      ) +
+      this.p('Demann retrè ou a te konfime pa erè poutèt yon erè manyèl nan ekip nou an — okenn lajan pa t voye ba ou pa metòd sa a.') +
+      this.p(`${amountFmt} HTG lajan an ansanm ak frè a retounen sou balans OZAMAPAY ou kounye a.`) +
+      this.p('Tanpri resoumèt demann retrè ou a pou nou ka trete l kòrèkteman.') +
+      this.accentLine('Nou dezole pou dezagreman sa a. Yon kesyon? Ekip nou la 7 jou sou 7 sou WhatsApp.'),
+      '#DC2626',
+    );
+    await this.send(email, `Retrè ${amountFmt} HTG anile — lajan retounen`, html);
   }
 
   async sendCardReplaced(
@@ -634,6 +656,38 @@ export class MailService {
       '#B71C1C',
     );
     await this.send('contact@ozamapay.com', 'Kliyan bloke sou kreyasyon kat NFC — OZAMAPAY', html);
+  }
+
+  // 4 oct 2026 — cardkyc ka rete "pending" (eta tranzitwa ki ta dwe rezoud
+  // nan kèk minit) pandan plis pase 1è — PA yon echèk definitif, men yon
+  // siyal pou revizyon manyèl (dashboard ziiropay) si StroWallet gen yon
+  // blokaj reyèl. Admin-sèlman, pa gen aksyon otomatik ki pran apati alèt sa a.
+  async sendCardCreationPendingStuckAlert(
+    email: string,
+    name: string | null,
+    userId: string,
+    customerId: string,
+    context: string,
+    pendingSinceMinutes: number,
+  ): Promise<void> {
+    const now = new Date().toLocaleDateString('fr-HT');
+    const html = this.wrap(
+      'cardkyc rete "pending" plis pase 1è — OZAMAPAY',
+      'Alèt Verifikasyon Kat Vityèl',
+      this.badge('ATANSYON') +
+      `<div style="height:16px;"></div>` +
+      this.p('cardkyc kliyan sa a rete nan estati "pending" depi plis pase 1è — pifò ka rezoud nan kèk minit, kidonk sa a ka endike yon blokaj reyèl kote StroWallet. Verifye dashboard ziiropay manyèlman.') +
+      this.table(
+        this.infoRow('Kliyan', `${name || '—'} (${email})`) +
+        this.infoRow('userId', userId) +
+        this.infoRow('customer_id (ziiropay)', customerId) +
+        this.infoRow('Kontèks', context === 'REPLACEMENT' ? 'Ranplasman' : 'Kreyasyon nòmal') +
+        this.infoRow('Dire "pending"', `${pendingSinceMinutes} minit`) +
+        this.infoRow('Dat', now),
+      ),
+      '#e65100',
+    );
+    await this.send('contact@ozamapay.com', 'cardkyc rete "pending" plis pase 1è — OZAMAPAY', html);
   }
 
   async sendFinanceConfirmed(
