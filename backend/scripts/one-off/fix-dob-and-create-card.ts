@@ -11,8 +11,11 @@
  *
  * Safety: DRY-RUN pa default. --confirm pou aplike pou tout bon.
  *
+ * Opsyonèl: --trimCity pou netwaye espas anplis nan Kyc.city (pa chanje
+ * kontni an, jis retire espas anvan/apre).
+ *
  * Kòmand (kòm Render job pou bon sekrè production):
- *   npx ts-node --transpile-only --compiler-options '{"module":"CommonJS","moduleResolution":"node","resolvePackageJsonExports":false}' scripts/one-off/fix-dob-and-create-card.ts --email=xxx@gmail.com --dateOfBirth=1998-03-05            # dry-run
+ *   npx ts-node --transpile-only --compiler-options '{"module":"CommonJS","moduleResolution":"node","resolvePackageJsonExports":false}' scripts/one-off/fix-dob-and-create-card.ts --email=xxx@gmail.com --dateOfBirth=1998-03-05 --trimCity            # dry-run
  *   ... --confirm  # live
  */
 
@@ -37,6 +40,7 @@ function getArgValue(flag: string): string | null {
 async function main() {
   const email = getArgValue('--email');
   const dobInput = getArgValue('--dateOfBirth');
+  const trimCity = process.argv.includes('--trimCity');
   const confirm = process.argv.includes('--confirm');
   if (!email || !dobInput) {
     console.error('✗ Mande --email=<email> --dateOfBirth=<YYYY-MM-DD>');
@@ -72,6 +76,10 @@ async function main() {
     console.log('── Kliyan ────────────────────────────────────────────────');
     console.log(`  ${user.name} (${user.email})`);
     console.log(`  Dat nesans aktyèl: ${user.kyc.dateOfBirth.toISOString().slice(0, 10)} → nouvo: ${newDob.toISOString().slice(0, 10)}`);
+    const trimmedCity = user.kyc.city.trim();
+    if (trimCity) {
+      console.log(`  city aktyèl: "${user.kyc.city}" → netwaye: "${trimmedCity}"`);
+    }
     console.log(`  wallet: balans aktyèl: ${user.wallet.balance} HTG`);
     console.log(`  Kou echanj: ${exchangeRate} HTG/USD → koute total: ${totalHtg} HTG pou $${AMOUNT_USD}`);
 
@@ -93,8 +101,11 @@ async function main() {
     }
 
     console.log('\n[LIVE] Mete dat nesans ajou...');
-    await prisma.kyc.update({ where: { userId: user.id }, data: { dateOfBirth: newDob } });
-    console.log('✓ Dat nesans mete ajou.');
+    await prisma.kyc.update({
+      where: { userId: user.id },
+      data: { dateOfBirth: newDob, ...(trimCity ? { city: trimmedCity } : {}) },
+    });
+    console.log(`✓ Dat nesans mete ajou.${trimCity ? ' City netwaye.' : ''}`);
 
     console.log('\n[LIVE] Relanse createAndFundCard($3)...\n');
     try {
