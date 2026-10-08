@@ -103,6 +103,38 @@ export class StrowalletService {
     return !line1 || line1.trim().length < this.MIN_ADDRESS_LENGTH;
   }
 
+  // 8 oct 2026 — ZiiroPay rejte `city` ki gen yon chif ("City can contain only
+  // letters, hyphens, apostrophes, periods, and spaces") — men chif la se souvan
+  // yon seksyon kominal lejitim nan adrès Ayisyen (egzanp "Delmas 71", "Tabarre
+  // 27"), pa yon erè soumisyon. Nou retire chif yo nan city epi ajoute l nan
+  // line1 (chif pa dwe disparèt) — Kyc.city/line1 stoke nan DB a pa touche,
+  // sèlman done yo voye bay founisè a transfòme. MAX_LINE1_LENGTH pa yon sèy
+  // dokimante pa StroWallet — pi gwo line1 konfime k ap mache AN LIVE se 45
+  // karaktè (wè scripts/one-off/_check-line1-length-distribution.ts), 100 se yon
+  // maj pridan; si pa gen plas ase pou ajoute city a antye, nou koupe sifiks la
+  // olye depase sèy la.
+  readonly MAX_LINE1_LENGTH = 100;
+
+  sanitizeCityForProvider(
+    city: string | null | undefined,
+    line1: string | null | undefined,
+  ): { city: string; line1: string } {
+    const safeCity = city || '';
+    const safeLine1 = line1 || '';
+    if (!/\d/.test(safeCity)) return { city: safeCity, line1: safeLine1 };
+
+    const cleanCity = safeCity.replace(/\d+/g, '').replace(/\s+/g, ' ').trim();
+    if (!cleanCity) return { city: safeCity, line1: safeLine1 };
+
+    const trimmedCity = safeCity.trim();
+    if (safeLine1.includes(trimmedCity)) return { city: cleanCity, line1: safeLine1 };
+
+    const suffix = `, ${trimmedCity}`;
+    const available = this.MAX_LINE1_LENGTH - safeLine1.length;
+    const newLine1 = available > 2 ? safeLine1 + suffix.slice(0, available) : safeLine1;
+    return { city: cleanCity, line1: newLine1 };
+  }
+
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
   private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
@@ -447,6 +479,14 @@ export class StrowalletService {
     // StroWallet la (1MB, wè resolveIdFrontImageBase64()).
     const idFrontImageBase64 = await this.resolveIdFrontImageBase64(user.kyc.idImage);
 
+    // 8 oct 2026 — wè sanitizeCityForProvider(): retire chif nan city (rejte pa
+    // ZiiroPay), ajoute l nan line1 voye bay founisè a. Kyc.city/line1 stoke nan
+    // DB a pa touche.
+    const { city: providerCity, line1: providerLine1 } = this.sanitizeCityForProvider(
+      user.kyc.city,
+      user.kyc.line1,
+    );
+
     const cardkycParams = {
       first_name: firstName,
       last_name: lastName,
@@ -463,8 +503,8 @@ export class StrowalletService {
       date_of_birth: isoDob,
       // 2 oct 2026 — FAZ 0: dedwi (pa hardcode) — wè resolveDialCode().
       dial_code: dialCode,
-      line1: user.kyc.line1,
-      city: user.kyc.city,
+      line1: providerLine1,
+      city: providerCity,
       state: user.kyc.state,
       postal_code: user.kyc.zipCode,
       country: this.resolveNfcCountry(user.kyc.country),
@@ -476,7 +516,7 @@ export class StrowalletService {
       account_purpose: 'personal_use',
       annual_salary: '50000',
       expected_monthly_volume: '5000',
-      place_of_birth: user.kyc.city || 'Port-au-Prince',
+      place_of_birth: providerCity || 'Port-au-Prince',
     };
 
     // ── Etap 1: Debi wallet sèlman (transaction 1) ──────────────────────────
@@ -607,6 +647,12 @@ export class StrowalletService {
 
     const idFrontImageBase64 = await this.resolveIdFrontImageBase64(user.kyc?.idImage || '');
 
+    // 8 oct 2026 — wè sanitizeCityForProvider() (menm rezon ak createAndFundCard()).
+    const { city: providerCity, line1: providerLine1 } = this.sanitizeCityForProvider(
+      user.kyc?.city,
+      user.kyc?.line1,
+    );
+
     const cardkycParams = {
       first_name: firstName,
       last_name: lastName,
@@ -621,8 +667,8 @@ export class StrowalletService {
       date_of_birth: isoDob,
       // 2 oct 2026 — FAZ 0: dedwi (pa hardcode) — wè resolveDialCode().
       dial_code: dialCode,
-      line1: user.kyc?.line1 || '',
-      city: user.kyc?.city || '',
+      line1: providerLine1,
+      city: providerCity,
       state: user.kyc?.state || '',
       postal_code: user.kyc?.zipCode || '',
       country: this.resolveNfcCountry(user.kyc?.country),
@@ -631,7 +677,7 @@ export class StrowalletService {
       account_purpose: 'personal_use',
       annual_salary: '50000',
       expected_monthly_volume: '5000',
-      place_of_birth: user.kyc?.city || 'Port-au-Prince',
+      place_of_birth: providerCity || 'Port-au-Prince',
     };
 
     let cardId: string;
