@@ -1,11 +1,24 @@
 import {
   Controller, Get, Post, Param, Body, Req, UseGuards, Query,
-  Headers, RawBody, HttpCode, BadRequestException,
+  Headers, RawBody, HttpCode, BadRequestException, ServiceUnavailableException,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { GiftCardsService } from './giftcards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+
+// 8 oct 2026 — kredansyal Reloadly envalid (INVALID_CREDENTIALS sou /oauth/token),
+// katalòg ak kòmand kraze nèt. Kouvri-sekirite tanporè: GIFTCARDS_ENABLED=false
+// nan env var bloke katalòg/kòmand ak yon mesaj klè olye yon erè 500 brit —
+// chanje valè a sou Render epi sèvis la rebòte san bezwen nouvo deplwaman.
+// `getUserOrders` PA afekte — kliyan dwe ka wè kòd kòmand COMPLETED yo toujou.
+const GIFTCARDS_UNAVAILABLE_MESSAGE = 'Sèvis gift card tanporèman endisponib, n ap retabli l byento.';
+
+function assertGiftCardsEnabled(): void {
+  if (process.env.GIFTCARDS_ENABLED === 'false') {
+    throw new ServiceUnavailableException(GIFTCARDS_UNAVAILABLE_MESSAGE);
+  }
+}
 
 @Controller('giftcards')
 export class GiftCardsController {
@@ -14,12 +27,14 @@ export class GiftCardsController {
   @Get('products')
   @UseGuards(JwtAuthGuard)
   async getProducts(@Query('countryCode') countryCode?: string) {
+    assertGiftCardsEnabled();
     return this.giftCardsService.getProducts(countryCode ?? 'US');
   }
 
   @Get('products/:id')
   @UseGuards(JwtAuthGuard)
   async getProductById(@Param('id') id: string) {
+    assertGiftCardsEnabled();
     return this.giftCardsService.getProductById(Number(id));
   }
 
@@ -30,6 +45,7 @@ export class GiftCardsController {
     @Body('productId') productId: number,
     @Body('unitPrice') unitPrice: number,
   ) {
+    assertGiftCardsEnabled();
     const userId = req.user.id ?? req.user.sub;
     return this.giftCardsService.orderGiftCard(userId, Number(productId), Number(unitPrice));
   }

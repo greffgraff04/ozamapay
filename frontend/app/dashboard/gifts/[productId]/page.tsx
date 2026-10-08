@@ -27,6 +27,7 @@ export default function GiftCardProductPage() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
   const [buyAmount, setBuyAmount] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
@@ -40,6 +41,7 @@ export default function GiftCardProductPage() {
     fetch(`${backendUrl}/giftcards/products/${productId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async (res) => {
         if (res.status === 401) { signOut(); return; }
+        if (res.status === 503) { setUnavailable(true); setLoadError(true); return; }
         if (!res.ok) { setLoadError(true); return; }
         const data = await res.json();
         setProduct(data);
@@ -89,7 +91,9 @@ export default function GiftCardProductPage() {
   if (loadError || !product) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: colors.background }} className="flex flex-col items-center justify-center px-6 text-center">
-        <p className="font-black italic uppercase text-white mb-4">Pwodwi a pa jwenn</p>
+        <p className="font-black italic uppercase text-white mb-4">
+          {unavailable ? 'Sèvis gift card tanporèman endisponib, n ap retabli l byento.' : 'Pwodwi a pa jwenn'}
+        </p>
         <button
           onClick={() => router.push('/dashboard')}
           className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-widest text-white"

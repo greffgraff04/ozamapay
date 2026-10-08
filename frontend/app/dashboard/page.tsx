@@ -532,6 +532,7 @@ export default function Dashboard() {
   // Gift cards
   const [gcProducts, setGcProducts] = useState<any[]>([]);
   const [gcLoading, setGcLoading] = useState(false);
+  const [gcUnavailable, setGcUnavailable] = useState(false);
   const [gcSelectedBrand, setGcSelectedBrand] = useState<string | null>(null);
   const [gcSelectedDenom, setGcSelectedDenom] = useState<number | null>(null);
   const [gcOrders, setGcOrders] = useState<any[]>([]);
@@ -1054,7 +1055,11 @@ export default function Dashboard() {
         fetch(`${backendUrl}/giftcards/orders`, { headers: { Authorization: `Bearer ${token}` } }),
       ]).then(async ([productsRes, ordersRes]) => {
         if (productsRes.status === 401 || ordersRes.status === 401) { signOut(); return; }
-        const [products, orders] = await Promise.all([productsRes.json(), ordersRes.json()]);
+        setGcUnavailable(productsRes.status === 503);
+        const [products, orders] = await Promise.all([
+          productsRes.ok ? productsRes.json() : null,
+          ordersRes.ok ? ordersRes.json() : null,
+        ]);
         setGcProducts(Array.isArray(products?.content) ? products.content : (Array.isArray(products) ? products : []));
         setGcOrders(Array.isArray(orders) ? orders : []);
       }).catch(() => {}).finally(() => setGcLoading(false));
@@ -4500,6 +4505,10 @@ export default function Dashboard() {
                 {gcLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-[#FF7A00] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : gcUnavailable ? (
+                  <div className="oz-glass rounded-2xl p-6 text-center mb-3">
+                    <p className="font-bold text-[13px]" style={{ color: '#FF7A00' }}>Sèvis gift card tanporèman endisponib, n ap retabli l byento.</p>
                   </div>
                 ) : gcProducts.length === 0 ? (
                   <div className="oz-glass rounded-2xl p-6 text-center mb-3">
