@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isStaging } from '../config/app-env';
 
 @Injectable()
 export class ReloadlyAuthService {
@@ -8,6 +9,17 @@ export class ReloadlyAuthService {
   async getToken(audience: string): Promise<string> {
     const cached = this.tokens.get(audience);
     if (cached && Date.now() < cached.expiresAt) return cached.token;
+
+    // No module-level check at boot (credentials are only read here, lazily,
+    // on first real call) — but in staging, without sandbox credentials,
+    // fail locally instead of making a pointless (and possibly prod-domain)
+    // real HTTP call that's guaranteed to fail auth anyway.
+    if (isStaging() && (!process.env.RELOADLY_CLIENT_ID || !process.env.RELOADLY_CLIENT_SECRET)) {
+      throw new Error(
+        'Reloadly pa konfigire an staging (RELOADLY_CLIENT_ID/RELOADLY_CLIENT_SECRET manke) — ' +
+        'aksyon gift card pa disponib.',
+      );
+    }
 
     const res = await fetch('https://auth.reloadly.com/oauth/token', {
       method: 'POST',

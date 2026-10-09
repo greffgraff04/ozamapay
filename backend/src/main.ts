@@ -6,7 +6,7 @@ import { join } from 'path';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HealthService } from './health/health.service';
-import { assertStagingNotUsingProdDatabase } from './config/app-env';
+import { assertStagingNotUsingProdDatabase, logStagingProviderReadiness } from './config/app-env';
 
 async function bootstrap() {
   // Refuse to boot before touching anything else if a staging deploy is
@@ -19,6 +19,9 @@ async function bootstrap() {
     );
     process.exit(1);
   }
+
+  // Informational only — never blocks boot. See src/config/app-env.ts.
+  logStagingProviderReadiness();
 
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

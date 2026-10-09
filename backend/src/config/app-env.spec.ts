@@ -87,4 +87,69 @@ describe('app-env', () => {
       expect(load().defaultTrongridBaseUrlForNetwork()).toBe('https://nile.trongrid.io');
     });
   });
+
+  describe('assertTronManualTriggerAllowedInStaging (admin /admin/sweep/run, /admin/reconciliation/run)', () => {
+    it('is a no-op when APP_ENV is unset, regardless of TRON_NETWORK — unchanged prod behavior', () => {
+      delete process.env.APP_ENV;
+      delete process.env.TRON_NETWORK;
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).not.toThrow();
+    });
+
+    it('is a no-op when APP_ENV=production, regardless of TRON_NETWORK', () => {
+      process.env.APP_ENV = 'production';
+      delete process.env.TRON_NETWORK;
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).not.toThrow();
+    });
+
+    it('throws in staging when TRON_NETWORK is unset', () => {
+      process.env.APP_ENV = 'staging';
+      delete process.env.TRON_NETWORK;
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).toThrow(/TRON_NETWORK/);
+    });
+
+    it('throws in staging when TRON_NETWORK=mainnet', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.TRON_NETWORK = 'mainnet';
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).toThrow(/TRON_NETWORK/);
+    });
+
+    it('does not throw in staging when TRON_NETWORK=nile', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.TRON_NETWORK = 'nile';
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).not.toThrow();
+    });
+
+    it('does not throw in staging when TRON_NETWORK=testnet', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.TRON_NETWORK = 'testnet';
+      expect(() => load().assertTronManualTriggerAllowedInStaging()).not.toThrow();
+    });
+  });
+
+  describe('logStagingProviderReadiness', () => {
+    it('never throws, in staging or otherwise, regardless of which secrets are set', () => {
+      delete process.env.APP_ENV;
+      expect(() => load().logStagingProviderReadiness()).not.toThrow();
+
+      jest.resetModules();
+      process.env.APP_ENV = 'staging';
+      delete process.env.TRON_MASTER_MNEMONIC;
+      delete process.env.SWEEP_MASTER_MNEMONIC;
+      delete process.env.RELOADLY_CLIENT_ID;
+      delete process.env.RELOADLY_CLIENT_SECRET;
+      delete process.env.MONCASH_MODE;
+      expect(() => load().logStagingProviderReadiness()).not.toThrow();
+    });
+
+    it('is a no-op (no console output) when APP_ENV is unset', () => {
+      delete process.env.APP_ENV;
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      load().logStagingProviderReadiness();
+      expect(logSpy).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+  });
 });

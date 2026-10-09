@@ -1,21 +1,46 @@
 import {
   Injectable,
   BadRequestException,
+  Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isStaging } from '../config/app-env';
 
 // @ts-ignore
 const moncash = require('moncash-sdk');
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+  // Only ever false in staging (see constructor) — in prod the constructor
+  // throws instead of leaving this set, exactly like before this change.
+  private enabled = true;
+
   constructor(
     private prisma: PrismaService,
   ) {
     const mode = process.env.MONCASH_MODE;
-    if (!mode) {
+    const clientId = process.env.MONCASH_CLIENT_ID;
+    const clientSecret = process.env.MONCASH_SECRET_KEY;
+
+    if (isStaging()) {
+      // MonCash (native SDK) has a real sandbox mode — allow it ONLY when
+      // explicitly configured for sandbox with its own credentials. Any
+      // other staging state (missing mode, missing creds, or mode=live)
+      // disables the service instead of risking a real "live" charge —
+      // no moncash.configure() call, no network call, ever, in that case.
+      this.enabled = mode === 'sandbox' && !!clientId && !!clientSecret;
+      if (!this.enabled) {
+        this.logger.warn(
+          '[staging] PaymentsService (MonCash natif) dezaktive — mete MONCASH_MODE=sandbox ' +
+          'ak MONCASH_CLIENT_ID/MONCASH_SECRET_KEY (sandbox) pou aktive l.',
+        );
+        return;
+      }
+    } else if (!mode) {
       throw new Error(
         'MONCASH_MODE environment variable must be set ("live" in production, "sandbox" for testing)',
       );
@@ -23,12 +48,8 @@ export class PaymentsService {
 
     moncash.configure({
       mode,
-
-      client_id:
-        process.env.MONCASH_CLIENT_ID,
-
-      client_secret:
-        process.env.MONCASH_SECRET_KEY,
+      client_id: clientId,
+      client_secret: clientSecret,
     });
   }
 
@@ -37,6 +58,9 @@ export class PaymentsService {
     userId: string,
     agentId?: string,
   ): Promise<string> {
+    if (!this.enabled) {
+      throw new ServiceUnavailableException('Indisponible en staging');
+    }
     const payment_creator =
       moncash.payment;
 
@@ -78,6 +102,9 @@ export class PaymentsService {
   async validateMonCashPayment(
     transactionId: string,
   ) {
+    if (!this.enabled) {
+      throw new ServiceUnavailableException('Indisponible en staging');
+    }
     return new Promise(
       (resolve, reject) => {
         const capture =
