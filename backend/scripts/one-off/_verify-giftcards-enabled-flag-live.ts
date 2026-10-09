@@ -9,13 +9,15 @@
  * kote env var la ap viv.
  */
 import { NestFactory } from '@nestjs/core';
-import { GiftCardsModule } from '../../src/giftcards/giftcards.module';
+import { AppModule } from '../../src/app.module';
 import { GiftCardsController } from '../../src/giftcards/giftcards.controller';
 
 async function main() {
   console.log(`process.env.GIFTCARDS_ENABLED = ${JSON.stringify(process.env.GIFTCARDS_ENABLED)}`);
 
-  const app = await NestFactory.createApplicationContext(GiftCardsModule, { logger: ['error', 'warn'] });
+  // AppModule konplè — menm graf dependans ak pwodiksyon, pa gen rekonstriksyon
+  // manyèl chemen DI (KycModule → StrowalletModule → AlertCooldownModule, elatriye).
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error', 'warn'] });
   const controller = app.get(GiftCardsController);
 
   try {
