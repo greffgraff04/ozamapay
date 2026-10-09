@@ -158,8 +158,12 @@ export class StrowalletService {
   // ─── HELPER ────────────────────────────────────────────────────────────────
 
   async getExchangeRate(): Promise<number> {
+    // 9 okt 2026 — CARD_RATE te yon kle jele depi me (pa gen kontwòl admin,
+    // pa gen istorik), alòske USD_HTG se vrè referans aktyèl la, deja itilize
+    // pa giftcards/wallet/admin AK pa app mobil la pou menm aperçu rechaj sa
+    // a — switch la aliyen backend la ak tout rès sistèm nan, san release mobil.
     const rate = await this.prisma.rate.findUnique({
-      where: { key: 'CARD_RATE' },
+      where: { key: 'USD_HTG' },
     });
     if (!rate) throw new BadRequestException('Taux de change USD introuvable');
     return Number(rate.value);
