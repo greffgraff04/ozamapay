@@ -44,10 +44,16 @@ export class GiftCardsController {
     @Req() req: any,
     @Body('productId') productId: number,
     @Body('unitPrice') unitPrice: number,
+    @Body('quantity') quantity?: number,
   ) {
     assertGiftCardsEnabled();
     const userId = req.user.id ?? req.user.sub;
-    return this.giftCardsService.orderGiftCard(userId, Number(productId), Number(unitPrice));
+    return this.giftCardsService.orderGiftCard(
+      userId,
+      Number(productId),
+      Number(unitPrice),
+      quantity === undefined ? 1 : Number(quantity),
+    );
   }
 
   @Get('orders')

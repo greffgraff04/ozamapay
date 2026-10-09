@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, TransactionType, TransactionStatus, LedgerType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReloadlyAuthService } from '../reloadly/reloadly-auth.service';
 
@@ -59,41 +59,114 @@ export class GiftCardsService {
 
   // ─── Order ────────────────────────────────────────────────────────────────
 
-  async orderGiftCard(userId: string, productId: number, unitPrice: number) {
+  async orderGiftCard(userId: string, productId: number, unitPrice: number, quantity: number = 1) {
+    // ── Garde-fous d'entrée — rejet avant même de toucher le catalogue ──────
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new BadRequestException('productId envalid');
+    }
+    const priceCents = Math.round(unitPrice * 100);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0 || Math.abs(unitPrice * 100 - priceCents) > 1e-6) {
+      throw new BadRequestException('unitPrice envalid — dwe pozitif ak maksimòm 2 chif apre pwen');
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+      throw new BadRequestException('quantity envalid — dwe yon nonb antye ant 1 ak 10');
+    }
+
+    // Prix JAMAIS pris du client — on va toujours le rechercher/valider contre
+    // le catalogue fournisseur avant de calculer quoi que ce soit. Si le
+    // catalogue est inaccessible, on refuse la commande (fail closed) au lieu
+    // d'avaler l'erreur comme avant (ancien try/catch silencieux).
+    const product = await this.getProductById(productId);
+    const productName = product?.productName ?? `Gift Card #${productId}`;
+    const validatedUnitPrice = this.resolveCatalogPrice(product, unitPrice);
+
     const rateEntry = await this.prisma.rate.findUnique({ where: { key: 'USD_HTG' } });
     const exchangeRate = Number(rateEntry?.value ?? 140);
-    const htgCost = Math.round(unitPrice * exchangeRate * (1 + MARGIN) * 100) / 100;
-    const marginHTG = Math.round(unitPrice * exchangeRate * MARGIN * 100) / 100;
+    const totalSenderCost = Math.round(validatedUnitPrice * quantity * 100) / 100;
+    const htgCost = Math.round(totalSenderCost * exchangeRate * (1 + MARGIN) * 100) / 100;
+    const marginHTG = Math.round(totalSenderCost * exchangeRate * MARGIN * 100) / 100;
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('Itilizatè pa jwenn');
 
-    let productName = `Gift Card #${productId}`;
-    try {
-      const p = await this.getProductById(productId);
-      productName = p.productName ?? productName;
-    } catch {}
+    // 1 — Débit atomique conditionnel + création commande + audit trail (serializable)
+    const { orderId, newBalance, transactionId } = await this.prisma.$transaction(async (tx) => {
+      const walletMeta = await tx.wallet.findUnique({ where: { userId }, select: { id: true } });
+      if (!walletMeta) throw new BadRequestException('Wallet pa jwenn');
+      const masterWallet = await tx.wallet.findUnique({ where: { userId: MASTER_ID } });
+      if (!masterWallet) throw new BadRequestException('Master wallet pa jwenn');
 
-    // 1 — Debit wallet + create PENDING order (serializable)
-    const { orderId, newBalance } = await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.findUnique({ where: { userId } });
-      if (!wallet) throw new BadRequestException('Wallet pa jwenn');
-      if (Number(wallet.balance) < htgCost) {
-        throw new BadRequestException(`Balans ensifizan — bezwen ${htgCost} HTG`);
-      }
-
-      const updated = await tx.wallet.update({
-        where: { userId },
+      // Débit conditionnel : la vérification de solde fait partie du WHERE de
+      // l'UPDATE lui-même (pas d'étape lecture-puis-écriture séparée). Sous
+      // charge concurrente, Postgres verrouille la ligne au niveau de l'UPDATE
+      // — une seule des commandes simultanées peut gagner la course,
+      // count === 0 pour toutes les autres ⇒ solde insuffisant.
+      const debit = await tx.wallet.updateMany({
+        where: { userId, balance: { gte: htgCost } },
         data: { balance: { decrement: htgCost } },
       });
-      await tx.wallet.update({
+      if (debit.count === 0) {
+        throw new BadRequestException(`Balans ensifizan — bezwen ${htgCost} HTG`);
+      }
+      const updatedWallet = await tx.wallet.findUnique({ where: { userId } });
+      if (!updatedWallet) throw new BadRequestException('Wallet pa jwenn');
+      const balanceBeforeWallet = Prisma.Decimal.add(updatedWallet.balance, htgCost);
+
+      const updatedMaster = await tx.wallet.update({
         where: { userId: MASTER_ID },
         data: { balance: { increment: marginHTG } },
       });
       const order = await tx.giftCardOrder.create({
-        data: { userId, productId, productName, unitPrice, htgPaid: htgCost, status: 'PENDING' },
+        data: {
+          userId,
+          productId,
+          productName,
+          unitPrice: validatedUnitPrice,
+          htgPaid: htgCost,
+          status: 'PENDING',
+        },
       });
-      return { orderId: order.id, newBalance: updated.balance };
+
+      const transaction = await tx.transaction.create({
+        data: {
+          reference: `GIFTCARD-${order.id}`,
+          senderWalletId: walletMeta.id,
+          receiverWalletId: masterWallet.id,
+          amount: htgCost,
+          fee: marginHTG,
+          netAmount: htgCost - marginHTG,
+          type: TransactionType.PAYMENT,
+          status: TransactionStatus.PENDING,
+          method: 'GIFTCARD',
+          title: `Gift card ${productName}`,
+          description: `Order ${order.id} — pwodwi #${productId} x${quantity}`,
+        },
+      });
+
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: walletMeta.id,
+          transactionId: transaction.id,
+          type: LedgerType.DEBIT,
+          amount: htgCost,
+          balanceBefore: balanceBeforeWallet,
+          balanceAfter: updatedWallet.balance,
+          description: `Gift card order ${order.id}`,
+        },
+      });
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: masterWallet.id,
+          transactionId: transaction.id,
+          type: LedgerType.CREDIT,
+          amount: marginHTG,
+          balanceBefore: masterWallet.balance,
+          balanceAfter: updatedMaster.balance,
+          description: `Komisyon gift card order ${order.id}`,
+        },
+      });
+
+      return { orderId: order.id, newBalance: updatedWallet.balance, transactionId: transaction.id };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     // 2 — Call Reloadly outside the DB transaction
@@ -104,8 +177,8 @@ export class GiftCardsService {
       const result = await this.reloadlyPost('/orders', {
         productId,
         countryCode: 'US',
-        quantity: 1,
-        unitPrice,
+        quantity,
+        unitPrice: validatedUnitPrice,
         customIdentifier: orderId,
         senderName: 'OZAMAPAY',
         recipientEmail: user.email,
@@ -119,9 +192,39 @@ export class GiftCardsService {
     } catch (err: any) {
       this.logger.error(`Reloadly order failed for orderId ${orderId}: ${err.message}`);
       await this.prisma.$transaction(async (tx) => {
-        await tx.wallet.update({ where: { userId }, data: { balance: { increment: htgCost } } });
-        await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { decrement: marginHTG } } });
+        // Garde anti-double-ranbousman : si yon lòt chemen (egzanp webhook)
+        // deja rezoud kòmand sa a, status la pa 'PENDING' ankò — nou sòti san
+        // touche balans yo ankò. Kòd sa a se sèl andwa ki ka ranbouse apre yon
+        // debi ki reyisi (orderId/transactionId pa egziste si debi a echwe).
+        const current = await tx.giftCardOrder.findUnique({ where: { id: orderId } });
+        if (!current || current.status !== 'PENDING') return;
+
+        const revertedWallet = await tx.wallet.update({ where: { userId }, data: { balance: { increment: htgCost } } });
+        const revertedMaster = await tx.wallet.update({ where: { userId: MASTER_ID }, data: { balance: { decrement: marginHTG } } });
         await tx.giftCardOrder.update({ where: { id: orderId }, data: { status: 'FAILED' } });
+        await tx.transaction.update({ where: { id: transactionId }, data: { status: TransactionStatus.FAILED } });
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: revertedWallet.id,
+            transactionId,
+            type: LedgerType.CREDIT,
+            amount: htgCost,
+            balanceBefore: Prisma.Decimal.sub(revertedWallet.balance, htgCost),
+            balanceAfter: revertedWallet.balance,
+            description: `Ranbousman gift card order ${orderId} — echèk founisè`,
+          },
+        });
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: revertedMaster.id,
+            transactionId,
+            type: LedgerType.DEBIT,
+            amount: marginHTG,
+            balanceBefore: Prisma.Decimal.add(revertedMaster.balance, marginHTG),
+            balanceAfter: revertedMaster.balance,
+            description: `Ranbousman komisyon gift card order ${orderId} — echèk founisè`,
+          },
+        });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
@@ -130,8 +233,82 @@ export class GiftCardsService {
       where: { id: orderId },
       data: { redeemCode: redeemCode ?? undefined, status: finalStatus },
     });
+    await this.prisma.transaction.update({
+      where: { id: transactionId },
+      data: { status: finalStatus === 'COMPLETED' ? TransactionStatus.COMPLETED : TransactionStatus.PROCESSING },
+    });
 
-    return { orderId, productName, unitPrice, htgPaid: htgCost, redeemCode, status: finalStatus, newBalance };
+    return {
+      orderId,
+      productName,
+      unitPrice: validatedUnitPrice,
+      quantity,
+      htgPaid: htgCost,
+      redeemCode,
+      status: finalStatus,
+      newBalance,
+    };
+  }
+
+  // ─── Validation prix catalogue ────────────────────────────────────────────
+  // Jamè fè konfyans nan pri yo bay nan kliyan an — valide/aliyen li ak
+  // katalòg Reloadly la anvan nenpòt kalkil oswa debi balans.
+  //
+  // Devise : unitPrice se toujou yon montan SENDER (devise facturasyon
+  // OZAMAPAY↔Reloadly, souvan USD men pa toujou — gen pwodwi EUR). Se sa
+  // webapp lan deja voye (frontend/app/dashboard/gifts/[productId]/page.tsx:48,
+  // 61-70, li li minSenderDenomination/fixedSenderDenominations pou bati
+  // `buyAmount`) e se sa Reloadly POST /orders.unitPrice espere tou. Chemen
+  // prensipal la validè kont chan SENDER yo. Si yon pwodwi pa ekspoze chan
+  // SENDER (ka ki pa konfime nan done aktyèl yo), nou tonbe tounen sou
+  // RECIPIENT + fixedRecipientToSenderDenominationsMap pou konvèti an SENDER
+  // anvan okenn kalkil — webapp aktyèl la pa chanje paske li toujou voye yon
+  // valè SENDER, ki ap toujou matche chemen prensipal la.
+  private resolveCatalogPrice(product: any, clientUnitPrice: number): number {
+    const isRangeType =
+      product?.denominationType === 'RANGE' ||
+      (product?.senderFaceValue == null && product?.minSenderDenomination != null);
+    const hasSenderRange = product?.minSenderDenomination != null && product?.maxSenderDenomination != null;
+    const hasSenderFixed =
+      (Array.isArray(product?.fixedSenderDenominations) && product.fixedSenderDenominations.length > 0) ||
+      product?.senderFaceValue != null;
+
+    if (isRangeType && hasSenderRange) {
+      const min = Number(product.minSenderDenomination);
+      const max = Number(product.maxSenderDenomination);
+      if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        throw new BadRequestException('Pa ka valide pri pwodwi sa a kounye a');
+      }
+      if (clientUnitPrice < min || clientUnitPrice > max) {
+        throw new BadRequestException(`Pri envalid — dwe ant ${min} ak ${max}`);
+      }
+      return clientUnitPrice;
+    }
+
+    if (!isRangeType && hasSenderFixed) {
+      const allowed: number[] = Array.isArray(product.fixedSenderDenominations) && product.fixedSenderDenominations.length
+        ? product.fixedSenderDenominations.map(Number)
+        : [Number(product.senderFaceValue)];
+      const match = allowed.find((v) => Number.isFinite(v) && Math.abs(v - clientUnitPrice) < 0.01);
+      if (match === undefined) {
+        throw new BadRequestException('Pri envalid pou pwodwi sa a');
+      }
+      return match;
+    }
+
+    // Chemen segondè — pwodwi san chan SENDER, sèlman RECIPIENT + mapping.
+    const map = product?.fixedRecipientToSenderDenominationsMap;
+    if (map && typeof map === 'object') {
+      const key = Object.keys(map).find((k) => Number(k) === clientUnitPrice);
+      if (key !== undefined) {
+        const senderValue = Number(map[key]);
+        if (Number.isFinite(senderValue) && senderValue > 0) return senderValue;
+      }
+    }
+
+    throw new BadRequestException(
+      'Pa ka valide pri pwodwi sa a — okenn done SENDER ou mapping disponib nan katalòg la',
+    );
   }
 
   // ─── History ──────────────────────────────────────────────────────────────
