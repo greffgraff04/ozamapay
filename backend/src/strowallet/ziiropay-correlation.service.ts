@@ -3,6 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
+import { isStaging } from '../config/app-env';
+import { assertNoRealProviderCallInStaging, mockStrowalletResponse } from '../config/provider-mock';
 
 const CHECK_DELAY_MS = 15 * 60 * 1000;
 const BASE_URL_ZIIROPAY = 'https://ziiropay.com/api/bitvcard';
@@ -60,6 +62,10 @@ export class ZiiropayCorrelationService {
   }
 
   private async fetchZiiropayCardStatus(cardId: string): Promise<string | undefined> {
+    if (isStaging()) {
+      return mockStrowalletResponse('fetch-nfccard-detail')?.response?.card_detail?.card_status;
+    }
+    assertNoRealProviderCallInStaging('ZiiroPay');
     // Trailing-slash/mode='live' PA touche isit la sou demand — menm egzansyon
     // ak checkHealth() nan strowallet.service.ts, tikè separe pou FAZ 0.
     const { data } = await axios.get(`${BASE_URL_ZIIROPAY}/fetch-nfccard-detail/`, {
@@ -71,6 +77,10 @@ export class ZiiropayCorrelationService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkPending(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] checkPending sote — koupe pou staging.');
+      return;
+    }
     if (this.isChecking) return;
     this.isChecking = true;
 

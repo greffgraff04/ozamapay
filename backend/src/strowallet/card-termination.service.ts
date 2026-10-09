@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { StrowalletService } from './strowallet.service';
+import { isStaging } from '../config/app-env';
 
 const CARD_CREATION_FEE_USD = 2.5;
 const CARD_TERMINATION_PENALTY_USD = 5;
@@ -250,6 +251,10 @@ export class CardTerminationService {
   // ── retry: every 2 minutes, re-check cards stuck in PENDING_RECHARGE ───────
   @Cron('0 */2 * * * *')
   async retryPendingRecharges(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] retryPendingRecharges sote — koupe pou staging.');
+      return;
+    }
     if (this.isRetryingPending) return;
     this.isRetryingPending = true;
 

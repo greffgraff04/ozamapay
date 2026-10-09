@@ -8,6 +8,8 @@ import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.se
 import axios from 'axios';
 import sharp from 'sharp';
 import type { CardCreationPending } from '@prisma/client';
+import { isStaging } from '../config/app-env';
+import { assertNoRealProviderCallInStaging, mockStrowalletResponse } from '../config/provider-mock';
 
 // 4 oct 2026 — tèks egzak Mr. Greffin bay pou kliyan an pandan cardkyc rete
 // "pending" (pa yon echèk — wè pollPendingCardCreations()).
@@ -196,12 +198,17 @@ export class StrowalletService {
         : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...restParams };
     const body = id_front_image !== undefined ? new URLSearchParams({ id_front_image }) : null;
     let data: any;
-    try {
-      ({ data } = await axios.post(url, body, { params: payload }));
-    } catch (error: any) {
-      const detail = error?.response?.data;
-      this.logger.error(`Strowallet API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
-      throw this.strowalletFailure(detail ?? error?.message);
+    if (isStaging()) {
+      data = mockStrowalletResponse(endpoint);
+    } else {
+      try {
+        assertNoRealProviderCallInStaging('StroWallet/ZiiroPay');
+        ({ data } = await axios.post(url, body, { params: payload }));
+      } catch (error: any) {
+        const detail = error?.response?.data;
+        this.logger.error(`Strowallet API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
+        throw this.strowalletFailure(detail ?? error?.message);
+      }
     }
     if (data?.success === false || data?.status === false) {
       this.logger.error(`Strowallet error [${endpoint}]: ${JSON.stringify(data)}`);
@@ -330,11 +337,16 @@ export class StrowalletService {
         ? { public_key: this.ZIIROPAY_PUBLIC_KEY, ...params }
         : { public_key: this.PUBLIC_KEY, mode: this.MODE, ...params };
     let data: any;
-    try {
-      ({ data } = await axios.get(url, { params: payload }));
-    } catch (error: any) {
-      this.logger.error(`Strowallet GET error [${endpoint}]: ${error?.message}`);
-      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+    if (isStaging()) {
+      data = mockStrowalletResponse(endpoint);
+    } else {
+      try {
+        assertNoRealProviderCallInStaging('StroWallet/ZiiroPay');
+        ({ data } = await axios.get(url, { params: payload }));
+      } catch (error: any) {
+        this.logger.error(`Strowallet GET error [${endpoint}]: ${error?.message}`);
+        throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+      }
     }
     if (data?.success === false || data?.status === false) {
       this.logger.error(`Strowallet GET failed [${endpoint}]: ${JSON.stringify(data)}`);
@@ -784,6 +796,10 @@ export class StrowalletService {
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async pollPendingCardCreations(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] pollPendingCardCreations sote — koupe pou staging.');
+      return;
+    }
     if (this.isPollingPendingCardCreations) return;
     this.isPollingPendingCardCreations = true;
 

@@ -6,8 +6,20 @@ import { join } from 'path';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { HealthService } from './health/health.service';
+import { assertStagingNotUsingProdDatabase } from './config/app-env';
 
 async function bootstrap() {
+  // Refuse to boot before touching anything else if a staging deploy is
+  // somehow wired to the prod database — see src/config/app-env.ts.
+  try {
+    assertStagingNotUsingProdDatabase();
+  } catch (err) {
+    console.error(
+      `FATAL: sèvè a p ap demare — ${err instanceof Error ? err.message : err}`,
+    );
+    process.exit(1);
+  }
+
   // Nou presize <NestExpressApplication> pou NestJS konnen n ap sèvi ak Express anba kod lan
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
@@ -60,12 +72,21 @@ async function bootstrap() {
 
   app.use(helmet());
 
+  // CORS_EXTRA_ORIGINS: comma-separated list appended to the prod allowlist,
+  // never replacing it — lets a staging frontend origin be allowed without
+  // touching this list. Unset in prod today, so behavior is unchanged there.
+  const extraOrigins = (process.env.CORS_EXTRA_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
     origin: [
       'https://ozamapay.vercel.app',
       'https://ozamapay.com',
       'https://www.ozamapay.com',
       /\.vercel\.app$/,
+      ...extraOrigins,
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

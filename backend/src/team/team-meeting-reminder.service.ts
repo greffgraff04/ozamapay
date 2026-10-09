@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { isStaging } from '../config/app-env';
 
 @Injectable()
 export class TeamMeetingReminderService {
+  private readonly logger = new Logger(TeamMeetingReminderService.name);
+
   constructor(
     private prisma: PrismaService,
     private mail: MailService,
@@ -14,6 +17,10 @@ export class TeamMeetingReminderService {
   // haven't been reminded yet. reminderSent gates this so we never double-send.
   @Cron(CronExpression.EVERY_MINUTE)
   async sendUpcomingMeetingReminders() {
+    if (isStaging()) {
+      this.logger.log('[staging] sendUpcomingMeetingReminders sote — koupe pou staging.');
+      return;
+    }
     const now = new Date();
     const in30Min = new Date(now.getTime() + 30 * 60 * 1000);
 

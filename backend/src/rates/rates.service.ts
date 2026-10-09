@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
+import { isStaging } from '../config/app-env';
 
 @Injectable()
 export class RatesService {
+  private readonly logger = new Logger(RatesService.name);
   private readonly STALE_DAYS = 3; // suggested default — confirm cadence with COO
 
   constructor(
@@ -43,6 +45,10 @@ export class RatesService {
   // si cadans cron lan ta chanje pita.
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async checkRateStaleness() {
+    if (isStaging()) {
+      this.logger.log('[staging] checkRateStaleness sote — koupe pou staging.');
+      return;
+    }
     const rates = await this.prisma.rate.findMany();
     const staleMs = this.STALE_DAYS * 24 * 60 * 60 * 1000;
     for (const rate of rates) {

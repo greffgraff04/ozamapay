@@ -2,6 +2,12 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { isStaging } from '../config/app-env';
+import {
+  assertNoRealProviderCallInStaging,
+  mockMoncashPayCreateResponse,
+  mockMoncashPayStatusResponse,
+} from '../config/provider-mock';
 
 const BASE_URL = 'https://hvlmeoqyxaguzcujpmit.supabase.co/functions/v1';
 const FEE_RATE = 0.089; // 6% OZAMAPAY + 2.9% MonCash processing
@@ -44,30 +50,35 @@ export class MonCashConnectService {
     const referenceId = `ozama_${userId}_${Date.now()}`;
 
     let data: any;
-    try {
-      const res = await fetch(`${BASE_URL}/pay-create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.MONCASHCONNECT_SECRET_KEY}`,
-        },
-        body: JSON.stringify({
-          amount: amountHTG,
-          referenceId,
-          returnUrl: 'https://ozamapay.com/dashboard',
-        }),
-      });
+    if (isStaging()) {
+      data = mockMoncashPayCreateResponse();
+    } else {
+      try {
+        assertNoRealProviderCallInStaging('MonCashConnect');
+        const res = await fetch(`${BASE_URL}/pay-create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.MONCASHCONNECT_SECRET_KEY}`,
+          },
+          body: JSON.stringify({
+            amount: amountHTG,
+            referenceId,
+            returnUrl: `${process.env.FRONTEND_URL || 'https://ozamapay.com'}/dashboard`,
+          }),
+        });
 
-      data = await res.json();
+        data = await res.json();
 
-      if (!res.ok) {
-        this.logger.error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
+        if (!res.ok) {
+          this.logger.error(`MonCashConnect pay-create failed: ${JSON.stringify(data)}`);
+          throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
+        }
+      } catch (err: any) {
+        if (err instanceof BadRequestException) throw err;
+        this.logger.error(`MonCashConnect pay-create error: ${(err as Error).message}`);
         throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
       }
-    } catch (err: any) {
-      if (err instanceof BadRequestException) throw err;
-      this.logger.error(`MonCashConnect pay-create error: ${(err as Error).message}`);
-      throw new BadRequestException('Nou rankontre yon pwoblèm teknik. Tanpri eseye ankò pita oswa kontakte sipò OZAMAPAY.');
     }
 
     const paymentUrl: string = data.paymentUrl ?? data.payment_url ?? data.url ?? '';
@@ -190,7 +201,11 @@ export class MonCashConnectService {
   // Returns 'COMPLETED' | 'FAILED' | 'PENDING' on a known answer, null when
   // the endpoint is unavailable or the response is unrecognisable.
   async checkPaymentStatus(referenceId: string): Promise<'COMPLETED' | 'FAILED' | 'PENDING' | null> {
+    if (isStaging()) {
+      return mockMoncashPayStatusResponse().status;
+    }
     try {
+      assertNoRealProviderCallInStaging('MonCashConnect');
       const res = await fetch(`${BASE_URL}/pay-status`, {
         method: 'POST',
         headers: {
@@ -228,6 +243,10 @@ export class MonCashConnectService {
   //   • status FAILED / null (endpoint unavailable) → mark CANCELLED
   @Cron('*/5 * * * *')
   async expireStalePayments(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] expireStalePayments sote — koupe pou staging.');
+      return;
+    }
     const cutoff = new Date(Date.now() - STALE_MINUTES * 60 * 1000);
 
     const stale = await this.prisma.transaction.findMany({

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { TronUsageService } from './tron-usage.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
+import { isStaging } from '../config/app-env';
 
 // Alert only, never mutates anything — a lightweight "is the crypto
 // pipeline actually alive" check on top of HealthService (which only
@@ -32,6 +33,10 @@ export class TronHealthService {
 
   @Cron('*/15 * * * *')
   private async scheduledHealthCheck(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] scheduledHealthCheck sote — koupe pou staging.');
+      return;
+    }
     try {
       await this.runHealthCheck();
     } catch (err: any) {
