@@ -64,6 +64,42 @@ describe('app-env', () => {
       process.env.DATABASE_URL = 'postgres://user:pass@host/ozamapay_staging';
       expect(() => load().assertStagingNotUsingProdDatabase()).not.toThrow();
     });
+
+    it('does not false-positive on a Neon connection string whose USERNAME is "neondb_owner" — only the db name matters', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.DATABASE_URL = 'postgresql://neondb_owner:secret@ep-some-project.neon.tech/ozamapay_staging?sslmode=require';
+      expect(() => load().assertStagingNotUsingProdDatabase()).not.toThrow();
+    });
+
+    it('refuses when the database name is exactly "neondb"', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.DATABASE_URL = 'postgresql://neondb_owner:secret@ep-some-project.neon.tech/neondb?sslmode=require';
+      expect(() => load().assertStagingNotUsingProdDatabase()).toThrow();
+    });
+
+    it('refuses on a case-insensitive match (e.g. "NeonDB")', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.DATABASE_URL = 'postgresql://neondb_owner:secret@ep-some-project.neon.tech/NeonDB?sslmode=require';
+      expect(() => load().assertStagingNotUsingProdDatabase()).toThrow();
+    });
+
+    it('fails closed (refuses) when DATABASE_URL is not a valid URL', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.DATABASE_URL = 'not-a-valid-url';
+      expect(() => load().assertStagingNotUsingProdDatabase()).toThrow();
+    });
+
+    it('fails closed (refuses) when DATABASE_URL is unset', () => {
+      process.env.APP_ENV = 'staging';
+      delete process.env.DATABASE_URL;
+      expect(() => load().assertStagingNotUsingProdDatabase()).toThrow();
+    });
+
+    it('fails closed (refuses) when DATABASE_URL is valid but has no database name in the path', () => {
+      process.env.APP_ENV = 'staging';
+      process.env.DATABASE_URL = 'postgresql://neondb_owner:secret@ep-some-project.neon.tech/';
+      expect(() => load().assertStagingNotUsingProdDatabase()).toThrow();
+    });
   });
 
   describe('defaultTrongridBaseUrlForNetwork', () => {

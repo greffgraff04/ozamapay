@@ -12,12 +12,27 @@ export function isStaging(): boolean {
 // of the exit path (and this stays unit-testable without forking a process).
 // Deliberately doesn't log/include the DATABASE_URL value itself — only the
 // fact that it matched — per the no-secrets-in-output rule.
+//
+// Must check the DATABASE NAME only (URL pathname), not the full URL —
+// Neon's default connection string username is literally "neondb_owner",
+// so a naive substring check on the whole URL false-positives on any Neon
+// project (prod or not), e.g. postgresql://neondb_owner:***@host/ozamapay_staging.
+// An invalid URL or a missing database name both fail closed (treated as
+// "refuse"), since we can't prove it's safe.
 export function assertStagingNotUsingProdDatabase(): void {
   if (!isStaging()) return;
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (dbUrl.includes('neondb')) {
+
+  let dbName: string | null = null;
+  try {
+    const parsed = new URL(process.env.DATABASE_URL || '');
+    dbName = parsed.pathname.split('/').filter(Boolean)[0] || null;
+  } catch {
+    dbName = null;
+  }
+
+  if (!dbName || dbName.toLowerCase() === 'neondb') {
     throw new Error(
-      'APP_ENV=staging men DATABASE_URL sanble pwente sou baz done pwodiksyon (neondb) — refize demare.',
+      'APP_ENV=staging men DATABASE_URL envalid oswa pwente sou baz done pwodiksyon (neondb) — refize demare.',
     );
   }
 }
