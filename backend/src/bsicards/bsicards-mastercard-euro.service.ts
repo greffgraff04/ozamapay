@@ -2,6 +2,13 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { isStaging } from '../config/app-env';
+import {
+  assertNoRealProviderCallInStaging,
+  mockBsicardsResponse,
+  mockBsicardsSensitiveCardScriptUrl,
+  mockBsicardsSensitiveCardScriptBody,
+} from '../config/provider-mock';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_EUR';
 const RATE_KEY = 'EUR_HTG';
@@ -28,14 +35,19 @@ export class BSICardsMastercardEuroService {
   private async bsicardsPost(endpoint: string, body: Record<string, unknown>) {
     const url = `${this.BASE_URL}${endpoint}`;
     let data: any;
-    try {
-      ({ data } = await axios.post(url, body, {
-        headers: { publickey: this.PUBLIC_KEY, secretkey: this.SECRET_KEY },
-      }));
-    } catch (error: any) {
-      const detail = error?.response?.data;
-      this.logger.error(`BSICards API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
-      throw this.bsicardsFailure(detail ?? error?.message);
+    if (isStaging()) {
+      data = mockBsicardsResponse(endpoint);
+    } else {
+      try {
+        assertNoRealProviderCallInStaging('BSICards');
+        ({ data } = await axios.post(url, body, {
+          headers: { publickey: this.PUBLIC_KEY, secretkey: this.SECRET_KEY },
+        }));
+      } catch (error: any) {
+        const detail = error?.response?.data;
+        this.logger.error(`BSICards API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
+        throw this.bsicardsFailure(detail ?? error?.message);
+      }
     }
     if (data?.success === false || data?.status === false) {
       this.logger.error(`BSICards error [${endpoint}]: ${JSON.stringify(data)}`);
@@ -250,10 +262,17 @@ export class BSICardsMastercardEuroService {
     // ki ekspire nan 2 minit). Nou PA janm egzekite script sa a — nou li
     // TÈKS brit li sèlman, epi ekstrè URL anndan `var url = "..."` ak yon
     // regex. Sa evite egzekite JS deyò nan kontèks aplikasyon nou an.
-    const scriptRes = await axios.get(scriptUrl, { responseType: 'text', transformResponse: (r) => r });
-    const match = String(scriptRes.data).match(/var\s+url\s*=\s*"([^"]+)"/);
+    let scriptBody: string;
+    if (isStaging()) {
+      scriptBody = mockBsicardsSensitiveCardScriptBody();
+    } else {
+      assertNoRealProviderCallInStaging('BSICards (4payments.io sensitive-card script)');
+      const scriptRes = await axios.get(scriptUrl, { responseType: 'text', transformResponse: (r) => r });
+      scriptBody = String(scriptRes.data);
+    }
+    const match = scriptBody.match(/var\s+url\s*=\s*"([^"]+)"/);
     if (!match) {
-      this.logger.error(`BSICards mastercard-euro: pa jwenn URL anndan script la — ${String(scriptRes.data).slice(0, 500)}`);
+      this.logger.error(`BSICards mastercard-euro: pa jwenn URL anndan script la — ${scriptBody.slice(0, 500)}`);
       throw new BadRequestException('Nou pa ka chaje detay kat la kounye a. Eseye ankò.');
     }
 

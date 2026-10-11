@@ -12,6 +12,18 @@ import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { ApiService } from '../api/api.service';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+} from 'class-validator';
+import { IsMoneyAmount } from '../common/validation/money-amount.decorator';
 
 // ── Named constants — easy to tune ────────────────────────────────────────
 const BUSINESS_WITHDRAW_FEE = 0.015; // 1.5%
@@ -25,36 +37,113 @@ const BUSINESS_PAYMENT_FEE: Record<string, number> = {
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
+// Okenn klas sa yo pa t gen okenn dekoratè class-validator (wè odit) —
+// sa ki ta fè `whitelist: true` sipriime TOUT chan yo si yo pa t dekore
+// anvan. Chak chan deklare la a se EGZAKTEMAN sa service la li deja.
+
+export const BUSINESS_TIERS = ['STARTER', 'PRO', 'ENTERPRISE'];
 
 export class ApplyBusinessDto {
+  @IsString()
+  @IsNotEmpty()
   businessName: string;
+
+  @IsString()
+  @IsNotEmpty()
   category: string;
+
+  @IsIn(BUSINESS_TIERS)
   tier: 'STARTER' | 'PRO' | 'ENTERPRISE';
+
+  @IsString()
+  @IsNotEmpty()
   phone: string;
+
+  @IsString()
+  @IsNotEmpty()
   address: string;
 }
 
+export const BUSINESS_WITHDRAW_DESTINATIONS = ['PERSONAL_WALLET', 'MONCASH', 'BANK'];
+// Pa t gen okenn plafon biznis egziste pou retrè business — gad-fou sanite,
+// pa yon règ metye strik.
+export const BUSINESS_WITHDRAW_MAX_HTG = 500_000;
+
 export class WithdrawDto {
+  @IsMoneyAmount(BUSINESS_WITHDRAW_MAX_HTG)
   amount: number;
+
+  @IsIn(BUSINESS_WITHDRAW_DESTINATIONS)
   destination: 'PERSONAL_WALLET' | 'MONCASH' | 'BANK';
+
+  @IsOptional()
+  @IsString()
   accountInfo?: string;
+
+  @IsString()
+  @Matches(/^\d{4,6}$/, { message: 'pin dwe 4 a 6 chif' })
   pin: string;
 }
 
+export const BUSINESS_MEMBER_ROLES = ['ACCOUNTANT', 'CASHIER'];
+
 export class InviteMemberDto {
+  @IsEmail()
   email: string;
+
+  @IsIn(BUSINESS_MEMBER_ROLES)
   role: 'ACCOUNTANT' | 'CASHIER';
 }
 
+export const API_KEY_MODES = ['LIVE', 'TEST'];
+export const API_KEY_PERMISSIONS = ['READ', 'WRITE', 'WEBHOOK'];
+
 export class CreateApiKeyDto {
+  @IsString()
+  @IsNotEmpty()
   name: string;
+
+  @IsIn(API_KEY_MODES)
   mode: 'LIVE' | 'TEST';
+
+  @IsOptional()
+  @IsArray()
+  @IsIn(API_KEY_PERMISSIONS, { each: true })
   permissions?: ('READ' | 'WRITE' | 'WEBHOOK')[];
 }
 
+// Sèl evenman biznis ki janm deklanche reyèlman (BusinessService.fireWebhooks
+// nan ApiService) — 'test.ping' se yon evenman entèn pou testBusinessWebhook,
+// pa yon bagay yon kliyan ta dwe anrejistre.
+export const BUSINESS_WEBHOOK_EVENTS = ['payment.received'];
+
 export class CreateBizWebhookDto {
+  // https sèlman — anpeche yon URL http:// oswa yon lòt schéma (egzanp
+  // file://) ki ta ka ouvri yon SSRF lè testBusinessWebhook rele l.
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   url: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsIn(BUSINESS_WEBHOOK_EVENTS, { each: true })
   events: string[];
+}
+
+// Pa t gen okenn plafon pou peman biznis (POST /business/:id/pay) —
+// menm echèl ak retrè business pou konsistans.
+export const BUSINESS_PAYMENT_MAX_HTG = 500_000;
+
+export class PayBusinessDto {
+  @IsMoneyAmount(BUSINESS_PAYMENT_MAX_HTG)
+  amount: number;
+
+  @IsString()
+  @Matches(/^\d{4,6}$/, { message: 'pin dwe 4 a 6 chif' })
+  pin: string;
+
+  @IsOptional()
+  @IsString()
+  apiPaymentId?: string;
 }
 
 const API_TIERS = ['PRO', 'ENTERPRISE'];

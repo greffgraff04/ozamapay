@@ -19,6 +19,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { MonCashConnectService } from './moncashconnect.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { MonCashTopupDto, MonCashConnectInitiateDto } from './dto/moncash-topup.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -32,15 +33,14 @@ export class PaymentsController {
   @Post('moncash/topup')
   @UseGuards(JwtAuthGuard)
   async createTopup(
-    @Body('amount') amount: number,
-    @Body('agentId') agentId: string,
+    @Body() body: MonCashTopupDto,
     @Req() req,
   ) {
     const paymentUrl =
       await this.paymentsService.createMonCashPayment(
-        amount,
+        body.amount,
         req.user?.id,
-        agentId,
+        body.agentId,
       );
 
     return {
@@ -85,10 +85,10 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async initiateMoncashConnect(
     @Req() req: any,
-    @Body('amount') amount: number,
+    @Body() body: MonCashConnectInitiateDto,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.monCashConnectService.createPaymentRequest(userId, Number(amount));
+    return this.monCashConnectService.createPaymentRequest(userId, Number(body.amount));
   }
 
   @Post('moncashconnect/webhook')

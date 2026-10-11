@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { isStaging } from '../config/app-env';
+import { assertNoRealProviderCallInStaging, mockBsicardsResponse } from '../config/provider-mock';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_USD';
 
@@ -32,14 +34,19 @@ export class BSICardsMastercardService {
   private async bsicardsMultipartPost(endpoint: string, form: FormData) {
     const url = `${this.BASE_URL}${endpoint}`;
     let data: any;
-    try {
-      ({ data } = await axios.post(url, form, {
-        headers: { publickey: this.PUBLIC_KEY, secretkey: this.SECRET_KEY },
-      }));
-    } catch (error: any) {
-      const detail = error?.response?.data;
-      this.logger.error(`BSICards API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
-      throw this.bsicardsFailure(detail ?? error?.message);
+    if (isStaging()) {
+      data = mockBsicardsResponse(endpoint);
+    } else {
+      try {
+        assertNoRealProviderCallInStaging('BSICards');
+        ({ data } = await axios.post(url, form, {
+          headers: { publickey: this.PUBLIC_KEY, secretkey: this.SECRET_KEY },
+        }));
+      } catch (error: any) {
+        const detail = error?.response?.data;
+        this.logger.error(`BSICards API error [${endpoint}]: ${JSON.stringify(detail) ?? error?.message}`);
+        throw this.bsicardsFailure(detail ?? error?.message);
+      }
     }
     if (data?.success === false || data?.status === false) {
       this.logger.error(`BSICards error [${endpoint}]: ${JSON.stringify(data)}`);

@@ -5,8 +5,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { deriveTronPrivateKey, getTreasuryAddress, getTreasuryPrivateKey } from './hd-wallet.util';
 import { TronUsageService } from './tron-usage.service';
+import { isStaging, defaultTrongridBaseUrlForNetwork } from '../config/app-env';
 
-const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
+const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || defaultTrongridBaseUrlForNetwork();
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
 const USDT_TRC20_CONTRACT = process.env.USDT_TRC20_CONTRACT_ADDRESS || 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 const MIN_USDT_THRESHOLD = Number(process.env.SWEEP_MIN_USDT_THRESHOLD || 1);
@@ -86,6 +87,10 @@ export class SweepService {
 
   @Cron('*/15 * * * *')
   private async scheduledSweepSafetyNet(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] scheduledSweepSafetyNet sote — koupe pou staging.');
+      return;
+    }
     try {
       await this.runAutoSweep();
     } catch (err: any) {

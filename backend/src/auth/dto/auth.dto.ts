@@ -3,6 +3,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  Matches,
   MinLength,
   IsOptional,
   IsString,
@@ -34,4 +35,41 @@ export class LoginDto {
   @IsOptional()
   @IsString()
   dailyCode?: string;
+}
+
+// `AuthController.forgotPassword` te fè `email.toLowerCase()` san verifye
+// kalite valè a — yon `email` undefined/non-string ta fè sèvè a krache yon
+// erè 500 olye yon 400 pwòp (gap idantifye nan odit la).
+export class ForgotPasswordDto {
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  // AuthService.resetPassword deja revalide longè 6 karaktè minimòm kòm
+  // dezyèm kouch defans — DTO a se premye filtraj la.
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class Enable2FADto {
+  // Kòd TOTP estanda : 6 chif.
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'token dwe 6 chif' })
+  token: string;
+}
+
+export class Complete2FADto {
+  @IsString()
+  @IsNotEmpty()
+  tempToken: string;
+
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'totpCode dwe 6 chif' })
+  totpCode: string;
 }

@@ -6,6 +6,19 @@ import { AdminGuard } from './admin.guard';
 import { MasterGuard } from './master.guard';
 import { CooGuard } from './coo.guard';
 import { AgentAccessGuard } from './agent-access.guard';
+import {
+  AdminTopupDto,
+  UpdateAgentPackageDto,
+  ProcessFinanceRequestDto,
+  ProcessTransactionDto,
+  UpdateBusinessTierDto,
+} from './dto/admin-money.dto';
+import {
+  ReviewKycDto,
+  SuspendUserDto,
+  InviteEmployeeDto,
+  RejectReasonDto,
+} from './dto/admin-misc.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -40,7 +53,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async reviewKyc(
     @Param('id') kycId: string,
-    @Body() body: { status: 'APPROVED' | 'REJECTED'; adminId?: string },
+    @Body() body: ReviewKycDto,
     @Req() req: any
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
@@ -54,7 +67,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async adminTopup(
     @Param('userId') userId: string,
-    @Body() body: { amount: number },
+    @Body() body: AdminTopupDto,
     @Req() req: any
   ) {
     const adminId = req.user?.id || req.user?.sub;
@@ -74,7 +87,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async updateAgentPackage(
     @Param('agentId') agentId: string,
-    @Body() body: { packageType?: string; customCommission?: number; maxLimit?: number },
+    @Body() body: UpdateAgentPackageDto,
   ) {
     return this.adminService.updateAgentPackage(agentId, body);
   }
@@ -83,7 +96,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async adminTopupAgent(
     @Param('agentId') agentId: string,
-    @Body() body: { amount: number }
+    @Body() body: AdminTopupDto
   ) {
     return this.adminService.adminTopupAgent(agentId, body.amount);
   }
@@ -92,7 +105,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async suspendUser(
     @Param('userId') userId: string,
-    @Body() body: { isSuspended: boolean }
+    @Body() body: SuspendUserDto
   ) {
     return this.adminService.suspendUser(userId, body.isSuspended);
   }
@@ -108,7 +121,7 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   async processFinanceRequest(
     @Param('id') id: string,
-    @Body() body: { status: 'COMPLETED' | 'REJECTED'; adminNote?: string },
+    @Body() body: ProcessFinanceRequestDto,
   ) {
     return this.adminService.processFinanceRequest(id, body.status, body.adminNote);
   }
@@ -130,7 +143,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async processManualTransaction(
     @Param('id') txId: string,
-    @Body() body: { status: 'COMPLETED' | 'REJECTED'; adminId?: string },
+    @Body() body: ProcessTransactionDto,
     @Req() req: any
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
@@ -146,7 +159,7 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, MasterGuard)
   @HttpCode(HttpStatus.CREATED)
   async inviteEmployee(
-    @Body() body: { email: string; role: string },
+    @Body() body: InviteEmployeeDto,
     @Req() req: any,
   ) {
     return this.adminService.inviteEmployee(body.email, body.role, req.user.id);
@@ -221,7 +234,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async rejectBusinessApplication(
     @Param('businessId') businessId: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
     @Req() req: any,
   ) {
     const adminId = req.user?.id;
@@ -241,7 +254,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async updateBusinessTier(
     @Param('id') id: string,
-    @Body() body: { tier: 'STARTER' | 'PRO' | 'ENTERPRISE' },
+    @Body() body: UpdateBusinessTierDto,
     @Req() req: any,
   ) {
     const adminId = req.user?.id;
@@ -273,7 +286,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async rejectBusinessWithdrawal(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
     @Req() req: any,
   ) {
     const adminId = req.user?.id;

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BrevoClient } from '@getbrevo/brevo';
+import { isStaging } from '../config/app-env';
 
 @Injectable()
 export class MailService {
@@ -105,7 +106,23 @@ export class MailService {
 
   // ── private send helper ──────────────────────────────────────────────────
 
+  // STAGING_EMAIL_ALLOWLIST: comma-separated recipient emails. In staging,
+  // only those addresses actually get sent to Brevo — every other email is
+  // logged and skipped, so staging never spams a real customer inbox.
+  // Outside staging this check is a no-op (isStaging() short-circuits it).
+  private isAllowedInStaging(to: string): boolean {
+    const allowlist = (process.env.STAGING_EMAIL_ALLOWLIST || '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    return allowlist.includes(to.trim().toLowerCase());
+  }
+
   private async send(to: string, subject: string, html: string): Promise<void> {
+    if (isStaging() && !this.isAllowedInStaging(to)) {
+      console.log(`[staging] Email "${subject}" bay ${to} SOTE — pa nan STAGING_EMAIL_ALLOWLIST.`);
+      return;
+    }
     try {
       console.log(`[DIAG] MailService.send: BEFORE brevo.sendTransacEmail to=${to} subject="${subject}"`);
       const result = await this.brevo.transactionalEmails.sendTransacEmail({

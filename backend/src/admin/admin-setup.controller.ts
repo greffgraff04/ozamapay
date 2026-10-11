@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { CompleteSetupDto } from './dto/complete-setup.dto';
 
 @Controller('admin/setup')
 export class AdminSetupController {
@@ -12,16 +13,7 @@ export class AdminSetupController {
 
   @Post('complete')
   @HttpCode(HttpStatus.CREATED)
-  completeSetup(
-    @Body() body: {
-      token: string;
-      firstName: string;
-      lastName: string;
-      phone: string;
-      password: string;
-      dailyCode: string;
-    },
-  ) {
+  completeSetup(@Body() body: CompleteSetupDto) {
     const { token, dailyCode, ...personalInfo } = body;
     return this.adminService.acceptInvitation(token, personalInfo, dailyCode);
   }

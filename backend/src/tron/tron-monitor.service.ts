@@ -4,8 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { SweepService } from './sweep.service';
 import { TronUsageService } from './tron-usage.service';
+import { isStaging, defaultTrongridBaseUrlForNetwork } from '../config/app-env';
 
-const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || 'https://api.trongrid.io';
+const TRONGRID_BASE_URL = process.env.TRONGRID_BASE_URL || defaultTrongridBaseUrlForNetwork();
 const TRONGRID_API_KEY = process.env.TRONGRID_API_KEY;
 // Mainnet USDT TRC20 contract — override via env for testnet/shadownet.
 const USDT_TRC20_CONTRACT = process.env.USDT_TRC20_CONTRACT_ADDRESS || 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -61,6 +62,13 @@ export class TronMonitorService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    // Not a @Cron, but functionally one: a perpetual loop that detects
+    // on-chain deposits and credits real money via TronGrid — same staging
+    // safety requirement as the decorated crons applies here.
+    if (isStaging()) {
+      this.logger.log('[staging] TronMonitorService.runForever pa demare — koupe pou staging.');
+      return;
+    }
     // Fire-and-forget: this loop runs for the lifetime of the process.
     this.runForever().catch((err) => this.logger.error(`TronMonitor loop kraze: ${err.message}`));
   }

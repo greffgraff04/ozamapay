@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { BSICardsMastercardEuroService } from './bsicards-mastercard-euro.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
+import { isStaging } from '../config/app-env';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_EUR';
 const DRIFT_TOLERANCE_EUR = 0.01; // evite fo-pozitif ki soti nan awondi Decimal
@@ -31,6 +32,10 @@ export class BSICardsBalanceSyncService {
 
   @Cron(CronExpression.EVERY_10_MINUTES)
   async syncAllBalances(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] syncAllBalances sote — koupe pou staging.');
+      return;
+    }
     if (this.isSyncing) return;
     this.isSyncing = true;
 

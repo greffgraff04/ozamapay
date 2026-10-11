@@ -16,7 +16,8 @@ import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KycApprovedGuard } from './kyc-approved.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
-import { UpdateAddressDto } from './dto/kyc.dto';
+import { CreateKycDto, UpdateAddressDto } from './dto/kyc.dto';
+import { validateInMode } from '../common/validation/validate-in-mode';
 
 @Controller('kyc')
 @UseGuards(JwtAuthGuard)
@@ -69,13 +70,21 @@ export class KycController {
       ? await this.imagekitService.uploadFile(files.userPhotoFile[0], 'kyc')
       : '';
 
-    return this.kycService.submitKyc(req.user.id, {
+    const merged = {
       ...parsedData,
       idType: body.idType,
       idNumber: body.idNumber,
       idImage: idImageUrl,
       userPhoto: userPhotoUrl,
-    });
+    };
+
+    // CreateKycDto egziste deja, byen dekore, men pa t janm referanse isit
+    // la (gap idantifye nan odit la — body a te type `any`). Multipart +
+    // blob JSON pa pèmèt @Body() dto:X dirèkteman, se pou sa nou validè
+    // manyèlman isit la, menm semantik VALIDATION_MODE ak lòt wout yo.
+    const validated = await validateInMode(CreateKycDto, merged, 'POST /kyc/submit');
+
+    return this.kycService.submitKyc(req.user.id, validated as CreateKycDto);
   }
 
   @Get('status')

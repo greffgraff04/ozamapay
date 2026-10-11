@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { isStaging } from '../config/app-env';
 
 export interface MigrationStatus {
   inSync: boolean;
@@ -26,6 +27,10 @@ export class HealthService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async checkHealth(): Promise<void> {
+    if (isStaging()) {
+      this.logger.log('[staging] checkHealth sote — koupe pou staging.');
+      return;
+    }
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       this.consecutiveFailures = 0;

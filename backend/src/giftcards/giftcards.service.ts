@@ -4,8 +4,11 @@ import { Prisma, TransactionType, TransactionStatus, LedgerType } from '@prisma/
 import { PrismaService } from '../prisma/prisma.service';
 import { ReloadlyAuthService } from '../reloadly/reloadly-auth.service';
 
-const RELOADLY_BASE = 'https://giftcards.reloadly.com';
-const GIFTCARDS_AUDIENCE = 'https://giftcards.reloadly.com';
+// Reloadly does have a real sandbox (sandbox-giftcards.reloadly.com, with
+// its own audience) — unlike StroWallet/BSICards/MonCashConnect, no mock
+// adapter is needed here, staging just points these at the sandbox via env.
+const RELOADLY_BASE = process.env.RELOADLY_BASE_URL || 'https://giftcards.reloadly.com';
+const GIFTCARDS_AUDIENCE = process.env.RELOADLY_AUTH_AUDIENCE || 'https://giftcards.reloadly.com';
 const MARGIN = 0.05;
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
