@@ -16,7 +16,14 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  Enable2FADto,
+  Complete2FADto,
+} from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -79,8 +86,8 @@ export class AuthController {
   // =========================
   @Post('forgot-password')
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  forgotPassword(@Body('email') email: string) {
-    return this.authService.forgotPassword(email);
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
   }
 
   // =========================
@@ -88,11 +95,8 @@ export class AuthController {
   // =========================
   @Post('reset-password')
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  resetPassword(
-    @Body('token') token: string,
-    @Body('newPassword') newPassword: string,
-  ) {
-    return this.authService.resetPassword(token, newPassword);
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
   // =========================
@@ -112,10 +116,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   enable2FA(
     @Req() req: any,
-    @Body('token') token: string,
+    @Body() dto: Enable2FADto,
   ) {
     const userId = req.user.id || req.user.sub;
-    return this.authService.enable2FA(userId, token);
+    return this.authService.enable2FA(userId, dto.token);
   }
 
   // =========================
@@ -123,11 +127,8 @@ export class AuthController {
   // =========================
   @Post('2fa/complete')
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  complete2FA(
-    @Body('tempToken') tempToken: string,
-    @Body('totpCode') totpCode: string,
-  ) {
-    return this.authService.complete2FA(tempToken, totpCode);
+  complete2FA(@Body() dto: Complete2FADto) {
+    return this.authService.complete2FA(dto.tempToken, dto.totpCode);
   }
 
   // =========================
