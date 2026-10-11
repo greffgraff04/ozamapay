@@ -13,6 +13,12 @@ import {
   ProcessTransactionDto,
   UpdateBusinessTierDto,
 } from './dto/admin-money.dto';
+import {
+  ReviewKycDto,
+  SuspendUserDto,
+  InviteEmployeeDto,
+  RejectReasonDto,
+} from './dto/admin-misc.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -47,7 +53,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async reviewKyc(
     @Param('id') kycId: string,
-    @Body() body: { status: 'APPROVED' | 'REJECTED'; adminId?: string },
+    @Body() body: ReviewKycDto,
     @Req() req: any
   ) {
     const adminId = req.user?.id || body.adminId || "ADMIN-SYS";
@@ -99,7 +105,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async suspendUser(
     @Param('userId') userId: string,
-    @Body() body: { isSuspended: boolean }
+    @Body() body: SuspendUserDto
   ) {
     return this.adminService.suspendUser(userId, body.isSuspended);
   }
@@ -153,7 +159,7 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, MasterGuard)
   @HttpCode(HttpStatus.CREATED)
   async inviteEmployee(
-    @Body() body: { email: string; role: string },
+    @Body() body: InviteEmployeeDto,
     @Req() req: any,
   ) {
     return this.adminService.inviteEmployee(body.email, body.role, req.user.id);
@@ -228,7 +234,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async rejectBusinessApplication(
     @Param('businessId') businessId: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
     @Req() req: any,
   ) {
     const adminId = req.user?.id;
@@ -280,7 +286,7 @@ export class AdminController {
   @UseGuards(CooGuard)
   async rejectBusinessWithdrawal(
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: RejectReasonDto,
     @Req() req: any,
   ) {
     const adminId = req.user?.id;
