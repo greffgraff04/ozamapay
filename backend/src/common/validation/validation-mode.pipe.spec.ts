@@ -83,6 +83,15 @@ describe('ValidationModePipe — VALIDATION_MODE (hotfix ValidationPipe étape 2
       const result = await pipe.transform(payload, metadata);
       expect(result.champNonDeklare).toBe('rete la');
     });
+
+    it('pa tranfòme TYP okenn chan — "amount" rete yon string si li rive kon string (mod "log" pa janm itilize enforcePipe/transform:true, li retounen `value` orijinal la san pase nan class-transformer)', async () => {
+      const pipe = buildPipe();
+      const payload = { name: 'ok', amount: '50' as any };
+      const result = await pipe.transform(payload, metadata);
+      expect(result).toBe(payload);
+      expect(typeof result.amount).toBe('string');
+      expect(result.amount).toBe('50');
+    });
   });
 
   it('VALIDATION_MODE absan oswa valè envalid tonbe sou "log" pa default', async () => {

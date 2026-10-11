@@ -49,5 +49,13 @@ describe('validateInMode (POST /kyc/submit — multipart, pa ka itilize @Body() 
       expect((result as any).extraField).toBe('rete la');
       expect((result as any).name).toBe('');
     });
+
+    it('pa tranfòme TYP okenn chan — retounen `data` orijinal la, pa `instance` la (ki pase nan plainToInstance)', async () => {
+      const payload = { name: 'ok', age: '30' as any };
+      const result = await validateInMode(SampleDto, payload, 'POST /test');
+      expect(result).toBe(payload);
+      expect(typeof (result as any).age).toBe('string');
+      expect((result as any).age).toBe('30');
+    });
   });
 });
