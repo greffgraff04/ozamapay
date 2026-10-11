@@ -2553,7 +2553,7 @@ export default function Dashboard() {
                       </p>
                       <img src="/moncashqrcode.png" alt="QR Code MonCash" className="w-32 h-32 object-contain rounded-lg" />
                       <p className="font-medium text-[11px]" style={{ color: colors.accent }}>
-                        Si ou itilize app MonCash, skane QR code a — pa gen frè!
+                        Si ou itilize app MonCash, skane QR code a pou voye lajan an.
                       </p>
                     </div>
                   )}
@@ -2616,6 +2616,22 @@ export default function Dashboard() {
                       )}
                     </button>
                   </div>
+                  {topUpAmount && Number(topUpAmount) > 0 && (() => {
+                    const feeAmount = Math.round(Number(topUpAmount) * 0.06);
+                    const amountAfterFee = Number(topUpAmount) - feeAmount;
+                    return (
+                      <div className="pt-2 border-t space-y-1 animate-in fade-in mb-2" style={{ borderColor: colors.border }}>
+                        <div className="flex justify-between">
+                          <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>Frè 6%</span>
+                          <span className="font-medium italic text-[10px]" style={{ color: colors.textSecondary }}>{feeAmount.toLocaleString()} HTG</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>Wap Resevwa</span>
+                          <span className="font-black italic text-[10px]" style={{ color: colors.accent }}>{amountAfterFee.toLocaleString()} HTG</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <button
                     onClick={() => handlePaymentLogic()}
                     disabled={topupLoading || !(topUpAmount && selectedMethod && topUpType === 'MANUAL')}

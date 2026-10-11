@@ -31,7 +31,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Ki frè OZAMAPAY mande?',
-    a: 'Topup: 6%. Retrè: 2%. KYC: ~3,375 HTG yon fwa. Kreye kat: GRATIS.',
+    a: 'Topup manyèl: 6%. Topup MonCash Otomatik: 8,9% (6% OZAMAPAY + 2,9% frè MonCash). Retrè: 2%. KYC: ~3,375 HTG yon fwa. Kreye kat: GRATIS.',
   },
   {
     q: 'Kijan mwen ka kontakte yon ajans?',
