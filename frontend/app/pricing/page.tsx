@@ -17,17 +17,24 @@ type Example = {
 
 const fees = [
   {
-    label: 'Topup Lokal',
-    sub: 'MonCash · NatCash',
+    label: 'Topup Manyèl Lokal',
+    sub: 'MonCash · NatCash — depo manyèl, apwobasyon ajan',
     value: '6%',
     note: 'sou montan topup',
     icon: '↑',
   },
   {
-    label: 'Topup Entènasyonal',
-    sub: 'Zelle · CashApp · Meru',
+    label: 'Topup Manyèl Entènasyonal',
+    sub: 'Zelle · CashApp · Meru · Bank · USDT',
     value: '6%',
     note: 'konvèti + frè',
+    icon: '↑',
+  },
+  {
+    label: 'MonCash Otomatik',
+    sub: 'Peman enstantane, san apwobasyon ajan',
+    value: '8,9%',
+    note: '6% OZAMAPAY + 2,9% frè MonCash',
     icon: '↑',
   },
   {
@@ -68,7 +75,7 @@ const rates = [
 
 const examples: Example[] = [
   {
-    title: 'Topup 5 000 HTG via MonCash',
+    title: 'Topup 5 000 HTG via MonCash (manyèl)',
     steps: [
       { label: 'Montan topup', value: '5 000 HTG' },
       { label: 'Frè (6%)', value: '− 300 HTG', accent: true },
@@ -76,7 +83,15 @@ const examples: Example[] = [
     ],
   },
   {
-    title: 'Topup $50 via Zelle',
+    title: 'Topup 5 000 HTG via MonCash Otomatik',
+    steps: [
+      { label: 'Montan topup', value: '5 000 HTG' },
+      { label: 'Frè (8,9%)', value: '− 445 HTG', accent: true },
+      { label: 'Ou resevwa', value: '4 555 HTG', bold: true },
+    ],
+  },
+  {
+    title: 'Topup $50 via Zelle (manyèl)',
     steps: [
       { label: 'Konvèti ($50 × 135)', value: '6 750 HTG' },
       { label: 'Frè (6%)', value: '− 405 HTG', accent: true },
@@ -87,8 +102,9 @@ const examples: Example[] = [
     title: 'Retrè 10 000 HTG',
     steps: [
       { label: 'Montan retrè', value: '10 000 HTG' },
-      { label: 'Frè (2%)', value: '− 200 HTG', accent: true },
-      { label: 'Ou resevwa', value: '9 800 HTG', bold: true },
+      { label: 'Frè (2%)', value: '200 HTG', accent: true },
+      { label: 'Total debite', value: '10 200 HTG', accent: true },
+      { label: 'Benefisyè a resevwa', value: '10 000 HTG', bold: true },
     ],
   },
 ];
