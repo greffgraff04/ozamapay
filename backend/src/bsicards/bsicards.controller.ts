@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/co
 import { BSICardsService } from './bsicards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MasterGuard } from '../admin/master.guard';
+import { UserIdDto } from './dto/user-id.dto';
 
 // Admin/CEO-only pou kounye a (menm pè guard ak SweepController) — pa gen
 // endpoint customer-facing (/v1/cards) toutotan entegrasyon an poko pwouve.
@@ -11,7 +12,7 @@ export class BSICardsController {
   constructor(private readonly bsicardsService: BSICardsService) {}
 
   @Post('create-card')
-  createCard(@Body() body: { userId: string }) {
+  createCard(@Body() body: UserIdDto) {
     return this.bsicardsService.createCard(body.userId);
   }
 
@@ -26,12 +27,12 @@ export class BSICardsController {
   }
 
   @Post('block')
-  blockCard(@Body() body: { userId: string }) {
+  blockCard(@Body() body: UserIdDto) {
     return this.bsicardsService.blockCard(body.userId);
   }
 
   @Post('unblock')
-  unblockCard(@Body() body: { userId: string }) {
+  unblockCard(@Body() body: UserIdDto) {
     return this.bsicardsService.unblockCard(body.userId);
   }
 }

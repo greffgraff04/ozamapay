@@ -14,19 +14,12 @@ import * as bcrypt from 'bcrypt';
 import {
   AgentTopupDto,
   AgentWithdrawDto,
+  AGENT_TOPUP_MAX_HTG,
+  AGENT_WITHDRAW_COMMISSION_MAX_HTG,
 } from './dto/agent-transactions.dto';
+import { AGENT_LIQUIDITY_REQUEST_MAX_HTG } from './dto/liquidity-request.dto';
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
-
-// Plafon pou chak operasyon ajan — HTG. Montan topup/retrè kliyan an pwatik
-// toujou lwen anba sa a (kraze lajan kach nan men yon ajan), chif sa a se yon
-// gad-fou kont erè/abi, pa yon limit operasyonèl nòmal.
-const AGENT_TOPUP_MAX_HTG = 200_000;
-const AGENT_WITHDRAW_COMMISSION_MAX_HTG = 200_000;
-// Demand likidite se yon reyapwovizyonman an gwo pou ajan an (pa yon
-// operasyon kliyan inik) — admin toujou revize l manyèlman anvan lajan vrè
-// deplase, men nou bloke valè absurd/negatif anvan yo rive nan koute admin lan.
-const AGENT_LIQUIDITY_REQUEST_MAX_HTG = 500_000;
 
 @Injectable()
 export class AgentsService {

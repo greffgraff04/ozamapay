@@ -20,6 +20,7 @@ import {
   InviteMemberDto,
   CreateApiKeyDto,
   CreateBizWebhookDto,
+  PayBusinessDto,
 } from './business.service';
 
 @UseGuards(JwtAuthGuard)
@@ -112,7 +113,7 @@ export class BusinessController {
   payBusiness(
     @Request() req,
     @Param('id') id: string,
-    @Body() body: { amount: number; pin: string; apiPaymentId?: string },
+    @Body() body: PayBusinessDto,
   ) {
     return this.businessService.payBusiness(req.user.id, id, body.amount, body.pin, body.apiPaymentId);
   }

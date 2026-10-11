@@ -13,7 +13,9 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
   AgentTopupDto,
   AgentWithdrawDto,
+  WithdrawCommissionDto,
 } from './dto/agent-transactions.dto';
+import { LiquidityRequestDto, ApplyAgentDto } from './dto/liquidity-request.dto';
 
 @Controller('agents')
 export class AgentsController {
@@ -55,7 +57,7 @@ export class AgentsController {
   @Post('liquidity-request')
   async createLiquidityRequest(
     @Req() req: any,
-    @Body() body: { amount: number; method: 'MONCASH' | 'ZELLE' | 'CASH' | 'BANK'; accountInfo: string },
+    @Body() body: LiquidityRequestDto,
   ) {
     return this.agentsService.createLiquidityRequest(
       req.user.id,
@@ -72,7 +74,7 @@ export class AgentsController {
   @Post('apply')
   async applyAsAgent(
     @Req() req: any,
-    @Body() body: { businessName?: string },
+    @Body() body: ApplyAgentDto,
   ) {
     return this.agentsService.applyAsAgent(
       req.user.id,
@@ -105,11 +107,11 @@ export class AgentsController {
   @Post('withdraw')
   async withdrawCommission(
     @Req() req: any,
-    @Body('amount') amount: number,
+    @Body() body: WithdrawCommissionDto,
   ) {
     return this.agentsService.withdrawCommission(
       req.user.id,
-      amount,
+      body.amount,
     );
   }
 

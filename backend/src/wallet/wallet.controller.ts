@@ -15,6 +15,10 @@ import { Throttle } from '@nestjs/throttler';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
+import { TransferDto } from './dto/transfer.dto';
+import { ManualTopupDto } from './dto/manual-topup.dto';
+import { WithdrawRequestDto } from './dto/withdraw-request.dto';
+import { FinanceRequestDto } from './dto/finance-request.dto';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
@@ -83,7 +87,7 @@ export class WalletController {
   @Throttle({ short: { limit: 5, ttl: 60000 } })
   async transferP2P(
     @Req() req: any,
-    @Body() body: { recipientEmail: string; amount: number; pin: string },
+    @Body() body: TransferDto,
   ) {
     return this.walletService.transferP2P(
       req.user.id,
@@ -100,7 +104,7 @@ export class WalletController {
   @Throttle({ short: { limit: 5, ttl: 60000 } })
   async transfer(
     @Req() req: any,
-    @Body() body: { recipientEmail: string; amount: number; pin: string },
+    @Body() body: TransferDto,
   ) {
     return this.walletService.transfer(
       req.user.id,
@@ -120,7 +124,7 @@ export class WalletController {
   }))
   async createManualTopup(
     @Req() req: any,
-    @Body() body: { amount: string; method: string; agentId?: string },
+    @Body() body: ManualTopupDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const proofImage = file
@@ -141,7 +145,7 @@ export class WalletController {
   @Post('withdraw')
   async createWithdrawRequest(
     @Req() req: any,
-    @Body() body: { amount: number; method: string; accountInfo: string },
+    @Body() body: WithdrawRequestDto,
   ) {
     return this.walletService.createWithdrawRequest(
       req.user.id,
@@ -161,7 +165,7 @@ export class WalletController {
   }))
   async createFinanceRequest(
     @Req() req: any,
-    @Body() body: { serviceType: any; amount: string; details: string },
+    @Body() body: FinanceRequestDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     const proofImage = file

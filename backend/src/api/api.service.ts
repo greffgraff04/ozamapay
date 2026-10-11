@@ -2,6 +2,16 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { createHmac, randomBytes } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
+import { IsMoneyAmount } from '../common/validation/money-amount.decorator';
 
 const BUSINESS_PAYMENT_FEE: Record<string, number> = {
   STARTER: 0.025,
@@ -11,15 +21,44 @@ const BUSINESS_PAYMENT_FEE: Record<string, number> = {
 
 export type ApiPermission = 'READ' | 'WRITE' | 'WEBHOOK';
 
+// ApiPayment.currency pa janm konvèti — platfòm lan ap opere sèlman an HTG
+// (`testWalletBalance`/`Wallet.balance` toujou HTG, pa gen okenn lojik
+// konvèsyon pou peman API). Aksepte yon lòt devise ta jis estoke yon etikèt
+// fo san okenn konvèsyon reyèl — se risk #10 nan odit la.
+export const API_PAYMENT_CURRENCIES = ['HTG'];
+// Pa gen plafon biznis egziste pou peman API — menm echèl ak BUSINESS_PAYMENT_MAX_HTG.
+export const API_PAYMENT_MAX_HTG = 500_000;
+
 export class InitiatePaymentDto {
+  @IsMoneyAmount(API_PAYMENT_MAX_HTG)
   amount: number;
+
+  @IsOptional()
+  @IsIn(API_PAYMENT_CURRENCIES)
   currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   reference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   description?: string;
 }
 
+// Sèl evenman API ki janm deklanche reyèlman — wè ApiService.fireWebhooks
+// pi ba, menm rezon ak BUSINESS_WEBHOOK_EVENTS nan business.service.ts.
+export const API_WEBHOOK_EVENTS = ['payment.received'];
+
 export class CreateWebhookDto {
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   url: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsIn(API_WEBHOOK_EVENTS, { each: true })
   events: string[];
 }
 

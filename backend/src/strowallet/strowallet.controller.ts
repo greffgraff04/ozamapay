@@ -4,6 +4,7 @@ import { StrowalletService } from './strowallet.service';
 import { CardOtpService } from './card-otp.service';
 import { CardsService } from '../cards/cards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CreateCardDto, FundCardDto, CardIdDto } from './dto/card.dto';
 
 // 31 out 2026 — my-card/secret-details/recharge/freeze/unfreeze delege bay
 // CardsService (miltip-provider: StroWallet + BSICards). create/otp/history
@@ -41,17 +42,17 @@ export class StrowalletController {
   // `provider` opsyonèl — defo STROWALLET_NFC pou konpatibilite ak aparèy
   // ki poko voye l (app mobil la).
   @Post('create')
-  createCard(@Request() req, @Body() body: { amount_usd?: number; provider?: string }) {
+  createCard(@Request() req, @Body() body: CreateCardDto) {
     return this.cardsService.createCard(req.user.id, body.provider ?? 'STROWALLET_NFC', Number(body.amount_usd));
   }
 
   @Post('recharge')
-  fundVirtualCard(@Request() req, @Body() body: { amount_usd: number; cardId?: string }) {
+  fundVirtualCard(@Request() req, @Body() body: FundCardDto) {
     return this.cardsService.fundCard(req.user.id, Number(body.amount_usd), body.cardId);
   }
 
   @Post('secret-details')
-  getCardSecretDetails(@Request() req, @Body() body: { cardId?: string }) {
+  getCardSecretDetails(@Request() req, @Body() body: CardIdDto) {
     return this.cardsService.getSecretDetails(req.user.id, body?.cardId);
   }
 
@@ -61,12 +62,12 @@ export class StrowalletController {
   }
 
   @Post('freeze')
-  freezeCard(@Request() req, @Body() body: { cardId?: string }) {
+  freezeCard(@Request() req, @Body() body: CardIdDto) {
     return this.cardsService.freezeCard(req.user.id, body?.cardId);
   }
 
   @Post('unfreeze')
-  unfreezeCard(@Request() req, @Body() body: { cardId?: string }) {
+  unfreezeCard(@Request() req, @Body() body: CardIdDto) {
     return this.cardsService.unfreezeCard(req.user.id, body?.cardId);
   }
 }

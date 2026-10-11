@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Query, Req, UseGuards } from '@nestjs/comm
 import { RatesService } from './rates.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CooGuard } from '../admin/coo.guard';
+import { UpdateRateDto } from './dto/update-rate.dto';
 
 @Controller('rates')
 export class RatesController {
@@ -20,7 +21,7 @@ export class RatesController {
 
   @Post('update')
   @UseGuards(JwtAuthGuard, CooGuard)
-  update(@Body() data: { key: string; value: number }, @Req() req: any) {
+  update(@Body() data: UpdateRateDto, @Req() req: any) {
     const adminId = req.user.id || req.user.sub;
     return this.ratesService.updateRate(data.key, data.value, adminId);
   }

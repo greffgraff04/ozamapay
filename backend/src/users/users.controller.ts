@@ -16,6 +16,7 @@ import { memoryStorage } from 'multer';
 import { UserService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
+import { AgentSelfTopupDto, ChangePinDto, UpdateProfileDto } from './dto/user-money.dto';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -27,7 +28,7 @@ export class UserController {
 
   @Post('change-pin')
   @HttpCode(HttpStatus.OK)
-  async changePin(@Req() req: any, @Body() body: { newPin: string }) {
+  async changePin(@Req() req: any, @Body() body: ChangePinDto) {
     const userId = req.user.id || req.user.sub;
     return this.userService.updateTransactionPin(userId, body.newPin);
   }
@@ -40,7 +41,7 @@ export class UserController {
 
   @Post('agent/topup')
   @HttpCode(HttpStatus.OK)
-  async agentTopup(@Req() req: any, @Body() body: { amount: number }) {
+  async agentTopup(@Req() req: any, @Body() body: AgentSelfTopupDto) {
     const userId = req.user.id || req.user.sub;
     return this.userService.agentSelfTopup(userId, body.amount);
   }
@@ -48,7 +49,7 @@ export class UserController {
   @Patch('profile')
   async updateProfile(
     @Req() req: any,
-    @Body() body: { name?: string; phone?: string },
+    @Body() body: UpdateProfileDto,
   ) {
     const userId = req.user.id || req.user.sub;
     return this.userService.updateProfile(userId, body);
