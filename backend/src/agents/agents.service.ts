@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,12 +18,40 @@ import {
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
 
+// Plafon pou chak operasyon ajan — HTG. Montan topup/retrè kliyan an pwatik
+// toujou lwen anba sa a (kraze lajan kach nan men yon ajan), chif sa a se yon
+// gad-fou kont erè/abi, pa yon limit operasyonèl nòmal.
+const AGENT_TOPUP_MAX_HTG = 200_000;
+const AGENT_WITHDRAW_COMMISSION_MAX_HTG = 200_000;
+// Demand likidite se yon reyapwovizyonman an gwo pou ajan an (pa yon
+// operasyon kliyan inik) — admin toujou revize l manyèlman anvan lajan vrè
+// deplase, men nou bloke valè absurd/negatif anvan yo rive nan koute admin lan.
+const AGENT_LIQUIDITY_REQUEST_MAX_HTG = 500_000;
+
 @Injectable()
 export class AgentsService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
   ) {}
+
+  // Gad-fou kominn pou tout montan ajan — rejte AVAN okenn lekti/ekriti DB.
+  // Negatif/zero/NaN te pèmèt envèse sans PIN oswa kreye balans ki pa gen
+  // okenn sipò reyèl (wè hotfix/agents-amount).
+  private assertValidAgentAmount(amount: unknown, max: number, label: string): number {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException(`${label}: montan envalid — dwe yon nonb pozitif`);
+    }
+    const cents = Math.round(n * 100);
+    if (Math.abs(n * 100 - cents) > 1e-6) {
+      throw new BadRequestException(`${label}: maksimòm 2 chif apre pwen`);
+    }
+    if (n > max) {
+      throw new BadRequestException(`${label}: depase plafon maksimòm (${max} HTG)`);
+    }
+    return n;
+  }
 
   // ========================================
   // CREATE LIQUIDITY REQUEST
@@ -33,6 +62,12 @@ export class AgentsService {
     method: 'MONCASH' | 'ZELLE' | 'CASH' | 'BANK',
     accountInfo: string,
   ) {
+    amount = this.assertValidAgentAmount(
+      amount,
+      AGENT_LIQUIDITY_REQUEST_MAX_HTG,
+      'Demand likidite',
+    );
+
     const agent = await this.prisma.agent.findUnique({
       where: { userId },
       include: { wallet: true },
@@ -189,31 +224,27 @@ export class AgentsService {
     userId: string,
     amount: number,
   ) {
+    amount = this.assertValidAgentAmount(
+      amount,
+      AGENT_WITHDRAW_COMMISSION_MAX_HTG,
+      'Retrè komisyon',
+    );
+
     return this.prisma.$transaction(
       async (tx) => {
         const agent =
           await tx.agent.findUnique({
             where: { userId },
-
-            include: {
-              wallet: true,
-            },
           });
 
-        if (!agent) {
-          throw new BadRequestException(
-            'Agent pa jwenn',
-          );
-        }
-
-        const currentBalance =
-          Number(
-            agent.wallet?.balance || 0,
-          );
-
-        if (currentBalance < amount) {
-          throw new BadRequestException(
-            'Balance insuffisant',
+        // Menm kontwòl wòl ak topup/liquidity-request : sèlman yon ajan
+        // status=ACTIVE ka retire komisyon. San sa a, yon itilizatè ki pa
+        // janm aplike kòm ajan (oswa ki PENDING/SUSPENDED) pa dwe ka rive
+        // menm nan verifikasyon balans — se yon aksyon entèdi, pa yon ka
+        // "resous pa jwenn" (403, pa 400).
+        if (!agent || agent.status !== 'ACTIVE') {
+          throw new ForbiddenException(
+            'Ou pa yon ajan aktif — aksyon sa a entèdi',
           );
         }
 
@@ -228,18 +259,26 @@ export class AgentsService {
           );
         }
 
-        // DEBIT AGENT
-        await tx.agentWallet.update({
+        // DEBIT AGENT — kondisyon balans fè pati WHERE la menm, pa yon
+        // lekti separe (menm patwon ak gift cards): sou konkirans, Postgres
+        // vewouye liy lan nan UPDATE a, se yon sèl kòmand ki ka genyen.
+        const debit = await tx.agentWallet.updateMany({
           where: {
             agentId: agent.id,
+            balance: { gte: amount },
           },
-
           data: {
             balance: {
               decrement: amount,
             },
           },
         });
+
+        if (debit.count === 0) {
+          throw new BadRequestException(
+            'Balance insuffisant',
+          );
+        }
 
         // CREDIT USER
         await tx.wallet.update({
@@ -267,6 +306,12 @@ export class AgentsService {
     agentUserId: string,
     dto: AgentTopupDto,
   ) {
+    const validatedAmount = this.assertValidAgentAmount(
+      dto.amount,
+      AGENT_TOPUP_MAX_HTG,
+      'Topup',
+    );
+
     const agentUser = await this.prisma.user.findUnique({
       where: { id: agentUserId },
       select: { email: true, name: true },
@@ -343,9 +388,7 @@ export class AgentsService {
           );
         }
 
-        const amount = Number(
-          dto.amount,
-        );
+        const amount = validatedAmount;
 
         // FEES
         const totalFee =
@@ -360,30 +403,26 @@ export class AgentsService {
         const finalAmount =
           amount - totalFee;
 
-        // VERIFY AGENT BALANCE
-        if (
-          Number(
-            agent.wallet?.balance ||
-              0,
-          ) < amount
-        ) {
-          throw new BadRequestException(
-            'Agent pa gen ase lajan',
-          );
-        }
-
-        // DEBIT AGENT
-        await tx.agentWallet.update({
+        // DEBIT AGENT — kondisyon balans fè pati WHERE la menm, pa yon
+        // lekti separe (menm patwon ak gift cards): sou konkirans, Postgres
+        // vewouye liy lan nan UPDATE a, se yon sèl kòmand ki ka genyen.
+        const debit = await tx.agentWallet.updateMany({
           where: {
             agentId: agent.id,
+            balance: { gte: amount },
           },
-
           data: {
             balance: {
               decrement: amount,
             },
           },
         });
+
+        if (debit.count === 0) {
+          throw new BadRequestException(
+            'Agent pa gen ase lajan',
+          );
+        }
 
         // CREDIT USER
         await tx.wallet.update({

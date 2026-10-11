@@ -1,9 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AlertCooldownService } from '../common/alert-cooldown/alert-cooldown.service';
 import { isStaging } from '../config/app-env';
+
+// Fouchèt reyalis pou valè yon to chanj (HTG pou 1 inite lòt devise). Tout
+// valè aktyèl yo (USD_HTG, EUR_HTG, USDT_HTG, CARD_RATE) ap antre 130-155 —
+// bòn sa yo kite plas pou depresyasyon gourd futur enpòtan san kite yon dwa
+// zewo anplis (ex: 1350 olye 135) oswa yon valè kraze (0, negatif) tonbe
+// nan baz done a san kontwòl, sa ki t ap korupye tout konvèsyon nan platfòm lan.
+const MIN_RATE_VALUE = 1;
+const MAX_RATE_VALUE = 1000;
 
 @Injectable()
 export class RatesService {
@@ -28,6 +36,19 @@ export class RatesService {
   }
 
   async updateRate(key: string, value: number, adminId: string) {
+    if (typeof key !== 'string' || !key.trim()) {
+      throw new BadRequestException('Kle to a obligatwa');
+    }
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException('Valè to a envalid — dwe yon nonb pozitif');
+    }
+    if (n < MIN_RATE_VALUE || n > MAX_RATE_VALUE) {
+      throw new BadRequestException(
+        `Valè to a andeyò fouchèt reyalis (${MIN_RATE_VALUE}-${MAX_RATE_VALUE})`,
+      );
+    }
+
     const [rate] = await this.prisma.$transaction([
       this.prisma.rate.upsert({ where: { key }, update: { value }, create: { key, value } }),
       this.prisma.exchangeRateHistory.create({ data: { pair: key, rate: value } }),
