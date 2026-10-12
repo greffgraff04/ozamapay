@@ -18,6 +18,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService, DeviceInfo } from './auth.service';
+import { OtpService } from './otp.service';
 import {
   LoginDto,
   RegisterDto,
@@ -27,6 +28,9 @@ import {
   Complete2FADto,
   RefreshTokenDto,
   RevokeSessionsDto,
+  SendOtpDto,
+  VerifyOtpDto,
+  DeviceNotMeDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -50,6 +54,7 @@ function extractDeviceInfo(req: any): DeviceInfo | undefined {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly otpService: OtpService,
   ) {}
 
   // =========================
@@ -105,6 +110,34 @@ export class AuthController {
     const userId = req.user.id || req.user.sub;
     await this.authService.revokeAllSessions(userId, req.user.sid, dto.includeCurrent);
     return { message: 'Tout sesyon yo revoke' };
+  }
+
+  // =========================
+  // OTP EMAIL (plan endpoints-app, lo L2) — pa gen JwtAuthGuard sou wout sa
+  // yo paske purpose=new_device/reset rive AVAN ou gen yon token valid; se
+  // OtpService ki rezoud idantite a selon `purpose` (Bearer pou register,
+  // challengeToken pou new_device, email pou reset).
+  // =========================
+  @Post('otp/send')
+  @Throttle({ short: { limit: 3, ttl: 600000 } })
+  @HttpCode(HttpStatus.OK)
+  sendOtp(@Body() dto: SendOtpDto, @Req() req: any) {
+    return this.otpService.send(dto, req.headers.authorization);
+  }
+
+  @Post('otp/verify')
+  @Throttle({ short: { limit: 10, ttl: 600000 } })
+  @HttpCode(HttpStatus.OK)
+  verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: any) {
+    return this.otpService.verify(dto, req.headers.authorization);
+  }
+
+  @Post('device/not-me')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  async deviceNotMe(@Body() dto: DeviceNotMeDto) {
+    await this.authService.notMeDevice(dto.challengeToken);
+    return { message: 'Tantativ konyeksyon bloke. Yon alèt voye pa email.' };
   }
 
   @Post('logout')

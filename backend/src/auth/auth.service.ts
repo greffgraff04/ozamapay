@@ -336,6 +336,18 @@ export class AuthService {
     // App mobil (X-Device-Id prezan) — pè access/refresh token + Session.
     // Webapp (deviceInfo absan) kontinye egzakteman jan l te ye a, pi ba a.
     if (deviceInfo) {
+      // "Aparèy konni" = yon Session (menm revoke) te deja egziste pou
+      // deviceId sa a pou itilizatè sa a. Si non, defi OTP obligatwa anvan
+      // nenpòt token reyèl soti — wè plan endpoints-app, lo L2.
+      const knownDevice = await this.prisma.session.findFirst({
+        where: { userId: user.id, deviceId: deviceInfo.deviceId },
+      });
+
+      if (!knownDevice) {
+        const challengeToken = this.signChallengeToken(user.id, deviceInfo);
+        return { requiresDeviceVerification: true, challengeToken };
+      }
+
       const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
       return {
         message: 'Koneksyon reyisi',
@@ -406,6 +418,99 @@ export class AuthService {
       refreshToken,
       expiresIn: MOBILE_ACCESS_TOKEN_TTL_SECONDS,
     };
+  }
+
+  // =========================
+  // DEVICE CHALLENGE — nouvo aparèy (plan endpoints-app, lo L2)
+  // =========================
+
+  // Token tanporè (10 min) ki idantifye itilizatè a + aparèy la AVAN nenpòt
+  // access/refresh token reyèl soti. OtpService itilize l pou konnen ki
+  // itilizatè pou voye/verifye OTP a; /auth/device/not-me itilize l pou
+  // bloke sa ki te ka yon tantativ.
+  signChallengeToken(userId: string, deviceInfo: DeviceInfo): string {
+    return this.jwtService.sign(
+      {
+        sub: userId,
+        purpose: 'device_challenge',
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName,
+        platform: deviceInfo.platform,
+        jti: randomUUID(),
+      },
+      { expiresIn: '10m' },
+    );
+  }
+
+  async verifyChallengeToken(
+    token: string,
+  ): Promise<{ userId: string; deviceInfo: DeviceInfo; jti: string; exp: number }> {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Defi ekspire oswa envalid — rekoneksyon obligatwa');
+    }
+    if (payload.purpose !== 'device_challenge') {
+      throw new UnauthorizedException('Token envalid');
+    }
+    if (payload.jti && (await this.tokenBlacklist.has(payload.jti))) {
+      throw new UnauthorizedException('Defi sa a deja itilize');
+    }
+    return {
+      userId: payload.sub,
+      deviceInfo: { deviceId: payload.deviceId, deviceName: payload.deviceName, platform: payload.platform },
+      jti: payload.jti,
+      exp: payload.exp,
+    };
+  }
+
+  // Apre OTP purpose=NEW_DEVICE verifye avèk siksè — menm chemen ak yon
+  // koneksyon mobil nòmal (Session + pè token), men soti nan OTP a olye
+  // dirèkteman nan login().
+  async completeDeviceVerification(userId: string, deviceInfo: DeviceInfo) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true, kyc: true },
+    });
+    if (!user) throw new NotFoundException('Itilizatè sa a pa egziste.');
+
+    const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
+    return {
+      message: 'Koneksyon reyisi',
+      ...pair,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        referredByAgentId: user.referredByAgentId,
+        transactionPin: user.transactionPin ? true : false,
+        wallet: { balance: user.wallet?.balance || 0 },
+        kyc: user.kyc
+          ? { status: user.kyc.status, fullName: `${user.kyc.firstName} ${user.kyc.lastName}` }
+          : null,
+      },
+    };
+  }
+
+  // POST /auth/device/not-me — bloke defi a definitivman (jti blackliste,
+  // pa ka itilize ankò pou voye/verifye OTP) + alèt email. Pa mande auth
+  // konplè: se egzateman ka a kote itilizatè a PA gen yon token valid.
+  async notMeDevice(challengeTokenRaw: string): Promise<void> {
+    const { userId, deviceInfo, jti, exp } = await this.verifyChallengeToken(challengeTokenRaw);
+    if (jti) await this.tokenBlacklist.add(jti, exp);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return;
+
+    await this.mailService.sendNewDeviceAlert(
+      user.email,
+      user.name || 'Kliyan',
+      deviceInfo.deviceName ?? null,
+      null,
+      new Date(),
+    );
   }
 
   // Rotasyon + deteksyon reyitilizasyon : chak refresh token valab la

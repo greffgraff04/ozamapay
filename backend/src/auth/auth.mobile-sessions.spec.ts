@@ -11,8 +11,8 @@ import { AuthService } from './auth.service';
 const HASHED_PASSWORD = bcrypt.hashSync('password123', 10);
 
 // Petit magasin en mémoire qui imite les appels Prisma utilisés par
-// AuthService (login/refresh/sessions) — assez réaliste pour tester
-// correctement la rotation et la détection de réutilisation en chaîne.
+// AuthService (login/refresh/sessions/device-challenge) — assez réaliste
+// pour tester correctement la rotation et la détection de réutilisation.
 function buildFakePrisma(initialUser: any) {
   const users = new Map<string, any>([[initialUser.id, initialUser]]);
   const sessions = new Map<string, any>();
@@ -61,6 +61,12 @@ function buildFakePrisma(initialUser: any) {
       }
       return null;
     }),
+    findFirst: jest.fn(async ({ where }: any) => {
+      for (const row of sessions.values()) {
+        if (row.userId === where.userId && row.deviceId === where.deviceId) return row;
+      }
+      return null;
+    }),
     findMany: jest.fn(async ({ where }: any) => {
       return Array.from(sessions.values()).filter(
         (row) => row.userId === where.userId && (where.revokedAt === null ? row.revokedAt === null : true),
@@ -84,14 +90,27 @@ function buildFakePrisma(initialUser: any) {
   };
 }
 
-function buildService(fakePrisma: any) {
-  const jwtService = {
-    sign: jest.fn((payload: any) => `signed.${JSON.stringify(payload)}`),
-    verify: jest.fn(),
+// jwtService.sign/verify réels (pas de mock) pour signChallengeToken/
+// verifyChallengeToken — un simple objet JSON ne suffit pas, il faut un
+// vrai aller-retour JWT pour ces tests.
+function buildJwtService() {
+  const jwt = require('jsonwebtoken');
+  const secret = 'test-secret-l1-l2';
+  return {
+    sign: jest.fn((payload: any, options?: any) => jwt.sign(payload, secret, options)),
+    verify: jest.fn((token: string) => jwt.verify(token, secret)),
   };
-  const mailService = { sendVerificationEmail: jest.fn(), sendWelcome: jest.fn() };
+}
+
+function buildService(fakePrisma: any, tokenBlacklistOverrides: any = {}) {
+  const jwtService = buildJwtService();
+  const mailService = {
+    sendVerificationEmail: jest.fn(),
+    sendWelcome: jest.fn(),
+    sendNewDeviceAlert: jest.fn(),
+  };
   const twoFactorService = {};
-  const tokenBlacklist = { add: jest.fn(), has: jest.fn().mockResolvedValue(false) };
+  const tokenBlacklist = { add: jest.fn(), has: jest.fn().mockResolvedValue(false), ...tokenBlacklistOverrides };
   return new AuthService(fakePrisma as any, jwtService as any, mailService as any, twoFactorService as any, tokenBlacklist as any);
 }
 
@@ -113,6 +132,22 @@ function makeUser(overrides: Partial<any> = {}) {
   };
 }
 
+// Simule le parcours complet d'un PREMIER login mobile réussi : login()
+// renvoie un défi (nouvel appareil), puis completeDeviceVerification()
+// représente un OTP purpose=new_device vérifié avec succès (testé
+// séparément dans otp.service.spec.ts) — ce helper donne un vrai pair
+// accessToken/refreshToken aux tests qui testent autre chose (rotation,
+// sessions...) sans redupliquer la logique OTP partout.
+async function loginMobileKnownDevice(
+  service: AuthService,
+  user: any,
+  deviceId = 'device-abc',
+  deviceName?: string,
+  platform?: string,
+) {
+  return service.completeDeviceVerification(user.id, { deviceId, deviceName, platform });
+}
+
 describe('AuthService.login — webapp (sans X-Device-Id) INCHANGÉ', () => {
   it('retourne { message, token, user } — pas de accessToken/refreshToken, aucune Session créée', async () => {
     const user = makeUser();
@@ -128,8 +163,8 @@ describe('AuthService.login — webapp (sans X-Device-Id) INCHANGÉ', () => {
   });
 });
 
-describe('AuthService.login — app mobile (X-Device-Id présent)', () => {
-  it('retourne { message, accessToken, refreshToken, expiresIn, user } et crée une Session', async () => {
+describe('AuthService.login — app mobile, NOUVEL appareil (lo L2)', () => {
+  it('ne délivre AUCUN token — renvoie requiresDeviceVerification + challengeToken', async () => {
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
@@ -141,30 +176,79 @@ describe('AuthService.login — app mobile (X-Device-Id présent)', () => {
       { deviceId: 'device-abc', deviceName: 'iPhone 15', platform: 'ios' },
     );
 
-    expect(result).not.toHaveProperty('token');
-    expect(result).toHaveProperty('accessToken');
-    expect(result).toHaveProperty('refreshToken');
-    expect(result).toHaveProperty('expiresIn', 15 * 60);
-    expect(fakePrisma.session.create).toHaveBeenCalledTimes(1);
-    expect(fakePrisma.session.create.mock.calls[0][0].data.deviceId).toBe('device-abc');
+    expect(result).toEqual({ requiresDeviceVerification: true, challengeToken: expect.any(String) });
+    expect(fakePrisma.session.create).not.toHaveBeenCalled();
   });
 });
 
-describe('AuthService.refresh — rotation + détection de réutilisation', () => {
-  async function loginMobile(fakePrisma: any, service: AuthService, user: any) {
-    return service.login(
+describe('AuthService.login — app mobile, appareil DÉJÀ connu', () => {
+  it('délivre directement accessToken/refreshToken, pas de défi', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    // Un 1er login+vérif sur ce device a déjà eu lieu avant ce test
+    // (simulé directement via completeDeviceVerification).
+    await loginMobileKnownDevice(service, user, 'device-abc');
+
+    const result = await service.login(
       { email: user.email, password: 'password123' } as any,
       '1.2.3.4',
       'ozamapay-app/1.0',
       { deviceId: 'device-abc' },
     );
-  }
 
+    expect(result).not.toHaveProperty('requiresDeviceVerification');
+    expect(result).toHaveProperty('accessToken');
+    expect(result).toHaveProperty('refreshToken');
+  });
+});
+
+describe('AuthService.signChallengeToken / verifyChallengeToken', () => {
+  it('un challengeToken valide se vérifie et retourne userId + deviceInfo', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    const token = service.signChallengeToken(user.id, { deviceId: 'device-abc', deviceName: 'iPhone' });
+    const resolved = await service.verifyChallengeToken(token);
+
+    expect(resolved.userId).toBe(user.id);
+    expect(resolved.deviceInfo.deviceId).toBe('device-abc');
+  });
+
+  it('un challengeToken déjà blacklisté (consommé par /auth/device/not-me) est rejeté', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma, { has: jest.fn().mockResolvedValue(true) });
+
+    const token = service.signChallengeToken(user.id, { deviceId: 'device-abc' });
+
+    await expect(service.verifyChallengeToken(token)).rejects.toThrow(UnauthorizedException);
+  });
+});
+
+describe('AuthService.notMeDevice', () => {
+  it('blacklist le jti du challenge et envoie une alerte email', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+    const token = service.signChallengeToken(user.id, { deviceId: 'device-abc', deviceName: 'iPhone 15' });
+
+    await service.notMeDevice(token);
+
+    const mailService = (service as any).mailService;
+    expect(mailService.sendNewDeviceAlert).toHaveBeenCalledTimes(1);
+    expect(mailService.sendNewDeviceAlert.mock.calls[0][0]).toBe(user.email);
+  });
+});
+
+describe('AuthService.refresh — rotation + détection de réutilisation', () => {
   it('un refresh valide rotationne : nouveau pair émis, ancienne session marquée "rotation"', async () => {
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    const { refreshToken: firstRefresh } = (await loginMobile(fakePrisma, service, user)) as any;
+    const { refreshToken: firstRefresh } = (await loginMobileKnownDevice(service, user)) as any;
 
     const secondPair = await service.refresh(firstRefresh);
 
@@ -181,7 +265,7 @@ describe('AuthService.refresh — rotation + détection de réutilisation', () =
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    const { refreshToken: firstRefresh } = (await loginMobile(fakePrisma, service, user)) as any;
+    const { refreshToken: firstRefresh } = (await loginMobileKnownDevice(service, user)) as any;
 
     await service.refresh(firstRefresh); // rotation normale → session-2 créée
 
@@ -197,7 +281,7 @@ describe('AuthService.refresh — rotation + détection de réutilisation', () =
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    const { refreshToken } = (await loginMobile(fakePrisma, service, user)) as any;
+    const { refreshToken } = (await loginMobileKnownDevice(service, user)) as any;
 
     const session = fakePrisma.sessions.get('session-1');
     session.expiresAt = new Date(Date.now() - 1000);
@@ -219,7 +303,7 @@ describe('AuthService — sessions (liste/révocation, isolées par utilisateur)
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    await service.login({ email: user.email, password: 'password123' } as any, undefined, undefined, { deviceId: 'd1' });
+    await loginMobileKnownDevice(service, user, 'd1');
 
     const list = await service.listSessions(user.id, 'session-1');
     expect(list).toHaveLength(1);
@@ -230,7 +314,7 @@ describe('AuthService — sessions (liste/révocation, isolées par utilisateur)
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    await service.login({ email: user.email, password: 'password123' } as any, undefined, undefined, { deviceId: 'd1' });
+    await loginMobileKnownDevice(service, user, 'd1');
 
     await expect(service.revokeSession('un-autre-user', 'session-1')).rejects.toThrow();
   });
@@ -239,8 +323,8 @@ describe('AuthService — sessions (liste/révocation, isolées par utilisateur)
     const user = makeUser();
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
-    await service.login({ email: user.email, password: 'password123' } as any, undefined, undefined, { deviceId: 'd1' });
-    await service.login({ email: user.email, password: 'password123' } as any, undefined, undefined, { deviceId: 'd2' });
+    await loginMobileKnownDevice(service, user, 'd1');
+    await loginMobileKnownDevice(service, user, 'd2');
 
     await service.revokeAllSessions(user.id, 'session-1', false);
 

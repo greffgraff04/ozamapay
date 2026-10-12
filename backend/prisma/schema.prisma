@@ -64,6 +64,7 @@ model User {
 
   adminSessions        AdminSession[]
   sessions             Session[]
+  otpCodes             OtpCode[]
   giftCardOrders       GiftCardOrder[]
   airtimeOrders        AirtimeOrder[]
   merchantApplications MerchantApplication[]
@@ -641,6 +642,12 @@ enum KycStatus {
   REJECTED
 }
 
+enum OtpPurpose {
+  REGISTER
+  NEW_DEVICE
+  RESET
+}
+
 enum ServiceType {
   WISE
   MERU
@@ -781,6 +788,23 @@ model BlacklistedAccessToken {
   createdAt DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+// Kòd OTP pa email — tout kalite (REGISTER/NEW_DEVICE/RESET). `codeHash`
+// sèlman, kòd an klè a pa janm ekri nan baz done a ni nan okenn log.
+model OtpCode {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  codeHash    String
+  purpose     OtpPurpose
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, purpose])
 }
 
 model MerchantApplication {
