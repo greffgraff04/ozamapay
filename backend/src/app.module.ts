@@ -7,6 +7,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { AccountModule } from './account/account.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AlertCooldownModule } from './common/alert-cooldown/alert-cooldown.module';
 import { WalletModule } from './wallet/wallet.module';
@@ -45,6 +46,7 @@ import { TronModule } from './tron/tron.module';
     AlertCooldownModule,
     UsersModule,
     AuthModule,
+    AccountModule,
     WalletModule,
     MailModule,
     KycModule,

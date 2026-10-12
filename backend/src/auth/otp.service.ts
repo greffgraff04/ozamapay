@@ -21,7 +21,7 @@ const OTP_MAX_ATTEMPTS = 5;
 const OTP_MAX_SENDS_PER_WINDOW = 3;
 const OTP_RATE_LIMIT_WINDOW_MINUTES = 10;
 
-type OtpPurposeUpper = 'REGISTER' | 'NEW_DEVICE' | 'RESET';
+export type OtpPurposeUpper = 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT';
 
 interface ResolvedIdentity {
   userId: string | null;
@@ -36,6 +36,18 @@ export class OtpService {
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
   ) {}
+
+  private resolveBearerIdentity(authHeader?: string): { userId: string } {
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    if (!token) throw new UnauthorizedException('Konekte anvan ou mande yon kòd');
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new UnauthorizedException('Sesyon ekspire — rekonekte w');
+    }
+    return { userId: payload.sub };
+  }
 
   private async resolveIdentity(
     purpose: OtpPurposeUpper,
@@ -52,21 +64,18 @@ export class OtpService {
       }
       // Chemen altènatif (webapp/ansyen app ki ta deja gen yon Bearer) —
       // pa itilize pou kounye a men rete disponib san danje.
-      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-      if (!token) throw new UnauthorizedException('Konekte anvan ou mande yon kòd');
-      let payload: any;
-      try {
-        payload = this.jwtService.verify(token);
-      } catch {
-        throw new UnauthorizedException('Sesyon ekspire — rekonekte w');
-      }
-      return { userId: payload.sub };
+      return this.resolveBearerIdentity(authHeader);
     }
 
     if (purpose === 'NEW_DEVICE') {
       if (!dto.challengeToken) throw new BadRequestException('challengeToken obligatwa');
       const { userId, deviceInfo } = await this.authService.verifyChallengeToken(dto.challengeToken);
       return { userId, deviceInfo };
+    }
+
+    if (purpose === 'DELETE_ACCOUNT') {
+      // Itilizatè a deja konekte (Bearer) — wè plan endpoints-app, lo L4.
+      return this.resolveBearerIdentity(authHeader);
     }
 
     // RESET — anti-enumerasyon : jwenn oswa pa, menm repons jenerik pi ba.
@@ -120,12 +129,11 @@ export class OtpService {
     return generic;
   }
 
-  async verify(dto: VerifyOtpDto, authHeader?: string): Promise<any> {
-    const purpose = dto.purpose.toUpperCase() as OtpPurposeUpper;
-    const { userId, deviceInfo } = await this.resolveIdentity(purpose, dto, authHeader);
-
-    if (!userId) throw new BadRequestException('Kòd envalid');
-
+  // Jwenn, verifye, epi konsome (si bon) dènye kòd aktif pou (userId,
+  // purpose). Pataje ant verify() (wout piblik /auth/otp/verify) ak
+  // AccountDeletionService (ki konsome yon kòd DIREKTEMAN nan
+  // /account/deletion-request, san yon etap /auth/otp/verify separe).
+  private async consumeValidCode(userId: string, purpose: OtpPurposeUpper, code: string): Promise<void> {
     const otp = await this.prisma.otpCode.findFirst({
       where: { userId, purpose, consumedAt: null },
       orderBy: { createdAt: 'desc' },
@@ -137,13 +145,29 @@ export class OtpService {
       throw new BadRequestException('Twòp tantativ — mande yon nouvo kòd');
     }
 
-    const match = await bcrypt.compare(dto.code, otp.codeHash);
+    const match = await bcrypt.compare(code, otp.codeHash);
     if (!match) {
       await this.prisma.otpCode.update({ where: { id: otp.id }, data: { attempts: otp.attempts + 1 } });
       throw new BadRequestException('Kòd envalid');
     }
 
     await this.prisma.otpCode.update({ where: { id: otp.id }, data: { consumedAt: new Date() } });
+  }
+
+  // API piblik pou AccountDeletionService — konsome yon kòd purpose=
+  // DELETE_ACCOUNT san okenn "swit" aksyon (sa se AccountDeletionService ki
+  // deside sa k ap pase apre).
+  async verifyCodeOnly(userId: string, purpose: OtpPurposeUpper, code: string): Promise<void> {
+    await this.consumeValidCode(userId, purpose, code);
+  }
+
+  async verify(dto: VerifyOtpDto, authHeader?: string): Promise<any> {
+    const purpose = dto.purpose.toUpperCase() as OtpPurposeUpper;
+    const { userId, deviceInfo } = await this.resolveIdentity(purpose, dto, authHeader);
+
+    if (!userId) throw new BadRequestException('Kòd envalid');
+
+    await this.consumeValidCode(userId, purpose, dto.code);
 
     if (purpose === 'REGISTER') {
       await this.prisma.user.update({
@@ -165,6 +189,12 @@ export class OtpService {
     if (purpose === 'NEW_DEVICE') {
       if (!deviceInfo) throw new BadRequestException('challengeToken envalid');
       return this.authService.completeDeviceVerification(userId, deviceInfo);
+    }
+
+    if (purpose === 'DELETE_ACCOUNT') {
+      // Konfimasyon kòd la sèlman — /account/deletion-request se li ki
+      // kreye demand la reyèlman (pa gen "swit" otomatik isit la).
+      return { message: 'Kòd konfime', verified: true };
     }
 
     // RESET — jwenn chemen EGZAK /auth/reset-password deja itilize a, san

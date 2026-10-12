@@ -167,8 +167,13 @@ export class AuthService {
         },
       );
 
-    // Emails sent outside transaction so failures don't roll back user creation
-    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    // Emails sent outside transaction so failures don't roll back user creation.
+    // Korije lo L3 : app mobil (deviceInfo prezan) verifye email li PA OTP
+    // sèlman — pa gen rezon pou voye LYEN klasik an plis, sa ta konfonn.
+    // Webapp (deviceInfo absan) kontinye voye lyen an, jan li te toujou fè.
+    if (!deviceInfo) {
+      await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    }
     await this.mailService.sendWelcome(user.email, user.name || 'Kliyan');
 
     // App mobil (X-Device-Id prezan) — pa gen okenn token ki soti isit la.
@@ -289,6 +294,27 @@ export class AuthService {
       );
     }
 
+    // Modpas kòrèk verifye — kont sipresyon (lo L4) egzekite deja a bloke
+    // login nèt, apre prèv idantite a (pa anvan, pou anti-enumerasyon).
+    if (user.deletionExecutedAt) {
+      throw new ForbiddenException('Kont sa a dezaktive. Kontakte sipò si ou panse sa se yon erè.');
+    }
+
+    // Yon nouvo login (modpas kòrèk) anile otomatikman nenpòt demand
+    // sipresyon kont PENDING — menm chemen pou webapp ak app mobil, menm
+    // kèlkeswa branch ki swiv pi ba a (wè plan endpoints-app, lo L4).
+    let deletionCancelled = false;
+    const pendingDeletion = await this.prisma.accountDeletionRequest.findFirst({
+      where: { userId: user.id, status: 'PENDING' },
+    });
+    if (pendingDeletion) {
+      await this.prisma.accountDeletionRequest.update({
+        where: { id: pendingDeletion.id },
+        data: { status: 'CANCELLED', cancelledAt: new Date() },
+      });
+      deletionCancelled = true;
+    }
+
     // Successful login — reset attempt counter
     await this.prisma.user.update({
       where: { id: user.id },
@@ -356,7 +382,11 @@ export class AuthService {
       // endpoints-app, lo L3.
       if (!user.emailVerified) {
         const challengeToken = this.signChallengeToken(user.id, deviceInfo);
-        return { requiresEmailVerification: true, challengeToken };
+        return {
+          requiresEmailVerification: true,
+          challengeToken,
+          ...(deletionCancelled ? { deletionCancelled: true } : {}),
+        };
       }
 
       // "Aparèy konni" = yon Session (menm revoke) te deja egziste pou
@@ -368,7 +398,11 @@ export class AuthService {
 
       if (!knownDevice) {
         const challengeToken = this.signChallengeToken(user.id, deviceInfo);
-        return { requiresDeviceVerification: true, challengeToken };
+        return {
+          requiresDeviceVerification: true,
+          challengeToken,
+          ...(deletionCancelled ? { deletionCancelled: true } : {}),
+        };
       }
 
       const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
@@ -376,6 +410,7 @@ export class AuthService {
         message: 'Koneksyon reyisi',
         ...pair,
         user: userPayload,
+        ...(deletionCancelled ? { deletionCancelled: true } : {}),
       };
     }
 
@@ -394,6 +429,8 @@ export class AuthService {
       token,
 
       user: userPayload,
+
+      ...(deletionCancelled ? { deletionCancelled: true } : {}),
     };
   }
 

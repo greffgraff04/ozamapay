@@ -1141,12 +1141,13 @@ export class MailService {
     email: string,
     name: string,
     code: string,
-    purpose: 'REGISTER' | 'NEW_DEVICE' | 'RESET',
+    purpose: 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT',
   ): Promise<void> {
     const titles: Record<string, { ht: string; fr: string }> = {
       REGISTER: { ht: 'Konfime kont ou', fr: 'Confirmez votre compte' },
       NEW_DEVICE: { ht: 'Nouvo aparèy ap konekte', fr: 'Nouvel appareil détecté' },
       RESET: { ht: 'Reyajiste modpas ou', fr: 'Réinitialisation de mot de passe' },
+      DELETE_ACCOUNT: { ht: 'Konfime sipresyon kont ou', fr: 'Confirmez la suppression de votre compte' },
     };
     const { ht, fr } = titles[purpose] ?? titles.REGISTER;
 
@@ -1200,6 +1201,31 @@ export class MailService {
       '#c62828',
     );
     await this.send(email, 'OZAMAPAY — Tantativ konyeksyon bloke', html);
+  }
+
+  // Plan endpoints-app, lo L4 — "yon moyen d'annuler" = rekonekte anvan
+  // dat la, pa gen lyen separe (menm mekanis ak AuthService.login()).
+  async sendAccountDeletionRequested(email: string, name: string, scheduledFor: Date): Promise<void> {
+    const scheduledStr = scheduledFor.toLocaleString('fr-FR', {
+      timeZone: 'America/Port-au-Prince',
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    const html = this.wrap(
+      'Sipresyon kont OZAMAPAY',
+      'Sipresyon kont pwograme',
+      `${this.p(`Bonjou ${name},`)}
+       ${this.p(
+         `Nou resevwa demand ou pou sipresyon kont ou. Kont ou ap dezaktive definitivman si ou pa fè anyen.<br>` +
+         `<span style="font-size:11px;color:#999;">Nous avons reçu votre demande de suppression de compte. Votre compte sera désactivé définitivement si vous ne faites rien.</span>`,
+       )}
+       ${this.table(this.infoRow('Dat/Date', scheduledStr))}
+       ${this.accentLine(
+         'Pou ANILE : tou senpleman rekonekte sou kont ou anvan dat sa a — sa ap anile demand lan otomatikman.<br>' +
+         '<span style="font-size:11px;color:#9c6a2e;">Pour ANNULER : reconnectez-vous simplement à votre compte avant cette date — cela annulera automatiquement la demande.</span>',
+       )}
+       ${this.p('Si se pa ou ki fè demand sa a, rekonekte kounye a pou anile l, oswa kontakte sipò.<br><span style="font-size:11px;color:#999;">Si ce n\'est pas vous, reconnectez-vous maintenant pour annuler, ou contactez le support.</span>')}`,
+    );
+    await this.send(email, 'OZAMAPAY — Sipresyon kont pwograme', html);
   }
 
   async sendPromoMondialeEmail(email: string, name: string): Promise<void> {

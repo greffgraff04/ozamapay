@@ -74,8 +74,24 @@ function buildFakePrisma(initialUser: any) {
     }),
   };
 
+  const deletionRequests = new Map<string, any>();
+  const accountDeletionRequest = {
+    findFirst: jest.fn(async ({ where }: any) => {
+      for (const row of deletionRequests.values()) {
+        if (row.userId === where.userId && row.status === where.status) return row;
+      }
+      return null;
+    }),
+    update: jest.fn(async ({ where, data }: any) => {
+      const row = deletionRequests.get(where.id);
+      Object.assign(row, data);
+      return row;
+    }),
+  };
+
   return {
     sessions,
+    deletionRequests,
     user: {
       findUnique: jest.fn(async ({ where }: any) => users.get(where.id ?? '') ?? (where.email ? initialUser : null)),
       update: jest.fn(async ({ where, data }: any) => {
@@ -86,6 +102,7 @@ function buildFakePrisma(initialUser: any) {
     },
     session: sessionClient,
     adminSession: { updateMany: jest.fn(), create: jest.fn() },
+    accountDeletionRequest,
     $transaction: jest.fn(async (cb: any) => cb({ session: sessionClient })),
   };
 }
@@ -331,5 +348,68 @@ describe('AuthService — sessions (liste/révocation, isolées par utilisateur)
 
     expect(fakePrisma.sessions.get('session-1').revokedAt).toBeNull();
     expect(fakePrisma.sessions.get('session-2').revokedAt).not.toBeNull();
+  });
+});
+
+describe('AuthService.login — suppression de compte différée (lo L4)', () => {
+  it('bloque le login si le compte a déjà été exécuté (deletionExecutedAt)', async () => {
+    const user = makeUser({ deletionExecutedAt: new Date() });
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    await expect(service.login({ email: user.email, password: 'password123' } as any)).rejects.toThrow(
+      /dezaktive/,
+    );
+  });
+
+  it('un login webapp réussi ANNULE automatiquement une demande PENDING et le signale (deletionCancelled)', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    fakePrisma.deletionRequests.set('req-1', {
+      id: 'req-1',
+      userId: user.id,
+      status: 'PENDING',
+      cancelledAt: null,
+    });
+    const service = buildService(fakePrisma);
+
+    const result: any = await service.login({ email: user.email, password: 'password123' } as any);
+
+    expect(result.deletionCancelled).toBe(true);
+    expect(fakePrisma.deletionRequests.get('req-1').status).toBe('CANCELLED');
+  });
+
+  it("un login webapp SANS demande pending ne change RIEN à la réponse (pas de clé deletionCancelled) — régression webapp", async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    const result: any = await service.login({ email: user.email, password: 'password123' } as any);
+
+    expect(result).not.toHaveProperty('deletionCancelled');
+    expect(result).toEqual({ message: expect.any(String), token: expect.any(String), user: expect.any(Object) });
+  });
+
+  it('un login mobile sur device déjà connu annule aussi la demande PENDING', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+    await loginMobileKnownDevice(service, user, 'device-abc');
+    fakePrisma.deletionRequests.set('req-1', {
+      id: 'req-1',
+      userId: user.id,
+      status: 'PENDING',
+      cancelledAt: null,
+    });
+
+    const result: any = await service.login(
+      { email: user.email, password: 'password123' } as any,
+      undefined,
+      undefined,
+      { deviceId: 'device-abc' },
+    );
+
+    expect(result.deletionCancelled).toBe(true);
+    expect(result).toHaveProperty('accessToken');
   });
 });

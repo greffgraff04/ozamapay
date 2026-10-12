@@ -246,4 +246,47 @@ describe('OtpService.verify', () => {
     expect(result).toEqual({ message: expect.any(String), emailVerified: true });
     expect(authService.completeDeviceVerification).not.toHaveBeenCalled();
   });
+
+  it('purpose=delete_account via Bearer : juste confirmation, ne déclenche aucune suite', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, jwtService, authService } = buildService(fakePrisma);
+    jwtService.verify.mockReturnValue({ sub: user.id });
+    await service.send({ purpose: 'delete_account' } as any, 'Bearer t');
+    const code = extractSentCode(mailService);
+
+    const result = await service.verify({ purpose: 'delete_account', code } as any, 'Bearer t');
+
+    expect(result).toEqual({ message: expect.any(String), verified: true });
+    expect(authService.completeDeviceVerification).not.toHaveBeenCalled();
+    expect(user.emailVerified).toBe(false); // ne touche pas emailVerified
+  });
+});
+
+describe('OtpService.verifyCodeOnly (utilisé par AccountDeletionService, sans passer par /auth/otp/verify)', () => {
+  it('consomme un bon code purpose=delete_account sans lever d\'exception', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, jwtService } = buildService(fakePrisma);
+    jwtService.verify.mockReturnValue({ sub: user.id });
+    await service.send({ purpose: 'delete_account' } as any, 'Bearer t');
+    const code = extractSentCode(mailService);
+
+    await expect(service.verifyCodeOnly(user.id, 'DELETE_ACCOUNT', code)).resolves.toBeUndefined();
+
+    const stored = Array.from(fakePrisma.otpCodes.values())[0];
+    expect(stored.consumedAt).not.toBeNull();
+  });
+
+  it('rejette un mauvais code', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, jwtService } = buildService(fakePrisma);
+    jwtService.verify.mockReturnValue({ sub: user.id });
+    await service.send({ purpose: 'delete_account' } as any, 'Bearer t');
+
+    await expect(service.verifyCodeOnly(user.id, 'DELETE_ACCOUNT', '000000')).rejects.toThrow(
+      BadRequestException,
+    );
+  });
 });

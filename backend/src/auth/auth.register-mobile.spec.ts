@@ -21,6 +21,7 @@ function buildFakePrisma() {
       }),
     },
     agent: { findUnique: jest.fn() },
+    accountDeletionRequest: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
     $transaction: jest.fn(async (cb: any) =>
       cb({
         user: {
@@ -65,6 +66,8 @@ describe('AuthService.register — webapp (sans X-Device-Id) INCHANGÉ', () => {
     expect(result).toHaveProperty('user');
     expect(result).not.toHaveProperty('requiresEmailVerification');
     expect(result).not.toHaveProperty('challengeToken');
+    // Webapp garde le lien de vérification classique (correction lo L3).
+    expect((service as any).mailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
   });
 
   it('rejette toujours un email déjà utilisé, identiquement aujourd\'hui', async () => {
@@ -97,6 +100,10 @@ describe('AuthService.register — app mobile (X-Device-Id présent)', () => {
     expect(result).not.toHaveProperty('accessToken');
     // Le compte existe bel et bien malgré l'absence de token.
     expect(fakePrisma.usersByEmail.get('mobile@b.com')).toBeDefined();
+    // Correction lo L3 : PAS de lien de vérification classique côté mobile
+    // — seulement l'OTP (sendWelcome reste envoyé, lui n'est pas concerné).
+    expect((service as any).mailService.sendVerificationEmail).not.toHaveBeenCalled();
+    expect((service as any).mailService.sendWelcome).toHaveBeenCalledTimes(1);
   });
 
   it('le challengeToken renvoyé se vérifie et porte le bon deviceId', async () => {

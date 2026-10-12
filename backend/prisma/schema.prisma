@@ -59,12 +59,18 @@ model User {
   failedLoginAttempts Int       @default(0)
   loginLockedUntil    DateTime?
 
+  // Lo L4 — sèlman mete apre AccountDeletionRequest egzekite (48h +
+  // ACCOUNT_DELETION_EXECUTION_ENABLED=true). Bloke login sèlman, AUCUN
+  // lòt chan User pa touche, AUCUNE anonymizasyon.
+  deletionExecutedAt DateTime?
+
   adminInvitationToken String?
   adminSetupComplete   Boolean @default(false)
 
   adminSessions        AdminSession[]
   sessions             Session[]
   otpCodes             OtpCode[]
+  deletionRequests     AccountDeletionRequest[]
   giftCardOrders       GiftCardOrder[]
   airtimeOrders        AirtimeOrder[]
   merchantApplications MerchantApplication[]
@@ -646,6 +652,13 @@ enum OtpPurpose {
   REGISTER
   NEW_DEVICE
   RESET
+  DELETE_ACCOUNT
+}
+
+enum AccountDeletionStatus {
+  PENDING
+  CANCELLED
+  EXECUTED
 }
 
 enum ServiceType {
@@ -805,6 +818,24 @@ model OtpCode {
   createdAt   DateTime   @default(now())
 
   @@index([userId, purpose])
+}
+
+// Sipresyon kont diferan 48h (plan endpoints-app, lo L4) — AUCUNE
+// anonymizasyon/sipresyon fizik isit la, sèlman yon flag ki bloke login
+// (User.deletionExecutedAt) apre egzekisyon. Transaction/LedgerEntry/Kyc
+// pa touche — dire retansyon legal poko defini (Me Vercy).
+model AccountDeletionRequest {
+  id           String                @id @default(uuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id])
+  status       AccountDeletionStatus @default(PENDING)
+  requestedAt  DateTime              @default(now())
+  scheduledFor DateTime
+  cancelledAt  DateTime?
+  executedAt   DateTime?
+
+  @@index([userId])
+  @@index([status, scheduledFor])
 }
 
 model MerchantApplication {
