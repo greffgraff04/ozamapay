@@ -126,6 +126,7 @@ function makeUser(overrides: Partial<any> = {}) {
     failedLoginAttempts: 0,
     loginLockedUntil: null,
     isSuspended: false,
+    emailVerified: true,
     wallet: { balance: 100 },
     kyc: null,
     ...overrides,

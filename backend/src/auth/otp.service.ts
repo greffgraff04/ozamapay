@@ -43,6 +43,15 @@ export class OtpService {
     authHeader?: string,
   ): Promise<ResolvedIdentity> {
     if (purpose === 'REGISTER') {
+      // App mobil (plan endpoints-app, lo L3) — /auth/register pa bay
+      // okenn token tout tan email pa verifye, donk idantite a soti nan
+      // challengeToken a, menm chemen ak NEW_DEVICE.
+      if (dto.challengeToken) {
+        const { userId, deviceInfo } = await this.authService.verifyChallengeToken(dto.challengeToken);
+        return { userId, deviceInfo };
+      }
+      // Chemen altènatif (webapp/ansyen app ki ta deja gen yon Bearer) —
+      // pa itilize pou kounye a men rete disponib san danje.
       const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
       if (!token) throw new UnauthorizedException('Konekte anvan ou mande yon kòd');
       let payload: any;
@@ -106,8 +115,7 @@ export class OtpService {
     // API la (menm an staging).
     await this.mailService.sendOtpCode(user.email, user.name || 'Kliyan', code, purpose);
 
-    // Pa gen deviceInfo pou REGISTER/RESET — annik NEW_DEVICE genyen l.
-    void deviceInfo;
+    void deviceInfo; // pa itilize isit la — sèlman verify() bezwen l
 
     return generic;
   }
@@ -142,6 +150,15 @@ export class OtpService {
         where: { id: userId },
         data: { emailVerified: true, emailVerificationToken: null },
       });
+
+      // App mobil (challengeToken, deviceInfo prezan) — kounye a ke email
+      // la verifye, aparèy la vin "konni" (Session kreye) e app la resevwa
+      // vrè pè token li t ap tann depi /auth/register — plan endpoints-app,
+      // lo L3. Chemen Bearer (webapp/altènatif, pa gen deviceInfo) kontinye
+      // egzakteman jan l te ye nan lo L2.
+      if (deviceInfo) {
+        return this.authService.completeDeviceVerification(userId, deviceInfo);
+      }
       return { message: 'Email konfime', emailVerified: true };
     }
 

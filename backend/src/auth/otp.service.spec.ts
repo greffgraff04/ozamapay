@@ -217,4 +217,33 @@ describe('OtpService.verify', () => {
     expect(authService.completeDeviceVerification).toHaveBeenCalledWith(user.id, { deviceId: 'd1' });
     expect(result).toEqual({ accessToken: 'at', refreshToken: 'rt' });
   });
+
+  it('purpose=register via challengeToken (app mobile, lo L3) : vérifie emailVerified=true PUIS délègue à completeDeviceVerification', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, authService } = buildService(fakePrisma);
+    authService.verifyChallengeToken.mockResolvedValue({ userId: user.id, deviceInfo: { deviceId: 'd2' } });
+    authService.completeDeviceVerification.mockResolvedValue({ accessToken: 'at2', refreshToken: 'rt2', expiresIn: 900 });
+
+    await service.send({ purpose: 'register', challengeToken: 'ct' } as any);
+    const code = extractSentCode(mailService);
+
+    const result = await service.verify({ purpose: 'register', code, challengeToken: 'ct' } as any);
+
+    expect(user.emailVerified).toBe(true);
+    expect(authService.completeDeviceVerification).toHaveBeenCalledWith(user.id, { deviceId: 'd2' });
+    expect(result).toEqual({ accessToken: 'at2', refreshToken: 'rt2', expiresIn: 900 });
+  });
+
+  it('purpose=register via Bearer (sans deviceInfo) garde l\'ancien comportement : juste emailVerified, pas de tokens', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, jwtService, authService } = buildService(fakePrisma);
+    const code = await sendAndGetCode(fakePrisma, service, mailService, jwtService, user);
+
+    const result = await service.verify({ purpose: 'register', code } as any, 'Bearer t');
+
+    expect(result).toEqual({ message: expect.any(String), emailVerified: true });
+    expect(authService.completeDeviceVerification).not.toHaveBeenCalled();
+  });
 });

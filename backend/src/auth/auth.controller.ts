@@ -62,8 +62,8 @@ export class AuthController {
   // =========================
   @Post('register')
   @Throttle({ short: { limit: 3, ttl: 60000 } })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: any) {
+    return this.authService.register(dto, extractDeviceInfo(req));
   }
 
   // =========================

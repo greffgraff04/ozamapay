@@ -57,7 +57,7 @@ export class AuthService {
   // REGISTER
   // =========================
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, deviceInfo?: DeviceInfo) {
     const existing =
       await this.prisma.user.findUnique({
         where: {
@@ -170,6 +170,19 @@ export class AuthService {
     // Emails sent outside transaction so failures don't roll back user creation
     await this.mailService.sendVerificationEmail(user.email, verificationToken);
     await this.mailService.sendWelcome(user.email, user.name || 'Kliyan');
+
+    // App mobil (X-Device-Id prezan) — pa gen okenn token ki soti isit la.
+    // Kont kreye, men imèl la DWE verifye pa OTP (purpose=register) anvan
+    // menm yon access/refresh token egziste — wè plan endpoints-app, lo L3.
+    // Webapp (deviceInfo absan) kontinye egzakteman jan l te ye a, pi ba a.
+    if (deviceInfo) {
+      const challengeToken = this.signChallengeToken(user.id, deviceInfo);
+      return {
+        message: 'Kont kreye — konfime email ou ak kòd OTP la',
+        requiresEmailVerification: true,
+        challengeToken,
+      };
+    }
 
     // =========================
     // JWT TOKEN
@@ -336,6 +349,16 @@ export class AuthService {
     // App mobil (X-Device-Id prezan) — pè access/refresh token + Session.
     // Webapp (deviceInfo absan) kontinye egzakteman jan l te ye a, pi ba a.
     if (deviceInfo) {
+      // Kont mobil ki poko verifye email li (OTP purpose=register poko
+      // konplete, ekz. app la te fèmen anvan) — relanse MENM defi a, jamè
+      // okenn token, kèlkeswa si aparèy la ta "konni" (pa ka rive vre pou
+      // yon kont ki poko janm fin kreye yon Session) — wè plan
+      // endpoints-app, lo L3.
+      if (!user.emailVerified) {
+        const challengeToken = this.signChallengeToken(user.id, deviceInfo);
+        return { requiresEmailVerification: true, challengeToken };
+      }
+
       // "Aparèy konni" = yon Session (menm revoke) te deja egziste pou
       // deviceId sa a pou itilizatè sa a. Si non, defi OTP obligatwa anvan
       // nenpòt token reyèl soti — wè plan endpoints-app, lo L2.
