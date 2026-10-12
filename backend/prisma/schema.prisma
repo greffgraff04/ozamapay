@@ -59,10 +59,18 @@ model User {
   failedLoginAttempts Int       @default(0)
   loginLockedUntil    DateTime?
 
+  // Lo L4 — sèlman mete apre AccountDeletionRequest egzekite (48h +
+  // ACCOUNT_DELETION_EXECUTION_ENABLED=true). Bloke login sèlman, AUCUN
+  // lòt chan User pa touche, AUCUNE anonymizasyon.
+  deletionExecutedAt DateTime?
+
   adminInvitationToken String?
   adminSetupComplete   Boolean @default(false)
 
   adminSessions        AdminSession[]
+  sessions             Session[]
+  otpCodes             OtpCode[]
+  deletionRequests     AccountDeletionRequest[]
   giftCardOrders       GiftCardOrder[]
   airtimeOrders        AirtimeOrder[]
   merchantApplications MerchantApplication[]
@@ -640,6 +648,19 @@ enum KycStatus {
   REJECTED
 }
 
+enum OtpPurpose {
+  REGISTER
+  NEW_DEVICE
+  RESET
+  DELETE_ACCOUNT
+}
+
+enum AccountDeletionStatus {
+  PENDING
+  CANCELLED
+  EXECUTED
+}
+
 enum ServiceType {
   WISE
   MERU
@@ -745,6 +766,76 @@ model AdminSession {
 
   @@index([userId])
   @@index([isActive])
+}
+
+// Sesyon app mobil (refresh token) — webapp pa itilize sa a, li kontinye ak
+// yon sèl JWT 24h san okenn Session (wè ValidationMode/staging-safety plan,
+// branch "X-Device-Id" prezan = mobil, absan = webapp, konpòtman idantik).
+model Session {
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  refreshTokenHash     String    @unique
+  deviceId             String?
+  deviceName           String?
+  platform             String?
+  ipAddress            String?
+  userAgent            String?
+  createdAt            DateTime  @default(now())
+  lastUsedAt           DateTime  @default(now())
+  expiresAt            DateTime
+  revokedAt            DateTime?
+  revokedReason        String?
+  replacedBySessionId  String?
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([refreshTokenHash])
+}
+
+// Ranplasman pèsistan pou TokenBlacklistService (te yon Map an memwa, pèdi
+// chak redeploy) — menm entèfas piblik (add/has), sèlman estokaj la chanje.
+model BlacklistedAccessToken {
+  jti       String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+// Kòd OTP pa email — tout kalite (REGISTER/NEW_DEVICE/RESET). `codeHash`
+// sèlman, kòd an klè a pa janm ekri nan baz done a ni nan okenn log.
+model OtpCode {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  codeHash    String
+  purpose     OtpPurpose
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, purpose])
+}
+
+// Sipresyon kont diferan 48h (plan endpoints-app, lo L4) — AUCUNE
+// anonymizasyon/sipresyon fizik isit la, sèlman yon flag ki bloke login
+// (User.deletionExecutedAt) apre egzekisyon. Transaction/LedgerEntry/Kyc
+// pa touche — dire retansyon legal poko defini (Me Vercy).
+model AccountDeletionRequest {
+  id           String                @id @default(uuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id])
+  status       AccountDeletionStatus @default(PENDING)
+  requestedAt  DateTime              @default(now())
+  scheduledFor DateTime
+  cancelledAt  DateTime?
+  executedAt   DateTime?
+
+  @@index([userId])
+  @@index([status, scheduledFor])
 }
 
 model MerchantApplication {

@@ -41,9 +41,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     email: string;
     role: string;
     jti?: string;
+    sid?: string;
     exp: number;
   }) {
-    if (payload.jti && this.tokenBlacklist.has(payload.jti)) {
+    if (payload.jti && (await this.tokenBlacklist.has(payload.jti))) {
       throw new UnauthorizedException('Token révoqué');
     }
 
@@ -74,6 +75,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       name: user.name,
       jti: payload.jti,
+      sid: payload.sid,
       exp: payload.exp,
 
       wallet: user.wallet,

@@ -1134,6 +1134,100 @@ export class MailService {
     await this.send(email, `Code journalier OZAMAPAY — ${date}`, html);
   }
 
+  // Plan endpoints-app, lo L2 — `code` an klè a pase sèlman nan html la,
+  // JAMÈ nan `subject` (sa a ta parèt nan lis email/notifikasyon aparèy la)
+  // ni nan okenn log — wè OtpService.
+  async sendOtpCode(
+    email: string,
+    name: string,
+    code: string,
+    purpose: 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT',
+  ): Promise<void> {
+    const titles: Record<string, { ht: string; fr: string }> = {
+      REGISTER: { ht: 'Konfime kont ou', fr: 'Confirmez votre compte' },
+      NEW_DEVICE: { ht: 'Nouvo aparèy ap konekte', fr: 'Nouvel appareil détecté' },
+      RESET: { ht: 'Reyajiste modpas ou', fr: 'Réinitialisation de mot de passe' },
+      DELETE_ACCOUNT: { ht: 'Konfime sipresyon kont ou', fr: 'Confirmez la suppression de votre compte' },
+    };
+    const { ht, fr } = titles[purpose] ?? titles.REGISTER;
+
+    const html = this.wrap(
+      'Kòd OTP OZAMAPAY',
+      ht,
+      `${this.p(`Bonjou ${name},`)}
+       ${this.p(`Men kòd verifikasyon ou (valab 10 minit) :<br><span style="font-size:11px;color:#999;">${fr} — voici votre code de vérification (valable 10 minutes) :</span>`)}
+       <div style="background:#0F121E;border:2px solid #FF7A00;border-radius:10px;padding:28px;text-align:center;margin:0 0 20px;">
+         <p style="margin:0;font-size:44px;font-weight:900;color:#FF7A00;letter-spacing:12px;font-family:monospace;">${code}</p>
+       </div>
+       ${this.accentLine(
+         '⚠️ OZAMAPAY pa p janm mande w kòd sa a — pa pataje l ak pèsòn, menm si moun nan di l se ekip OZAMAPAY.<br>' +
+         '<span style="font-size:11px;color:#9c6a2e;">OZAMAPAY ne vous demandera jamais ce code — ne le partagez avec personne, même si la personne prétend faire partie de l\'équipe OZAMAPAY.</span>',
+       )}
+       ${this.p('Si se pa ou ki mande sa, inyore email sa a.<br><span style="font-size:11px;color:#999;">Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet email.</span>')}`,
+    );
+
+    await this.send(email, 'Kòd OTP OZAMAPAY', html);
+  }
+
+  // Plan endpoints-app, lo L2 — déclenché par POST /auth/device/not-me.
+  async sendNewDeviceAlert(
+    email: string,
+    name: string,
+    deviceName: string | null,
+    ipAddress: string | null,
+    when: Date,
+  ): Promise<void> {
+    const whenStr = when.toLocaleString('fr-FR', {
+      timeZone: 'America/Port-au-Prince',
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    const html = this.wrap(
+      'Tantativ konyeksyon bloke',
+      'Nou bloke yon tantativ konyeksyon',
+      `${this.p(`Bonjou ${name},`)}
+       ${this.p(
+         `Yon moun te eseye konekte sou kont ou soti nan yon aparèy nou pa rekonèt, epi ou te di "se pa mwen". Nou bloke tantativ sa a.<br>` +
+         `<span style="font-size:11px;color:#999;">Une tentative de connexion depuis un appareil inconnu a été bloquée après que vous ayez indiqué "ce n'est pas moi".</span>`,
+       )}
+       ${this.table(
+         this.infoRow('Aparèy / Appareil', deviceName || 'Enkoni / Inconnu') +
+         this.infoRow('Adrès IP', ipAddress || 'Enkoni / Inconnue') +
+         this.infoRow('Dat / Date', whenStr),
+       )}
+       ${this.accentLine(
+         'Si se pa ou ki te fè tantativ sa a, chanje modpas ou kounye a.<br>' +
+         '<span style="font-size:11px;color:#9c6a2e;">Si ce n\'était pas vous, changez votre mot de passe immédiatement.</span>',
+       )}`,
+      '#c62828',
+    );
+    await this.send(email, 'OZAMAPAY — Tantativ konyeksyon bloke', html);
+  }
+
+  // Plan endpoints-app, lo L4 — "yon moyen d'annuler" = rekonekte anvan
+  // dat la, pa gen lyen separe (menm mekanis ak AuthService.login()).
+  async sendAccountDeletionRequested(email: string, name: string, scheduledFor: Date): Promise<void> {
+    const scheduledStr = scheduledFor.toLocaleString('fr-FR', {
+      timeZone: 'America/Port-au-Prince',
+      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+    const html = this.wrap(
+      'Sipresyon kont OZAMAPAY',
+      'Sipresyon kont pwograme',
+      `${this.p(`Bonjou ${name},`)}
+       ${this.p(
+         `Nou resevwa demand ou pou sipresyon kont ou. Kont ou ap dezaktive definitivman si ou pa fè anyen.<br>` +
+         `<span style="font-size:11px;color:#999;">Nous avons reçu votre demande de suppression de compte. Votre compte sera désactivé définitivement si vous ne faites rien.</span>`,
+       )}
+       ${this.table(this.infoRow('Dat/Date', scheduledStr))}
+       ${this.accentLine(
+         'Pou ANILE : tou senpleman rekonekte sou kont ou anvan dat sa a — sa ap anile demand lan otomatikman.<br>' +
+         '<span style="font-size:11px;color:#9c6a2e;">Pour ANNULER : reconnectez-vous simplement à votre compte avant cette date — cela annulera automatiquement la demande.</span>',
+       )}
+       ${this.p('Si se pa ou ki fè demand sa a, rekonekte kounye a pou anile l, oswa kontakte sipò.<br><span style="font-size:11px;color:#999;">Si ce n\'est pas vous, reconnectez-vous maintenant pour annuler, ou contactez le support.</span>')}`,
+    );
+    await this.send(email, 'OZAMAPAY — Sipresyon kont pwograme', html);
+  }
+
   async sendPromoMondialeEmail(email: string, name: string): Promise<void> {
     const html = `<!DOCTYPE html>
 <html lang="ht">

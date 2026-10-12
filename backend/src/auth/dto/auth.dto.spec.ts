@@ -6,6 +6,10 @@ import {
   ResetPasswordDto,
   Enable2FADto,
   Complete2FADto,
+  RefreshTokenDto,
+  SendOtpDto,
+  VerifyOtpDto,
+  DeviceNotMeDto,
 } from './auth.dto';
 
 describe('RegisterDto (/auth/register)', () => {
@@ -50,4 +54,31 @@ describe('Complete2FADto (/auth/2fa/complete)', () => {
 
   it('rejte yon totpCode non-nimerik', () =>
     expectInvalid(Complete2FADto, { tempToken: 'jwt.token.here', totpCode: 'abcdef' }));
+});
+
+describe('RefreshTokenDto (/auth/refresh — app mobil sèlman)', () => {
+  it('aksepte yon payload valid', () => expectValid(RefreshTokenDto, { refreshToken: 'abc123' }));
+
+  it('rejte yon refreshToken vid', () => expectInvalid(RefreshTokenDto, { refreshToken: '' }));
+});
+
+describe('SendOtpDto (/auth/otp/send)', () => {
+  it('aksepte purpose=register san lòt chan (idantite soti nan Bearer)', () =>
+    expectValid(SendOtpDto, { purpose: 'register' }));
+
+  it('aksepte purpose=reset ak email', () => expectValid(SendOtpDto, { purpose: 'reset', email: 'a@b.com' }));
+
+  it('rejte yon purpose ki pa nan lis fèmen an', () => expectInvalid(SendOtpDto, { purpose: 'autre' }));
+});
+
+describe('VerifyOtpDto (/auth/otp/verify)', () => {
+  it('aksepte yon kòd 6 chif valid', () => expectValid(VerifyOtpDto, { purpose: 'register', code: '123456' }));
+
+  it('rejte yon kòd ki pa 6 chif', () => expectInvalid(VerifyOtpDto, { purpose: 'register', code: '123' }));
+});
+
+describe('DeviceNotMeDto (/auth/device/not-me)', () => {
+  it('aksepte yon challengeToken valid', () => expectValid(DeviceNotMeDto, { challengeToken: 'jwt.here' }));
+
+  it('rejte yon challengeToken vid', () => expectInvalid(DeviceNotMeDto, { challengeToken: '' }));
 });
