@@ -73,3 +73,17 @@ export class Complete2FADto {
   @Matches(/^\d{6}$/, { message: 'totpCode dwe 6 chif' })
   totpCode: string;
 }
+
+// Sesyon app mobil (plan endpoints-app, lo L1) — `refreshToken` se valè brit
+// la, jamè hash la; AuthService.refresh() fè sha256 anvan li konpare l ak
+// Session.refreshTokenHash.
+export class RefreshTokenDto {
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
+}
+
+export class RevokeSessionsDto {
+  @IsOptional()
+  includeCurrent?: boolean;
+}

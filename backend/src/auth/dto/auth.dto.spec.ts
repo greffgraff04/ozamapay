@@ -6,6 +6,7 @@ import {
   ResetPasswordDto,
   Enable2FADto,
   Complete2FADto,
+  RefreshTokenDto,
 } from './auth.dto';
 
 describe('RegisterDto (/auth/register)', () => {
@@ -50,4 +51,10 @@ describe('Complete2FADto (/auth/2fa/complete)', () => {
 
   it('rejte yon totpCode non-nimerik', () =>
     expectInvalid(Complete2FADto, { tempToken: 'jwt.token.here', totpCode: 'abcdef' }));
+});
+
+describe('RefreshTokenDto (/auth/refresh — app mobil sèlman)', () => {
+  it('aksepte yon payload valid', () => expectValid(RefreshTokenDto, { refreshToken: 'abc123' }));
+
+  it('rejte yon refreshToken vid', () => expectInvalid(RefreshTokenDto, { refreshToken: '' }));
 });

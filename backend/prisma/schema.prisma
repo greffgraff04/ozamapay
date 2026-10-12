@@ -63,6 +63,7 @@ model User {
   adminSetupComplete   Boolean @default(false)
 
   adminSessions        AdminSession[]
+  sessions             Session[]
   giftCardOrders       GiftCardOrder[]
   airtimeOrders        AirtimeOrder[]
   merchantApplications MerchantApplication[]
@@ -745,6 +746,41 @@ model AdminSession {
 
   @@index([userId])
   @@index([isActive])
+}
+
+// Sesyon app mobil (refresh token) — webapp pa itilize sa a, li kontinye ak
+// yon sèl JWT 24h san okenn Session (wè ValidationMode/staging-safety plan,
+// branch "X-Device-Id" prezan = mobil, absan = webapp, konpòtman idantik).
+model Session {
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id])
+  refreshTokenHash     String    @unique
+  deviceId             String?
+  deviceName           String?
+  platform             String?
+  ipAddress            String?
+  userAgent            String?
+  createdAt            DateTime  @default(now())
+  lastUsedAt           DateTime  @default(now())
+  expiresAt            DateTime
+  revokedAt            DateTime?
+  revokedReason        String?
+  replacedBySessionId  String?
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([refreshTokenHash])
+}
+
+// Ranplasman pèsistan pou TokenBlacklistService (te yon Map an memwa, pèdi
+// chak redeploy) — menm entèfas piblik (add/has), sèlman estokaj la chanje.
+model BlacklistedAccessToken {
+  jti       String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 model MerchantApplication {

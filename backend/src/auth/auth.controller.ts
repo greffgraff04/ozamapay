@@ -3,7 +3,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   UseGuards,
   Req,
@@ -15,7 +17,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
-import { AuthService } from './auth.service';
+import { AuthService, DeviceInfo } from './auth.service';
 import {
   LoginDto,
   RegisterDto,
@@ -23,8 +25,26 @@ import {
   ResetPasswordDto,
   Enable2FADto,
   Complete2FADto,
+  RefreshTokenDto,
+  RevokeSessionsDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+
+// App mobil sèlman — header "X-Device-Id" prezan vle di se app a k ap rele,
+// webapp pa janm voye l, donk `deviceInfo` ap toujou `undefined` pou webapp
+// e tout branch ki depann de li yo (AuthService.login/refresh) rete inatif.
+function extractDeviceInfo(req: any): DeviceInfo | undefined {
+  const deviceId = req.headers['x-device-id'] as string | undefined;
+  if (!deviceId) return undefined;
+  const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
+  return {
+    deviceId,
+    deviceName: req.headers['x-device-name'] as string | undefined,
+    platform: req.headers['x-device-platform'] as string | undefined,
+    ipAddress: ip,
+    userAgent: req.headers['user-agent'] as string | undefined,
+  };
+}
 
 @Controller('auth')
 export class AuthController {
@@ -49,7 +69,42 @@ export class AuthController {
   login(@Body() dto: LoginDto, @Req() req: any) {
     const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
     const userAgent = req.headers['user-agent'] as string | undefined;
-    return this.authService.login(dto, ip, userAgent);
+    return this.authService.login(dto, ip, userAgent, extractDeviceInfo(req));
+  }
+
+  // =========================
+  // MOBILE SESSIONS (plan endpoints-app, lo L1) — webapp n'appelle jamais
+  // ces routes, elles existent uniquement pour l'app (X-Device-Id).
+  // =========================
+  @Post('refresh')
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  refresh(@Body() dto: RefreshTokenDto, @Req() req: any) {
+    return this.authService.refresh(dto.refreshToken, extractDeviceInfo(req));
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  listSessions(@Req() req: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.authService.listSessions(userId, req.user.sid);
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async revokeSession(@Req() req: any, @Param('id') id: string) {
+    const userId = req.user.id || req.user.sub;
+    await this.authService.revokeSession(userId, id);
+    return { message: 'Sesyon revoke' };
+  }
+
+  @Post('sessions/revoke-all')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async revokeAllSessions(@Req() req: any, @Body() dto: RevokeSessionsDto) {
+    const userId = req.user.id || req.user.sub;
+    await this.authService.revokeAllSessions(userId, req.user.sid, dto.includeCurrent);
+    return { message: 'Tout sesyon yo revoke' };
   }
 
   @Post('logout')
@@ -57,7 +112,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: any) {
     const { jti, exp } = req.user;
-    if (jti && exp) this.authService.invalidateToken(jti, exp);
+    if (jti && exp) await this.authService.invalidateToken(jti, exp);
     return { message: 'Dekonekte avèk siksè' };
   }
 
@@ -66,7 +121,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async adminLogout(@Req() req: any) {
     const { jti, exp } = req.user;
-    if (jti && exp) this.authService.invalidateToken(jti, exp);
+    if (jti && exp) await this.authService.invalidateToken(jti, exp);
     const userId = req.user?.id || req.user?.sub;
     return this.authService.logoutAdmin(userId);
   }

@@ -1,25 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
 
+// Pèsistan (table BlacklistedAccessToken) olye yon Map an memwa — te pèdi
+// chak redeploy anvan. Menm entèfas piblik ak ansyen vèsyon an (add/has),
+// JwtStrategy/AuthController pa chanje — sèlman estokaj la pase nan Prisma.
 @Injectable()
 export class TokenBlacklistService {
-  // jti → exp (unix timestamp) — retire otomatikman apre ekspire
-  private readonly store = new Map<string, number>();
+  constructor(private readonly prisma: PrismaService) {}
 
-  add(jti: string, exp: number): void {
-    this.store.set(jti, exp);
+  async add(jti: string, exp: number): Promise<void> {
+    await this.prisma.blacklistedAccessToken.upsert({
+      where: { jti },
+      create: { jti, expiresAt: new Date(exp * 1000) },
+      update: { expiresAt: new Date(exp * 1000) },
+    });
   }
 
-  has(jti: string): boolean {
-    return this.store.has(jti);
+  async has(jti: string): Promise<boolean> {
+    const row = await this.prisma.blacklistedAccessToken.findUnique({ where: { jti } });
+    return !!row;
   }
 
-  // Chak 24h — netwaye tokens ki deja ekspire yo pou evite fuit memwa
+  // Chak 24h — netwaye tokens ki deja ekspire yo pou evite kwasans san fen
   @Cron('0 0 * * *')
-  cleanup(): void {
-    const now = Math.floor(Date.now() / 1000);
-    for (const [jti, exp] of this.store.entries()) {
-      if (exp < now) this.store.delete(jti);
-    }
+  async cleanup(): Promise<void> {
+    await this.prisma.blacklistedAccessToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
   }
 }
