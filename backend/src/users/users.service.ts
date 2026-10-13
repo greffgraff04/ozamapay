@@ -141,7 +141,12 @@ export class UserService {
 
   // Lo L6 — chanjman telefòn pa app mobil (X-Device-Id prezan) mande OTP
   // anvan aplikasyon; webapp (isMobileDevice=false) kenbe ansyen chemen an
-  // dirèkteman pou pa kraze l — li poko adapte pou flux OTP a.
+  // dirèkteman pou pa kraze l.
+  // Lo L6b — X-Device-Id se yon header kliyan ka chanje/retire, donk pa yon
+  // vrè garanti sekirite pou li menm sèl. PHONE_CHANGE_OTP_ALL_CLIENTS=true
+  // (defo false — webapp dwe deja adapte avèk siksè AVAN flag sa a aktive,
+  // wè deploy order nan plan L6b) mande OTP pou TOUT kliyan, X-Device-Id
+  // prezan oswa non.
   async updateProfile(
     userId: string,
     data: { name?: string; phone?: string },
@@ -152,8 +157,9 @@ export class UserService {
       select: { phone: true },
     });
     const phoneChanged = typeof data.phone === 'string' && data.phone !== current?.phone;
+    const otpRequiredForAllClients = process.env.PHONE_CHANGE_OTP_ALL_CLIENTS === 'true';
 
-    if (phoneChanged && isMobileDevice) {
+    if (phoneChanged && (isMobileDevice || otpRequiredForAllClients)) {
       if (data.name) {
         await this.prisma.user.update({ where: { id: userId }, data: { name: data.name } });
       }

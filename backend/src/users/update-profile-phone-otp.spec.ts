@@ -72,3 +72,54 @@ describe('UserService.updateProfile — gating OTP par X-Device-Id (lo L6)', () 
     expect(result).toMatchObject({ success: true, phone: '50922222222' });
   });
 });
+
+describe('UserService.updateProfile — PHONE_CHANGE_OTP_ALL_CLIENTS (lo L6b)', () => {
+  const ENV_KEY = 'PHONE_CHANGE_OTP_ALL_CLIENTS';
+  const originalValue = process.env[ENV_KEY];
+
+  afterEach(() => {
+    if (originalValue === undefined) delete process.env[ENV_KEY];
+    else process.env[ENV_KEY] = originalValue;
+  });
+
+  it('flag absent (défaut) → webapp garde l\'ancien comportement, pas d\'OTP', async () => {
+    delete process.env[ENV_KEY];
+    const { service, otpService, user } = buildService();
+
+    const result = await service.updateProfile(user.id, { phone: '50922222222' }, false);
+
+    expect(otpService.initiatePhoneChange).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: true, phone: '50922222222' });
+  });
+
+  it('flag="true" → webapp (isMobileDevice=false) exige aussi l\'OTP', async () => {
+    process.env[ENV_KEY] = 'true';
+    const { service, prisma, otpService, user } = buildService();
+
+    const result = await service.updateProfile(user.id, { phone: '50922222222' }, false);
+
+    expect(result).toEqual({ requiresOtp: true, challengeToken: 'challenge-token-xyz' });
+    expect(otpService.initiatePhoneChange).toHaveBeenCalledWith(user.id, '50922222222');
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('flag="true" + téléphone inchangé → toujours pas d\'OTP', async () => {
+    process.env[ENV_KEY] = 'true';
+    const { service, otpService, user } = buildService({ phone: '50911111111' });
+
+    const result = await service.updateProfile(user.id, { phone: '50911111111' }, false);
+
+    expect(otpService.initiatePhoneChange).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: true, phone: '50911111111' });
+  });
+
+  it('valeur autre que "true" (ex: "1", "")  → traité comme désactivé', async () => {
+    process.env[ENV_KEY] = '1';
+    const { service, otpService, user } = buildService();
+
+    const result = await service.updateProfile(user.id, { phone: '50922222222' }, false);
+
+    expect(otpService.initiatePhoneChange).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ success: true, phone: '50922222222' });
+  });
+});
