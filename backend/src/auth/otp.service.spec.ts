@@ -70,7 +70,7 @@ function makeUser(overrides: Partial<any> = {}) {
 }
 
 function buildService(fakePrisma: any, authServiceOverrides: any = {}) {
-  const mailService = { sendOtpCode: jest.fn() };
+  const mailService = { sendOtpCode: jest.fn(), sendPhoneChangedAlert: jest.fn() };
   const authService = {
     verifyChallengeToken: jest.fn(),
     completeDeviceVerification: jest.fn(),
@@ -288,5 +288,79 @@ describe('OtpService.verifyCodeOnly (utilisé par AccountDeletionService, sans p
     await expect(service.verifyCodeOnly(user.id, 'DELETE_ACCOUNT', '000000')).rejects.toThrow(
       BadRequestException,
     );
+  });
+});
+
+describe('OtpService.initiatePhoneChange + verify — purpose=change_phone (lo L6)', () => {
+  it('ne change pas le téléphone avant vérification ; un bon code l\'applique et déclenche l\'alerte', async () => {
+    const user: any = makeUser({ phone: '50911111111' });
+    const fakePrisma = buildFakePrisma(user);
+    const { service, mailService, jwtService } = buildService(fakePrisma);
+    jwtService.sign.mockReturnValue('challenge-token-abc');
+
+    const { challengeToken } = await service.initiatePhoneChange(user.id, '50922222222');
+    expect(challengeToken).toBe('challenge-token-abc');
+    expect(user.phone).toBe('50911111111'); // aucun changement avant OTP
+
+    const code = extractSentCode(mailService);
+    expect(mailService.sendOtpCode).toHaveBeenCalledWith(user.email, user.name, code, 'CHANGE_PHONE');
+    expect(mailService.sendPhoneChangedAlert).not.toHaveBeenCalled();
+
+    jwtService.verify.mockReturnValue({
+      sub: user.id,
+      purpose: 'phone_change_challenge',
+      newPhone: '50922222222',
+    });
+
+    const result = await service.verify(
+      { purpose: 'change_phone', code, challengeToken } as any,
+    );
+
+    expect(result.phone).toBe('50922222222');
+    expect(user.phone).toBe('50922222222');
+    expect(mailService.sendPhoneChangedAlert).toHaveBeenCalledWith(user.email, user.name, '50922222222');
+  });
+
+  it('rejette un challengeToken d\'un autre purpose (ex: device_challenge)', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, jwtService } = buildService(fakePrisma);
+    jwtService.verify.mockReturnValue({ sub: user.id, purpose: 'device_challenge', deviceId: 'd1' });
+
+    await expect(
+      service.verify({ purpose: 'change_phone', code: '123456', challengeToken: 'x' } as any),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('respecte le rate-limit 3 demandes / 10 min par compte', async () => {
+    const user = makeUser();
+    const fakePrisma = buildFakePrisma(user);
+    const { service, jwtService } = buildService(fakePrisma);
+    jwtService.sign.mockReturnValue('t');
+
+    await service.initiatePhoneChange(user.id, '50933333331');
+    await service.initiatePhoneChange(user.id, '50933333332');
+    await service.initiatePhoneChange(user.id, '50933333333');
+
+    await expect(service.initiatePhoneChange(user.id, '50933333334')).rejects.toThrow(HttpException);
+  });
+
+  it('un mauvais code ne change pas le téléphone', async () => {
+    const user: any = makeUser({ phone: '50911111111' });
+    const fakePrisma = buildFakePrisma(user);
+    const { service, jwtService } = buildService(fakePrisma);
+    jwtService.sign.mockReturnValue('challenge-token-abc');
+
+    const { challengeToken } = await service.initiatePhoneChange(user.id, '50922222222');
+    jwtService.verify.mockReturnValue({
+      sub: user.id,
+      purpose: 'phone_change_challenge',
+      newPhone: '50922222222',
+    });
+
+    await expect(
+      service.verify({ purpose: 'change_phone', code: '000000', challengeToken } as any),
+    ).rejects.toThrow(BadRequestException);
+    expect(user.phone).toBe('50911111111');
   });
 });

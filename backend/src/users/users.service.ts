@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { OtpService } from '../auth/otp.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private otpService: OtpService,
+  ) {}
 
   /**
    * 1. RALE PROFIL AJAN AN POU DASHBOARD LI
@@ -135,7 +139,28 @@ export class UserService {
     };
   }
 
-  async updateProfile(userId: string, data: { name?: string; phone?: string }) {
+  // Lo L6 — chanjman telefòn pa app mobil (X-Device-Id prezan) mande OTP
+  // anvan aplikasyon; webapp (isMobileDevice=false) kenbe ansyen chemen an
+  // dirèkteman pou pa kraze l — li poko adapte pou flux OTP a.
+  async updateProfile(
+    userId: string,
+    data: { name?: string; phone?: string },
+    isMobileDevice = false,
+  ) {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
+    const phoneChanged = typeof data.phone === 'string' && data.phone !== current?.phone;
+
+    if (phoneChanged && isMobileDevice) {
+      if (data.name) {
+        await this.prisma.user.update({ where: { id: userId }, data: { name: data.name } });
+      }
+      const { challengeToken } = await this.otpService.initiatePhoneChange(userId, data.phone!);
+      return { requiresOtp: true, challengeToken };
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {

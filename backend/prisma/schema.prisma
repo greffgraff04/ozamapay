@@ -653,6 +653,7 @@ enum OtpPurpose {
   NEW_DEVICE
   RESET
   DELETE_ACCOUNT
+  CHANGE_PHONE
 }
 
 enum AccountDeletionStatus {
