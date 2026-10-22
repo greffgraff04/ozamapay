@@ -301,14 +301,14 @@ export class MailService {
       `<div style="height:16px;"></div>` +
       this.amountBox(`$${fundAmountUsd.toFixed(2)}`, 'Nouvo balans kat la') +
       this.table(
-        this.infoRow('Rezon', 'Kat presedan an te dezaktive/terminen pa StroWallet') +
+        this.infoRow('Rezon', 'Kat presedan an te dezaktive/terminen') +
         (feeDeductedHtg
           ? this.infoRow('Frè dediwi nan wallet ou', `${feeDeductedHtg.toLocaleString('fr-HT')} HTG`)
           : '') +
         this.infoRow('Dat', now),
       ) +
       this.p(`Bonjou ${name},`) +
-      this.p('Kat vityèl ou a te dezaktive pa StroWallet epi nou ranplase l otomatikman pou ou.') +
+      this.p('Kat vityèl ou a te dezaktive epi nou ranplase l otomatikman pou ou.') +
       this.accentLine('Kat ou pare pou itilize kounye a — verifye l nan app la.') +
       this.btn('Wè Kat Ou →', `${this.frontendUrl}/dashboard`),
     );
