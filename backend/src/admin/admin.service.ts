@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { KycService } from '../kyc/kyc.service';
 import { COMMISSION_AGENT_KYC } from '../common/constants';
 import { isStaging } from '../config/app-env';
 
@@ -17,6 +18,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly kycService: KycService,
   ) {}
 
   async getDashboardStats() {
@@ -321,6 +323,16 @@ export class AdminService {
   async activateAgent(agentId: string) {
     const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
     if (!agent) throw new NotFoundException('Ajan sa a pa egziste');
+
+    // KYC APPROVED obligatwa anvan aktivasyon — san sa a yon ajan ki gen
+    // KYC PENDING/REJECTED ta ka vin ACTIVE epi jwenn aksè nan topup/withdraw.
+    try {
+      await this.kycService.assertApproved(agent.userId);
+    } catch {
+      throw new BadRequestException(
+        "Pa ka aktive ajan sa a — itilizatè a pa gen yon KYC APPROVED",
+      );
+    }
 
     return this.prisma.$transaction(async (tx) => {
       await tx.agent.update({ where: { id: agentId }, data: { status: 'ACTIVE' } });

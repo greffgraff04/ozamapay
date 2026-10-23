@@ -10,6 +10,7 @@ import {
 
 import { AgentsService } from './agents.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import {
   AgentTopupDto,
   AgentWithdrawDto,
@@ -70,7 +71,9 @@ export class AgentsController {
   // =========================
   // APPLY AS AGENT
   // =========================
-  @UseGuards(JwtAuthGuard)
+  // KYC APPROVED obligatwa anvan ou ka aplike kòm ajan — san sa a nenpòt
+  // kont (menm KYC PENDING/REJECTED) te ka kreye yon Agent PENDING.
+  @UseGuards(JwtAuthGuard, KycApprovedGuard)
   @Post('apply')
   async applyAsAgent(
     @Req() req: any,
