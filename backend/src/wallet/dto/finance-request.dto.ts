@@ -1,4 +1,5 @@
 import { IsIn, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { IsMoneyAmount } from '../../common/validation/money-amount.decorator';
 
 // Sèl 2 opsyon aktyèlman ofri nan webapp (app/dashboard/page.tsx) — 'WISE'
@@ -12,6 +13,10 @@ export const FINANCE_SERVICE_TYPES = ['NATCASH', 'USDT'];
 export const FINANCE_REQUEST_MAX_HTG = 50_000;
 
 export class FinanceRequestDto {
+  // Menm rezon ak WithdrawRequestDto.method : odit VALIDATION_MODE=log
+  // jwenn echèk sou sa a (24 fwa), swa yon bundle web pa ajou, swa yon
+  // lòt kliyan ki pa fè .toUpperCase() — nou aksepte toulede ka yo.
+  @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
   @IsString()
   @IsIn(FINANCE_SERVICE_TYPES)
   serviceType: string;

@@ -24,6 +24,17 @@ describe('CreateKycDto (/kyc/submit, branché via validateInMode)', () => {
     expectInvalid(CreateKycDto, { ...valid, dateOfBirth: '01/01/1990' }));
 
   it('rejte yon firstName vid', () => expectInvalid(CreateKycDto, { ...valid, firstName: '' }));
+
+  // Odit VALIDATION_MODE=log (2026-10) jwenn 3-4 echèk sou state/zipCode —
+  // anpil adrès Ayisyen lejitim pa gen "state"/"zipCode" (frontend pa egzije
+  // yo). Opsyonèl kounye a, menm jan ak UpdateAddressDto.
+  it('aksepte yon payload san state ni zipCode (adrès Ayisyen san sa yo)', () => {
+    const { state, zipCode, ...withoutStateZip } = valid;
+    return expectValid(CreateKycDto, withoutStateZip);
+  });
+
+  it('aksepte state/zipCode vid tou', () =>
+    expectValid(CreateKycDto, { ...valid, state: '', zipCode: '' }));
 });
 
 describe('UpdateAddressDto (/kyc/address)', () => {

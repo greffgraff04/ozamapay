@@ -42,6 +42,18 @@ describe('WithdrawRequestDto (/wallet/withdraw)', () => {
 
   it('rejte yon montan zewo', () =>
     expectInvalid(WithdrawRequestDto, { amount: 0, method: 'MONCASH', accountInfo: 'info' }));
+
+  // Odit VALIDATION_MODE=log (2026-10) jwenn 1686 echèk sou sa a — webapp
+  // voye "moncash"/"bank"/etc an miniskil. @Transform nan DTO a dwe aksepte
+  // DE KA yo pou pa kraze retrè kliyan si enforce ta aktive.
+  it('aksepte method an miniskil (webapp aktyèl la) — @Transform normalize l', () =>
+    expectValid(WithdrawRequestDto, { amount: 100, method: 'moncash', accountInfo: 'info' }));
+
+  it('aksepte method an MAJISKIL tou', () =>
+    expectValid(WithdrawRequestDto, { amount: 100, method: 'MONCASH', accountInfo: 'info' }));
+
+  it('rejte yon method ki pa nan lis fèmen, kèlkeswa ka', () =>
+    expectInvalid(WithdrawRequestDto, { amount: 100, method: 'wise', accountInfo: 'info' }));
 });
 
 describe('FinanceRequestDto (/wallet/finance-request)', () => {
@@ -53,4 +65,7 @@ describe('FinanceRequestDto (/wallet/finance-request)', () => {
 
   it('rejte yon montan ki pa fini (NaN)', () =>
     expectInvalid(FinanceRequestDto, { serviceType: 'NATCASH', amount: NaN, details: 'detay' }));
+
+  it('aksepte serviceType an miniskil — @Transform normalize l', () =>
+    expectValid(FinanceRequestDto, { serviceType: 'natcash', amount: 100, details: 'detay' }));
 });

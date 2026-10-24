@@ -148,10 +148,15 @@ export class WalletController {
     @Req() req: any,
     @Body() body: WithdrawRequestDto,
   ) {
+    // Nòmalizasyon defansiv: ValidationModePipe sèlman aplike @Transform nan
+    // DTO a an mod "enforce" — an mod "log" (default jodi a) li retounen
+    // valè brit la san chanje l. Nòmalize isit la garanti sèvis la toujou
+    // resevwa yon valè an MAJISKIL, kèlkeswa VALIDATION_MODE.
+    const method = typeof body.method === 'string' ? body.method.toUpperCase() : body.method;
     return this.walletService.createWithdrawRequest(
       req.user.id,
       body.amount,
-      body.method,
+      method,
       body.accountInfo,
     );
   }
@@ -172,9 +177,13 @@ export class WalletController {
     const proofImage = file
       ? await this.imagekitService.uploadFile(file, 'finance')
       : undefined;
+    // Menm rezon ak /wallet/withdraw pi wo a — nòmalize defansivman paske
+    // @Transform nan DTO a pa aplike an mod "log" (default jodi a).
+    const serviceType =
+      typeof body.serviceType === 'string' ? body.serviceType.toUpperCase() : body.serviceType;
     return this.walletService.createFinanceRequest(
       req.user.id,
-      body.serviceType,
+      serviceType,
       Number(body.amount),
       body.details,
       proofImage,
