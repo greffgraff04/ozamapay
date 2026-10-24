@@ -16,10 +16,9 @@ const FEES = {
   TOPUP: 0.06,
   TRANSFER: 0.0099,
   WITHDRAW: 0.02,
-  // L7 — frè konvèsyon devise. Rete 0 jiskaske biznis apwouve yon valè
-  // (rekòmandasyon pwopoze: 1%, aliye ak TRANSFER). PA chanje san apwobasyon
-  // esplisit — wè POST /wallet/convert.
-  CONVERT: 0,
+  // L7 — frè konvèsyon devise. Apwouve pa Greffin 2026-10-24 (1%, aliye ak
+  // TRANSFER=0.99%).
+  CONVERT: 0.01,
 };
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
@@ -57,6 +56,20 @@ export class WalletService {
 
   private round(value: number) {
     return Math.round(value * 100) / 100;
+  }
+
+  // L7 — yon round-trip HTG->USD->HTG ak Math.round "nòmal" te ka rann PI
+  // PLIS pase montan depa a (ekzanp konkrè: 1000 HTG te vin 1000.35 HTG),
+  // sa ki ta pèmèt yon arbitraj enfini (konvèti fè-wi-ale san rete). Règ
+  // absoli: montan KREDITE a toujou wondi AN BA (floorCents), montan FRÈ a
+  // toujou wondi AN WO (ceilCents) — platfòm lan pa janm pèdi yon santim,
+  // kliyan an pa janm genyen yon santim ki pa t gen rezon egziste.
+  private floorCents(value: number) {
+    return Math.floor(value * 100) / 100;
+  }
+
+  private ceilCents(value: number) {
+    return Math.ceil(value * 100) / 100;
   }
 
   private async getUsdHtgRate(): Promise<number> {
@@ -736,8 +749,10 @@ export class WalletService {
     }
 
     const feePercent = FEES.CONVERT;
-    const feeAmount = this.round(grossTo * feePercent);
-    const finalAmount = this.round(grossTo - feeAmount);
+    // Frè wondi AN WO (janm anba sa 1% reyèl la), montan kredite wondi AN
+    // BA (janm pi plis pase sa kliyan an merite) — wè floorCents/ceilCents.
+    const feeAmount = this.ceilCents(grossTo * feePercent);
+    const finalAmount = this.floorCents(grossTo - feeAmount);
     const rate = n > 0 ? grossTo / n : 0;
 
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {

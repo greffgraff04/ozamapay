@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -13,18 +13,8 @@ import { isStaging } from '../config/app-env';
 const MIN_RATE_VALUE = 1;
 const MAX_RATE_VALUE = 1000;
 
-// L7 — staging (ozamapay_staging) pa gen `prisma db seed` nan buildCommand
-// li (sèlman prod genyen), donk tab Rate a rete vid apre migrate deploy.
-// Valè sa yo kopye an LEKTI SÈLMAN depi prod (ozamapay-backend) le
-// 2026-10-23 — PA yon nouvo desizyon biznis. CREATE sèlman si absan — pa
-// janm ekraze yon valè admin te deja antre sou staging.
-const STAGING_SEED_RATES: Record<string, number> = {
-  USD_HTG: 135,
-  EUR_HTG: 152,
-};
-
 @Injectable()
-export class RatesService implements OnModuleInit {
+export class RatesService {
   private readonly logger = new Logger(RatesService.name);
   private readonly STALE_DAYS = 3; // suggested default — confirm cadence with COO
 
@@ -33,17 +23,6 @@ export class RatesService implements OnModuleInit {
     private mailService: MailService,
     private alertCooldown: AlertCooldownService,
   ) {}
-
-  async onModuleInit() {
-    if (!isStaging()) return;
-    for (const [key, value] of Object.entries(STAGING_SEED_RATES)) {
-      const existing = await this.prisma.rate.findUnique({ where: { key } });
-      if (!existing) {
-        await this.prisma.rate.create({ data: { key, value, currency: 'HTG' } });
-        this.logger.log(`[staging] seed Rate ${key}=${value} (pa t egziste)`);
-      }
-    }
-  }
 
   async getAllRates() {
     return this.prisma.rate.findMany();

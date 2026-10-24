@@ -118,23 +118,86 @@ describe('WalletService — /wallet/convert/quote', () => {
     );
   });
 
-  it('kreye yon devis valid HTG -> USD ak to a', async () => {
+  it('kreye yon devis valid HTG -> USD, frè 1% wondi AN WO, montan final wondi AN BA', async () => {
     const { service } = buildService();
     const quote = await service.getConversionQuote('user-1', 'HTG', 'USD', 1400);
     expect(quote.quoteId).toBeDefined();
-    expect(quote.finalAmount).toBeCloseTo(10, 2); // 1400 HTG / 140 = 10 USD
+    // 1400/140 = 10 USD brit. Frè 1% = 0.10 (wondi an wo, deja egzak isit
+    // la). Final = floor(10 - 0.10) = 9.90.
+    expect(quote.feePercent).toBe(0.01);
+    expect(quote.feeAmount).toBeCloseTo(0.1, 2);
+    expect(quote.finalAmount).toBeCloseTo(9.9, 2);
+  });
+
+  it('frè wondi AN WO, pa janm anba 1% reyèl la (ekzanp ki pa tonbe wonn)', async () => {
+    const { service } = buildService();
+    // 777/140 = 5.55 brit. Frè 1% egzak = 0.0555 -> ceilCents = 0.06 (pa 0.05).
+    const quote = await service.getConversionQuote('user-1', 'HTG', 'USD', 777);
+    expect(quote.feeAmount).toBeCloseTo(0.06, 2);
+    expect(quote.finalAmount).toBeCloseTo(5.49, 2); // floor(5.55 - 0.06)
+  });
+});
+
+describe('WalletService — round-trip pa janm rann plis pase montan depa a', () => {
+  const amounts = [7, 13.37, 100, 999];
+
+  it.each(amounts)('HTG(%s) -> USD -> HTG pa janm depase montan depa a', async (amount) => {
+    const { service, state } = buildService();
+    state.walletBalance = amount;
+
+    const q1 = await service.getConversionQuote('user-1', 'HTG', 'USD', amount);
+    await service.executeConversion('user-1', q1.quoteId);
+    const usdBalance = state.currencyBalances.get('user-1:USD') ?? 0;
+    expect(usdBalance).toBeCloseTo(q1.finalAmount, 2);
+
+    if (usdBalance > 0) {
+      const q2 = await service.getConversionQuote('user-1', 'USD', 'HTG', usdBalance);
+      await service.executeConversion('user-1', q2.quoteId);
+    }
+
+    expect(state.walletBalance).toBeLessThanOrEqual(amount);
+  });
+
+  it('round-trip ak 3 devise (HTG -> EUR -> USD -> HTG) pa janm genyen lajan', async () => {
+    const { service, state } = buildService();
+    const startAmount = 500;
+    state.walletBalance = startAmount;
+
+    const q1 = await service.getConversionQuote('user-1', 'HTG', 'EUR', startAmount);
+    await service.executeConversion('user-1', q1.quoteId);
+    const eur = state.currencyBalances.get('user-1:EUR') ?? 0;
+
+    const q2 = await service.getConversionQuote('user-1', 'EUR', 'USD', eur);
+    await service.executeConversion('user-1', q2.quoteId);
+    const usd = state.currencyBalances.get('user-1:USD') ?? 0;
+
+    const q3 = await service.getConversionQuote('user-1', 'USD', 'HTG', usd);
+    await service.executeConversion('user-1', q3.quoteId);
+
+    expect(state.walletBalance).toBeLessThanOrEqual(startAmount);
+  });
+
+  it('montan tèlman piti ke frè a ta manje tout valè a — rejte pwòpteman, pa kredite 0/negatif', async () => {
+    const { service } = buildService();
+    // 1 HTG / 140 = 0.0071 USD brit. ceilCents(frè) = 0.01 minimòm, pi plis
+    // pase valè brit la — finalAmount ta negatif. Dwe rejte, pa kreye yon
+    // devis ak yon montan ki pa gen sans.
+    await expect(service.getConversionQuote('user-1', 'HTG', 'USD', 1)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 });
 
 describe('WalletService — /wallet/convert (egzekisyon)', () => {
-  it('debite wallet HTG epi kredite WalletCurrencyBalance USD', async () => {
+  it('debite wallet HTG epi kredite WalletCurrencyBalance USD (net frè 1%)', async () => {
     const { service, state } = buildService();
     const quote = await service.getConversionQuote('user-1', 'HTG', 'USD', 700); // wallet gen 1000 HTG
     const result = await service.executeConversion('user-1', quote.quoteId);
 
     expect(result.success).toBe(true);
-    expect(state.walletBalance).toBe(300); // 1000 - 700
-    expect(state.currencyBalances.get('user-1:USD')).toBeCloseTo(5, 2); // 700/140
+    expect(state.walletBalance).toBe(300); // 1000 - 700 (debi pa touche pa frè a)
+    // 700/140 = 5 brit. Frè 1% = 0.05 egzak. Final = floor(5 - 0.05) = 4.95.
+    expect(state.currencyBalances.get('user-1:USD')).toBeCloseTo(4.95, 2);
   });
 
   it('doub soumisyon (menm quoteId 2 fwa) — dezyèm apèl la echwe', async () => {
