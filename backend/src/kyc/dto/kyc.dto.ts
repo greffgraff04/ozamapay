@@ -50,13 +50,16 @@ export class CreateKycDto {
   @IsNotEmpty()
   city: string;
 
+  // Opsyonèl (menm jan ak UpdateAddressDto) — anpil adrès Ayisyen lejitim pa
+  // gen "state"/"zipCode" (odit VALIDATION_MODE=log jwenn echèk sou sa a pou
+  // KYC/kat kreye ak siksè). KycService.submitKyc aplike '' kòm defo si absan.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  state: string;
+  state?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  zipCode: string;
+  zipCode?: string;
 
   @IsString()
   @IsNotEmpty()

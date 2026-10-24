@@ -48,7 +48,7 @@ export class CardsService {
   async getMyCards(userId: string) {
     const cards = await this.prisma.virtualCard.findMany({
       where: { userId, status: { in: ['ACTIVE', 'FROZEN'] } },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
     // Yon itilizatè pa ka gen plis pase 1 kat StroWallet, kidonk sa a se
     // pi plis 1 apèl siplemantè pou sync balans live (menm apèl ak getMyCard).

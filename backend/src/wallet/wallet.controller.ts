@@ -19,6 +19,7 @@ import { TransferDto } from './dto/transfer.dto';
 import { ManualTopupDto } from './dto/manual-topup.dto';
 import { WithdrawRequestDto } from './dto/withdraw-request.dto';
 import { FinanceRequestDto } from './dto/finance-request.dto';
+import { ConvertQuoteDto, ConvertExecuteDto } from './dto/convert.dto';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
@@ -147,10 +148,15 @@ export class WalletController {
     @Req() req: any,
     @Body() body: WithdrawRequestDto,
   ) {
+    // Nòmalizasyon defansiv: ValidationModePipe sèlman aplike @Transform nan
+    // DTO a an mod "enforce" — an mod "log" (default jodi a) li retounen
+    // valè brit la san chanje l. Nòmalize isit la garanti sèvis la toujou
+    // resevwa yon valè an MAJISKIL, kèlkeswa VALIDATION_MODE.
+    const method = typeof body.method === 'string' ? body.method.toUpperCase() : body.method;
     return this.walletService.createWithdrawRequest(
       req.user.id,
       body.amount,
-      body.method,
+      method,
       body.accountInfo,
     );
   }
@@ -171,13 +177,46 @@ export class WalletController {
     const proofImage = file
       ? await this.imagekitService.uploadFile(file, 'finance')
       : undefined;
+    // Menm rezon ak /wallet/withdraw pi wo a — nòmalize defansivman paske
+    // @Transform nan DTO a pa aplike an mod "log" (default jodi a).
+    const serviceType =
+      typeof body.serviceType === 'string' ? body.serviceType.toUpperCase() : body.serviceType;
     return this.walletService.createFinanceRequest(
       req.user.id,
-      body.serviceType,
+      serviceType,
       Number(body.amount),
       body.details,
       proofImage,
     );
+  }
+
+  // ======================================================
+  // L7 — DEVIS KONVÈSYON DEVISE (valab 30s, quoteId pou egzekite)
+  // ======================================================
+  @Get('convert/quote')
+  @Throttle({ short: { limit: 20, ttl: 60000 } })
+  async getConversionQuote(
+    @Req() req: any,
+    @Query() query: ConvertQuoteDto,
+  ) {
+    return this.walletService.getConversionQuote(
+      req.user.id,
+      query.from,
+      query.to,
+      query.amount,
+    );
+  }
+
+  // ======================================================
+  // L7 — EGZEKITE KONVÈSYON DEVISE (sèlman ak yon quoteId valab)
+  // ======================================================
+  @Post('convert')
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  async executeConversion(
+    @Req() req: any,
+    @Body() body: ConvertExecuteDto,
+  ) {
+    return this.walletService.executeConversion(req.user.id, body.quoteId);
   }
 
   @Get('notifications')

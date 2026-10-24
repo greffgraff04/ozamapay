@@ -16,6 +16,9 @@ const FEES = {
   TOPUP: 0.06,
   TRANSFER: 0.0099,
   WITHDRAW: 0.02,
+  // L7 — frè konvèsyon devise. Apwouve pa Greffin 2026-10-24 (1%, aliye ak
+  // TRANSFER=0.99%).
+  CONVERT: 0.01,
 };
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
@@ -25,6 +28,19 @@ const isInternational = (method: string) => INTERNATIONAL_METHODS.includes(metho
 
 const DOMESTIC_TOPUP_METHODS = ['MONCASH', 'NATCASH'];
 const INTL_DEPOSIT_METHODS = ['BANK', 'ZELLE', 'CASHAPP', 'MERU', 'USDT'];
+
+// L7 — devise sipòte pou /wallet/convert. Kle Rate korespondan an (HTG per
+// 1 inite) — null pou HTG limenm (idantite, pa gen lòt to pou chèche).
+const CONVERT_RATE_KEYS: Record<string, string | null> = {
+  HTG: null,
+  USD: 'USD_HTG',
+  EUR: 'EUR_HTG',
+};
+
+// Gad-fou sanite (pa yon règ biznis strik, menm filozofi ak
+// WALLET_TRANSFER_MAX_HTG) — aplike sou valè EKIVALAN an HTG, kèlkeswa
+// devise sous/destinasyon an.
+const CONVERT_MAX_HTG_EQUIVALENT = 500_000;
 
 @Injectable()
 export class WalletService {
@@ -42,9 +58,58 @@ export class WalletService {
     return Math.round(value * 100) / 100;
   }
 
+  // L7 — yon round-trip HTG->USD->HTG ak Math.round "nòmal" te ka rann PI
+  // PLIS pase montan depa a (ekzanp konkrè: 1000 HTG te vin 1000.35 HTG),
+  // sa ki ta pèmèt yon arbitraj enfini (konvèti fè-wi-ale san rete). Règ
+  // absoli: montan KREDITE a toujou wondi AN BA (floorCents), montan FRÈ a
+  // toujou wondi AN WO (ceilCents) — platfòm lan pa janm pèdi yon santim,
+  // kliyan an pa janm genyen yon santim ki pa t gen rezon egziste.
+  private floorCents(value: number) {
+    return Math.floor(value * 100) / 100;
+  }
+
+  private ceilCents(value: number) {
+    return Math.ceil(value * 100) / 100;
+  }
+
   private async getUsdHtgRate(): Promise<number> {
     const entry = await this.prisma.rate.findUnique({ where: { key: 'USD_HTG' } });
     return Number(entry?.value || 140);
+  }
+
+  // L7 — kontrèman ak getUsdHtgRate() pi wo a (fallback 140 silansye), isit
+  // la nou REJTE si to a manke/envalid — "refuse proprement" olye konvèti
+  // ak yon to ki pa vrè. Sèlman itilize pa /wallet/convert.
+  private async getStrictHtgRate(currency: string): Promise<number> {
+    if (currency === 'HTG') return 1;
+    const key = CONVERT_RATE_KEYS[currency];
+    if (!key) {
+      throw new BadRequestException(`Devise ${currency} pa sipòte pou konvèsyon`);
+    }
+    const entry = await this.prisma.rate.findUnique({ where: { key } });
+    const n = Number(entry?.value);
+    if (!entry || !Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException(
+        `Konvèsyon ${currency} pa disponib kounye a — to chanj pa konfigire`,
+      );
+    }
+    return n;
+  }
+
+  // Konvèti yon montan nan `from` pou jwenn valè an `to`, pase pa HTG kòm
+  // pivo (menm jan ak tout lòt konvèsyon nan platfòm lan — wè
+  // BSICardsMastercardEuroService.getEurHtgRate). Retounen tou valè
+  // ekivalan an HTG pou kontwòl plafon.
+  private async convertViaHtg(
+    amount: number,
+    from: string,
+    to: string,
+  ): Promise<{ htgEquivalent: number; grossTo: number }> {
+    const fromRate = await this.getStrictHtgRate(from);
+    const toRate = await this.getStrictHtgRate(to);
+    const htgEquivalent = from === 'HTG' ? amount : amount * fromRate;
+    const grossTo = to === 'HTG' ? htgEquivalent : htgEquivalent / toRate;
+    return { htgEquivalent, grossTo };
   }
 
   // ======================================================
@@ -660,5 +725,211 @@ export class WalletService {
       data: { isRead: true },
     });
     return { success: true };
+  }
+
+  // ======================================================
+  // L7 — CONVERSION DE DEVISES (HTG <-> USD <-> EUR)
+  // ======================================================
+
+  async getConversionQuote(userId: string, from: string, to: string, amount: unknown) {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new BadRequestException('Montan envalid — dwe yon nonb pozitif');
+    }
+    if (from === to) {
+      throw new BadRequestException('Pa ka konvèti yon devise an tèt li');
+    }
+
+    const { htgEquivalent, grossTo } = await this.convertViaHtg(n, from, to);
+
+    if (htgEquivalent > CONVERT_MAX_HTG_EQUIVALENT) {
+      throw new BadRequestException(
+        `Montan depase plafon maksimòm (${CONVERT_MAX_HTG_EQUIVALENT} HTG ekivalan)`,
+      );
+    }
+
+    const feePercent = FEES.CONVERT;
+    // Frè wondi AN WO (janm anba sa 1% reyèl la), montan kredite wondi AN
+    // BA (janm pi plis pase sa kliyan an merite) — wè floorCents/ceilCents.
+    const feeAmount = this.ceilCents(grossTo * feePercent);
+    const finalAmount = this.floorCents(grossTo - feeAmount);
+    const rate = n > 0 ? grossTo / n : 0;
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      throw new BadRequestException('Montan final la envalid apre konvèsyon — eseye yon montan diferan');
+    }
+
+    const expiresAt = new Date(Date.now() + 30_000);
+
+    const quote = await this.prisma.conversionQuote.create({
+      data: {
+        userId,
+        fromCurrency: from,
+        toCurrency: to,
+        amount: n,
+        rate,
+        feePercent,
+        feeAmount,
+        finalAmount,
+        expiresAt,
+      },
+    });
+
+    return {
+      quoteId: quote.id,
+      from,
+      to,
+      amount: n,
+      rate,
+      feePercent,
+      feeAmount,
+      finalAmount,
+      expiresAt: quote.expiresAt,
+    };
+  }
+
+  async executeConversion(userId: string, quoteId: unknown) {
+    if (typeof quoteId !== 'string' || !quoteId.trim()) {
+      throw new BadRequestException('quoteId obligatwa');
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const now = new Date();
+
+        // Reklamasyon atomik — sèl sous verite pou idanpotans/anti-doub-soumèt
+        // ak ekspirasyon. Yon WHERE ki gen userId + consumedAt:null +
+        // expiresAt>now garanti sèlman YON apèl ka reyisi pou menm quoteId a,
+        // menm si 2 rekèt rive an menm tan (count=0 pou dezyèm nan).
+        const claim = await tx.conversionQuote.updateMany({
+          where: { id: quoteId, userId, consumedAt: null, expiresAt: { gt: now } },
+          data: { consumedAt: now },
+        });
+
+        if (claim.count === 0) {
+          throw new BadRequestException('Devis envalid, ekspire, oswa deja itilize');
+        }
+
+        const quote = await tx.conversionQuote.findUnique({ where: { id: quoteId } });
+        if (!quote) {
+          throw new BadRequestException('Devis envalid, ekspire, oswa deja itilize');
+        }
+
+        const amount = Number(quote.amount);
+        const finalAmount = Number(quote.finalAmount);
+        const from = quote.fromCurrency;
+        const to = quote.toCurrency;
+
+        const wallet = await tx.wallet.findUnique({ where: { userId } });
+        if (!wallet) throw new NotFoundException('Wallet pa jwenn');
+
+        // DEBI — balans fè pati WHERE la menm (pa yon lekti separe) : sou
+        // konkirans, se yon sèl UPDATE ki ka genyen, menm patwon ak
+        // agentWallet/withdraw yo pi wo.
+        let debitBefore: number;
+        let debitAfter: number;
+
+        if (from === 'HTG') {
+          debitBefore = Number(wallet.balance);
+          const debit = await tx.wallet.updateMany({
+            where: { userId, balance: { gte: amount } },
+            data: { balance: { decrement: amount } },
+          });
+          if (debit.count === 0) throw new BadRequestException('Balans ensifizan');
+          debitAfter = this.round(debitBefore - amount);
+        } else {
+          const existing = await tx.walletCurrencyBalance.findUnique({
+            where: { userId_currency: { userId, currency: from } },
+          });
+          debitBefore = Number(existing?.balance || 0);
+          const debit = await tx.walletCurrencyBalance.updateMany({
+            where: { userId, currency: from, balance: { gte: amount } },
+            data: { balance: { decrement: amount } },
+          });
+          if (debit.count === 0) throw new BadRequestException('Balans ensifizan');
+          debitAfter = this.round(debitBefore - amount);
+        }
+
+        // KREDI — lòt janm lan.
+        let creditBefore: number;
+        let creditAfter: number;
+
+        if (to === 'HTG') {
+          const currentWallet =
+            from === 'HTG' ? wallet : await tx.wallet.findUnique({ where: { userId } });
+          creditBefore = Number(currentWallet!.balance);
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { increment: finalAmount } },
+          });
+          creditAfter = this.round(creditBefore + finalAmount);
+        } else {
+          const existingTo = await tx.walletCurrencyBalance.findUnique({
+            where: { userId_currency: { userId, currency: to } },
+          });
+          creditBefore = Number(existingTo?.balance || 0);
+          await tx.walletCurrencyBalance.upsert({
+            where: { userId_currency: { userId, currency: to } },
+            update: { balance: { increment: finalAmount } },
+            create: { userId, currency: to, balance: finalAmount },
+          });
+          creditAfter = this.round(creditBefore + finalAmount);
+        }
+
+        const reference = `CV-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+
+        const transaction = await tx.transaction.create({
+          data: {
+            reference,
+            type: 'CONVERSION',
+            status: 'COMPLETED',
+            amount,
+            fee: quote.feeAmount,
+            netAmount: finalAmount,
+            currency: from,
+            senderWalletId: wallet.id,
+            receiverWalletId: wallet.id,
+            title: `Konvèsyon ${from} → ${to}`,
+            description: `${amount} ${from} → ${finalAmount} ${to} (frè ${quote.feeAmount} ${to})`,
+          },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            type: 'DEBIT',
+            amount,
+            balanceBefore: debitBefore,
+            balanceAfter: debitAfter,
+            currency: from,
+            description: `Konvèsyon soti ${from}`,
+          },
+        });
+
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: wallet.id,
+            transactionId: transaction.id,
+            type: 'CREDIT',
+            amount: finalAmount,
+            balanceBefore: creditBefore,
+            balanceAfter: creditAfter,
+            currency: to,
+            description: `Konvèsyon rive ${to}`,
+          },
+        });
+
+        return {
+          success: true,
+          transactionId: transaction.id,
+          reference,
+          debited: { currency: from, amount },
+          credited: { currency: to, amount: finalAmount },
+          fee: { currency: to, amount: Number(quote.feeAmount) },
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 }

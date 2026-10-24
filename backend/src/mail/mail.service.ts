@@ -448,6 +448,28 @@ export class MailService {
     await this.send(email, 'Enfòmasyon sou Kreyasyon Kat Vityèl', html);
   }
 
+  // 4 oct 2026 — anons retour kreyasyon Kat Visa (5 out, midi). Tèks egzat
+  // apwouve, pa modifye san apwobasyon.
+  async sendVisaCardReturnAnnouncement(email: string): Promise<void> {
+    const subject = 'Retour des Cartes Visa — Disponible demain à partir de midi';
+    const whatsappUrl = 'https://whatsapp.com/channel/0029Vb7sB7O9WtC086cSz343';
+    const html = this.wrap(
+      subject,
+      'Retour des Cartes Visa',
+      this.p('Cher(e) client(e) OZAMAPAY,') +
+      this.p("Nous avons le plaisir de vous annoncer que vous pourrez à nouveau créer vos Cartes Visa à partir de demain, 5 Octobre, à midi (12h00).") +
+      this.p("Vous pourrez créer votre carte directement depuis l'application OZAMAPAY.") +
+      this.p("Si vous disposiez déjà d'une carte Visa et souhaitez effectuer un suivi, n'hésitez pas à nous contacter.") +
+      this.p('Pour rester informé(e) en temps réel de toutes nos mises à jour, rejoignez notre canal WhatsApp officiel :') +
+      this.btn('Rejoindre le canal WhatsApp →', whatsappUrl) +
+      `<div style="height:16px;"></div>` +
+      this.p('Merci de votre patience et de votre confiance.') +
+      this.p("L'équipe OZAMAPAY"),
+      '#22C55E',
+    );
+    await this.send(email, subject, html);
+  }
+
   // ── Kanpay 24 out 2026 (3 gwoup) — tèks egzat apwouve, pa modifye san apwobasyon ──
 
   private campaignContact(): string {
@@ -601,6 +623,28 @@ export class MailService {
       '#e65100',
     );
     await this.send(email, 'Aksyon rapid — nou bezwen konplete adrès ou', html);
+  }
+
+  // 8 oct 2026 — kliyan ki achte yon gift card pandan kòd la poko pare
+  // imedyatman (eta PROCESSING→COMPLETED apre) pa t janm resevwa okenn imèl
+  // konfimasyon lè kòd la fini pare — fonksyon sa a pa t egziste. Mesaj la PA
+  // dwe janm kontni redeemCode a (rezon sekirite, imèl ka entèsepte) — kliyan
+  // dwe ale nan app la pou wè kòd la.
+  async sendGiftCardReadyNotice(email: string, name: string, productName: string, orderDate: string): Promise<void> {
+    const firstName = (name || 'Kliyan').trim().split(' ')[0];
+    const html = this.wrap(
+      'Gift card ou a pare',
+      'Gift Card Ou Pare',
+      this.badge('KONFIME') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${firstName},`) +
+      this.p(`Gift card ${productName} ou te achte ${orderDate} la pare depi lontan — men nou pa t voye w yon konfimasyon, eskize nou.`) +
+      this.accentLine('Pou wè kòd ou: louvri app OZAMAPAY → seksyon "Kado & Kredi" → ou ap jwenn kòmand ou a ak kòd la.') +
+      this.p('Si ou gen difikilte, reponn imèl sa a oswa kontakte nou sou WhatsApp: +509 31 91 99 91') +
+      this.p('Ekip OZAMAPAY') +
+      this.btn('Wè Kòd Ou →', `${this.frontendUrl}/dashboard`),
+    );
+    await this.send(email, 'Gift card ou a pare', html);
   }
 
   async sendSystemAlert(error: string, uptime: number): Promise<void> {
@@ -1141,13 +1185,14 @@ export class MailService {
     email: string,
     name: string,
     code: string,
-    purpose: 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT',
+    purpose: 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT' | 'CHANGE_PHONE',
   ): Promise<void> {
     const titles: Record<string, { ht: string; fr: string }> = {
       REGISTER: { ht: 'Konfime kont ou', fr: 'Confirmez votre compte' },
       NEW_DEVICE: { ht: 'Nouvo aparèy ap konekte', fr: 'Nouvel appareil détecté' },
       RESET: { ht: 'Reyajiste modpas ou', fr: 'Réinitialisation de mot de passe' },
       DELETE_ACCOUNT: { ht: 'Konfime sipresyon kont ou', fr: 'Confirmez la suppression de votre compte' },
+      CHANGE_PHONE: { ht: 'Konfime chanjman telefòn', fr: 'Confirmez le changement de téléphone' },
     };
     const { ht, fr } = titles[purpose] ?? titles.REGISTER;
 
@@ -1460,6 +1505,29 @@ export class MailService {
       '#1565C0',
     );
     await this.send(email, 'Demann reset modpas — OZAMAPAY', html);
+  }
+
+  // Plan endpoints-app, lo L6 — deklanche apre POST /auth/otp/verify
+  // purpose=change_phone konfime avèk siksè. Pa gen non founisè okenn kote.
+  async sendPhoneChangedAlert(email: string, name: string, newPhone: string): Promise<void> {
+    const html = this.wrap(
+      'Telefòn ou chanje — OZAMAPAY',
+      'Sekirite Kont Ou',
+      this.badge('KONFIME') +
+      `<div style="height:16px;"></div>` +
+      this.p(`Bonjou ${name},`) +
+      this.p(
+        `Nimewo telefòn kont OZAMAPAY ou a fèk chanje pou ${newPhone}.<br>` +
+        `<span style="font-size:11px;color:#999;">Le numéro de téléphone de votre compte OZAMAPAY a été modifié.</span>`,
+      ) +
+      this.accentLine(
+        'Si se pa ou ki fè chanjman sa a, kontakte nou imedyatman sou WhatsApp oswa pa email — sekirite kont ou enpòtan pou nou.<br>' +
+        '<span style="font-size:11px;color:#9c6a2e;">Si ce n\'était pas vous, contactez-nous immédiatement — la sécurité de votre compte est importante pour nous.</span>',
+      ) +
+      this.btn('Ale nan Kont Ou →', `${this.frontendUrl}/dashboard`),
+      '#1565C0',
+    );
+    await this.send(email, 'Telefòn ou chanje — OZAMAPAY', html);
   }
 
   async sendPasswordChanged(email: string, name: string): Promise<void> {

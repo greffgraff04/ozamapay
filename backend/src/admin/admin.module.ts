@@ -6,9 +6,10 @@ import { AdminStatsController } from './admin-stats.controller';
 import { AgentAdminController } from './agent-admin.controller';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailModule } from '../mail/mail.module';
+import { KycModule } from '../kyc/kyc.module';
 
 @Module({
-  imports: [MailModule],
+  imports: [MailModule, KycModule],
   controllers: [AdminController, AdminSetupController, AdminStatsController, AgentAdminController],
   providers: [AdminService, PrismaService],
 })

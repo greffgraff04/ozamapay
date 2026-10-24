@@ -517,6 +517,10 @@ export default function Dashboard() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editProfileLoading, setEditProfileLoading] = useState(false);
+  // Lo L6b — OTP pou chanjman telefòn (PATCH /user/profile → 202)
+  const [phoneOtpChallenge, setPhoneOtpChallenge] = useState<string | null>(null);
+  const [phoneOtpCode, setPhoneOtpCode] = useState('');
+  const [phoneOtpLoading, setPhoneOtpLoading] = useState(false);
 
   // QR modal
   const [showQrModal, setShowQrModal] = useState(false);
@@ -659,7 +663,11 @@ export default function Dashboard() {
         body: JSON.stringify({ name: editName.trim(), phone: editPhone.trim() }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.status === 202 && data?.requiresOtp) {
+        // Lo L6b — chanjman telefòn mande konfimasyon OTP anvan li aplike.
+        setPhoneOtpChallenge(data.challengeToken);
+        showToast('Nou voye yon kòd nan email ou pou konfime nouvo telefòn ou', 'success');
+      } else if (res.ok) {
         setUser((prev: any) => ({ ...prev, name: editName.trim(), phone: editPhone.trim() }));
         setIsEditingProfile(false);
         showToast('Pwofil mete ajou ✓', 'success');
@@ -671,6 +679,46 @@ export default function Dashboard() {
     } finally {
       setEditProfileLoading(false);
     }
+  };
+
+  const handleConfirmPhoneOtp = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !phoneOtpChallenge) return;
+    if (!/^\d{6}$/.test(phoneOtpCode.trim())) {
+      showToast('Kòd la dwe 6 chif', 'error');
+      return;
+    }
+    setPhoneOtpLoading(true);
+    try {
+      const res = await fetch(`${backendUrl}/auth/otp/verify`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purpose: 'change_phone',
+          code: phoneOtpCode.trim(),
+          challengeToken: phoneOtpChallenge,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser((prev: any) => ({ ...prev, name: editName.trim(), phone: data.phone || editPhone.trim() }));
+        setPhoneOtpChallenge(null);
+        setPhoneOtpCode('');
+        setIsEditingProfile(false);
+        showToast('Telefòn ou chanje ak siksè ✓', 'success');
+      } else {
+        showToast(data.message || 'Kòd envalid', 'error');
+      }
+    } catch {
+      showToast('Erè rezo', 'error');
+    } finally {
+      setPhoneOtpLoading(false);
+    }
+  };
+
+  const handleCancelPhoneOtp = () => {
+    setPhoneOtpChallenge(null);
+    setPhoneOtpCode('');
   };
 
   const handleSavePin = async () => {
@@ -4113,21 +4161,46 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       {isEditingProfile ? (
                         <div className="space-y-2">
-                          <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
-                            className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
-                          <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
-                            className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
-                          <div className="flex gap-2 pt-1">
-                            <button onClick={handleEditProfile} disabled={editProfileLoading}
-                              className="flex-1 py-1.5 rounded-xl text-white text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50"
-                              style={{ backgroundColor: colors.accent }}>
-                              {editProfileLoading ? '...' : 'Sove'}
-                            </button>
-                            <button onClick={() => setIsEditingProfile(false)}
-                              className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider transition">
-                              Anile
-                            </button>
-                          </div>
+                          {phoneOtpChallenge ? (
+                            <>
+                              <p className="text-[10px] leading-snug" style={{ color: 'rgba(255,255,255,.75)' }}>
+                                Nou voye yon kòd 6 chif nan email ou pou konfime nouvo telefòn ou.
+                              </p>
+                              <input type="text" inputMode="numeric" maxLength={6} value={phoneOtpCode}
+                                onChange={e => setPhoneOtpCode(e.target.value.replace(/\D/g, ''))}
+                                placeholder="Kòd 6 chif"
+                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold text-center tracking-[6px] placeholder:text-white/30 placeholder:tracking-normal outline-none focus:border-[#FF7A00] transition" />
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={handleConfirmPhoneOtp} disabled={phoneOtpLoading}
+                                  className="flex-1 py-1.5 rounded-xl text-white text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50"
+                                  style={{ backgroundColor: colors.accent }}>
+                                  {phoneOtpLoading ? '...' : 'Konfime'}
+                                </button>
+                                <button onClick={handleCancelPhoneOtp}
+                                  className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider transition">
+                                  Anile
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Non"
+                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
+                              <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Telefòn"
+                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold placeholder:text-white/30 outline-none focus:border-[#FF7A00] transition" />
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={handleEditProfile} disabled={editProfileLoading}
+                                  className="flex-1 py-1.5 rounded-xl text-white text-[10px] font-black uppercase tracking-wider transition disabled:opacity-50"
+                                  style={{ backgroundColor: colors.accent }}>
+                                  {editProfileLoading ? '...' : 'Sove'}
+                                </button>
+                                <button onClick={() => { setIsEditingProfile(false); handleCancelPhoneOtp(); }}
+                                  className="flex-1 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-black uppercase tracking-wider transition">
+                                  Anile
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <>

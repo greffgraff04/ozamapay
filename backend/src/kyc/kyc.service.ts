@@ -131,10 +131,10 @@ export class KycService {
                 dto.city,
 
               state:
-                dto.state,
+                dto.state ?? '',
 
               zipCode:
-                dto.zipCode,
+                dto.zipCode ?? '',
 
               country:
                 dto.country,

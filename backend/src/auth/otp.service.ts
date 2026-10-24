@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,11 +21,12 @@ const OTP_MAX_ATTEMPTS = 5;
 const OTP_MAX_SENDS_PER_WINDOW = 3;
 const OTP_RATE_LIMIT_WINDOW_MINUTES = 10;
 
-export type OtpPurposeUpper = 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT';
+export type OtpPurposeUpper = 'REGISTER' | 'NEW_DEVICE' | 'RESET' | 'DELETE_ACCOUNT' | 'CHANGE_PHONE';
 
 interface ResolvedIdentity {
   userId: string | null;
   deviceInfo?: DeviceInfo;
+  newPhone?: string;
 }
 
 @Injectable()
@@ -76,6 +77,16 @@ export class OtpService {
     if (purpose === 'DELETE_ACCOUNT') {
       // Itilizatè a deja konekte (Bearer) — wè plan endpoints-app, lo L4.
       return this.resolveBearerIdentity(authHeader);
+    }
+
+    if (purpose === 'CHANGE_PHONE') {
+      // Idantite + nouvo telefòn ki vle aplike soti nan challengeToken a
+      // (siyen pa initiatePhoneChange(), pa pa dto.challengeToken brit) —
+      // pa gen Bearer obligatwa isit la paske /auth/otp/verify pa gen
+      // JwtAuthGuard, menm jan ak NEW_DEVICE/REGISTER.
+      if (!dto.challengeToken) throw new BadRequestException('challengeToken obligatwa');
+      const { userId, newPhone } = this.verifyPhoneChangeToken(dto.challengeToken);
+      return { userId, newPhone };
     }
 
     // RESET — anti-enumerasyon : jwenn oswa pa, menm repons jenerik pi ba.
@@ -161,9 +172,68 @@ export class OtpService {
     await this.consumeValidCode(userId, purpose, code);
   }
 
+  // challengeToken separe de signChallengeToken (AuthService, device_challenge)
+  // — pòte nouvo telefòn ki tann konfimasyon, pa deviceInfo. Rete isit la
+  // (pa nan AuthService) paske OtpService deja gen JwtService enjekte e sa
+  // evite touche AuthService pou yon fonksyonalite ki pa gen rapò ak aparèy.
+  private signPhoneChangeToken(userId: string, newPhone: string): string {
+    return this.jwtService.sign(
+      { sub: userId, purpose: 'phone_change_challenge', newPhone, jti: randomUUID() },
+      { expiresIn: '10m' },
+    );
+  }
+
+  private verifyPhoneChangeToken(token: string): { userId: string; newPhone: string } {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch {
+      throw new BadRequestException('challengeToken envalid oswa ekspire');
+    }
+    if (payload.purpose !== 'phone_change_challenge' || !payload.newPhone) {
+      throw new BadRequestException('challengeToken envalid');
+    }
+    return { userId: payload.sub, newPhone: payload.newPhone };
+  }
+
+  // Lo L6 — PATCH /user/profile (app mobil, X-Device-Id prezan) rele isit
+  // la DIREKTEMAN kote yon chanjman telefòn detekte; pa gen OTP voye deja
+  // (pa gen /auth/otp/send separe pou chemen sa a), menm wòl/limit/hash ak
+  // tout lòt purpose (10 min, 5 tantativ, 3 demann/10 min pa kont).
+  async initiatePhoneChange(userId: string, newPhone: string): Promise<{ challengeToken: string }> {
+    const purpose: OtpPurposeUpper = 'CHANGE_PHONE';
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('Itilizatè pa egziste');
+
+    const windowStart = new Date(Date.now() - OTP_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+    const recentCount = await this.prisma.otpCode.count({
+      where: { userId, purpose, createdAt: { gte: windowStart } },
+    });
+    if (recentCount >= OTP_MAX_SENDS_PER_WINDOW) {
+      throw new HttpException('Twòp demann kòd — eseye ankò nan kèk minit', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    await this.prisma.otpCode.updateMany({
+      where: { userId, purpose, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+
+    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+
+    await this.prisma.otpCode.create({
+      data: { userId, purpose, codeHash, expiresAt, maxAttempts: OTP_MAX_ATTEMPTS },
+    });
+
+    await this.mailService.sendOtpCode(user.email, user.name || 'Kliyan', code, purpose);
+
+    return { challengeToken: this.signPhoneChangeToken(userId, newPhone) };
+  }
+
   async verify(dto: VerifyOtpDto, authHeader?: string): Promise<any> {
     const purpose = dto.purpose.toUpperCase() as OtpPurposeUpper;
-    const { userId, deviceInfo } = await this.resolveIdentity(purpose, dto, authHeader);
+    const { userId, deviceInfo, newPhone } = await this.resolveIdentity(purpose, dto, authHeader);
 
     if (!userId) throw new BadRequestException('Kòd envalid');
 
@@ -195,6 +265,17 @@ export class OtpService {
       // Konfimasyon kòd la sèlman — /account/deletion-request se li ki
       // kreye demand la reyèlman (pa gen "swit" otomatik isit la).
       return { message: 'Kòd konfime', verified: true };
+    }
+
+    if (purpose === 'CHANGE_PHONE') {
+      if (!newPhone) throw new BadRequestException('challengeToken envalid');
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { phone: newPhone },
+        select: { id: true, name: true, email: true, phone: true },
+      });
+      await this.mailService.sendPhoneChangedAlert(user.email, user.name || 'Kliyan', user.phone || '');
+      return { success: true, message: 'Telefòn ou chanje ak siksè', phone: user.phone };
     }
 
     // RESET — jwenn chemen EGZAK /auth/reset-password deja itilize a, san

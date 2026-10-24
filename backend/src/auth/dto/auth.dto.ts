@@ -10,9 +10,10 @@ import {
   IsString,
 } from 'class-validator';
 
-// Plan endpoints-app, lo L2 — menm lis kle ak enum Prisma `OtpPurpose`, an
-// miniskil paske se sa app/webapp yo voye (AuthController konvèti).
-export const OTP_PURPOSES = ['register', 'new_device', 'reset', 'delete_account'];
+// Plan endpoints-app, lo L2 (+ lo L6 pou change_phone) — menm lis kle ak
+// enum Prisma `OtpPurpose`, an miniskil paske se sa app/webapp yo voye
+// (AuthController konvèti).
+export const OTP_PURPOSES = ['register', 'new_device', 'reset', 'delete_account', 'change_phone'];
 
 export class RegisterDto {
   @IsEmail()
