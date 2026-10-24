@@ -80,6 +80,12 @@ model User {
 
   teamMember TeamMember?
 
+  // L7 — soldes non-HTG (USD/EUR) obtenus via /wallet/convert. Wallet.balance
+  // reste l'unique source de vérité pour le HTG — table additive séparée,
+  // AUCUNE colonne touchée sur Wallet.
+  currencyBalances WalletCurrencyBalance[]
+  conversionQuotes ConversionQuote[]
+
   @@index([email])
   @@index([role])
 }
@@ -99,6 +105,44 @@ model Wallet {
   @@index([userId])
 }
 
+// L7 — solde non-HTG (USD/EUR) alimenté uniquement via /wallet/convert.
+// Additive pure : Wallet et son champ balance (HTG) ne changent pas.
+model WalletCurrencyBalance {
+  id        String   @id @default(uuid())
+  userId    String
+  currency  String // 'USD' | 'EUR'
+  balance   Decimal  @default(0.00) @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, currency])
+  @@index([userId])
+}
+
+// L7 — devis de conversion à usage unique (quoteId), valable 30s. Même
+// sémantique expiresAt/consumedAt que OtpCode : la réclamation atomique
+// (updateMany WHERE consumedAt IS NULL AND expiresAt > now) sert à la fois
+// d'idempotence et de garde-fou anti-double-soumission.
+model ConversionQuote {
+  id           String    @id @default(uuid())
+  userId       String
+  fromCurrency String
+  toCurrency   String
+  amount       Decimal   @db.Decimal(18, 2)
+  rate         Decimal   @db.Decimal(18, 8)
+  feePercent   Decimal   @db.Decimal(6, 4)
+  feeAmount    Decimal   @db.Decimal(18, 2)
+  finalAmount  Decimal   @db.Decimal(18, 2)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model Transaction {
   id               String            @id @default(uuid())
   reference        String            @unique
@@ -113,6 +157,10 @@ model Transaction {
   title            String?
   description      String?
   proofImage       String?
+  // L7 — devise de amount/fee/netAmount ci-dessus. NULL = HTG implicite
+  // (toutes les lignes existantes, comportement inchangé). Renseigné
+  // explicitement seulement par /wallet/convert (CONVERSION).
+  currency         String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   commissions      Commission[]
@@ -137,6 +185,12 @@ model LedgerEntry {
   amount        Decimal     @db.Decimal(18, 2)
   balanceBefore Decimal     @db.Decimal(18, 2)
   balanceAfter  Decimal     @db.Decimal(18, 2)
+  // L7 — devise de amount/balanceBefore/balanceAfter. NULL = HTG implicite
+  // (lignes existantes inchangées). Pour la jambe non-HTG d'une conversion,
+  // balanceBefore/After reflètent WalletCurrencyBalance, pas Wallet.balance
+  // — walletId reste le Wallet.id de l'utilisateur (seule ligne Wallet FK
+  // valide), currency indique quel solde est réellement affecté.
+  currency      String?
   description   String?
   createdAt     DateTime    @default(now())
   transaction   Transaction @relation(fields: [transactionId], references: [id])
@@ -620,6 +674,7 @@ enum TransactionType {
   TOPUP
   WITHDRAWAL
   CARD
+  CONVERSION
 }
 
 enum KYCStatus {

@@ -19,6 +19,7 @@ import { TransferDto } from './dto/transfer.dto';
 import { ManualTopupDto } from './dto/manual-topup.dto';
 import { WithdrawRequestDto } from './dto/withdraw-request.dto';
 import { FinanceRequestDto } from './dto/finance-request.dto';
+import { ConvertQuoteDto, ConvertExecuteDto } from './dto/convert.dto';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
@@ -178,6 +179,35 @@ export class WalletController {
       body.details,
       proofImage,
     );
+  }
+
+  // ======================================================
+  // L7 — DEVIS KONVÈSYON DEVISE (valab 30s, quoteId pou egzekite)
+  // ======================================================
+  @Get('convert/quote')
+  @Throttle({ short: { limit: 20, ttl: 60000 } })
+  async getConversionQuote(
+    @Req() req: any,
+    @Query() query: ConvertQuoteDto,
+  ) {
+    return this.walletService.getConversionQuote(
+      req.user.id,
+      query.from,
+      query.to,
+      query.amount,
+    );
+  }
+
+  // ======================================================
+  // L7 — EGZEKITE KONVÈSYON DEVISE (sèlman ak yon quoteId valab)
+  // ======================================================
+  @Post('convert')
+  @Throttle({ short: { limit: 10, ttl: 60000 } })
+  async executeConversion(
+    @Req() req: any,
+    @Body() body: ConvertExecuteDto,
+  ) {
+    return this.walletService.executeConversion(req.user.id, body.quoteId);
   }
 
   @Get('notifications')
