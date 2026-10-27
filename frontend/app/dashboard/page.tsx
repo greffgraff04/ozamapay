@@ -1377,7 +1377,13 @@ export default function Dashboard() {
           } : {}),
         })
       });
-      if (res.ok) { alert("Demann retrè voye !"); fetchData(); }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        alert("Demann retrè voye !");
+        fetchData();
+      } else {
+        showToast(data.message || 'Erè pandan demann retrè a.', 'error');
+      }
     } catch (e) { alert("Erè koneksyon"); }
   };
 

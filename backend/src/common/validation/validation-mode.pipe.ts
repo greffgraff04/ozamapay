@@ -1,5 +1,6 @@
 import {
   ArgumentMetadata,
+  BadRequestException,
   Inject,
   Injectable,
   Logger,
@@ -12,6 +13,32 @@ import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 
 type ValidationMode = 'enforce' | 'log';
+
+// Mesaj kreyòl pou kliyan an, pa DTO + chan. Detay teknik (non DTO, non chan,
+// kontrent ki vyole) rete nan log sèvè a sèlman — jamè nan repons lan, pou
+// pa expoze estrikti validasyon an bay yon moun k ap sonde API a.
+const CLIENT_MESSAGES: Record<string, Record<string, string>> = {
+  RegisterDto: { password: 'Modpas la dwe gen omwen 6 karaktè.' },
+  LoginDto: { email: 'Adrès imel la pa bon.' },
+  WithdrawRequestDto: { amount: 'Montan retrè a dwe ant 50 ak 10 000 HTG.' },
+  FinanceRequestDto: { serviceType: 'Sèvis sa a pa disponib.' },
+  TransferDto: {
+    recipientEmail: 'Adrès imel moun w ap voye kòb la pa bon.',
+    pin: 'Kòd PIN lan dwe gen 4 a 6 chif.',
+  },
+  CreateCardDto: { amount_usd: 'Montan an dwe ant $3 ak $500.' },
+  FundCardDto: { amount_usd: 'Montan an dwe ant $3 ak $500.' },
+};
+
+const DEFAULT_CLIENT_MESSAGE =
+  'Enfòmasyon ou mete yo pa kòrèk. Verifye yo epi eseye ankò.';
+
+function resolveClientMessage(errors: ValidationError[]): string {
+  const first = errors[0];
+  const dtoName = (first?.target as any)?.constructor?.name;
+  const field = first?.property;
+  return (dtoName && field && CLIENT_MESSAGES[dtoName]?.[field]) || DEFAULT_CLIENT_MESSAGE;
+}
 
 // VALIDATION_MODE absan oswa nenpòt lòt valè pase "enforce" => "log" (sekou
 // pa default). Sa garanti pwodiksyon pa chanje konpòtman jiskaske yon moun
@@ -60,6 +87,17 @@ export class ValidationModePipe implements PipeTransform {
     whitelist: true,
     transform: true,
     forbidNonWhitelisted: false,
+    exceptionFactory: (errors: ValidationError[]) => {
+      const method = this.request?.method ?? '?';
+      const route = this.request?.route?.path ?? this.request?.url ?? '?';
+      const flattened = flattenErrors(errors);
+      this.logger.warn(
+        `[VALIDATION_MODE=enforce] ${method} ${route} DTO=${
+          (errors[0]?.target as any)?.constructor?.name ?? '?'
+        } ` + flattened.map((f) => `${f.field}:[${f.constraints.join(',')}]`).join(' '),
+      );
+      return new BadRequestException(resolveClientMessage(errors));
+    },
   });
 
   constructor(@Inject(REQUEST) private readonly request: any) {}
