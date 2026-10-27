@@ -1,7 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OtpService } from '../auth/otp.service';
 import * as bcrypt from 'bcrypt';
+
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Injectable()
 export class UserService {
@@ -9,6 +11,35 @@ export class UserService {
     private prisma: PrismaService,
     private otpService: OtpService,
   ) {}
+
+  // Scanner QR app mobil — rale sèlman non/imel/foto destinatè a, JAMÈ
+  // balans, telefòn, KYC, oswa id. select: {} la anpeche menm yon erè
+  // pwogramasyon pita soti lòt chan san fè espre. Imel envalid, pa jwenn,
+  // sispann, oswa kont efase (deletionExecutedAt) → menm 404 jenerik la,
+  // pou pa kite yon moun distenge "pa egziste" ak "sispann"/"efase".
+  async lookupByEmail(email?: string) {
+    const normalized = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!EMAIL_FORMAT.test(normalized)) {
+      throw new NotFoundException('Nou pa jwenn kont sa a.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalized },
+      select: {
+        name: true,
+        email: true,
+        photoUrl: true,
+        isSuspended: true,
+        deletionExecutedAt: true,
+      },
+    });
+
+    if (!user || user.isSuspended || user.deletionExecutedAt) {
+      throw new NotFoundException('Nou pa jwenn kont sa a.');
+    }
+
+    return { name: user.name, email: user.email, photoUrl: user.photoUrl };
+  }
 
   /**
    * 1. RALE PROFIL AJAN AN POU DASHBOARD LI
