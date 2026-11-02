@@ -23,6 +23,10 @@ import {
 } from './dto/auth.dto';
 
 import * as bcrypt from 'bcrypt';
+import {
+  isReviewAccountEmail,
+  REVIEW_ACCOUNT_BLOCKED_MESSAGE,
+} from '../common/review-account/review-account.config';
 
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
@@ -58,6 +62,13 @@ export class AuthService {
   // =========================
 
   async register(dto: RegisterDto, deviceInfo?: DeviceInfo) {
+    // Email yo rezève pou kont demo App Store/Google Play review — bloke
+    // PÈMANAN, menm si switch APP_REVIEW_ACCOUNT_ENABLED la koupe (sa
+    // konsène sèlman bypass OTP la, pa idantite rezève a).
+    if (isReviewAccountEmail(dto.email)) {
+      throw new ForbiddenException(REVIEW_ACCOUNT_BLOCKED_MESSAGE);
+    }
+
     const existing =
       await this.prisma.user.findUnique({
         where: {

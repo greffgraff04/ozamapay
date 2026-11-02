@@ -13,6 +13,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AuthService, DeviceInfo } from './auth.service';
 import { SendOtpDto, VerifyOtpDto } from './dto/auth.dto';
+import {
+  isReviewAccountEmail,
+  isReviewAccountLoginBypassActive,
+  getReviewAccountOtpCode,
+} from '../common/review-account/review-account.config';
+import { logReviewAccountActivity } from '../common/review-account/review-account-audit';
 
 const OTP_TTL_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
@@ -122,8 +128,19 @@ export class OtpService {
       data: { consumedAt: new Date() },
     });
 
-    // crypto.randomInt — jamè Math.random() pou yon kòd sekirite.
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    // Kont demo App Store/Google Play review (si switch la aktive) — kòd
+    // FIKS la soti nan env, pa gen imel reyèl voye (reviewer a pa gen aksè
+    // a bwat imel sa a). Rete sou MENM chemen OtpCode pi ba a (menm fenèt
+    // débi, menm envalidasyon ansyen kòd, menm expiration/tantativ nan
+    // verify()) — sèl diferans se ki kòd ki hash epi si imel la pati vre.
+    const reviewBypassActive = isReviewAccountLoginBypassActive(user.email);
+    const reviewCode = reviewBypassActive ? getReviewAccountOtpCode() : null;
+
+    // crypto.randomInt — jamè Math.random() pou yon kòd sekirite. Si switch
+    // la aktive ak email la nan lis la men APP_REVIEW_OTP_CODE pa konfigire,
+    // ret sou konpòtman nòmal (kòd aleatwa + imel reyèl) — pa janm aksepte
+    // `null` kòm yon "kòd".
+    const code = reviewCode || randomInt(0, 1_000_000).toString().padStart(6, '0');
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
@@ -131,9 +148,18 @@ export class OtpService {
       data: { userId, purpose, codeHash, expiresAt, maxAttempts: OTP_MAX_ATTEMPTS },
     });
 
-    // `code` pase SÈLMAN nan email la — jamè nan yon log, jamè nan repons
-    // API la (menm an staging).
-    await this.mailService.sendOtpCode(user.email, user.name || 'Kliyan', code, purpose);
+    if (reviewCode) {
+      await logReviewAccountActivity(this.prisma, {
+        userId,
+        email: user.email,
+        method: 'POST',
+        path: '/auth/otp/send',
+      });
+    } else {
+      // `code` pase SÈLMAN nan email la — jamè nan yon log, jamè nan repons
+      // API la (menm an staging).
+      await this.mailService.sendOtpCode(user.email, user.name || 'Kliyan', code, purpose);
+    }
 
     void deviceInfo; // pa itilize isit la — sèlman verify() bezwen l
 
@@ -237,7 +263,27 @@ export class OtpService {
 
     if (!userId) throw new BadRequestException('Kòd envalid');
 
+    // Switch kill la dwe efikas IMEDYATMAN, menm pou yon verify ki deja an
+    // vòl ak yon kòd ki te hash anvan switch la koupe — pa depann de si yon
+    // OtpCode te deja kreye ak kòd fiks la. isReviewAccountEmail la PÈMANAN
+    // (pa depann de switch la, kontrèman ak isReviewAccountLoginBypassActive),
+    // se egzateman sa ki fè l detekte "switch koupe pou yon email ki konfigire".
+    const reviewAccountUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const isReviewEmail = !!reviewAccountUser && isReviewAccountEmail(reviewAccountUser.email);
+    if (isReviewEmail && !isReviewAccountLoginBypassActive(reviewAccountUser!.email)) {
+      throw new UnauthorizedException('Kont demonstrasyon dezaktive.');
+    }
+
     await this.consumeValidCode(userId, purpose, dto.code);
+
+    if (isReviewEmail) {
+      await logReviewAccountActivity(this.prisma, {
+        userId,
+        email: reviewAccountUser!.email,
+        method: 'POST',
+        path: '/auth/otp/verify',
+      });
+    }
 
     if (purpose === 'REGISTER') {
       await this.prisma.user.update({

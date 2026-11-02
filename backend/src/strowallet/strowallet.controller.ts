@@ -4,6 +4,7 @@ import { StrowalletService } from './strowallet.service';
 import { CardOtpService } from './card-otp.service';
 import { CardsService } from '../cards/cards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ReviewAccountBlockGuard } from '../common/review-account/review-account-block.guard';
 import { CreateCardDto, FundCardDto, CardIdDto } from './dto/card.dto';
 
 // 31 out 2026 — my-card/secret-details/recharge/freeze/unfreeze delege bay
@@ -42,11 +43,13 @@ export class StrowalletController {
   // `provider` opsyonèl — defo STROWALLET_NFC pou konpatibilite ak aparèy
   // ki poko voye l (app mobil la).
   @Post('create')
+  @UseGuards(ReviewAccountBlockGuard)
   createCard(@Request() req, @Body() body: CreateCardDto) {
     return this.cardsService.createCard(req.user.id, body.provider ?? 'STROWALLET_NFC', Number(body.amount_usd));
   }
 
   @Post('recharge')
+  @UseGuards(ReviewAccountBlockGuard)
   fundVirtualCard(@Request() req, @Body() body: FundCardDto) {
     return this.cardsService.fundCard(req.user.id, Number(body.amount_usd), body.cardId);
   }

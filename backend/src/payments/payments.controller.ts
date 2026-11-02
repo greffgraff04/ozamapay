@@ -19,6 +19,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { MonCashConnectService } from './moncashconnect.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ReviewAccountBlockGuard } from '../common/review-account/review-account-block.guard';
 import { MonCashTopupDto, MonCashConnectInitiateDto } from './dto/moncash-topup.dto';
 
 @Controller('payments')
@@ -31,7 +32,7 @@ export class PaymentsController {
   ) {}
 
   @Post('moncash/topup')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ReviewAccountBlockGuard)
   async createTopup(
     @Body() body: MonCashTopupDto,
     @Req() req,
@@ -82,7 +83,7 @@ export class PaymentsController {
   // ======================================================
 
   @Post('moncashconnect/initiate')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ReviewAccountBlockGuard)
   async initiateMoncashConnect(
     @Req() req: any,
     @Body() body: MonCashConnectInitiateDto,

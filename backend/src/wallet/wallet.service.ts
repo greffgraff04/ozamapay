@@ -10,6 +10,7 @@ import { TrackingService } from '../tracking/tracking.service';
 import { KycService } from '../kyc/kyc.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { assertDemoTransferAllowed, isDemoToDemoTransfer } from '../common/review-account/review-account.config';
 
 
 const FEES = {
@@ -199,14 +200,21 @@ export class WalletService {
     amount: number,
     pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a
   ) {
-    // 1. Verifye si moun k ap voye a gen KYC approved
-    await this.kycService.assertApproved(senderId);
-
-    // 2. 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
+    // 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
     const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
     if (!sender) {
       throw new NotFoundException('Itilizatè sa a pa egziste.');
     }
+
+    // Kont demo App Store/Google Play review (si konfigire) — transfè
+    // sèlman ant 2 kont demo yo, gate KYC a skip SÈLMAN pou pè sa a. Nenpòt
+    // lòt konbinezon (demo→reyèl, reyèl→demo) bloke ak menm mesaj 403 la.
+    assertDemoTransferAllowed(sender.email, recipientEmail);
+    if (!isDemoToDemoTransfer(sender.email, recipientEmail)) {
+      // 1. Verifye si moun k ap voye a gen KYC approved
+      await this.kycService.assertApproved(senderId);
+    }
+
     const pinValid = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
     if (!pinValid) {
       throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
@@ -309,13 +317,19 @@ export class WalletService {
     amount: number,
     pin: string, // 🔑 NOUVO: Nou mande PIN itilizatè a kounye a tou
   ) {
-    await this.kycService.assertApproved(senderId);
-
     // 🚨 BARYÈ SEKIRITE: Verifye si Kòd PIN lan koresponn ak sa ki nan DB a
     const sender = await this.prisma.user.findUnique({ where: { id: senderId } });
     if (!sender) {
       throw new NotFoundException('Itilizatè sa a pa egziste.');
     }
+
+    // Kont demo App Store/Google Play review (si konfigire) — menm règ ak
+    // transferP2P pi wo a.
+    assertDemoTransferAllowed(sender.email, recipientEmail);
+    if (!isDemoToDemoTransfer(sender.email, recipientEmail)) {
+      await this.kycService.assertApproved(senderId);
+    }
+
     const pinValid2 = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
     if (!pinValid2) {
       throw new BadRequestException('Kòd PIN sekirite a enkòrèk. Tranzaksyon bloke!');
