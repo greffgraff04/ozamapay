@@ -14,6 +14,7 @@ import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import { WalletService } from './wallet.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ReviewAccountBlockGuard } from '../common/review-account/review-account-block.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
 import { TransferDto } from './dto/transfer.dto';
 import { ManualTopupDto } from './dto/manual-topup.dto';
@@ -119,6 +120,7 @@ export class WalletController {
   // KREYE DEMANN TOPUP MANUEL (ak opsiyon upload resi)
   // ======================================================
   @Post('topup')
+  @UseGuards(ReviewAccountBlockGuard)
   @UseInterceptors(FileInterceptor('receipt', {
     storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -144,6 +146,7 @@ export class WalletController {
   // KREYE DEMANN RETRÈ (MANUAL WITHDRAWAL)
   // ======================================================
   @Post('withdraw')
+  @UseGuards(ReviewAccountBlockGuard)
   async createWithdrawRequest(
     @Req() req: any,
     @Body() body: WithdrawRequestDto,
@@ -165,6 +168,7 @@ export class WalletController {
   // KREYE DEMANN FINANCE / SERVICE
   // ======================================================
   @Post('finance-request')
+  @UseGuards(ReviewAccountBlockGuard)
   @UseInterceptors(FileInterceptor('proofImage', {
     storage: memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },

@@ -24,6 +24,7 @@ model User {
   referredByAgent   Agent?  @relation("AgentReferrals", fields: [referredByAgentId], references: [id])
 
   adminLogs       AdminActionLog[]
+  reviewAccountAuditLogs ReviewAccountAuditLog[]
   agent           Agent?
   kyc             Kyc?
   notifications   Notification[]
@@ -382,6 +383,26 @@ model AdminActionLog {
   admin      User     @relation(fields: [adminId], references: [id])
 
   @@index([adminId])
+}
+
+// Compte démo App Store/Google Play review — log dédié pour CHAQUE requête
+// (autorisée ou bloquée) des 2 comptes identifiés par APP_REVIEW_ACCOUNT_EMAILS.
+// userId nullable : OtpService résout l'identité avant qu'un token existe
+// (send/verify), donc certaines lignes n'ont qu'un email. Jamais le code
+// OTP, jamais un mot de passe/PIN — seulement method/path/ip.
+model ReviewAccountAuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  email     String
+  method    String
+  path      String
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([email])
+  @@index([createdAt])
 }
 
 model Rate {

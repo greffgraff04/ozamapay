@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE, APP_INTERCEPTOR } from '@nestjs/core';
 import { ValidationModePipe } from './common/validation/validation-mode.pipe';
+import { ReviewAccountAuditInterceptor } from './common/review-account/review-account-audit.interceptor';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
@@ -81,6 +82,10 @@ import { TronModule } from './tron/tron.module';
     {
       provide: APP_PIPE,
       useClass: ValidationModePipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ReviewAccountAuditInterceptor,
     },
   ],
 })
