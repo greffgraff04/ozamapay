@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 
 import { Prisma, TransactionType } from '@prisma/client';
@@ -45,6 +46,8 @@ const CONVERT_MAX_HTG_EQUIVALENT = 500_000;
 
 @Injectable()
 export class WalletService {
+  private readonly logger = new Logger(WalletService.name);
+
   constructor(
     private prisma: PrismaService,
     private trackingService: TrackingService,
@@ -76,6 +79,25 @@ export class WalletService {
   private async getUsdHtgRate(): Promise<number> {
     const entry = await this.prisma.rate.findUnique({ where: { key: 'USD_HTG' } });
     return Number(entry?.value || 140);
+  }
+
+  // 2026-11-04, Greffin — SÈLMAN pou createManualTopup (depo entènasyonal) :
+  // getUsdHtgRate() pi wo a GADE menm jan an (140, toujou itilize pa
+  // createWithdrawRequest/retrè — pa touche, demann lan eksplisit sou depo
+  // yo sèlman). Isit la, okenn chif kache — si USD_HTG manke/envalid an
+  // baz done, nou REFIZE depo a olye konvèti ak yon to ki pa vrè (menm
+  // filozofi ak getStrictHtgRate(), itilize pa /wallet/convert).
+  // approveTopup() pa rele fonksyon sa a ni getUsdHtgRate() — li retravay
+  // sèlman transaction.amount (deja konvèti an HTG lè depo a te kreye),
+  // donk okenn chanjman nesesè la.
+  private async getUsdHtgRateForDeposit(): Promise<number> {
+    const entry = await this.prisma.rate.findUnique({ where: { key: 'USD_HTG' } });
+    const value = Number(entry?.value);
+    if (!entry || !Number.isFinite(value) || value <= 0) {
+      this.logger.error(`USD_HTG rate manquant ou invalide en base (valeur lue: ${entry?.value}) — dépôt international refusé`);
+      throw new BadRequestException('To chanj lan pa disponib pou kounye a. Eseye ankò pita.');
+    }
+    return value;
   }
 
   // L7 — kontrèman ak getUsdHtgRate() pi wo a (fallback 140 silansye), isit
@@ -132,6 +154,32 @@ export class WalletService {
     }
 
     return wallet;
+  }
+
+  // Additive — L7 (WalletCurrencyBalance) existe depwi /wallet/convert men
+  // pa t gen okenn wout pou li li. userId soti nan JwtAuthGuard (req.user.id),
+  // itilizatè a sèlman ka wè pwòp solde pa li — pa gen lòt paramèt ki ta
+  // pèmèt li mande yon lòt kont. HTG toujou egziste (Wallet kreye nan
+  // register()) ; USD/EUR defo 0 si WalletCurrencyBalance pa gen ranje pou
+  // kont sa a (jamè konvèti).
+  async getCurrencyBalances(userId: string) {
+    const [wallet, currencyBalances] = await Promise.all([
+      this.prisma.wallet.findUnique({ where: { userId } }),
+      this.prisma.walletCurrencyBalance.findMany({ where: { userId } }),
+    ]);
+
+    if (!wallet) {
+      throw new NotFoundException('Wallet pa jwenn');
+    }
+
+    const usd = currencyBalances.find((b) => b.currency === 'USD');
+    const eur = currencyBalances.find((b) => b.currency === 'EUR');
+
+    return {
+      HTG: this.round(Number(wallet.balance)),
+      USD: this.round(Number(usd?.balance || 0)),
+      EUR: this.round(Number(eur?.balance || 0)),
+    };
   }
 
   // ======================================================
@@ -482,7 +530,7 @@ export class WalletService {
     if (!wallet) throw new NotFoundException('Wallet pa jwenn');
 
     const amountHTG = isInternational(method)
-      ? this.round(amount * await this.getUsdHtgRate())
+      ? this.round(amount * await this.getUsdHtgRateForDeposit())
       : amount;
 
     const fee = this.round(amountHTG * FEES.TOPUP);
