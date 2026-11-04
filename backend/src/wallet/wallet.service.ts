@@ -134,6 +134,32 @@ export class WalletService {
     return wallet;
   }
 
+  // Additive — L7 (WalletCurrencyBalance) existe depwi /wallet/convert men
+  // pa t gen okenn wout pou li li. userId soti nan JwtAuthGuard (req.user.id),
+  // itilizatè a sèlman ka wè pwòp solde pa li — pa gen lòt paramèt ki ta
+  // pèmèt li mande yon lòt kont. HTG toujou egziste (Wallet kreye nan
+  // register()) ; USD/EUR defo 0 si WalletCurrencyBalance pa gen ranje pou
+  // kont sa a (jamè konvèti).
+  async getCurrencyBalances(userId: string) {
+    const [wallet, currencyBalances] = await Promise.all([
+      this.prisma.wallet.findUnique({ where: { userId } }),
+      this.prisma.walletCurrencyBalance.findMany({ where: { userId } }),
+    ]);
+
+    if (!wallet) {
+      throw new NotFoundException('Wallet pa jwenn');
+    }
+
+    const usd = currencyBalances.find((b) => b.currency === 'USD');
+    const eur = currencyBalances.find((b) => b.currency === 'EUR');
+
+    return {
+      HTG: this.round(Number(wallet.balance)),
+      USD: this.round(Number(usd?.balance || 0)),
+      EUR: this.round(Number(eur?.balance || 0)),
+    };
+  }
+
   // ======================================================
   // TRANSACTIONS
   // ======================================================

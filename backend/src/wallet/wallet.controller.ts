@@ -65,6 +65,14 @@ export class WalletController {
   }
 
   // ======================================================
+  // SOLDE PA DEVISE (HTG + USD + EUR) — additif, L7
+  // ======================================================
+  @Get('balances')
+  async getCurrencyBalances(@Req() req: any) {
+    return this.walletService.getCurrencyBalances(req.user.id);
+  }
+
+  // ======================================================
   // RALE TRANZAKSYON YO
   // ======================================================
   // Poll dashboard la (chak 25s) rele wout sa a souvan — lekti sèlman, san
