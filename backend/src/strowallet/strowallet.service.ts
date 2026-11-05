@@ -226,6 +226,43 @@ export class StrowalletService {
     return err;
   }
 
+  // Maske kle API ak nimewo kat anvan yo rive nan console.error — pa janm
+  // ekri sekrè oswa PAN brit nan log yo.
+  private redactSensitive(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map((v) => this.redactSensitive(v));
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        out[k] = /key|secret|card.?number|\bpan\b|cvv/i.test(k) ? '[REDACTED]' : this.redactSensitive(v);
+      }
+      return out;
+    }
+    return value;
+  }
+
+  // Lis blanch chan NON-PÈSONÈL yo ka sòti nan repons cardkyc StroWallet la.
+  // Nenpòt lòt chan (non, dat nesans, ID, adrès, telefòn, imèl, elatriye) pa
+  // dwe janm rive nan log — pou chan enkoni nou sèlman note non chan an.
+  private readonly KYC_LOG_ALLOWLIST = ['status', 'message', 'reason', 'comment', 'rejectlabels', 'rejectreasons', 'error', 'errors'];
+
+  private summarizeKycResponseForLog(kycResponse: unknown): Record<string, unknown> {
+    const payload = (kycResponse as any)?.response ?? (kycResponse as any)?.data ?? kycResponse;
+    const summary: Record<string, unknown> = {};
+    const unknownFields: string[] = [];
+    if (payload && typeof payload === 'object') {
+      for (const [k, v] of Object.entries(payload as Record<string, unknown>)) {
+        const normalized = k.toLowerCase().replace(/[_-]/g, '');
+        if (this.KYC_LOG_ALLOWLIST.includes(normalized)) {
+          summary[k] = this.redactSensitive(v);
+        } else {
+          unknownFields.push(k);
+        }
+      }
+    }
+    if (unknownFields.length) summary.unknownFields = unknownFields;
+    return summary;
+  }
+
   // StroWallet konfime (2026-08-08): echèk "Using fake details" — adrès Miami
   // ak telefòn Ameriken fiktif nou te itilize a se rezon prensipal echèk
   // create-nfc-card yo. Rezoud vrè non/telefòn kliyan an pou payload StroWallet
@@ -572,7 +609,13 @@ export class StrowalletService {
         });
         return { status: 'PENDING_VERIFICATION' as const, message: PENDING_VERIFICATION_MESSAGE };
       }
-      if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+      if (kycStatus !== 'approved') {
+        console.error('[StroWallet] cardkyc status pa "approved"', {
+          userId,
+          kycResponse: this.summarizeKycResponseForLog(kycResponse),
+        });
+        throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+      }
 
       const cardResponse = await this.nfcPost('create-nfc-card', {
         customer_id: customerId,
@@ -716,7 +759,13 @@ export class StrowalletService {
         });
         return { status: 'PENDING_VERIFICATION' as const, message: PENDING_VERIFICATION_MESSAGE };
       }
-      if (kycStatus !== 'approved') throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+      if (kycStatus !== 'approved') {
+        console.error('[StroWallet] cardkyc status pa "approved"', {
+          userId,
+          kycResponse: this.summarizeKycResponseForLog(kycResponse),
+        });
+        throw this.strowalletFailure(`cardkyc status="${kycStatus}", pa "approved"`);
+      }
 
       const cardResponse = await this.nfcPost('create-nfc-card', {
         customer_id: customerId,
