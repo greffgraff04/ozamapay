@@ -217,7 +217,14 @@ async function main() {
       throw err;
     }
 
-    if ('status' in result) {
+    // 5 nov 2026 — BUG konfime AN LIVE (job-dbmfnq3m8hqs73fbltdg): `'status' in
+    // result` fo, paske VirtualCard (rezilta siksè a) OSI gen yon chan `status`
+    // (ex: "ACTIVE") — kondisyon an te toujou vrè, kit se siksè kit se pending,
+    // ki te fè script la sispann apre Etap 2 san janm flip REPLACED/kreye
+    // odit/voye imèl menm lè kreyasyon an te reisi. Sèl chan "PENDING_VERIFICATION"
+    // diskriminan — li pa yon valè CardStatus posib (ACTIVE/FROZEN/TERMINATED/
+    // REPLACED/PENDING_RECHARGE), kidonk konparezon egzak la san ambigwite.
+    if (result.status === 'PENDING_VERIFICATION') {
       console.log(`  → "${result.status}" — cardkyc founisè a reponn "pending" (eta tranzitwa, pa echèk).`);
       console.log('  Ansyen kat rete TERMINATED. Background poll (pollPendingCardCreations, chak 30s)');
       console.log('  ap konplete kreyasyon an otomatikman lè cardkyc rezoud.');
