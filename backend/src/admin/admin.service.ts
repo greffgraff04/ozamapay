@@ -956,6 +956,47 @@ export class AdminService {
     };
   }
 
+  // 11 nov 2026 — lekti sèlman, pou sipò ka wè yon rezon echèk kreyasyon kat
+  // SAN bezwen dashboard founisè a. userId/idNumber/kle pa fè pati repons
+  // la — sèlman chan task la mande (email, dènye echèk, rezon, tantativ,
+  // si gen yon "pending" ouvè).
+  async getCardCreationFailuresSummary() {
+    const failures = await this.prisma.cardCreationFailure.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: { userId: true, email: true, errorMessage: true, providerReason: true, createdAt: true },
+    });
+
+    const byUser = new Map<string, { email: string; lastFailureAt: Date; reason: string; attempts: number }>();
+    for (const f of failures) {
+      const existing = byUser.get(f.userId);
+      if (existing) {
+        existing.attempts += 1;
+      } else {
+        byUser.set(f.userId, {
+          email: f.email,
+          lastFailureAt: f.createdAt,
+          reason: f.providerReason ?? f.errorMessage,
+          attempts: 1,
+        });
+      }
+    }
+
+    const userIds = [...byUser.keys()];
+    const openPendings = await this.prisma.cardCreationPending.findMany({
+      where: { userId: { in: userIds }, resolvedAt: null },
+      select: { userId: true },
+    });
+    const pendingUserIds = new Set(openPendings.map((p) => p.userId));
+
+    return [...byUser.entries()].map(([userId, info]) => ({
+      email: info.email,
+      lastFailureAt: info.lastFailureAt,
+      reason: info.reason,
+      attempts: info.attempts,
+      hasPendingVerification: pendingUserIds.has(userId),
+    }));
+  }
+
   async getSupportStats() {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);

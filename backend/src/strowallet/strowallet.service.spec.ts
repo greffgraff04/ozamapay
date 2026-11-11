@@ -39,6 +39,33 @@ describe('StrowalletService.sanitizeCityForProvider — koupe city a 20 karaktè
     const { city } = service.sanitizeCityForProvider(longCity, 'Ruelle D');
     expect(city).toBe('A'.repeat(20));
   });
+
+  it('vigil: premye segman kòm city, rès ajoute nan line1 (egzanp task la)', () => {
+    const { city, line1 } = service.sanitizeCityForProvider('Delmas, Port-au-Prince', 'Ruelle E');
+    expect(city).toBe('Delmas');
+    expect(line1).toBe('Ruelle E, Port-au-Prince');
+  });
+
+  it('vigil: pa duplike si rès la deja nan line1', () => {
+    const { city, line1 } = service.sanitizeCityForProvider('Delmas, Port-au-Prince', 'Ruelle E, Port-au-Prince');
+    expect(city).toBe('Delmas');
+    expect(line1).toBe('Ruelle E, Port-au-Prince');
+  });
+
+  it('retire senbòl pa otorize (sèlman lèt/aksan/tirè/apostwòf/pwen/espas rete)', () => {
+    const { city } = service.sanitizeCityForProvider('Jacmel@@!!', 'Ruelle F');
+    expect(city).toBe('Jacmel');
+  });
+
+  it('kenbe aksan, tirè, ak apostwòf nan city', () => {
+    const { city } = service.sanitizeCityForProvider("L'Île-à-Vache", 'Ruelle G');
+    expect(city).toBe("L'Île-à-Vache");
+  });
+
+  it('kolapse espas miltip ki rete apre retire senbòl yo', () => {
+    const { city } = service.sanitizeCityForProvider('Jean  !!  Rabel', 'Ruelle H');
+    expect(city).toBe('Jean Rabel');
+  });
 });
 
 describe('StrowalletService.sanitizeNameForProvider — retire ponktiyasyon', () => {
@@ -157,6 +184,52 @@ describe('StrowalletService.translateCardkycRejectionMessage — mesaj kliyan an
   });
 });
 
+describe('StrowalletService.extractProviderReasonFromDetail — rezon founisè a pou providerReason', () => {
+  const service = buildService();
+
+  it('kenbe sèlman chan lis blanch yo (status/message/...), jete reference/kyc_id/completion_link', () => {
+    const detail = JSON.stringify({
+      status: 'rejected',
+      message: 'DOCUMENT_DECLINED_BEFORE',
+      reference: 'REF123',
+      kyc_id: 'KYC123',
+      completion_link: 'https://provider.example/complete/abc',
+      customer_id: 'CUST123',
+      email: 'client@example.com',
+    });
+    const reason = service.extractProviderReasonFromDetail(detail);
+    expect(reason).not.toBeNull();
+    expect(reason).toContain('DOCUMENT_DECLINED_BEFORE');
+    expect(reason).not.toMatch(/REF123|KYC123|CUST123|completion_link|provider\.example|client@example\.com/i);
+  });
+
+  it('retounen null si sèlman reference/kyc_id/completion_link prezan (pa gen anyen nan lis blanch)', () => {
+    const detail = { reference: 'REF123', kyc_id: 'KYC123', completion_link: 'https://provider.example/complete/abc' };
+    expect(service.extractProviderReasonFromDetail(detail)).toBeNull();
+  });
+
+  it('aksepte yon objè brit (statusResponse soti nan cardkycstatus, pa sèlman string)', () => {
+    const detail = { status: 'rejected', comment: 'PHOTOS_INSATISFAISANTES' };
+    const reason = service.extractProviderReasonFromDetail(detail);
+    expect(reason).toContain('PHOTOS_INSATISFAISANTES');
+  });
+
+  it('aksepte yon mesaj tèks plat (pa JSON) kòm fallback "message"', () => {
+    const reason = service.extractProviderReasonFromDetail('cardkyc status="rejected", pa "approved"');
+    expect(reason).toContain('cardkyc status');
+  });
+
+  it('koupe a 1000 karaktè', () => {
+    const detail = { message: 'X'.repeat(2000) };
+    const reason = service.extractProviderReasonFromDetail(detail)!;
+    expect(reason.length).toBeLessThanOrEqual(1000);
+  });
+
+  it('retounen null pou undefined', () => {
+    expect(service.extractProviderReasonFromDetail(undefined)).toBeNull();
+  });
+});
+
 // ─── Tès entegrasyon: createAndFundCard() ───────────────────────────────────
 // Wire manyèlman (menm apwòch ak staging-provider-wiring.spec.ts) — pa gen
 // NestJS TestingModule, sèlman fo depandans ki bay sa fonksyon an bezwen pou
@@ -202,18 +275,27 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
     };
   }
 
-  function buildFakePrisma(user: any) {
+  function buildFakePrisma(user: any, options: { simulateMissingProviderReasonColumn?: boolean } = {}) {
     const txMock = {
       wallet: { update: jest.fn(async () => ({})) },
       transaction: { create: jest.fn(async () => ({})) },
       virtualCard: { create: jest.fn(async ({ data }: any) => ({ id: 'card-row-1', ...data })) },
     };
+    const createCardCreationFailure = jest.fn(async ({ data }: any) => {
+      // 11 nov 2026 — simile migrasyon add_card_creation_failure_provider_reason
+      // poko aplike: ekriti ak providerReason echwe, egzakteman jan Postgres
+      // ta fè si chan an pa egziste nan tab la.
+      if (options.simulateMissingProviderReasonColumn && data.providerReason) {
+        throw new Error('column "providerReason" of relation "CardCreationFailure" does not exist');
+      }
+      return data;
+    });
     return {
       virtualCard: { findFirst: jest.fn(async () => null) },
       user: { findUnique: jest.fn(async () => user) },
       rate: { findUnique: jest.fn(async () => ({ value: 130 })) },
       cardCreationFailure: {
-        create: jest.fn(async ({ data }: any) => data),
+        create: createCardCreationFailure,
         count: jest.fn(async () => 1), // < 2 → pa deklanche alèt email
       },
       $transaction: jest.fn(async (cb: any) => cb(txMock)),
@@ -330,5 +412,51 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
       message: 'Nou pa ka kreye kat la ak enfòmasyon sa yo. Tanpri kontakte sipò OZAMAPAY, nou pral ede w korije l.',
     });
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('sove providerReason nan CardCreationFailure sou rejè, san janm sove completion_link/kyc_id/reference', async () => {
+    const user = buildUser();
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    (axios.post as jest.Mock).mockRejectedValueOnce({
+      response: {
+        data: {
+          success: false,
+          status: 'rejected',
+          message: 'DOCUMENT_DECLINED_BEFORE',
+          reference: 'REF-SECRET-123',
+          kyc_id: 'KYC-SECRET-456',
+          completion_link: 'https://provider.example/complete/abc',
+        },
+      },
+    });
+
+    await expect(service.createAndFundCard('user-1', 3)).rejects.toBeTruthy();
+
+    const createCall = (fakePrisma.cardCreationFailure.create as jest.Mock).mock.calls[0][0];
+    expect(createCall.data.providerReason).toContain('DOCUMENT_DECLINED_BEFORE');
+    expect(createCall.data.providerReason).not.toMatch(/REF-SECRET-123|KYC-SECRET-456|completion_link|provider\.example/i);
+  });
+
+  it('ekriti providerReason pwoteje: si chan an pa egziste (migrasyon poko aplike), re-eseye san li epi pa kraske', async () => {
+    const user = buildUser();
+    const fakePrisma = buildFakePrisma(user, { simulateMissingProviderReasonColumn: true });
+    const service = buildService(fakePrisma);
+
+    (axios.post as jest.Mock).mockRejectedValueOnce({
+      response: { data: { success: false, status: 'rejected', message: 'DOCUMENT_DECLINED_BEFORE' } },
+    });
+
+    // Flow a dwe echwe NÒMALMAN (menm erè orijinal), PA kraske akoz chan
+    // providerReason ki pa egziste nan BDD a.
+    await expect(service.createAndFundCard('user-1', 3)).rejects.toBeTruthy();
+
+    expect(fakePrisma.cardCreationFailure.create).toHaveBeenCalledTimes(2);
+    const firstAttempt = (fakePrisma.cardCreationFailure.create as jest.Mock).mock.calls[0][0];
+    const secondAttempt = (fakePrisma.cardCreationFailure.create as jest.Mock).mock.calls[1][0];
+    expect(firstAttempt.data.providerReason).toBeDefined();
+    expect(secondAttempt.data.providerReason).toBeUndefined();
+    expect(secondAttempt.data.errorMessage).toBeDefined();
   });
 });

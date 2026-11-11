@@ -123,28 +123,62 @@ export class StrowalletService {
   // valè voye bay founisè a koupe.
   readonly MAX_CITY_LENGTH = 20;
 
+  // 11 nov 2026 — ZiiroPay aksepte sèlman lèt (ak aksan), tirè, apostwòf,
+  // pwen, espas nan city ("City can contain only letters, hyphens,
+  // apostrophes, periods, and spaces", konfime AN LIVE). Retire nenpòt lòt
+  // senbòl. Vigil jere apa (menm lojik ak chif la pi ba): premye segman =
+  // city, rès la ajoute nan line1 (egzanp "Delmas, Port-au-Prince" → city
+  // "Delmas", line1 resevwa ", Port-au-Prince") — Kyc.city/line1 nan BDD a
+  // pa touche, sèlman valè voye bay founisè a.
+  private stripDisallowedCitySymbols(value: string): string {
+    return value.replace(/[^\p{L}\s'.-]/gu, '');
+  }
+
+  private appendSegmentToLine1(currentLine1: string, segment: string): string {
+    const trimmedSegment = segment.trim();
+    if (!trimmedSegment || currentLine1.includes(trimmedSegment)) return currentLine1;
+    const suffix = `, ${trimmedSegment}`;
+    const available = this.MAX_LINE1_LENGTH - currentLine1.length;
+    return available > 2 ? currentLine1 + suffix.slice(0, available) : currentLine1;
+  }
+
+  private splitCityOnComma(cityValue: string, line1Value: string): { city: string; line1: string } {
+    const commaIndex = cityValue.indexOf(',');
+    if (commaIndex === -1) return { city: cityValue, line1: line1Value };
+    const before = cityValue.slice(0, commaIndex).trim();
+    const after = cityValue.slice(commaIndex + 1).trim();
+    if (!before) return { city: cityValue, line1: line1Value };
+    return { city: before, line1: this.appendSegmentToLine1(line1Value, after) };
+  }
+
   sanitizeCityForProvider(
     city: string | null | undefined,
     line1: string | null | undefined,
   ): { city: string; line1: string } {
     const finalize = (c: string, l: string) => ({
-      city: c.trim().slice(0, this.MAX_CITY_LENGTH),
+      city: c.replace(/\s+/g, ' ').trim().slice(0, this.MAX_CITY_LENGTH),
       line1: l,
     });
     const safeCity = city || '';
     const safeLine1 = line1 || '';
-    if (!/\d/.test(safeCity)) return finalize(safeCity, safeLine1);
+
+    if (!/\d/.test(safeCity)) {
+      const split = this.splitCityOnComma(safeCity, safeLine1);
+      return finalize(this.stripDisallowedCitySymbols(split.city), split.line1);
+    }
 
     const cleanCity = safeCity.replace(/\d+/g, '').replace(/\s+/g, ' ').trim();
     if (!cleanCity) return finalize(safeCity, safeLine1);
 
     const trimmedCity = safeCity.trim();
-    if (safeLine1.includes(trimmedCity)) return finalize(cleanCity, safeLine1);
+    if (safeLine1.includes(trimmedCity)) {
+      const split = this.splitCityOnComma(cleanCity, safeLine1);
+      return finalize(this.stripDisallowedCitySymbols(split.city), split.line1);
+    }
 
-    const suffix = `, ${trimmedCity}`;
-    const available = this.MAX_LINE1_LENGTH - safeLine1.length;
-    const newLine1 = available > 2 ? safeLine1 + suffix.slice(0, available) : safeLine1;
-    return finalize(cleanCity, newLine1);
+    const lineWithDigitSuffix = this.appendSegmentToLine1(safeLine1, trimmedCity);
+    const split = this.splitCityOnComma(cleanCity, lineWithDigitSuffix);
+    return finalize(this.stripDisallowedCitySymbols(split.city), split.line1);
   }
 
   // Fee constants
@@ -271,6 +305,29 @@ export class StrowalletService {
     }
     if (unknownFields.length) summary.unknownFields = unknownFields;
     return summary;
+  }
+
+  // 11 nov 2026 — menm lis blanch ak summarizeKycResponseForLog() (status/
+  // message/reason/comment/rejectLabels/rejectReasons/error/errors), men pou
+  // SOVE nan CardCreationFailure.providerReason (pa sèlman log). `detail` ka
+  // swa yon objè brit (statusResponse soti nan cardkycstatus) swa yon string
+  // (err.strowalletDetail — li menm ka yon JSON.stringify oswa yon mesaj
+  // tèks plat tankou `cardkyc status="rejected", pa "approved"`). Retire
+  // unknownFields (sa a se non chan sèlman, men pa fè pati lis blanch la
+  // egzakteman — nou rete estrik: SÈLMAN 8 chan yo). Jamais completion_link/
+  // kyc_id/reference/customer_id/email (yo tonbe nan unknownFields, jete).
+  extractProviderReasonFromDetail(detail: unknown): string | null {
+    let parsed: unknown = detail;
+    if (typeof detail === 'string') {
+      try {
+        parsed = JSON.parse(detail);
+      } catch {
+        parsed = { message: detail };
+      }
+    }
+    const { unknownFields, ...allowlisted } = this.summarizeKycResponseForLog(parsed);
+    if (!Object.keys(allowlisted).length) return null;
+    return JSON.stringify(allowlisted).slice(0, 1000);
   }
 
   // StroWallet konfime (2026-08-08): echèk "Using fake details" — adrès Miami
@@ -487,8 +544,23 @@ export class StrowalletService {
     email: string,
     context: 'CREATE' | 'REPLACEMENT',
     errorMessage: string,
+    providerReason?: string | null,
   ): Promise<void> {
-    await this.prisma.cardCreationFailure.create({ data: { userId, email, context, errorMessage } });
+    // 11 nov 2026 — providerReason pwoteje: si migrasyon
+    // add_card_creation_failure_provider_reason poko aplike (chan pa
+    // egziste ankò nan BDD), ekri a ta echwe san sa a — re-eseye san chan
+    // an olye kite tout echèk kardkyc rete san anrejistre.
+    try {
+      await this.prisma.cardCreationFailure.create({
+        data: { userId, email, context, errorMessage, ...(providerReason ? { providerReason } : {}) },
+      });
+    } catch (err: any) {
+      if (!providerReason) throw err;
+      this.logger.warn(
+        `[CardCreationFailure] Ekriti ak providerReason echwe (migrasyon posib poko aplike) — re-eseye san li: ${err?.message}`,
+      );
+      await this.prisma.cardCreationFailure.create({ data: { userId, email, context, errorMessage } });
+    }
 
     const lastCard = await this.prisma.virtualCard.findFirst({
       where: { userId },
@@ -738,7 +810,7 @@ export class StrowalletService {
         });
       });
       const strowalletDetail = (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown';
-      await this.recordCardCreationFailure(userId, user.email, 'CREATE', strowalletDetail);
+      await this.recordCardCreationFailure(userId, user.email, 'CREATE', strowalletDetail, this.extractProviderReasonFromDetail(strowalletDetail));
       // Si pa gen tradiksyon ki matche, kenbe erè orijinal la san chanjman
       // (menm mesaj jenerik ki te deja la, pa yon nouvo).
       const translatedMessage = this.translateCardkycRejectionMessage(strowalletDetail);
@@ -873,11 +945,13 @@ export class StrowalletService {
       cardId = cardResponse?.response?.card_id || cardResponse?.data?.card_id || cardResponse?.card_id;
       if (!cardId) throw this.strowalletFailure('create-nfc-card pa retounen card_id pou kat ranplasman an');
     } catch (err) {
+      const strowalletDetail = (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown';
       await this.recordCardCreationFailure(
         userId,
         user.email,
         'REPLACEMENT',
-        (err as any)?.strowalletDetail ?? (err as any)?.message ?? 'unknown',
+        strowalletDetail,
+        this.extractProviderReasonFromDetail(strowalletDetail),
       );
       throw err;
     }
@@ -991,14 +1065,19 @@ export class StrowalletService {
         await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { resolvedAt: new Date() } });
         this.logger.log(`[CardCreationPending] Rezoud APWOUVE id=${p.id} cardId=${cardId}`);
       } catch (err: any) {
-        await this.handlePendingCreationFailure(p, err?.strowalletDetail ?? err?.message ?? 'unknown');
+        const detail = err?.strowalletDetail ?? err?.message ?? 'unknown';
+        await this.handlePendingCreationFailure(p, detail, this.extractProviderReasonFromDetail(detail));
       }
       return;
     }
 
     if (kycStatus && kycStatus !== 'pending') {
       // Rejte (oswa nenpòt lòt estati final ki pa "approved"/"pending").
-      await this.handlePendingCreationFailure(p, `cardkyc status="${kycStatus}" (background poll)`);
+      await this.handlePendingCreationFailure(
+        p,
+        `cardkyc status="${kycStatus}" (background poll)`,
+        this.extractProviderReasonFromDetail(statusResponse),
+      );
       return;
     }
 
@@ -1081,7 +1160,11 @@ export class StrowalletService {
     }
   }
 
-  private async handlePendingCreationFailure(p: CardCreationPending, errorMessage: string): Promise<void> {
+  private async handlePendingCreationFailure(
+    p: CardCreationPending,
+    errorMessage: string,
+    providerReason?: string | null,
+  ): Promise<void> {
     if (p.context === 'CREATE' && p.totalHtg) {
       const totalHtg = Number(p.totalHtg);
       await this.prisma.$transaction(async (tx) => {
@@ -1131,7 +1214,7 @@ export class StrowalletService {
           .catch(() => {});
       }
     }
-    await this.recordCardCreationFailure(p.userId, p.email, p.context as 'CREATE' | 'REPLACEMENT', errorMessage);
+    await this.recordCardCreationFailure(p.userId, p.email, p.context as 'CREATE' | 'REPLACEMENT', errorMessage, providerReason);
     await this.prisma.cardCreationPending.update({ where: { id: p.id }, data: { resolvedAt: new Date() } });
   }
 

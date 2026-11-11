@@ -525,6 +525,13 @@ model CardCreationFailure {
   email        String
   context      String
   errorMessage String
+  // 11 nov 2026 — rezime KONT (maks 1000 karaktè) ki soti nan lis blanch
+  // summarizeKycResponseForLog() (status/message/reason/comment/
+  // rejectLabels/rejectReasons/error/errors) — JAMAIS completion_link/
+  // kyc_id/reference/kle/sekrè (sa yo pa fè pati lis blanch la, yo rete
+  // jete). Nullable — ekriti li pwoteje pa try/catch bò kòd la (strowallet.
+  // service.ts) pou yon migrasyon ki poko aplike pa bloke flow echèk la.
+  providerReason String?
   createdAt    DateTime @default(now())
 
   @@index([userId])
