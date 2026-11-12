@@ -86,9 +86,9 @@ export class StrowalletService {
   // konklizyon; adrès Wilmington te yon ERÈ. Sèvi ak VRÈ adrès Kyc kliyan an.
   // country DWE 3 karaktè (StroWallet konfime: "The country must be 3
   // characters.") — Kyc.country estoke alpha-2 ("HT"), konvèti an alpha-3.
-  private readonly ISO_ALPHA2_TO_ALPHA3: Record<string, string> = { HT: 'HTI' };
+  private readonly ISO_ALPHA2_TO_ALPHA3: Record<string, string> = { HT: 'HTI', DO: 'DOM' };
 
-  private resolveNfcCountry(country: string | null | undefined): string {
+  resolveNfcCountry(country: string | null | undefined): string {
     if (!country) return 'HTI';
     return this.ISO_ALPHA2_TO_ALPHA3[country.toUpperCase()] || country;
   }
@@ -388,8 +388,9 @@ export class StrowalletService {
   // match (prezève ansyen kòmpòtman pou ka ki pa idantifye).
   private readonly KNOWN_DIAL_CODE_PREFIXES = ['509', '33', '49', '44', '34', '55', '56', '1'];
 
-  private resolveDialCode(digits: string): string {
+  resolveDialCode(digits: string): string {
     if (digits.length === 8) return '+509';
+    if (digits.length === 10 && /^(809|829|849)/.test(digits)) return '+1';
     const match = this.KNOWN_DIAL_CODE_PREFIXES.find((code) => digits.startsWith(code));
     return match ? `+${match}` : '+509';
   }

@@ -133,6 +133,42 @@ describe('StrowalletService.calculateAgeYears', () => {
   });
 });
 
+describe('StrowalletService.resolveDialCode — rekonèt Repiblik Dominikèn (809/829/849)', () => {
+  const service = buildService();
+
+  it('829 (10 chif) → "+1" (reprodiksyon live dieumimaderissaint7@gmail.com)', () => {
+    expect(service.resolveDialCode('8294326658')).toBe('+1');
+  });
+
+  it('809 (10 chif) → "+1"', () => {
+    expect(service.resolveDialCode('8095551234')).toBe('+1');
+  });
+
+  it('849 (10 chif) → "+1"', () => {
+    expect(service.resolveDialCode('8495551234')).toBe('+1');
+  });
+
+  it('non-regresyon: 8 chif Ayiti → rete "+509"', () => {
+    expect(service.resolveDialCode('34202054')).toBe('+509');
+  });
+
+  it('non-regresyon: Lafrans (kòmanse pa 33) → rete "+33"', () => {
+    expect(service.resolveDialCode('33612345678')).toBe('+33');
+  });
+});
+
+describe('StrowalletService.resolveNfcCountry — "DO" → "DOM"', () => {
+  const service = buildService();
+
+  it('"DO" → "DOM"', () => {
+    expect(service.resolveNfcCountry('DO')).toBe('DOM');
+  });
+
+  it('non-regresyon: "HT" → "HTI"', () => {
+    expect(service.resolveNfcCountry('HT')).toBe('HTI');
+  });
+});
+
 describe('StrowalletService.translateCardkycRejectionMessage — mesaj kliyan an', () => {
   const service = buildService();
   const NEEDS_SUPPORT = 'Nou pa ka kreye kat la ak enfòmasyon sa yo. Tanpri kontakte sipò OZAMAPAY, nou pral ede w korije l.';
@@ -378,6 +414,25 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
     const cardkycCallArgs = (axios.post as jest.Mock).mock.calls[0];
     const sentPayload = cardkycCallArgs[2]?.params;
     expect(sentPayload.state).toBe('');
+  });
+
+  it('telefòn Repiblik Dominikèn (10 chif, 829) → dial_code "+1", phone_number san chanjman (reprodiksyon live dieumimaderissaint7@gmail.com)', async () => {
+    const user = buildUser({ phoneNumber: '8294326658' });
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    (axios.post as jest.Mock)
+      .mockResolvedValueOnce({ data: { success: true, response: { customer_id: 'cust-1', status: 'approved' } } })
+      .mockResolvedValueOnce({ data: { success: true, response: { card_id: 'card-xyz' } } });
+
+    await expect(service.createAndFundCard('user-1', 3)).resolves.toMatchObject({
+      message: expect.stringContaining('siksè'),
+    });
+
+    const cardkycCallArgs = (axios.post as jest.Mock).mock.calls[0];
+    const sentPayload = cardkycCallArgs[2]?.params;
+    expect(sentPayload.dial_code).toBe('+1');
+    expect(sentPayload.phone_number).toBe('8294326658');
   });
 
   it('blòk lokal: laj 16 an (pa 18) → mesaj "18 an", san apèl founisè', async () => {
