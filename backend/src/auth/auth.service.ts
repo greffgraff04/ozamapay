@@ -470,13 +470,16 @@ export class AuthService {
 
     if (!knownDevice) {
       const challengeToken = this.signChallengeToken(user.id, deviceInfo);
-      return { requiresDeviceVerification: true, challengeToken, isNewUser };
+      // App la pa toujou gen imel la (Apple pa re-voye l apre premye
+      // otorizasyon an) — li bezwen l isit la pou pase l bay ekran OTP a.
+      return { requiresDeviceVerification: true, challengeToken, isNewUser, email: user.email };
     }
 
     const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
     return {
       message: 'Koneksyon reyisi',
       ...pair,
+      email: user.email,
       user: {
         id: user.id,
         email: user.email,

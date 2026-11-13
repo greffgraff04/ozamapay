@@ -66,11 +66,28 @@ function buildFakePrisma() {
   };
 }
 
-function buildService(fakePrisma: any, overrides: { apple?: any; google?: any } = {}) {
-  const jwtService = {
-    sign: jest.fn(() => 'fake-jwt-token'),
-    verify: jest.fn(),
+// jwtService "vivan" (sign/verify backed pa yon Map) olye yon jest.fn() vid
+// — sa pèmèt tès yo verifye wout OTP a (verifyChallengeToken) rezoud menm
+// itilizatè a apre yon koneksyon social, san bezwen vrè `jsonwebtoken`.
+function buildLiveJwtService() {
+  const store = new Map<string, any>();
+  let counter = 0;
+  return {
+    sign: jest.fn((payload: any) => {
+      const token = `fake-jwt-${++counter}`;
+      store.set(token, payload);
+      return token;
+    }),
+    verify: jest.fn((token: string) => {
+      const payload = store.get(token);
+      if (!payload) throw new Error('invalid token');
+      return payload;
+    }),
   };
+}
+
+function buildService(fakePrisma: any, overrides: { apple?: any; google?: any } = {}) {
+  const jwtService = buildLiveJwtService();
   const mailService = { sendWelcome: jest.fn() };
   const twoFactorService = {};
   const tokenBlacklist = { add: jest.fn(), has: jest.fn().mockResolvedValue(false) };
@@ -92,7 +109,7 @@ function buildService(fakePrisma: any, overrides: { apple?: any; google?: any } 
     appleAuthService as any,
     googleMobileAuthService as any,
   );
-  return { service, mailService, appleAuthService, googleMobileAuthService };
+  return { service, mailService, appleAuthService, googleMobileAuthService, jwtService };
 }
 
 const DEVICE_INFO = { deviceId: 'device-1', deviceName: 'iPhone', platform: 'ios' };
@@ -121,7 +138,7 @@ describe('AuthService.loginWithApple', () => {
       DEVICE_INFO,
     );
 
-    expect(result).toMatchObject({ requiresDeviceVerification: true, isNewUser: true });
+    expect(result).toMatchObject({ requiresDeviceVerification: true, isNewUser: true, email: 'nouvo@example.com' });
     expect((result as any).challengeToken).toBeDefined();
 
     const created = [...fakePrisma.usersById.values()][0];
@@ -130,6 +147,56 @@ describe('AuthService.loginWithApple', () => {
     expect(created.emailVerified).toBe(true);
     expect(created.password).toBe('');
     expect(mailService.sendWelcome).toHaveBeenCalledWith('nouvo@example.com', 'Jean Pierre');
+  });
+
+  it('email relais prive Apple (@privaterelay.appleid.com) — kanmenm retounen nan "email" (se li ki email kont la)', async () => {
+    const fakePrisma = buildFakePrisma();
+    const { service } = buildService(fakePrisma, {
+      apple: {
+        verifyIdentityToken: jest.fn().mockResolvedValue({
+          sub: 'apple-sub-relay',
+          email: 'abc123xyz@privaterelay.appleid.com',
+          emailVerified: true,
+          isPrivateEmail: true,
+        }),
+      },
+    });
+
+    const result = await service.loginWithApple({ identityToken: 'tok', authorizationCode: 'code' } as any, DEVICE_INFO);
+
+    expect(result).toMatchObject({
+      requiresDeviceVerification: true,
+      email: 'abc123xyz@privaterelay.appleid.com',
+    });
+  });
+
+  it('rekoneksyon (Apple pa re-voye email) — aparèy konni, "email" prezan nan repons lan menm si Apple pa bay li ankò', async () => {
+    const fakePrisma = buildFakePrisma();
+    fakePrisma.seedUser({
+      id: 'user-returning',
+      email: 'returning@example.com',
+      name: 'Returning User',
+      role: 'USER',
+      appleUserId: 'apple-sub-returning',
+      referredByAgentId: null,
+      transactionPin: null,
+      wallet: { balance: 0 },
+      kyc: null,
+    });
+    fakePrisma.sessions.push({ userId: 'user-returning', deviceId: DEVICE_INFO.deviceId });
+    const { service } = buildService(fakePrisma, {
+      // Deuxième connexion Apple : le token ne contient plus l'email (Apple
+      // ne le renvoie qu'à la première autorisation) — exactement le cas
+      // signalé par l'app mobile.
+      apple: {
+        verifyIdentityToken: jest.fn().mockResolvedValue({ sub: 'apple-sub-returning', emailVerified: false }),
+      },
+    });
+
+    const result = await service.loginWithApple({ identityToken: 'tok', authorizationCode: 'code' } as any, DEVICE_INFO);
+
+    expect(result).toMatchObject({ message: 'Koneksyon reyisi', email: 'returning@example.com' });
+    expect((result as any).user.email).toBe('returning@example.com');
   });
 
   it('liaison compte existant: email deja nan BDD, emailVerified Apple=true → lye appleUserId san kreye doub', async () => {
@@ -187,9 +254,36 @@ describe('AuthService.loginWithApple', () => {
     const result = await service.loginWithApple({ identityToken: 'tok', authorizationCode: 'code' } as any, DEVICE_INFO);
 
     // Aparèy "konni" (Session egziste deja) → pè token reyèl, pa yon defi.
-    expect(result).toMatchObject({ message: 'Koneksyon reyisi', isNewUser: false });
+    expect(result).toMatchObject({ message: 'Koneksyon reyisi', isNewUser: false, email: 'linked@example.com' });
     expect((result as any).accessToken).toBeDefined();
     expect((result as any).refreshToken).toBeDefined();
+  });
+
+  it('flux OTP existan (NEW_DEVICE) rezoud menm itilizatè a apre yon koneksyon Apple sou yon nouvo aparèy', async () => {
+    const fakePrisma = buildFakePrisma();
+    const { service, jwtService } = buildService(fakePrisma, {
+      apple: {
+        verifyIdentityToken: jest.fn().mockResolvedValue({
+          sub: 'apple-sub-otp',
+          email: 'otp-flow@example.com',
+          emailVerified: true,
+        }),
+      },
+    });
+
+    const result = await service.loginWithApple({ identityToken: 'tok', authorizationCode: 'code' } as any, DEVICE_INFO);
+    expect(result).toMatchObject({ requiresDeviceVerification: true, email: 'otp-flow@example.com' });
+
+    // Menm chemen ak OtpService.resolveIdentity(purpose=NEW_DEVICE) :
+    // challengeToken retounen a dwe rezoud sou menm itilizatè ki gen email
+    // nou sot retounen a — pwouve flux OTP la toujou aliman ak "email".
+    const { userId, deviceInfo } = await service.verifyChallengeToken((result as any).challengeToken);
+    const createdUser = [...fakePrisma.usersById.values()][0];
+    expect(userId).toBe(createdUser.id);
+
+    const completion = await service.completeDeviceVerification(userId, deviceInfo);
+    expect((completion as any).user.email).toBe('otp-flow@example.com');
+    expect(jwtService.verify).toHaveBeenCalled();
   });
 
   it('email deja itilize men Apple PA konfime l verifye → ConflictException (pa lye san prèv)', async () => {
@@ -273,11 +367,37 @@ describe('AuthService.loginWithGoogleMobile', () => {
 
     const result = await service.loginWithGoogleMobile({ idToken: 'tok' } as any, DEVICE_INFO);
 
-    expect(result).toMatchObject({ requiresDeviceVerification: true, isNewUser: true });
+    expect(result).toMatchObject({ requiresDeviceVerification: true, isNewUser: true, email: 'nouvogoogle@example.com' });
     const created = [...fakePrisma.usersById.values()][0];
     expect(created.googleId).toBe('google-sub-1');
     expect(created.emailVerified).toBe(true);
     expect(mailService.sendWelcome).toHaveBeenCalledWith('nouvogoogle@example.com', 'Marie Joseph');
+  });
+
+  it('aparèy konni (Session deja egziste) → koneksyon dirèk, "email" prezan top-level ET nan "user"', async () => {
+    const fakePrisma = buildFakePrisma();
+    fakePrisma.seedUser({
+      id: 'user-g-linked',
+      email: 'glinked@example.com',
+      name: 'G Linked',
+      role: 'USER',
+      googleId: 'google-sub-linked',
+      referredByAgentId: null,
+      transactionPin: null,
+      wallet: { balance: 0 },
+      kyc: null,
+    });
+    fakePrisma.sessions.push({ userId: 'user-g-linked', deviceId: DEVICE_INFO.deviceId });
+    const { service } = buildService(fakePrisma, {
+      google: {
+        verifyIdToken: jest.fn().mockResolvedValue({ sub: 'google-sub-linked', emailVerified: true }),
+      },
+    });
+
+    const result = await service.loginWithGoogleMobile({ idToken: 'tok' } as any, DEVICE_INFO);
+
+    expect(result).toMatchObject({ message: 'Koneksyon reyisi', email: 'glinked@example.com' });
+    expect((result as any).user.email).toBe('glinked@example.com');
   });
 
   it('liaison compte existant pa email, googleId poko mete', async () => {
