@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { AuthService } from '../auth/auth.service';
 import { OtpService } from '../auth/otp.service';
+import { AppleAuthService } from '../auth/social/apple-auth.service';
 import { isStaging } from '../config/app-env';
 import { RequestAccountDeletionDto } from './dto/account-deletion.dto';
 
@@ -48,6 +49,7 @@ export class AccountDeletionService {
     private readonly mailService: MailService,
     private readonly authService: AuthService,
     private readonly otpService: OtpService,
+    private readonly appleAuthService: AppleAuthService,
   ) {}
 
   private async assertNoBlockers(userId: string, user: any): Promise<void> {
@@ -184,9 +186,29 @@ export class AccountDeletionService {
         }),
       ]);
       executed += 1;
+
+      // 13 nov 2026 — revokasyon Apple OBLIGATWA pou sipresyon kont
+      // (guideline 4.8). Jamè bloke sipresyon an si sa echwe/pa konfigire
+      // — AppleAuthService.revokeRefreshToken() deja avale pwòp erè li.
+      await this.revokeAppleTokenIfPresent(request.userId);
     }
 
     return { executed };
+  }
+
+  private async revokeAppleTokenIfPresent(userId: string): Promise<void> {
+    if (!this.appleAuthService) return;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { appleRefreshTokenEncrypted: true },
+    });
+    if (!user?.appleRefreshTokenEncrypted) return;
+
+    await this.appleAuthService.revokeRefreshToken(user.appleRefreshTokenEncrypted);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { appleRefreshTokenEncrypted: null },
+    });
   }
 
   // Automatik — koupe an staging (menm jan ak lòt cron yo), e koupe toupatou

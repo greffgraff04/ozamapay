@@ -128,7 +128,7 @@ function buildService(fakePrisma: any, tokenBlacklistOverrides: any = {}) {
   };
   const twoFactorService = {};
   const tokenBlacklist = { add: jest.fn(), has: jest.fn().mockResolvedValue(false), ...tokenBlacklistOverrides };
-  return new AuthService(fakePrisma as any, jwtService as any, mailService as any, twoFactorService as any, tokenBlacklist as any);
+  return new AuthService(fakePrisma as any, jwtService as any, mailService as any, twoFactorService as any, tokenBlacklist as any, {} as any, {} as any);
 }
 
 function makeUser(overrides: Partial<any> = {}) {
