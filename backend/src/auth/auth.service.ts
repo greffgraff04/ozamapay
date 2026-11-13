@@ -20,7 +20,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   LoginDto,
   RegisterDto,
+  AppleLoginDto,
+  GoogleMobileLoginDto,
 } from './dto/auth.dto';
+import { AppleAuthService } from './social/apple-auth.service';
+import { GoogleMobileAuthService } from './social/google-mobile-auth.service';
 
 import * as bcrypt from 'bcrypt';
 import {
@@ -55,6 +59,10 @@ export class AuthService {
     private twoFactorService: TwoFactorService,
 
     private tokenBlacklist: TokenBlacklistService,
+
+    private appleAuthService: AppleAuthService,
+
+    private googleMobileAuthService: GoogleMobileAuthService,
   ) {}
 
   // =========================
@@ -443,6 +451,166 @@ export class AuthService {
 
       ...(deletionCancelled ? { deletionCancelled: true } : {}),
     };
+  }
+
+  // =========================
+  // SIGN IN WITH APPLE / GOOGLE MOBIL (13 nov 2026, guideline 4.8) — app
+  // mobil SÈLMAN (X-Device-Id obligatwa, wè AuthController). Imel la deja
+  // verifye pa founisè a (Apple/Google), kidonk PA gen defi
+  // "requiresEmailVerification" isit la (diferan de login()/register()
+  // modpas) — sèlman defi aparèy (Session pa "konni") rete, menm chemen
+  // ak login(): challengeToken → /auth/otp/send|verify (purpose=new_device)
+  // → completeDeviceVerification(), san okenn chanjman nan OtpService.
+  // =========================
+
+  private async completeSocialLogin(user: any, deviceInfo: DeviceInfo, isNewUser: boolean) {
+    const knownDevice = await this.prisma.session.findFirst({
+      where: { userId: user.id, deviceId: deviceInfo.deviceId },
+    });
+
+    if (!knownDevice) {
+      const challengeToken = this.signChallengeToken(user.id, deviceInfo);
+      return { requiresDeviceVerification: true, challengeToken, isNewUser };
+    }
+
+    const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
+    return {
+      message: 'Koneksyon reyisi',
+      ...pair,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        referredByAgentId: user.referredByAgentId,
+        transactionPin: user.transactionPin ? true : false,
+        wallet: { balance: user.wallet?.balance || 0 },
+        kyc: user.kyc
+          ? { status: user.kyc.status, fullName: `${user.kyc.firstName} ${user.kyc.lastName}` }
+          : null,
+      },
+      isNewUser,
+    };
+  }
+
+  async loginWithApple(dto: AppleLoginDto, deviceInfo: DeviceInfo) {
+    const identity = await this.appleAuthService.verifyIdentityToken(dto.identityToken);
+
+    let user = await this.prisma.user.findUnique({
+      where: { appleUserId: identity.sub },
+      include: { wallet: true, kyc: true },
+    });
+    let isNewUser = false;
+
+    if (!user) {
+      const email = (dto.email || identity.email)?.toLowerCase();
+      const existingByEmail = email
+        ? await this.prisma.user.findUnique({ where: { email }, include: { wallet: true, kyc: true } })
+        : null;
+
+      if (existingByEmail && identity.emailVerified) {
+        user = existingByEmail.appleUserId
+          ? existingByEmail
+          : await this.prisma.user.update({
+              where: { id: existingByEmail.id },
+              data: { appleUserId: identity.sub, emailVerified: true },
+              include: { wallet: true, kyc: true },
+            });
+      } else if (existingByEmail) {
+        // Email egziste deja nan BDD a men Apple pa konfime l verifye —
+        // refize lye pou evite yon moun reklame yon kont ki pa pou li.
+        throw new ConflictException('Email deja itilize');
+      } else {
+        if (!email) {
+          throw new BadRequestException('Nou pa ka konplete koneksyon Apple ou a — email manke.');
+        }
+        if (isReviewAccountEmail(email)) {
+          throw new ForbiddenException(REVIEW_ACCOUNT_BLOCKED_MESSAGE);
+        }
+
+        const fullName = [dto.fullName?.givenName, dto.fullName?.familyName].filter(Boolean).join(' ').trim();
+        const created = await this.prisma.$transaction(async (tx) => {
+          const newUser = await tx.user.create({
+            data: {
+              email,
+              password: '',
+              name: fullName || email,
+              role: 'USER',
+              appleUserId: identity.sub,
+              emailVerified: true,
+              emailVerifiedAt: new Date(),
+            },
+          });
+          await tx.wallet.create({ data: { userId: newUser.id, balance: 0 } });
+          return newUser;
+        });
+        isNewUser = true;
+        await this.mailService.sendWelcome(created.email, created.name || 'Kliyan');
+        user = await this.prisma.user.findUnique({ where: { id: created.id }, include: { wallet: true, kyc: true } });
+      }
+    }
+
+    if (dto.authorizationCode) {
+      const encrypted = await this.appleAuthService.exchangeAuthorizationCodeAndEncrypt(dto.authorizationCode);
+      if (encrypted) {
+        await this.prisma.user.update({ where: { id: user!.id }, data: { appleRefreshTokenEncrypted: encrypted } });
+      }
+    }
+
+    return this.completeSocialLogin(user!, deviceInfo, isNewUser);
+  }
+
+  async loginWithGoogleMobile(dto: GoogleMobileLoginDto, deviceInfo: DeviceInfo) {
+    const identity = await this.googleMobileAuthService.verifyIdToken(dto.idToken);
+
+    let user = await this.prisma.user.findUnique({
+      where: { googleId: identity.sub },
+      include: { wallet: true, kyc: true },
+    });
+    let isNewUser = false;
+
+    if (!user) {
+      const existingByEmail = await this.prisma.user.findUnique({
+        where: { email: identity.email },
+        include: { wallet: true, kyc: true },
+      });
+
+      if (existingByEmail) {
+        user = existingByEmail.googleId
+          ? existingByEmail
+          : await this.prisma.user.update({
+              where: { id: existingByEmail.id },
+              data: { googleId: identity.sub, emailVerified: true },
+              include: { wallet: true, kyc: true },
+            });
+      } else {
+        if (isReviewAccountEmail(identity.email)) {
+          throw new ForbiddenException(REVIEW_ACCOUNT_BLOCKED_MESSAGE);
+        }
+
+        const name = [identity.firstName, identity.lastName].filter(Boolean).join(' ').trim();
+        const created = await this.prisma.$transaction(async (tx) => {
+          const newUser = await tx.user.create({
+            data: {
+              email: identity.email,
+              password: '',
+              name: name || identity.email,
+              role: 'USER',
+              googleId: identity.sub,
+              emailVerified: true,
+              emailVerifiedAt: new Date(),
+            },
+          });
+          await tx.wallet.create({ data: { userId: newUser.id, balance: 0 } });
+          return newUser;
+        });
+        isNewUser = true;
+        await this.mailService.sendWelcome(created.email, created.name || 'Kliyan');
+        user = await this.prisma.user.findUnique({ where: { id: created.id }, include: { wallet: true, kyc: true } });
+      }
+    }
+
+    return this.completeSocialLogin(user!, deviceInfo, isNewUser);
   }
 
   // =========================

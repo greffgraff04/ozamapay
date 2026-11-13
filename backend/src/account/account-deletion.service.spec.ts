@@ -79,13 +79,15 @@ function buildService(fakePrisma: any, overrides: any = {}) {
   const mailService = { sendAccountDeletionRequested: jest.fn() };
   const authService = { revokeAllSessions: jest.fn() };
   const otpService = { verifyCodeOnly: jest.fn() };
+  const appleAuthService = { revokeRefreshToken: jest.fn() };
   const service = new AccountDeletionService(
     fakePrisma as any,
     mailService as any,
     { ...authService, ...overrides.authService } as any,
     { ...otpService, ...overrides.otpService } as any,
+    { ...appleAuthService, ...overrides.appleAuthService } as any,
   );
-  return { service, mailService, authService, otpService };
+  return { service, mailService, authService, otpService, appleAuthService };
 }
 
 describe('AccountDeletionService.requestDeletion — re-authentification', () => {
@@ -287,6 +289,47 @@ describe('AccountDeletionService.executeScheduledDeletions — AUCUNE anonymisat
     const result = await service.executeScheduledDeletions();
 
     expect(result.executed).toBe(0);
+  });
+
+  it('revoke le refresh token Apple si présent, puis l\'efface (sans bloquer la suppression si ça échoue)', async () => {
+    const user = makeUser({ appleRefreshTokenEncrypted: 'iv:tag:ciphertext' });
+    const fakePrisma = buildFakePrisma(user);
+    fakePrisma.deletionRequests.set('req-due', {
+      id: 'req-due',
+      userId: user.id,
+      status: 'PENDING',
+      scheduledFor: new Date(Date.now() - 1000),
+      requestedAt: new Date(),
+      cancelledAt: null,
+      executedAt: null,
+    });
+    const { service, appleAuthService } = buildService(fakePrisma);
+
+    const result = await service.executeScheduledDeletions();
+
+    expect(result.executed).toBe(1);
+    expect(appleAuthService.revokeRefreshToken).toHaveBeenCalledWith('iv:tag:ciphertext');
+    expect((user as any).appleRefreshTokenEncrypted).toBeNull();
+  });
+
+  it('ne fait rien (pas de revoke) si aucun refresh token Apple n\'est stocké', async () => {
+    const user = makeUser(); // appleRefreshTokenEncrypted absent
+    const fakePrisma = buildFakePrisma(user);
+    fakePrisma.deletionRequests.set('req-due', {
+      id: 'req-due',
+      userId: user.id,
+      status: 'PENDING',
+      scheduledFor: new Date(Date.now() - 1000),
+      requestedAt: new Date(),
+      cancelledAt: null,
+      executedAt: null,
+    });
+    const { service, appleAuthService } = buildService(fakePrisma);
+
+    const result = await service.executeScheduledDeletions();
+
+    expect(result.executed).toBe(1);
+    expect(appleAuthService.revokeRefreshToken).not.toHaveBeenCalled();
   });
 });
 

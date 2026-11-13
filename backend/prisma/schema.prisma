@@ -51,6 +51,17 @@ model User {
 
   googleId String? @unique
 
+  // 13 nov 2026 — Sign in with Apple (guideline 4.8). `sub` Apple la, pa
+  // janm chanje pou yon kont done. `appleRefreshTokenEncrypted` chifre
+  // (AES-256-GCM, wè apple-token.util.ts) — sèlman si
+  // APPLE_TEAM_ID/KEY_ID/PRIVATE_KEY konfigire, itilize pou revoke Apple
+  // obligatwa lè yon kont sipresyon (executeScheduledDeletions). Google
+  // mobil reyitilize `googleId` ki egziste deja (menm `sub` ak flux web
+  // la) — pa gen nouvo chan "googleUserId" pou evite 2 idantite fragmante
+  // pou menm itilizatè.
+  appleUserId                String? @unique
+  appleRefreshTokenEncrypted String?
+
   photoUrl String?
 
   strowalletCustomerId String?
