@@ -7,6 +7,11 @@
 // un process SÉPARÉ, lancé avec STAGING_MOCK_FAILURE_RATE=1 et le flag
 // --scenario7-only. Voir les 2 commandes dans le rapport livré à l'utilisateur.
 
+// require() (pa import) pou garanti l egzekite AVAN nenpòt lòt bagay —
+// san okenn efè nan conteneur staging reyèl la (pa gen .env fichye la, Render
+// enjekte varyab yo dirèkteman), itil sèlman pou egzekisyon lokal/jetabl.
+require('dotenv').config();
+
 if (process.env.APP_ENV !== 'staging') {
   console.error('ARÈT IMMEDYAT: APP_ENV !== "staging" — script refize kouri.');
   process.exit(1);
