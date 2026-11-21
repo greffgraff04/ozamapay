@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function KycUploadPage() {
   const [formData, setFormData] = useState({
@@ -11,8 +11,17 @@ export default function KycUploadPage() {
     idNumber: '',
   });
   const [loading, setLoading] = useState(false);
+  const [pricing, setPricing] = useState<{ renaissancePricingEnabled: boolean }>({ renaissancePricingEnabled: false });
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    fetch(`${backendUrl}/pricing`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setPricing(data); })
+      .catch(() => {});
+  }, [backendUrl]);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -40,7 +49,11 @@ export default function KycUploadPage() {
       const result = await res.json();
 
       if (res.ok) {
-        alert("KYC Soumèt ak siksè! 3,375 HTG debite. N ap verifye l rapid vit. 🚀");
+        alert(
+          pricing.renaissancePricingEnabled
+            ? "KYC Soumèt ak siksè! Li 100% gratis. N ap verifye l rapid vit. 🚀"
+            : "KYC Soumèt ak siksè! 3,375 HTG debite. N ap verifye l rapid vit. 🚀"
+        );
         window.location.href = '/dashboard';
       } else {
         alert(result.message || "Erè pandan soumisyon an.");
@@ -114,7 +127,7 @@ export default function KycUploadPage() {
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          ) : "Peye ~3,375 HTG & Soumèt"}
+          ) : (pricing.renaissancePricingEnabled ? "Soumèt GRATIS" : "Peye ~3,375 HTG & Soumèt")}
         </button>
       </div>
     </div>

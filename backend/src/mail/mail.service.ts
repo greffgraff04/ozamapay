@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { BrevoClient } from '@getbrevo/brevo';
 import { isStaging } from '../config/app-env';
+import {
+  RENAISSANCE_PRICING_ENABLED,
+  CARD_CREATION_FEE_HTG,
+  CARD_INITIAL_BALANCE_USD,
+} from '../common/constants';
 
 @Injectable()
 export class MailService {
@@ -160,15 +165,23 @@ export class MailService {
       this.p(`Bonjou ${name},`) +
       this.p('Ou fè yon bon chwa jodi a.') +
       this.p('Pandan moun ap peye 10 a 15% nan Western Union pou voye lajan, ou sot chwazi yon altènativ ki koute 2% sèlman. Sa se yon desizyon entèlijan.') +
-      this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit. Frè verifikasyon se $25 USD, yon sèl fwa pou tout lavi kont ou.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit, e li 100% GRATIS.')
+        : this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit. Frè verifikasyon se $25 USD, yon sèl fwa pou tout lavi kont ou.')
+      ) +
       this.p('Apre verifikasyon:') +
       this.list([
         'Ou ka resevwa lajan depi nenpòt kote',
-        'Ou ka kreye kat VISA ou — san frè adisyonèl',
+        RENAISSANCE_PRICING_ENABLED
+          ? `Ou ka kreye kat VISA ou pou ${CARD_CREATION_FEE_HTG} HTG, ak $${CARD_INITIAL_BALANCE_USD} ladan l`
+          : 'Ou ka kreye kat VISA ou — san frè adisyonèl',
         'Ou ka voye kòb bay fanmi ou imedyatman',
       ]) +
       this.p('Pa kite opòtinite sa pase.') +
-      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.accentLine(`KYC gratis. Kat VISA: ${CARD_CREATION_FEE_HTG} HTG sèlman.`)
+        : this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.')
+      ) +
       this.btn('Fè KYC Mwen Kounye a →', `${this.frontendUrl}/kyc`),
     );
     await this.send(email, `${name}, byenvini nan OZAMAPAY`, html);
@@ -180,7 +193,10 @@ export class MailService {
       'Verifikasyon Apwouve',
       this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.amountBox('$25 USD', 'Frè KYC peye') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.amountBox('GRATIS', 'Verifikasyon KYC')
+        : this.amountBox('$25 USD', 'Frè KYC peye')
+      ) +
       this.p(`Bonjou ${name},`) +
       this.p('Verifikasyon idantite ou apwouve.') +
       this.p('Kont ou kounye a gen aksè konplè. Sa vle di ou ka:') +
@@ -189,7 +205,10 @@ export class MailService {
         'Resevwa Zelle, CashApp, Meru — dirèkteman nan kont ou',
         'Voye ak resevwa kòb san limit',
       ]) +
-      this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.p(`Kat VISA ou disponib pou ${CARD_CREATION_FEE_HTG} HTG (ak $${CARD_INITIAL_BALANCE_USD} ladan l). Kreye l kounye a epi kòmanse achte enlign depi Ayiti.`)
+        : this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.')
+      ) +
       this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.') +
       this.btn('Kreye Kat VISA Ou →', `${this.frontendUrl}/dashboard`),
     );
