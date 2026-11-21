@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Mail,
@@ -16,32 +16,38 @@ import {
 import Link from 'next/link';
 import { isBusinessHours, BUSINESS_HOURS_LABEL } from '../lib/businessHours';
 
-const FAQ_ITEMS = [
-  {
-    q: 'Kijan mwen ka topup kont mwen?',
-    a: 'Ou ka topup via MonCash, Zelle, CashApp ak lòt metòd. Ale nan tab TOPUP nan dashboard ou.',
-  },
-  {
-    q: 'Konbyen tan KYC pran?',
-    a: 'KYC pran mwens ke 24 èdtan. Ou pral resevwa yon email lè li apwouve.',
-  },
-  {
-    q: 'Kijan mwen ka kreye kat VISA mwen?',
-    a: "Apre KYC apwouve, ale nan tab CARDS epi klike 'Kreye Kat VISA'. Se GRATIS!",
-  },
-  {
-    q: 'Ki frè OZAMAPAY mande?',
-    a: 'Topup manyèl: 6%. Topup MonCash Otomatik: 8,9% (6% OZAMAPAY + 2,9% frè MonCash). Retrè: 2%. KYC: ~3,375 HTG yon fwa. Kreye kat: GRATIS.',
-  },
-  {
-    q: 'Kijan mwen ka kontakte yon ajans?',
-    a: 'Ale sou ozamapay.com/register?ref=CODE_AJAN pou enskri via yon ajans lokal.',
-  },
-  {
-    q: 'Kisa pou m fè si mwen bliye PIN mwen?',
-    a: 'Ale nan Profil → Sekirite → Chanje PIN pou kreye yon nouvo PIN.',
-  },
-];
+function buildFaqItems(pricing: { renaissancePricingEnabled: boolean; cardCreationFeeHtg: number }) {
+  return [
+    {
+      q: 'Kijan mwen ka topup kont mwen?',
+      a: 'Ou ka topup via MonCash, Zelle, CashApp ak lòt metòd. Ale nan tab TOPUP nan dashboard ou.',
+    },
+    {
+      q: 'Konbyen tan KYC pran?',
+      a: 'KYC pran mwens ke 24 èdtan. Ou pral resevwa yon email lè li apwouve.',
+    },
+    {
+      q: 'Kijan mwen ka kreye kat VISA mwen?',
+      a: pricing.renaissancePricingEnabled
+        ? `Apre KYC apwouve, ale nan tab CARDS epi klike 'Kreye Kat VISA'. Se ${pricing.cardCreationFeeHtg} HTG (gratis pou manm fondatè).`
+        : "Apre KYC apwouve, ale nan tab CARDS epi klike 'Kreye Kat VISA'. Se GRATIS!",
+    },
+    {
+      q: 'Ki frè OZAMAPAY mande?',
+      a: pricing.renaissancePricingEnabled
+        ? `Topup manyèl: 6%. Topup MonCash Otomatik: 8,9% (6% OZAMAPAY + 2,9% frè MonCash). Retrè: 2%. KYC: GRATIS. Kreye kat: ${pricing.cardCreationFeeHtg} HTG.`
+        : 'Topup manyèl: 6%. Topup MonCash Otomatik: 8,9% (6% OZAMAPAY + 2,9% frè MonCash). Retrè: 2%. KYC: ~3,375 HTG yon fwa. Kreye kat: GRATIS.',
+    },
+    {
+      q: 'Kijan mwen ka kontakte yon ajans?',
+      a: 'Ale sou ozamapay.com/register?ref=CODE_AJAN pou enskri via yon ajans lokal.',
+    },
+    {
+      q: 'Kisa pou m fè si mwen bliye PIN mwen?',
+      a: 'Ale nan Profil → Sekirite → Chanje PIN pou kreye yon nouvo PIN.',
+    },
+  ];
+}
 
 type ContactCard = {
   icon: React.ElementType;
@@ -106,6 +112,21 @@ function BusinessHoursNotice() {
 
 export default function SupportPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [pricing, setPricing] = useState<{ renaissancePricingEnabled: boolean; cardCreationFeeHtg: number }>({
+    renaissancePricingEnabled: false,
+    cardCreationFeeHtg: 0,
+  });
+
+  useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    fetch(`${API}/pricing`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setPricing(data); })
+      .catch(() => {});
+  }, []);
+
+  const FAQ_ITEMS = buildFaqItems(pricing);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white pt-32 pb-20">

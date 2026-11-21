@@ -61,6 +61,12 @@ export default function AdminDashboard() {
   const [rateValue, setRateValue] = useState('');
   const [token, setToken] = useState('');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  // Renaissance pricing — defo a se egzakteman ansyen konpòtman an.
+  const [pricing, setPricing] = useState<{
+    renaissancePricingEnabled: boolean;
+    kycFeeHtg: number;
+    cardCreationFeeHtg: number;
+  }>({ renaissancePricingEnabled: false, kycFeeHtg: 3375, cardCreationFeeHtg: 0 });
   const [selectedKyc, setSelectedKyc] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAgentTopup, setIsAgentTopup] = useState(false);
@@ -162,7 +168,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes, bizRes, bizWdRes] = await Promise.all([
+      const [statsRes, usersRes, agentsRes, liqRes, pendingTxRes, financeRes, invitationsRes, dailyCodeRes, sessionsRes, activityLogsRes, bizRes, bizWdRes, pricingRes] = await Promise.all([
         fetch(`${API}/admin/dashboard-stats`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve({}) })),
         fetch(`${API}/admin/users`, { headers: H() }).catch(err => ({ ok: false, json: () => Promise.resolve([]) })),
         fetch(`${API}/admin/agents`, { headers: H() }).catch(() => null),
@@ -175,7 +181,13 @@ export default function AdminDashboard() {
         fetch(`${API}/admin/activity-logs`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/businesses`, { headers: H() }).catch(() => null),
         fetch(`${API}/admin/business-withdrawals/pending`, { headers: H() }).catch(() => null),
+        fetch(`${API}/pricing`, { headers: H() }).catch(() => null),
       ]);
+
+      if (pricingRes && (pricingRes as Response).ok) {
+        const pricingData = await (pricingRes as Response).json().catch(() => null);
+        if (pricingData) setPricing(pricingData);
+      }
 
       const statsData = statsRes && statsRes.ok ? await statsRes.json() : {};
       if (usersRes && !usersRes.ok) console.warn('GET /admin/users failed:', (usersRes as Response).status);
@@ -1167,7 +1179,7 @@ export default function AdminDashboard() {
                   <div className="flex gap-3">
                     <button onClick={() => handleKycReview(selectedKyc.id, 'APPROVED')}
                       className="flex-1 bg-[#FF6B00] hover:bg-[#E05E00] text-white py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition">
-                      <CheckCircle2 size={14} /> Approve KYC — Debite ~3,375 HTG
+                      <CheckCircle2 size={14} /> {pricing.renaissancePricingEnabled ? 'Approve KYC — Gratis' : 'Approve KYC — Debite ~3,375 HTG'}
                     </button>
                     <button onClick={() => handleKycReview(selectedKyc.id, 'REJECTED')}
                       className="flex-1 bg-white/[0.02] hover:bg-white/[0.04] text-white/60 border border-white/[0.05] py-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition">
@@ -1711,13 +1723,23 @@ export default function AdminDashboard() {
                 <div className="bg-[#0D0E14] border border-white/[0.03] rounded-2xl p-6">
                   <h3 className="font-black text-xs uppercase tracking-widest text-white/80 mb-6">Frè Sistèm OZAMAPAY</h3>
                   <div className="space-y-2">
-                    {[
-                      { label: 'Depot / TopUp', value: '6%', desc: 'Sou chak rechajman' },
-                      { label: 'Transfè P2P', value: '0.99%', desc: 'Sou chak voye' },
-                      { label: 'Retrè / Withdraw', value: '2%', desc: 'Sou chak retrè' },
-                      { label: 'KYC Verification', value: '~3,375 HTG', desc: '405 HTG → Ajans, Rès → OZAMA' },
-                      { label: 'Virtual Card', value: 'Variable', desc: 'Selon taux USD/HTG' },
-                    ].map((fee, i) => (
+                    {(pricing.renaissancePricingEnabled
+                      ? [
+                          { label: 'Depot / TopUp', value: '6%', desc: 'Sou chak rechajman' },
+                          { label: 'Transfè P2P', value: '0.99%', desc: 'Sou chak voye' },
+                          { label: 'Retrè / Withdraw', value: '2%', desc: 'Sou chak retrè' },
+                          { label: 'KYC Verification', value: 'GRATIS', desc: 'Pa gen debi ni komisyon depi bascule a' },
+                          { label: 'Kreyasyon Kat (StroWallet)', value: `${pricing.cardCreationFeeHtg} HTG`, desc: '200 HTG → Ajans (1e kat peyan), Rès → OZAMA. Gratis pou manm fondatè.' },
+                          { label: 'Virtual Card (EUR)', value: 'Variable', desc: 'Selon taux EUR/HTG — pa chanje' },
+                        ]
+                      : [
+                          { label: 'Depot / TopUp', value: '6%', desc: 'Sou chak rechajman' },
+                          { label: 'Transfè P2P', value: '0.99%', desc: 'Sou chak voye' },
+                          { label: 'Retrè / Withdraw', value: '2%', desc: 'Sou chak retrè' },
+                          { label: 'KYC Verification', value: '~3,375 HTG', desc: '405 HTG → Ajans, Rès → OZAMA' },
+                          { label: 'Virtual Card', value: 'Variable', desc: 'Selon taux USD/HTG' },
+                        ]
+                    ).map((fee, i) => (
                       <div key={i} className="flex items-center justify-between p-3.5 bg-white/[0.01] border border-white/[0.03] rounded-xl transition">
                         <div>
                           <p className="font-bold text-xs text-white/90">{fee.label}</p>
@@ -1737,7 +1759,9 @@ export default function AdminDashboard() {
                     { label: 'Total HTG Sistèm', value: `${totalBalance.toLocaleString('fr-FR')} HTG` },
                     { label: 'Mwayèn Balans Node', value: `${totalUsers > 0 ? (totalBalance / totalUsers).toLocaleString('fr-FR', { maximumFractionDigits: 0 }) : 0} HTG` },
                     { label: 'Revenue Total Accumulated', value: `${Number(totalFeesGenerated).toLocaleString('fr-FR')} HTG` },
-                    { label: 'KYC Core Revenue', value: `${(approvedKyc * 2970).toLocaleString('fr-FR')} HTG` },
+                    pricing.renaissancePricingEnabled
+                      ? { label: 'KYC Core Revenue', value: 'N/A — KYC gratis apre bascule' }
+                      : { label: 'KYC Core Revenue', value: `${(approvedKyc * 2970).toLocaleString('fr-FR')} HTG` },
                   ].map((item, i) => (
                     <div key={i} className="p-4 bg-white/[0.01] border border-white/[0.03] rounded-xl">
                       <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest mb-2">{item.label}</p>

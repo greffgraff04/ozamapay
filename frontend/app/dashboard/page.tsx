@@ -347,6 +347,23 @@ const SCHEDULE_ICON_MAP: Record<'check' | 'message' | 'wrench', { Icon: any; col
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('home');
   const [user, setUser] = useState<any>(null);
+  // Renaissance pricing — defo a se egzakteman ansyen konpòtman an (KYC $25/3375
+  // HTG, kat "gratis") pandan GET /pricing poko reponn, oswa si flag la false.
+  const [pricing, setPricing] = useState<{
+    renaissancePricingEnabled: boolean;
+    kycFeeHtg: number;
+    kycFeeUsd: number;
+    cardCreationFeeHtg: number;
+    cardInitialBalanceUsd: number | null;
+    isFounderFreeCard: boolean;
+  }>({
+    renaissancePricingEnabled: false,
+    kycFeeHtg: 3375,
+    kycFeeUsd: 25,
+    cardCreationFeeHtg: 0,
+    cardInitialBalanceUsd: null,
+    isFounderFreeCard: false,
+  });
   const [myBusinesses, setMyBusinesses] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [cardActivity, setCardActivity] = useState<any[]>([]);
@@ -796,7 +813,7 @@ export default function Dashboard() {
       const headers = { Authorization: `Bearer ${localToken}` };
       const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:10000";
 
-      const [txRes, meRes, rateRes, notifRes, cardRes, bizRes, cardHistoryRes] = await Promise.all([
+      const [txRes, meRes, rateRes, notifRes, cardRes, bizRes, cardHistoryRes, pricingRes] = await Promise.all([
         fetch(`${API_BASE}/wallet/transactions?limit=5`, { headers }).catch(() => null),
         fetch(`${API_BASE}/auth/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/rates`).catch(() => null),
@@ -804,7 +821,13 @@ export default function Dashboard() {
         fetch(`${API_BASE}/v1/cards/my-cards`, { headers: { Authorization: `Bearer ${localToken}` } }).catch(() => null),
         fetch(`${API_BASE}/business/me`, { headers }).catch(() => null),
         fetch(`${API_BASE}/v1/cards/history`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/pricing`, { headers }).catch(() => null),
       ]);
+
+      if (pricingRes?.ok) {
+        const pricingData = await pricingRes.json().catch(() => null);
+        if (pricingData) setPricing(pricingData);
+      }
 
       if (meRes && meRes.status === 401) {
         // /auth/me is the definitive session check — a valid token never gets
@@ -1412,11 +1435,11 @@ export default function Dashboard() {
       return;
     }
 
-    const kycCostHtg = 3375; // $25 USD = 3375 HTG
+    const kycCostHtg = pricing.kycFeeHtg;
     const currentBalance = user?.wallet?.balance || 0;
 
-    if (currentBalance < kycCostHtg) {
-      showToast(`Balans ou pa ase. Ou bezwen omwen ~3,375 HTG pou peye frè KYC a.`, "error");
+    if (kycCostHtg > 0 && currentBalance < kycCostHtg) {
+      showToast(`Balans ou pa ase. Ou bezwen omwen ~${kycCostHtg.toLocaleString('fr-FR')} HTG pou peye frè KYC a.`, "error");
       return;
     }
 
@@ -1455,7 +1478,12 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast("Verifikasyon soumèt epi ~3,375 HTG debite ak siksè! 🎉", "success");
+        showToast(
+          pricing.renaissancePricingEnabled
+            ? "Verifikasyon soumèt ak siksè! Li 100% gratis. 🎉"
+            : "Verifikasyon soumèt epi ~3,375 HTG debite ak siksè! 🎉",
+          "success"
+        );
         setShowKycForm(false);
         
         // 1. Kreye nouvo objè user a ak status PENDING lan
@@ -1647,13 +1675,17 @@ export default function Dashboard() {
           {
             icon: <Shield size={48} className="text-[#FF6B00]" />,
             title: 'Etap 2: Verifye Idantite Ou',
-            text: 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Frè: ~3,375 HTG.',
+            text: pricing.renaissancePricingEnabled
+              ? 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Li 100% gratis.'
+              : 'Pase KYC pou jwenn aksè konplè. Sa pran < 24h. Frè: ~3,375 HTG.',
             btn: 'Kontinye →',
           },
           {
             icon: <CreditCard size={48} className="text-[#FF6B00]" />,
             title: 'Etap 3: Kreye Kat VISA Ou',
-            text: 'Apre KYC, kreye kat VISA GRATIS. Achte sou Amazon, Netflix ak plis!',
+            text: pricing.renaissancePricingEnabled
+              ? `Apre KYC, kreye kat VISA ou pou ${pricing.cardCreationFeeHtg} HTG. Achte sou Amazon, Netflix ak plis!`
+              : 'Apre KYC, kreye kat VISA GRATIS. Achte sou Amazon, Netflix ak plis!',
             btn: 'Kòmanse Kounye a! 🚀',
           },
         ];
@@ -3286,11 +3318,19 @@ export default function Dashboard() {
                 <div className="oz-glass-strong mb-4" style={{ borderRadius: 24, padding: 16 }}>
                   <div className="flex justify-between items-center mb-2">
                     <p className="font-bold text-[14px] text-white">{selectedCreateProvider === 'STROWALLET_NFC' ? 'KREYE KAT VISA' : 'KREYE KAT MASTERCARD EUR'}</p>
-                    <span className="font-bold text-[10px] px-[10px] py-[3px] rounded-full" style={{ background: '#B8E832', color: '#000000' }}>GRATIS</span>
+                    <span className="font-bold text-[10px] px-[10px] py-[3px] rounded-full" style={{ background: '#B8E832', color: '#000000' }}>
+                      {selectedCreateProvider === 'STROWALLET_NFC'
+                        ? (!pricing.renaissancePricingEnabled || pricing.isFounderFreeCard ? 'GRATIS' : `${pricing.cardCreationFeeHtg} HTG`)
+                        : 'GRATIS'}
+                    </span>
                   </div>
                   <p className="font-medium text-[12px] mb-4 leading-[18px]" style={{ color: '#FF7A00' }}>
                     {selectedCreateProvider === 'STROWALLET_NFC'
-                      ? 'Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!'
+                      ? (!pricing.renaissancePricingEnabled
+                          ? 'Kreye kat VISA ou GRATIS — OZAMAPAY peye frè kreye a pou ou!'
+                          : pricing.isFounderFreeCard
+                            ? `Kat VISA ou GRATIS — kado OZAMAPAY pou ou kòm manm fondatè, ak $${pricing.cardInitialBalanceUsd} ladan l!`
+                            : `Kreye kat VISA ou pou ${pricing.cardCreationFeeHtg} HTG — ak $${pricing.cardInitialBalanceUsd} ladan l!`)
                       : 'Kreye kat Mastercard EUR ou GRATIS — kat la kreye vid, ou rechaje l apre.'}
                   </p>
                   <div className="flex items-center justify-between gap-2 mb-4">
@@ -3298,22 +3338,32 @@ export default function Dashboard() {
                     <VideoGuideBadge phrase="Kijan pou kreye kat VISA ou?" />
                   </div>
                   {selectedCreateProvider === 'STROWALLET_NFC' && (
-                    <>
-                      <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>Depo Inisyal (Min. $3 USD)</span>
-                      <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
-                        <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
-                        <input
-                          type="number"
-                          min="3"
-                          value={cardCreateAmount}
-                          onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
-                          className="flex-1 outline-none font-bold text-[18px]"
-                          style={{ background: 'transparent', color: colors.textPrimary }}
-                          placeholder="3"
-                        />
-                        <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
+                    pricing.renaissancePricingEnabled && pricing.isFounderFreeCard ? (
+                      <div className="rounded-2xl px-4 py-[12px] mb-4 text-center" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
+                        <span className="font-bold text-[14px]" style={{ color: colors.textPrimary }}>${pricing.cardInitialBalanceUsd} USD — kado manm fondatè</span>
                       </div>
-                    </>
+                    ) : (
+                      <>
+                        <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.14em', fontSize: 9, color: glass.textDim, display: 'block', marginBottom: 6 }}>
+                          {pricing.renaissancePricingEnabled
+                            ? `Depo Total (Min. $${pricing.cardInitialBalanceUsd ?? 3} USD enkli nan ${pricing.cardCreationFeeHtg} HTG)`
+                            : 'Depo Inisyal (Min. $3 USD)'}
+                        </span>
+                        <div className="flex items-center w-full rounded-2xl px-4 py-[12px] mb-4" style={{ background: glass.inputBg, border: `1px solid ${glass.border}` }}>
+                          <span className="font-bold text-[16px] mr-[6px]" style={{ color: glass.textDim }}>$</span>
+                          <input
+                            type="number"
+                            min="3"
+                            value={cardCreateAmount}
+                            onChange={(e) => { const val = e.target.value; if (Number(val) < 0) return; setCardCreateAmount(val); }}
+                            className="flex-1 outline-none font-bold text-[18px]"
+                            style={{ background: 'transparent', color: colors.textPrimary }}
+                            placeholder="3"
+                          />
+                          <span className="font-medium text-[13px]" style={{ color: glass.textDim }}>USD</span>
+                        </div>
+                      </>
+                    )
                   )}
                   <button
                     onClick={async () => {
@@ -3348,7 +3398,11 @@ export default function Dashboard() {
                   >
                     {cardCreateLoading
                       ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      : <><Zap size={16} color="#FFFFFF" /> KREYE KAT GRATIS</>
+                      : <><Zap size={16} color="#FFFFFF" /> {
+                          selectedCreateProvider === 'STROWALLET_NFC' && pricing.renaissancePricingEnabled && !pricing.isFounderFreeCard
+                            ? `KREYE KAT — ${pricing.cardCreationFeeHtg} HTG`
+                            : 'KREYE KAT GRATIS'
+                        }</>
                     }
                   </button>
                 </div>
@@ -4129,11 +4183,15 @@ export default function Dashboard() {
                   <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-3">
                     <Info size={18} className="text-[#FF6B00] shrink-0 mt-0.5" />
                     <p className="text-[9px] font-bold text-orange-800 uppercase leading-relaxed">
-                      Sistèm lan ap debite <span className="text-[var(--oz-text)] font-black">~3,375 HTG</span> otomatikman pou frè verifikasyon.
+                      {pricing.renaissancePricingEnabled
+                        ? <>Verifikasyon KYC se <span className="text-[var(--oz-text)] font-black">100% GRATIS</span>.</>
+                        : <>Sistèm lan ap debite <span className="text-[var(--oz-text)] font-black">~3,375 HTG</span> otomatikman pou frè verifikasyon.</>}
                     </p>
                   </div>
                   <button onClick={handleKycSubmit} disabled={kycLoading} className="w-full bg-[#FF6B00] text-white py-5 rounded-2xl font-black uppercase italic tracking-widest shadow-lg text-xs transition-all active:scale-95 hover:bg-[#e66000] flex items-center justify-center gap-2 disabled:opacity-50">
-                    {kycLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Peye ~3,375 HTG & Soumèt'}
+                    {kycLoading
+                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : (pricing.renaissancePricingEnabled ? 'Soumèt GRATIS' : 'Peye ~3,375 HTG & Soumèt')}
                   </button>
                 </div>
               </div>
@@ -4336,7 +4394,9 @@ export default function Dashboard() {
                       ) : user?.kyc?.status === 'PENDING' ? (
                         <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(249,115,22,0.15)', color: '#f97316' }}>Annatant</span>
                       ) : (
-                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: colors.background, color: colors.textSecondary }}>~3,375 HTG</span>
+                        <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full" style={{ backgroundColor: colors.background, color: colors.textSecondary }}>
+                          {pricing.renaissancePricingEnabled ? 'GRATIS' : '~3,375 HTG'}
+                        </span>
                       )}
                       {user?.kyc?.status !== 'APPROVED' && <ChevronRight size={16} color={colors.textSecondary} />}
                     </div>

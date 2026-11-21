@@ -10,6 +10,12 @@ import sharp from 'sharp';
 import type { CardCreationPending } from '@prisma/client';
 import { isStaging } from '../config/app-env';
 import { assertNoRealProviderCallInStaging, mockStrowalletResponse } from '../config/provider-mock';
+import {
+  RENAISSANCE_PRICING_ENABLED,
+  CARD_CREATION_FEE_HTG,
+  CARD_INITIAL_BALANCE_USD,
+  AGENT_FIRST_CARD_COMMISSION_HTG,
+} from '../common/constants';
 
 // 4 oct 2026 — tèks egzak Mr. Greffin bay pou kliyan an pandan cardkyc rete
 // "pending" (pa yon echèk — wè pollPendingCardCreations()).
@@ -671,9 +677,40 @@ export class StrowalletService {
       throw new BadRequestException(this.KYC_FIELD_NEEDS_SUPPORT_MESSAGE);
     }
 
+    // Renaissance pricing — detèmine si kliyan an elijib pou kat gratis "manm
+    // fondatè" (li te peye ansyen frè KYC a e li pa gen OKENN kat, nenpòt estati,
+    // jiska kounye a). San flag la, konpòtman ansyen an rete EGZAKTEMAN menm jan.
+    let founderFreeGrant = false;
+    if (RENAISSANCE_PRICING_ENABLED) {
+      const anyCardEver = await this.prisma.virtualCard.findFirst({ where: { userId } });
+      if (!anyCardEver) {
+        const paidOldKyc = await this.prisma.transaction.findFirst({
+          where: { title: 'Frè KYC', senderWalletId: user.wallet.id },
+        });
+        founderFreeGrant = !!paidOldKyc;
+      }
+      if (founderFreeGrant) {
+        // Kado a se egzakteman $3 — n ap inyore montan kliyan te mande a.
+        amountUsd = CARD_INITIAL_BALANCE_USD;
+      }
+    }
+
     // Kalkile total an HTG — frè $2.50 kreyasyon absòbe pa OZAMAPAY, pa itilizatè
+    // (ansyen konpòtman, lè RENAISSANCE_PRICING_ENABLED=false).
     const exchangeRate = await this.getExchangeRate();
-    const totalHtg = Math.ceil(amountUsd * exchangeRate);
+    let totalHtg: number;
+    let cardCreationFeeHtg = 0;
+    let topUpHtg = 0;
+    if (!RENAISSANCE_PRICING_ENABLED) {
+      totalHtg = Math.ceil(amountUsd * exchangeRate);
+    } else if (founderFreeGrant) {
+      totalHtg = 0; // Pa gen debi kliyan — $3 la finanse pa OZAMAPAY, wè pi ba.
+    } else {
+      cardCreationFeeHtg = CARD_CREATION_FEE_HTG;
+      const topUpUsd = Math.max(0, amountUsd - CARD_INITIAL_BALANCE_USD);
+      topUpHtg = topUpUsd > 0 ? Math.ceil(topUpUsd * exchangeRate) : 0;
+      totalHtg = cardCreationFeeHtg + topUpHtg;
+    }
 
     if (Number(user.wallet.balance) < totalHtg) {
       throw new BadRequestException(
@@ -829,21 +866,158 @@ export class StrowalletService {
           currency: 'USD',
           provider: 'STROWALLET_NFC',
           status: 'ACTIVE',
+          isFounderFreeCard: RENAISSANCE_PRICING_ENABLED && founderFreeGrant,
         },
       });
 
-      await tx.transaction.create({
+      if (!RENAISSANCE_PRICING_ENABLED) {
+        // Ansyen konpòtman an, EGZAKTEMAN menm jan.
+        await tx.transaction.create({
+          data: {
+            senderWalletId: user.wallet!.id,
+            type: 'CARD',
+            amount: totalHtg,
+            netAmount: totalHtg,
+            fee: 0,
+            status: 'COMPLETED',
+            description: `Kreye kat vityèl NFC — $${amountUsd}`,
+            reference: `CARD-CREATE-${cardId}`,
+          },
+        });
+        return card;
+      }
+
+      if (founderFreeGrant) {
+        // Kado "manm fondatè" — $3 finanse pa OZAMAPAY. Ekriti sou wallet
+        // MASTER (pa sou kliyan an, li pa peye anyen) pou gen yon tras kont
+        // konpable klè separe de frè kreyasyon kat òdinè a.
+        const masterWallet = await tx.wallet.findUnique({ where: { userId: this.MASTER_ID } });
+        const founderGiftHtg = Math.ceil(CARD_INITIAL_BALANCE_USD * exchangeRate);
+        if (masterWallet) {
+          const giftTx = await tx.transaction.create({
+            data: {
+              senderWalletId: masterWallet.id,
+              type: 'CARD',
+              amount: founderGiftHtg,
+              netAmount: founderGiftHtg,
+              fee: 0,
+              status: 'COMPLETED',
+              title: 'Kat gratis manm fondatè',
+              description: `OZAMAPAY ofri $${CARD_INITIAL_BALANCE_USD} pou premye kat kliyan ki te peye ansyen KYC a`,
+              reference: `CARD-FOUNDER-FREE-${cardId}`,
+            },
+          });
+          const masterBalanceBefore = Number(masterWallet.balance);
+          await tx.wallet.update({
+            where: { id: masterWallet.id },
+            data: { balance: { decrement: founderGiftHtg } },
+          });
+          await tx.ledgerEntry.create({
+            data: {
+              walletId: masterWallet.id,
+              transactionId: giftTx.id,
+              type: 'DEBIT',
+              amount: founderGiftHtg,
+              balanceBefore: masterBalanceBefore,
+              balanceAfter: masterBalanceBefore - founderGiftHtg,
+              description: 'Kado kat gratis manm fondatè',
+            },
+          });
+        }
+        return card;
+      }
+
+      // Frè kreyasyon kat (1500 HTG), separe de rechaj opsyonèl la (si kliyan
+      // chwazi chaje plis pase $3 lè kreyasyon an).
+      const walletBalanceBeforeFee = Number(user.wallet!.balance);
+      const feeTx = await tx.transaction.create({
         data: {
           senderWalletId: user.wallet!.id,
           type: 'CARD',
-          amount: totalHtg,
-          netAmount: totalHtg,
+          amount: cardCreationFeeHtg,
+          netAmount: cardCreationFeeHtg,
           fee: 0,
           status: 'COMPLETED',
-          description: `Kreye kat vityèl NFC — $${amountUsd}`,
-          reference: `CARD-CREATE-${cardId}`,
+          title: 'Frè kreyasyon kat',
+          description: `Frè kreyasyon kat vityèl NFC (${CARD_CREATION_FEE_HTG} HTG, kat gen $${CARD_INITIAL_BALANCE_USD} enisyal)`,
+          reference: `CARD-CREATE-FEE-${cardId}`,
         },
       });
+      await tx.ledgerEntry.create({
+        data: {
+          walletId: user.wallet!.id,
+          transactionId: feeTx.id,
+          type: 'DEBIT',
+          amount: cardCreationFeeHtg,
+          balanceBefore: walletBalanceBeforeFee,
+          balanceAfter: walletBalanceBeforeFee - cardCreationFeeHtg,
+          description: 'Frè kreyasyon kat',
+        },
+      });
+
+      if (topUpHtg > 0) {
+        const topUpTx = await tx.transaction.create({
+          data: {
+            senderWalletId: user.wallet!.id,
+            type: 'CARD',
+            amount: topUpHtg,
+            netAmount: topUpHtg,
+            fee: 0,
+            status: 'COMPLETED',
+            title: 'Rechaj kat lè kreyasyon',
+            description: `Rechaj $${amountUsd - CARD_INITIAL_BALANCE_USD} sou kat la lè kreyasyon`,
+            reference: `CARD-CREATE-TOPUP-${cardId}`,
+          },
+        });
+        await tx.ledgerEntry.create({
+          data: {
+            walletId: user.wallet!.id,
+            transactionId: topUpTx.id,
+            type: 'DEBIT',
+            amount: topUpHtg,
+            balanceBefore: walletBalanceBeforeFee - cardCreationFeeHtg,
+            balanceAfter: walletBalanceBeforeFee - totalHtg,
+            description: 'Rechaj kat lè kreyasyon',
+          },
+        });
+      }
+
+      // Komisyon AGENT_FIRST_CARD_COMMISSION_HTG (200 HTG) — yon sèl fwa pa
+      // kliyan, sèlman pou premye kat PEYAN (pa pou kado manm fondatè a). Gad
+      // anti-doublon reyèl la se l'index inik pasyèl sou Commission(userId)
+      // WHERE type='FIRST_CARD' (wè migration.sql) — tcheke anvan kreye
+      // anpeche yon erè brital nan tranzaksyon an pou ka komen kote pa gen
+      // agent referan.
+      if (user.referredByAgentId) {
+        const alreadyPaid = await tx.commission.findFirst({
+          where: { userId, type: 'FIRST_CARD' },
+        });
+        if (!alreadyPaid) {
+          const agentRecord = await tx.agent.findUnique({
+            where: { id: user.referredByAgentId },
+            include: { wallet: true },
+          });
+          if (agentRecord?.wallet) {
+            await tx.agentWallet.update({
+              where: { agentId: user.referredByAgentId },
+              data: { balance: { increment: AGENT_FIRST_CARD_COMMISSION_HTG } },
+            });
+            await tx.agent.update({
+              where: { id: user.referredByAgentId },
+              data: { totalCommission: { increment: AGENT_FIRST_CARD_COMMISSION_HTG } },
+            });
+            await tx.commission.create({
+              data: {
+                agentId: user.referredByAgentId,
+                userId,
+                amount: AGENT_FIRST_CARD_COMMISSION_HTG,
+                type: 'FIRST_CARD',
+                transactionId: feeTx.id,
+              },
+            });
+          }
+        }
+      }
 
       return card;
     });
