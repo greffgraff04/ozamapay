@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { ActivationGauge } from '@/components/ActivationGauge';
 
 export default function KycUploadPage() {
   const [formData, setFormData] = useState({
@@ -11,7 +12,23 @@ export default function KycUploadPage() {
     idNumber: '',
   });
   const [loading, setLoading] = useState(false);
-  const [pricing, setPricing] = useState<{ renaissancePricingEnabled: boolean }>({ renaissancePricingEnabled: false });
+  const [pricing, setPricing] = useState<{
+    renaissancePricingEnabled: boolean;
+    isSubjectToThreshold: boolean;
+    isActivated: boolean;
+    thresholdHtg: number;
+    currentBalanceHtg: number;
+    missingHtg: number;
+    grossDepositEstimateHtg: number;
+  }>({
+    renaissancePricingEnabled: false,
+    isSubjectToThreshold: false,
+    isActivated: true,
+    thresholdHtg: 1500,
+    currentBalanceHtg: 0,
+    missingHtg: 0,
+    grossDepositEstimateHtg: 0,
+  });
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
 
@@ -64,6 +81,22 @@ export default function KycUploadPage() {
       setLoading(false);
     }
   };
+
+  if (pricing.isSubjectToThreshold && !pricing.isActivated) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white text-black rounded-[2.5rem] my-6 shadow-xl">
+        <h1 className="text-3xl font-black italic uppercase tracking-tight mb-2 text-[#0F121E]">Verifikasyon Idantite</h1>
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-8">Aktive kont ou anvan ou fè KYC.</p>
+        <ActivationGauge
+          thresholdHtg={pricing.thresholdHtg}
+          currentBalanceHtg={pricing.currentBalanceHtg}
+          missingHtg={pricing.missingHtg}
+          grossDepositEstimateHtg={pricing.grossDepositEstimateHtg}
+          onDepositClick={() => { window.location.href = '/dashboard'; }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-8 bg-white text-black rounded-[2.5rem] my-6 shadow-xl">

@@ -15,6 +15,7 @@ import { CommissionsModule } from '../commissions/commissions.module';
 import { ImageKitModule } from '../imagekit/imagekit.module';
 
 import { StrowalletModule } from '../strowallet/strowallet.module';
+import { ActivationModule } from '../activation/activation.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { StrowalletModule } from '../strowallet/strowallet.module';
     // pou relanse createAndFundCard()/createReplacementCard() otomatikman
     // apre yon adrès korije (wè CardCreationAddressBlock).
     StrowalletModule,
+    ActivationModule,
   ],
 
   controllers: [KycController],

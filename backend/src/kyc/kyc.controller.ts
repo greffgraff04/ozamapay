@@ -16,6 +16,7 @@ import { KycService } from './kyc.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KycApprovedGuard } from './kyc-approved.guard';
 import { ReviewAccountBlockGuard } from '../common/review-account/review-account-block.guard';
+import { ActivationGuard } from '../activation/activation.guard';
 import { ImageKitService } from '../imagekit/imagekit.service';
 import { CreateKycDto, UpdateAddressDto } from './dto/kyc.dto';
 import { validateInMode } from '../common/validation/validate-in-mode';
@@ -29,7 +30,7 @@ export class KycController {
   ) {}
 
   @Post('submit')
-  @UseGuards(ReviewAccountBlockGuard)
+  @UseGuards(ReviewAccountBlockGuard, ActivationGuard)
   @UseInterceptors(
     FileFieldsInterceptor(
       [
