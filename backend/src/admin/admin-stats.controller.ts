@@ -27,4 +27,12 @@ export class AdminStatsController {
   getSupportStats() {
     return this.adminService.getSupportStats();
   }
+
+  // 11 nov 2026 — lekti sèlman: pèmèt sipò wè rezon echèk kreyasyon kat yo
+  // san bezwen dashboard founisè a (wè AdminService.getCardCreationFailuresSummary()).
+  @Get('support/card-creation-failures')
+  @UseGuards(SupportGuard)
+  getCardCreationFailuresSummary() {
+    return this.adminService.getCardCreationFailuresSummary();
+  }
 }
