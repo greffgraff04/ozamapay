@@ -18,6 +18,7 @@ import { isBusinessHours, BUSINESS_HOURS_SCHEDULE, AFTER_HOURS_NOTE } from '../l
 import { parseMerchant } from '../../lib/merchant';
 import { MerchantAvatar } from '@/components/MerchantAvatar';
 import { CardCreationConfirmSheet } from '@/components/CardCreationConfirmSheet';
+import { ActivationGauge } from '@/components/ActivationGauge';
  
 // StroWallet klarifye (15 out 2026): "Billing Address" AFICHAJ la se adrès
 // StroWallet la (vini ak kat la), PA adrès KYC kliyan an. Payload API a
@@ -357,6 +358,13 @@ export default function Dashboard() {
     cardCreationFeeHtg: number;
     cardInitialBalanceUsd: number | null;
     isFounderFreeCard: boolean;
+    activationThresholdEnabled: boolean;
+    thresholdHtg: number;
+    isSubjectToThreshold: boolean;
+    currentBalanceHtg: number;
+    isActivated: boolean;
+    missingHtg: number;
+    grossDepositEstimateHtg: number;
   }>({
     renaissancePricingEnabled: false,
     kycFeeHtg: 3375,
@@ -364,6 +372,13 @@ export default function Dashboard() {
     cardCreationFeeHtg: 0,
     cardInitialBalanceUsd: null,
     isFounderFreeCard: false,
+    activationThresholdEnabled: false,
+    thresholdHtg: 1500,
+    isSubjectToThreshold: false,
+    currentBalanceHtg: 0,
+    isActivated: true,
+    missingHtg: 0,
+    grossDepositEstimateHtg: 0,
   });
   const [myBusinesses, setMyBusinesses] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -2026,6 +2041,16 @@ export default function Dashboard() {
 
             <div className="pb-24 pt-2">
 
+            {pricing.isSubjectToThreshold && !pricing.isActivated && (
+              <ActivationGauge
+                thresholdHtg={pricing.thresholdHtg}
+                currentBalanceHtg={pricing.currentBalanceHtg}
+                missingHtg={pricing.missingHtg}
+                grossDepositEstimateHtg={pricing.grossDepositEstimateHtg}
+                onDepositClick={() => setActiveTab('topup')}
+              />
+            )}
+
             <div className="space-y-2">
               {displayFeed.length === 0 ? (
                 <p className="font-medium italic text-[13px] text-center py-6 rounded-[28px] border border-[var(--oz-border)]" style={{ background: colors.surface, color: colors.textSecondary }}>
@@ -2187,6 +2212,16 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
+              {pricing.isSubjectToThreshold && !pricing.isActivated && (
+                <ActivationGauge
+                  thresholdHtg={pricing.thresholdHtg}
+                  currentBalanceHtg={pricing.currentBalanceHtg}
+                  missingHtg={pricing.missingHtg}
+                  grossDepositEstimateHtg={pricing.grossDepositEstimateHtg}
+                  onDepositClick={() => setActiveTab('topup')}
+                />
+              )}
 
               {/* Quick actions (desktop) */}
               <div className="flex flex-row gap-3">

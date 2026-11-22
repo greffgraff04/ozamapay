@@ -35,7 +35,7 @@ describe('StroWallet (strowallet.service.ts nfcGet chokepoint)', () => {
     (axios.get as jest.Mock).mockResolvedValue({ data: { success: true, response: {} } });
     const { StrowalletService } = require('../strowallet/strowallet.service');
     const config = { get: () => undefined } as any;
-    const service = new StrowalletService({} as any, config, {} as any, {} as any, {} as any);
+    const service = new StrowalletService({} as any, config, {} as any, {} as any, {} as any, {} as any);
 
     setStaging(true);
     await service.fetchCardDetailByCardId('CARD-1');
@@ -51,7 +51,7 @@ describe('BSICards (bsicards.service.ts bsicardsPost chokepoint)', () => {
   it('never calls axios.post in staging; calls it otherwise', async () => {
     (axios.post as jest.Mock).mockResolvedValue({ data: { success: true, response: {} } });
     const { BSICardsService } = require('../bsicards/bsicards.service');
-    const service = new BSICardsService({} as any, { get: () => undefined } as any);
+    const service = new BSICardsService({} as any, { get: () => undefined } as any, {} as any);
 
     setStaging(true);
     await service.getAllCards('user@example.com');

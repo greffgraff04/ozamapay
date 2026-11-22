@@ -1,15 +1,28 @@
 // RENAISSANCE_PRICING_ENABLED li env a yon sèl fwa lè constants.ts chaje —
 // jest.resetModules() + require() fre obligatwa pou chak tès.
 
+const DEFAULT_ACTIVATION_STATUS = {
+  activationThresholdEnabled: false,
+  thresholdHtg: 1500,
+  isSubjectToThreshold: false,
+  currentBalanceHtg: 0,
+  isActivated: true,
+  missingHtg: 0,
+  grossDepositEstimateHtg: 0,
+};
+
 function buildService(opts: { anyCardEver?: any; wallet?: any; paidOldKycTx?: any }) {
   const prisma: any = {
     virtualCard: { findFirst: jest.fn().mockResolvedValue(opts.anyCardEver ?? null) },
     wallet: { findUnique: jest.fn().mockResolvedValue(opts.wallet ?? { id: 'wallet-1', userId: 'user-1' }) },
     transaction: { findFirst: jest.fn().mockResolvedValue(opts.paidOldKycTx ?? null) },
   };
+  const activationService: any = {
+    getStatus: jest.fn().mockResolvedValue(DEFAULT_ACTIVATION_STATUS),
+  };
   const { PricingService: FreshPricingService } = require('./pricing.service');
-  const service = new FreshPricingService(prisma);
-  return { service, prisma };
+  const service = new FreshPricingService(prisma, activationService);
+  return { service, prisma, activationService };
 }
 
 describe('PricingService.getPricing — Renaissance pricing', () => {
@@ -37,6 +50,7 @@ describe('PricingService.getPricing — Renaissance pricing', () => {
       cardCreationFeeHtg: 0,
       cardInitialBalanceUsd: null,
       isFounderFreeCard: false,
+      ...DEFAULT_ACTIVATION_STATUS,
     });
   });
 

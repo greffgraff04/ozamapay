@@ -9,6 +9,7 @@ import { Prisma, TransactionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TrackingService } from '../tracking/tracking.service';
 import { KycService } from '../kyc/kyc.service';
+import { ActivationService } from '../activation/activation.service';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { assertDemoTransferAllowed, isDemoToDemoTransfer } from '../common/review-account/review-account.config';
@@ -52,6 +53,7 @@ export class WalletService {
     private prisma: PrismaService,
     private trackingService: TrackingService,
     private kycService: KycService,
+    private activationService: ActivationService,
   ) {}
 
   // ======================================================
@@ -261,6 +263,8 @@ export class WalletService {
     if (!isDemoToDemoTransfer(sender.email, recipientEmail)) {
       // 1. Verifye si moun k ap voye a gen KYC approved
       await this.kycService.assertApproved(senderId);
+      // Sèy aktivasyon (derrière flag) — wè ActivationService.
+      await this.activationService.assertActivated(senderId);
     }
 
     const pinValid = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
@@ -376,6 +380,7 @@ export class WalletService {
     assertDemoTransferAllowed(sender.email, recipientEmail);
     if (!isDemoToDemoTransfer(sender.email, recipientEmail)) {
       await this.kycService.assertApproved(senderId);
+      await this.activationService.assertActivated(senderId);
     }
 
     const pinValid2 = sender.transactionPin && await bcrypt.compare(pin, sender.transactionPin);
@@ -628,6 +633,7 @@ export class WalletService {
     accountInfo: string,
   ) {
     await this.kycService.assertApproved(userId);
+    await this.activationService.assertActivated(userId);
 
     const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) throw new NotFoundException('Wallet pa jwenn');
@@ -696,6 +702,7 @@ export class WalletService {
     }
 
     await this.kycService.assertApproved(userId);
+    await this.activationService.assertActivated(userId);
     // HTG services get 2% fee, USD/USDT services get 6% fee
     const isHtgService = serviceType === 'NATCASH';
     const feeRate = isHtgService ? FEES.WITHDRAW : FEES.TOPUP;

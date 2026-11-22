@@ -9,9 +9,10 @@ import { BSICardsWebhookController } from './bsicards.webhook.controller';
 import { BSICardsBalanceSyncService } from './bsicards-balance-sync.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailModule } from '../mail/mail.module';
+import { ActivationModule } from '../activation/activation.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), MailModule],
+  imports: [ConfigModule.forRoot(), MailModule, ActivationModule],
   controllers: [BSICardsController, BSICardsMastercardController, BSICardsWebhookController],
   providers: [BSICardsService, BSICardsMastercardService, BSICardsMastercardEuroService, BSICardsBalanceSyncService, PrismaService],
   exports: [BSICardsService, BSICardsMastercardService, BSICardsMastercardEuroService],

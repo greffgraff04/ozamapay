@@ -10,6 +10,7 @@ import sharp from 'sharp';
 import type { CardCreationPending } from '@prisma/client';
 import { isStaging } from '../config/app-env';
 import { assertNoRealProviderCallInStaging, mockStrowalletResponse } from '../config/provider-mock';
+import { ActivationService } from '../activation/activation.service';
 import {
   RENAISSANCE_PRICING_ENABLED,
   CARD_CREATION_FEE_HTG,
@@ -200,6 +201,7 @@ export class StrowalletService {
     private mailService: MailService,
     private ziiropayCorrelationService: ZiiropayCorrelationService,
     private alertCooldown: AlertCooldownService,
+    private activationService: ActivationService,
   ) {
     this.PUBLIC_KEY = this.config.get<string>('STROWALLET_PUBLIC_KEY') ?? '';
     this.ZIIROPAY_PUBLIC_KEY = this.config.get<string>('ZIIROPAY_PUBLIC_KEY') ?? '';
@@ -639,6 +641,8 @@ export class StrowalletService {
     if (!user.kyc || user.kyc.status !== 'APPROVED') {
       throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
     }
+    // Sèy aktivasyon (derrière flag) — wè ActivationService.
+    await this.activationService.assertActivated(userId);
 
     // 4 oct 2026 — tcheke anvan nenpòt apèl/debi, pa apre — evite yon rejè
     // cardkyc garanti ("address1 is too short") ki ta gaspiye yon tantativ

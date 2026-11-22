@@ -9,6 +9,7 @@ import {
   mockBsicardsSensitiveCardScriptUrl,
   mockBsicardsSensitiveCardScriptBody,
 } from '../config/provider-mock';
+import { ActivationService } from '../activation/activation.service';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_EUR';
 const RATE_KEY = 'EUR_HTG';
@@ -24,6 +25,7 @@ export class BSICardsMastercardEuroService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private activationService: ActivationService,
   ) {
     this.BASE_URL = this.config.get<string>('BSICARDS_BASE_URL') ?? 'https://cards.bsigroup.tech/api/';
     this.PUBLIC_KEY = this.config.get<string>('BSICARDS_PUBLIC_KEY') ?? '';
@@ -123,6 +125,8 @@ export class BSICardsMastercardEuroService {
     if (!user.kyc || user.kyc.status !== 'APPROVED') {
       throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
     }
+    // Sèy aktivasyon (derrière flag) — wè ActivationService.
+    await this.activationService.assertActivated(userId);
 
     const existing = await this.findEuroCard(userId);
     if (existing) throw new BadRequestException('Ou genyen yon kat Mastercard EUR deja');

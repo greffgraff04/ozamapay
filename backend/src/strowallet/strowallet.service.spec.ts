@@ -5,7 +5,7 @@ jest.mock('axios');
 
 function buildService(): StrowalletService {
   const fakeConfig = { get: () => undefined } as any;
-  return new StrowalletService({} as any, fakeConfig, {} as any, {} as any, {} as any);
+  return new StrowalletService({} as any, fakeConfig, {} as any, {} as any, {} as any, { assertActivated: jest.fn().mockResolvedValue(undefined) } as any);
 }
 
 describe('StrowalletService.sanitizeCityForProvider — koupe city a 20 karaktè', () => {
@@ -341,7 +341,7 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
 
   function buildService(fakePrisma: any): StrowalletService {
     const fakeConfig = { get: () => undefined } as any;
-    return new StrowalletService(fakePrisma as any, fakeConfig, {} as any, {} as any, {} as any);
+    return new StrowalletService(fakePrisma as any, fakeConfig, {} as any, {} as any, {} as any, { assertActivated: jest.fn().mockResolvedValue(undefined) } as any);
   }
 
   beforeEach(() => {

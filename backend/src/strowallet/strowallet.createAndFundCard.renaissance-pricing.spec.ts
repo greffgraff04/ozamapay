@@ -37,7 +37,7 @@ describe('StrowalletService.createAndFundCard — Renaissance pricing', () => {
         rate: { findUnique: jest.fn().mockResolvedValue({ value: 135 }) },
         $transaction: jest.fn((cb: any) => cb(prisma)),
       };
-      const service = new FreshService(prisma, { get: jest.fn() }, {}, {}, {});
+      const service = new FreshService(prisma, { get: jest.fn() }, {}, {}, {}, { assertActivated: jest.fn().mockResolvedValue(undefined) });
       jest.spyOn(service as any, 'nfcPost').mockImplementation(async (endpoint: any) => {
         if (endpoint === 'cardkyc') return { response: { customer_id: 'cust-1', status: 'approved' } };
         return { response: { card_id: 'card-1' } };
@@ -251,7 +251,7 @@ function buildServiceWith(
     $transaction: jest.fn((cb: any) => cb(prisma)),
   };
 
-  const service = new FreshService(prisma, { get: jest.fn() }, {}, {}, {});
+  const service = new FreshService(prisma, { get: jest.fn() }, {}, {}, {}, { assertActivated: jest.fn().mockResolvedValue(undefined) });
 
   jest.spyOn(service as any, 'nfcPost').mockImplementation(async (endpoint: any) => {
     if (endpoint === 'cardkyc') return { response: { customer_id: 'cust-1', status: 'approved' } };

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { isStaging } from '../config/app-env';
 import { assertNoRealProviderCallInStaging, mockBsicardsResponse } from '../config/provider-mock';
+import { ActivationService } from '../activation/activation.service';
 
 const PROVIDER = 'BSICARDS_MASTERCARD_USD';
 
@@ -17,6 +18,7 @@ export class BSICardsMastercardService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private activationService: ActivationService,
   ) {
     this.BASE_URL = this.config.get<string>('BSICARDS_BASE_URL') ?? 'https://cards.bsigroup.tech/api/';
     this.PUBLIC_KEY = this.config.get<string>('BSICARDS_PUBLIC_KEY') ?? '';
@@ -108,6 +110,8 @@ export class BSICardsMastercardService {
     if (!user.kyc || user.kyc.status !== 'APPROVED') {
       throw new BadRequestException('KYC ou dwe apwouve pou kreye yon kat');
     }
+    // Sèy aktivasyon (derrière flag) — wè ActivationService.
+    await this.activationService.assertActivated(userId);
 
     const existing = await this.findActiveOrFrozenCard(userId);
     if (existing) throw new BadRequestException('Ou genyen yon kat Mastercard USD deja');

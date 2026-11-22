@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { ImageKitModule } from '../imagekit/imagekit.module';
 import { KycModule } from '../kyc/kyc.module';
+import { ActivationModule } from '../activation/activation.module';
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +37,7 @@ import { KycModule } from '../kyc/kyc.module';
     AuthModule,
     ImageKitModule,
     KycModule,
+    ActivationModule,
 
     /*
     |--------------------------------------------------------------------------

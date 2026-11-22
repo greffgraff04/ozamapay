@@ -6,6 +6,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { GiftCardsService } from './giftcards.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { ActivationGuard } from '../activation/activation.guard';
 
 // 8 oct 2026 — kredansyal Reloadly envalid (INVALID_CREDENTIALS sou /oauth/token),
 // katalòg ak kòmand kraze nèt. Kouvri-sekirite tanporè: GIFTCARDS_ENABLED=false
@@ -39,7 +40,7 @@ export class GiftCardsController {
   }
 
   @Post('order')
-  @UseGuards(JwtAuthGuard, KycApprovedGuard)
+  @UseGuards(JwtAuthGuard, KycApprovedGuard, ActivationGuard)
   async orderGiftCard(
     @Req() req: any,
     @Body('productId') productId: number,
