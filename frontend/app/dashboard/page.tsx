@@ -1182,7 +1182,20 @@ export default function Dashboard() {
       setMccStatus('pending');
       setMccError('');
       try {
-        const res = await fetch(`${backendUrl}/payments/moncashconnect/initiate`, {
+        // feat/bazik-deposits (staging) — bascule contrôlée par MONCASH_GATEWAY
+        // côté backend. En prod la valeur reste "moncashconnect" (défaut),
+        // donc ce fetch échoue silencieusement vers le même comportement
+        // qu'avant si la route n'existe pas / l'env var est absente.
+        let initiatePath = 'moncashconnect/initiate';
+        try {
+          const gwRes = await fetch(`${backendUrl}/payments/gateway`);
+          if (gwRes.ok) {
+            const gw = await gwRes.json();
+            if (gw.moncash === 'bazik') initiatePath = 'bazik/initiate';
+          }
+        } catch {}
+
+        const res = await fetch(`${backendUrl}/payments/${initiatePath}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ amount: topupHTG }),
