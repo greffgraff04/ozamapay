@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BrevoClient } from '@getbrevo/brevo';
+import * as nodemailer from 'nodemailer';
 import { isStaging } from '../config/app-env';
 import {
   RENAISSANCE_PRICING_ENABLED,
@@ -15,8 +16,82 @@ export class MailService {
   private readonly frontendUrl =
     process.env.FRONTEND_URL || 'https://ozamapay.com';
 
+  // 25 nov 2026 — Brevo pa gen kredi depi 22 nov (konte "SUCCESS" fo: API a
+  // retounen yon messageId menm lè email la pa janm livre, "insufficient
+  // credits" sèlman nan log Brevo, pa nan repons lan). OTP SÈLMAN ka pase
+  // pa SMTP Hostinger (contact@ozamapay.com) olye Brevo — tout lòt email
+  // (byenveni, konfimasyon depo, elatriye) rete sou Brevo, san chanjman.
+  // Lazy (jamè kreye nan konstriktè a) — menm filozofi ak lòt sèvis nan
+  // koupe sa a (ReloadlyAuthService, StrowalletService): pa kraze demaraj
+  // si SMTP_* yo manke tout tan OTP_EMAIL_PROVIDER pa "hostinger".
+  private hostingerTransport: nodemailer.Transporter | null = null;
+
   constructor() {
     this.brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY as string });
+  }
+
+  private otpEmailProvider(): 'hostinger' | 'brevo' {
+    return process.env.OTP_EMAIL_PROVIDER === 'hostinger' ? 'hostinger' : 'brevo';
+  }
+
+  private getHostingerTransport(): nodemailer.Transporter {
+    if (this.hostingerTransport) return this.hostingerTransport;
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT);
+    const secure = process.env.SMTP_SECURE === 'true';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    if (!host || !Number.isFinite(port) || !user || !pass) {
+      throw new Error('SMTP Hostinger pa konfigire (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS manke)');
+    }
+    this.hostingerTransport = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    return this.hostingerTransport;
+  }
+
+  private async sendViaHostingerSmtp(to: string, subject: string, html: string): Promise<void> {
+    const transport = this.getHostingerTransport();
+    const fromName = process.env.SMTP_FROM_NAME || 'OZAMAPAY';
+    const fromEmail = process.env.SMTP_USER;
+    await transport.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  }
+
+  // OTP SÈLMAN — kontrèman ak send() (pi ba a), erè yo PA avale isit la:
+  // si Hostinger echwe, nou eseye Brevo kòm sekou; si TOUDELE echwe, nou
+  // jete yon erè reyèl (pa yon fo "kòd envoye") pou app la ka montre yon
+  // mesaj klè olye di kliyan an tann yon email ki pa janm ap rive.
+  private async sendOtpWithFallback(to: string, subject: string, html: string): Promise<void> {
+    if (isStaging() && !this.isAllowedInStaging(to)) {
+      console.log(`[staging] OTP email "${subject}" bay ${to} SOTE — pa nan STAGING_EMAIL_ALLOWLIST.`);
+      return;
+    }
+
+    try {
+      console.log(`[DIAG] MailService.sendOtpCode (hostinger): BEFORE smtp.sendMail to=${to}`);
+      await this.sendViaHostingerSmtp(to, subject, html);
+      console.log(`[DIAG] MailService.sendOtpCode (hostinger): SUCCESS to=${to}`);
+      return;
+    } catch (hostingerErr) {
+      const hostingerMessage = (hostingerErr as Error).message;
+      console.error(`[MailService] OTP via SMTP Hostinger echwe pou ${to}: ${hostingerMessage}`);
+
+      try {
+        console.log(`[DIAG] MailService.sendOtpCode: fallback Brevo BEFORE sendTransacEmail to=${to}`);
+        const result = await this.brevo.transactionalEmails.sendTransacEmail({
+          sender: this.SENDER,
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        });
+        console.log(`[DIAG] MailService.sendOtpCode: fallback Brevo SUCCESS to=${to} response=${JSON.stringify(result)}`);
+        return;
+      } catch (brevoErr) {
+        const brevoMessage = (brevoErr as Error).message;
+        console.error(`[MailService] OTP fallback Brevo TOU echwe pou ${to}: ${brevoMessage}`);
+        throw new Error(
+          `Nou pa ka voye kòd OTP la — ni SMTP Hostinger ni Brevo pa reponn (Hostinger: ${hostingerMessage} / Brevo: ${brevoMessage})`,
+        );
+      }
+    }
   }
 
   // ── private helpers ──────────────────────────────────────────────────────
@@ -1230,7 +1305,16 @@ export class MailService {
        ${this.p('Si se pa ou ki mande sa, inyore email sa a.<br><span style="font-size:11px;color:#999;">Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet email.</span>')}`,
     );
 
-    await this.send(email, 'Kòd OTP OZAMAPAY', html);
+    const subject = 'Kòd OTP OZAMAPAY';
+
+    // OTP_EMAIL_PROVIDER absan oswa != "hostinger" → chemen Brevo egzat
+    // jan li te ye a (send() avale erè, menm konpòtman ak jodi a — pa gen
+    // chanjman si flag la pa aktive eksplisitman).
+    if (this.otpEmailProvider() === 'hostinger') {
+      await this.sendOtpWithFallback(email, subject, html);
+      return;
+    }
+    await this.send(email, subject, html);
   }
 
   // Plan endpoints-app, lo L2 — déclenché par POST /auth/device/not-me.
