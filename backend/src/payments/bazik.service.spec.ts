@@ -1,3 +1,10 @@
+// Load explicitly rather than relying on @prisma/client's transitive dotenv
+// side effect — that side effect doesn't fire in every environment/Prisma
+// version, and OZAMAPAY_MASTER_ID must be in process.env BEFORE bazik.service
+// is imported below (it's read into a module-level const at import time).
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { BazikService, verifyBazikWebhookSignature } from './bazik.service';
 import { createHmac } from 'crypto';
 
