@@ -110,6 +110,20 @@ export class BazikService {
     return this.tokenCache.token;
   }
 
+  // 24 nov 2026 — `/moncash/token` pa gen `customerFullName` nan lis chan li
+  // (verifye kont docs/bazik-api.md : chan sa a SÈLMAN parèt nan repons lan,
+  // Bazik kalkile li li menm — chan requête reyèl yo se `customerFirstName`/
+  // `customerLastName` separe). Menm lojik fallback ak resolveNfcIdentity()
+  // (strowallet.service.ts) — dènye mo = lastName, rès = firstName — men san
+  // Kyc.firstName/lastName (chan sa yo optyonèl pou Bazik, pa yon egzijans
+  // idantite kòm StroWallet).
+  private splitCustomerName(name: string | null): { firstName: string; lastName: string } {
+    const parts = (name || 'Kliyan OZAMAPAY').trim().split(/\s+/).filter(Boolean);
+    const lastName = parts[parts.length - 1] || 'OZAMAPAY';
+    const firstName = parts.length > 1 ? parts.slice(0, -1).join(' ') : lastName;
+    return { firstName, lastName };
+  }
+
   // ── 1. CREATE PAYMENT — POST /moncash/token ─────────────────────────────────
   async createPaymentRequest(
     userId: string,
@@ -138,6 +152,7 @@ export class BazikService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('Itilizatè pa jwenn');
 
+    const { firstName, lastName } = this.splitCustomerName(user.name);
     const ourReferenceId = `bazik_${userId}_${Date.now()}`;
     const token = await this.getToken();
     const userID = process.env.BAZIK_USER_ID;
@@ -151,7 +166,8 @@ export class BazikService {
         userID,
         referenceId: ourReferenceId,
         description: `Depo MonCash OZAMAPAY — ${amountHTG} HTG`,
-        customerFullName: user.name || 'Kliyan OZAMAPAY',
+        customerFirstName: firstName,
+        customerLastName: lastName,
         customerEmail: user.email,
         successUrl: `${process.env.FRONTEND_URL || 'https://ozamapay.com'}/dashboard`,
         errorUrl: `${process.env.FRONTEND_URL || 'https://ozamapay.com'}/dashboard`,
