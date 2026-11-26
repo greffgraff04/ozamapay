@@ -51,7 +51,14 @@ export class BSICardsMastercardEuroService {
         throw this.bsicardsFailure(detail ?? error?.message);
       }
     }
-    if (data?.success === false || data?.status === false) {
+    // Egzije yon JSON valab ki deklare siksè eksplisitman (success===true oswa
+    // status===true) — nenpòt lòt bagay (paj HTML tankou "Account Suspended",
+    // JSON san okenn nan 2 chan sa yo, elatriye) trete kòm ECHEC. Avan, yon
+    // repons ki pa gen "success"/"status" ditou (undefined !== false) te pase
+    // kòm siksè san kontwòl, sa ki te kapab kite yon operasyon kontinye kòm si
+    // li te reyisi lè pwovidè a reyèlman anba pàn/sispansyon.
+    const isValidSuccess = data !== null && typeof data === 'object' && (data.success === true || data.status === true);
+    if (!isValidSuccess) {
       this.logger.error(`BSICards error [${endpoint}]: ${JSON.stringify(data)}`);
       throw this.bsicardsFailure(data);
     }
