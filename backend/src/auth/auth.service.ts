@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
@@ -31,6 +32,7 @@ import {
   isReviewAccountEmail,
   REVIEW_ACCOUNT_BLOCKED_MESSAGE,
 } from '../common/review-account/review-account.config';
+import { isOtpNewDeviceEnabled } from '../common/constants';
 
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
@@ -49,6 +51,8 @@ export interface DeviceInfo {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
 
@@ -64,6 +68,24 @@ export class AuthService {
 
     private googleMobileAuthService: GoogleMobileAuthService,
   ) {}
+
+  // 25 nov 2026 — isOtpNewDeviceEnabled()=false skip defi OTP la, men PA
+  // janm san tras: chak login sou yon aparèy ki PA "konni" (pa gen Session
+  // deja egziste pou deviceId sa a) rete vizib pou odit sekirite, menm si
+  // itilizatè a antre dirèkteman san OTP. JAMÈ itilize pou lòt bagay (reset
+  // modpas, PIN, elatriye) — sèlman branch new_device nan login()/
+  // completeSocialLogin() rele fonksyon sa a.
+  private logNewDeviceLoginWithoutOtp(
+    userId: string,
+    ip: string | null | undefined,
+    deviceInfo: DeviceInfo,
+  ): void {
+    this.logger.warn(
+      `[SECURITY] new_device_login_without_otp userId=${userId} ip=${ip ?? 'enkoni'} ` +
+      `deviceId=${deviceInfo.deviceId} deviceName=${deviceInfo.deviceName ?? 'enkoni'} ` +
+      `platform=${deviceInfo.platform ?? 'enkoni'}`,
+    );
+  }
 
   // =========================
   // REGISTER
@@ -416,6 +438,21 @@ export class AuthService {
       });
 
       if (!knownDevice) {
+        // isOtpNewDeviceEnabled()=false — menm chemen ak "aparèy konni" pi
+        // ba a (token reyèl imedya), men tras [SECURITY] rete obligatwa.
+        // Pa gen deplogaj fòse lè swit la retounen "true" pita — pwochen
+        // aparèy ki pa "konni" va mande OTP ankò, kont EGZISTAN yo pa afekte.
+        if (!isOtpNewDeviceEnabled()) {
+          this.logNewDeviceLoginWithoutOtp(user.id, ip, deviceInfo);
+          const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
+          return {
+            message: 'Koneksyon reyisi',
+            ...pair,
+            user: userPayload,
+            ...(deletionCancelled ? { deletionCancelled: true } : {}),
+          };
+        }
+
         const challengeToken = this.signChallengeToken(user.id, deviceInfo);
         return {
           requiresDeviceVerification: true,
@@ -463,18 +500,7 @@ export class AuthService {
   // → completeDeviceVerification(), san okenn chanjman nan OtpService.
   // =========================
 
-  private async completeSocialLogin(user: any, deviceInfo: DeviceInfo, isNewUser: boolean) {
-    const knownDevice = await this.prisma.session.findFirst({
-      where: { userId: user.id, deviceId: deviceInfo.deviceId },
-    });
-
-    if (!knownDevice) {
-      const challengeToken = this.signChallengeToken(user.id, deviceInfo);
-      // App la pa toujou gen imel la (Apple pa re-voye l apre premye
-      // otorizasyon an) — li bezwen l isit la pou pase l bay ekran OTP a.
-      return { requiresDeviceVerification: true, challengeToken, isNewUser, email: user.email };
-    }
-
+  private async buildSocialLoginSuccess(user: any, deviceInfo: DeviceInfo, isNewUser: boolean) {
     const pair = await this.issueTokenPair(user.id, user.email, user.role, deviceInfo);
     return {
       message: 'Koneksyon reyisi',
@@ -494,6 +520,27 @@ export class AuthService {
       },
       isNewUser,
     };
+  }
+
+  private async completeSocialLogin(user: any, deviceInfo: DeviceInfo, isNewUser: boolean) {
+    const knownDevice = await this.prisma.session.findFirst({
+      where: { userId: user.id, deviceId: deviceInfo.deviceId },
+    });
+
+    if (!knownDevice) {
+      // isOtpNewDeviceEnabled()=false — menm chemen ak login() pi wo a.
+      if (!isOtpNewDeviceEnabled()) {
+        this.logNewDeviceLoginWithoutOtp(user.id, deviceInfo.ipAddress, deviceInfo);
+        return this.buildSocialLoginSuccess(user, deviceInfo, isNewUser);
+      }
+
+      const challengeToken = this.signChallengeToken(user.id, deviceInfo);
+      // App la pa toujou gen imel la (Apple pa re-voye l apre premye
+      // otorizasyon an) — li bezwen l isit la pou pase l bay ekran OTP a.
+      return { requiresDeviceVerification: true, challengeToken, isNewUser, email: user.email };
+    }
+
+    return this.buildSocialLoginSuccess(user, deviceInfo, isNewUser);
   }
 
   async loginWithApple(dto: AppleLoginDto, deviceInfo: DeviceInfo) {
