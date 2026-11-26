@@ -25,3 +25,14 @@ export const ACTIVATION_THRESHOLD_START_DATE: Date | null = (() => {
 })();
 
 export const ACTIVATION_BLOCKED_MESSAGE = `Kont ou poko aktive. Ou bezwen gen omwen ${ACTIVATION_THRESHOLD_HTG.toLocaleString('fr-FR')} HTG sou balans ou pou aktive l. Lajan sa a rete pou ou.`;
+
+// 25 nov 2026 — kil switch TANPORÈ pou egzijans OTP "nouvo aparèy"
+// (purpose=new_device). Defo TRUE (konpòtman jodi a — OTP obligatwa pou
+// chak nouvo aparèy) — SÈLMAN valè eksplisit "false" dezaktive l. Absan
+// oswa nenpòt lòt valè = konpòtman jodi a rete san chanjman. Wè
+// AuthService.login()/completeSocialLogin() pou kote switch la aplike.
+// Fonksyon (pa yon const jele) — menm rezon ak isStaging() nan app-env.ts:
+// li li process.env chak fwa li rele, pa sèlman yon sèl fwa nan demaraj.
+export function isOtpNewDeviceEnabled(): boolean {
+  return process.env.OTP_NEW_DEVICE_ENABLED !== 'false';
+}
