@@ -110,7 +110,7 @@ describe('SumsubService.generateWebSdkLink', () => {
     });
     global.fetch = fetchMock as any;
 
-    const service = new SumsubService();
+    const service = new SumsubService({} as any);
     const url = await service.generateWebSdkLink('user-123', 'fr');
 
     expect(url).toBe('https://in.sumsub.com/websdk/abc123');
@@ -138,7 +138,7 @@ describe('SumsubService.generateWebSdkLink', () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as any;
 
-    const service = new SumsubService();
+    const service = new SumsubService({} as any);
     await expect(service.generateWebSdkLink('user-123', 'fr')).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -150,7 +150,144 @@ describe('SumsubService.generateWebSdkLink', () => {
       text: async () => 'unauthorized',
     }) as any;
 
-    const service = new SumsubService();
+    const service = new SumsubService({} as any);
     await expect(service.generateWebSdkLink('user-123', 'fr')).rejects.toThrow();
+  });
+});
+
+// ── Webhook applicantReviewed → mise à jour statut KYC ───────────────────────
+// Fake Prisma en mémoire, miroir exact des appels de processApplicantReviewed.
+function buildFakePrisma(seed: { user?: any; kyc?: any } = {}) {
+  const state = {
+    user: seed.user ? { ...seed.user } : null,
+    kyc: seed.kyc ? { ...seed.kyc } : null,
+  };
+  return {
+    state,
+    user: {
+      findUnique: jest.fn(async ({ where }: any) => {
+        if (!state.user || state.user.id !== where.id) return null;
+        return { ...state.user, kyc: state.kyc ? { ...state.kyc } : null };
+      }),
+      update: jest.fn(async ({ data }: any) => {
+        state.user = { ...state.user, ...data };
+        return state.user;
+      }),
+    },
+    kyc: {
+      update: jest.fn(async ({ data }: any) => {
+        state.kyc = { ...state.kyc, ...data };
+        return state.kyc;
+      }),
+    },
+  };
+}
+
+function reviewedPayload(answer: string, extra: any = {}) {
+  return {
+    type: 'applicantReviewed',
+    applicantId: 'appl-1',
+    levelName: 'id-and-liveness',
+    reviewStatus: 'completed',
+    externalUserId: 'user-1',
+    reviewResult: { reviewAnswer: answer, ...extra },
+  };
+}
+
+describe('SumsubService.processApplicantReviewed', () => {
+  it('GREEN → marque Kyc APPROVED + reviewedAt, enregistre applicantId/level sur user', async () => {
+    const prisma = buildFakePrisma({
+      user: { id: 'user-1' },
+      kyc: { id: 'kyc-1', status: 'PENDING' },
+    });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('approved');
+    expect(prisma.kyc.update).toHaveBeenCalledTimes(1);
+    expect(prisma.state.kyc.status).toBe('APPROVED');
+    expect(prisma.state.kyc.reviewedAt).toBeInstanceOf(Date);
+    expect(prisma.state.user.sumsubApplicantId).toBe('appl-1');
+    expect(prisma.state.user.sumsubLevelName).toBe('id-and-liveness');
+  });
+
+  it('RED → marque REJECTED et enregistre reviewRejectType + rejectLabels', async () => {
+    const prisma = buildFakePrisma({
+      user: { id: 'user-1' },
+      kyc: { id: 'kyc-1', status: 'PENDING' },
+    });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(
+      reviewedPayload('RED', { reviewRejectType: 'FINAL', rejectLabels: ['SELFIE_MISMATCH', 'ID_BLURRY'] }),
+    );
+
+    expect(out).toBe('rejected');
+    expect(prisma.state.kyc.status).toBe('REJECTED');
+    expect(prisma.state.kyc.sumsubReviewRejectType).toBe('FINAL');
+    expect(prisma.state.kyc.sumsubRejectLabels).toEqual(['SELFIE_MISMATCH', 'ID_BLURRY']);
+  });
+
+  it('utilisateur introuvable → aucune écriture, résultat user_not_found', async () => {
+    const prisma = buildFakePrisma({ user: null, kyc: null });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('user_not_found');
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+  });
+
+  it('doublon (même applicantId + reviewStatus déjà traité) → pas de réécriture', async () => {
+    const prisma = buildFakePrisma({
+      user: {
+        id: 'user-1',
+        sumsubApplicantId: 'appl-1',
+        sumsubReviewStatus: 'completed',
+      },
+      kyc: { id: 'kyc-1', status: 'PENDING' },
+    });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('duplicate');
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.status).toBe('PENDING');
+  });
+
+  it('KYC déjà APPROVED (ancien flux) → GREEN ne réécrit pas', async () => {
+    const prisma = buildFakePrisma({
+      user: { id: 'user-1' },
+      kyc: { id: 'kyc-1', status: 'APPROVED', reviewedAt: new Date('2026-01-01') },
+    });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('already_approved');
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.status).toBe('APPROVED');
+  });
+
+  it('KYC déjà APPROVED → un RED Sumsub NE l’écrase JAMAIS', async () => {
+    const prisma = buildFakePrisma({
+      user: { id: 'user-1' },
+      kyc: { id: 'kyc-1', status: 'APPROVED' },
+    });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('RED', { reviewRejectType: 'FINAL' }));
+
+    expect(out).toBe('already_approved');
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.status).toBe('APPROVED');
+  });
+
+  it('GREEN sans ligne Kyc → métadonnées enregistrées, statut non modifié', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const service = new SumsubService(prisma as any);
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('no_kyc_row');
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+    expect(prisma.state.user.sumsubApplicantId).toBe('appl-1');
   });
 });

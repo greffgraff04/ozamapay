@@ -60,13 +60,20 @@ export class SumsubController {
       payload = {};
     }
 
-    // Journalisation uniquement — aucun écriture en base (branché après validation).
     this.logger.log(
       `Sumsub webhook reçu — type=${payload.type ?? '?'} ` +
         `applicantId=${payload.applicantId ?? '?'} ` +
-        `externalUserId=${payload.externalUserId ?? '?'} ` +
         `reviewAnswer=${payload.reviewResult?.reviewAnswer ?? '?'}`,
     );
+
+    // On ne traite QUE les événements de revue finale. Tout autre type est
+    // acquitté (200) sans aucune écriture.
+    if (payload.type === 'applicantReviewed') {
+      const outcome = await this.sumsub.processApplicantReviewed(payload);
+      this.logger.log(`Sumsub applicantReviewed traité — résultat=${outcome}`);
+    } else {
+      this.logger.log(`Sumsub webhook: type ignoré (${payload.type ?? '?'})`);
+    }
 
     return { ok: true };
   }
