@@ -57,6 +57,75 @@ export function verifySumsubWebhookSignature(
   return crypto.timingSafeEqual(a, b);
 }
 
+// ── Extraction des champs Kyc depuis un applicant Sumsub (GET …/one) ───────
+// Pure, testable. Lit `info` puis `fixedInfo` en repli. Retourne null si les
+// champs d'IDENTITÉ essentiels manquent (on ne crée alors aucune ligne Kyc).
+// phone/adresse: repli sur '' si absents (colonnes NOT NULL). idImage/userPhoto:
+// référence `sumsub:{applicantId}` (les images Sumsub ne sont pas des URLs publiques).
+export function extractKycFieldsFromApplicant(
+  applicant: any,
+  applicantId: string,
+): null | {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date;
+  phoneNumber: string;
+  idType: string;
+  idNumber: string;
+  idImage: string;
+  userPhoto: string;
+  line1: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+} {
+  const info = applicant?.info || {};
+  const fixed = applicant?.fixedInfo || {};
+  const pick = (k: string) => info[k] ?? fixed[k] ?? null;
+
+  const firstName = pick('firstName');
+  const lastName = pick('lastName');
+  const dob = pick('dob'); // "YYYY-MM-DD"
+  const country = pick('country') || '';
+  const phone = pick('phone') || '';
+
+  const idDocs = (info.idDocs?.length ? info.idDocs : fixed.idDocs) || [];
+  const idDoc = idDocs[0] || {};
+  const idType = idDoc.idDocType || '';
+  const idNumber = idDoc.number || '';
+
+  const addresses = (info.addresses?.length ? info.addresses : fixed.addresses) || [];
+  const addr = addresses[0] || {};
+  const line1 = addr.street || addr.formattedAddress || '';
+  const city = addr.town || '';
+  const state = addr.state || '';
+  const zipCode = addr.postCode || '';
+
+  // Identité essentielle : sans ça, pas de création (évite un Kyc APPROVED vide).
+  if (!firstName || !lastName || !dob || !idType || !idNumber || !country) {
+    return null;
+  }
+  const dateOfBirth = new Date(dob);
+  if (isNaN(dateOfBirth.getTime())) return null;
+
+  return {
+    firstName,
+    lastName,
+    dateOfBirth,
+    phoneNumber: phone,
+    idType,
+    idNumber,
+    idImage: `sumsub:${applicantId}`,
+    userPhoto: `sumsub:${applicantId}`,
+    line1,
+    city,
+    state,
+    zipCode,
+    country,
+  };
+}
+
 @Injectable()
 export class SumsubService {
   private readonly logger = new Logger('SumsubService');
@@ -136,6 +205,40 @@ export class SumsubService {
     return verifySumsubWebhookSignature(secret, rawBody, digest || '');
   }
 
+  // ── GET signé {base}/resources/applicants/{applicantId}/one ────────────────
+  // Récupère les données du candidat (nom, prénom, DOB, pays, document, et via
+  // fixedInfo le téléphone/adresse). Jette sur config absente ou HTTP non-ok.
+  async getApplicant(applicantId: string): Promise<any> {
+    const appToken = process.env.SUMSUB_APP_TOKEN;
+    const secret = process.env.SUMSUB_SECRET_KEY;
+    if (!appToken || !secret) {
+      this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
+      throw new ServiceUnavailableException('Sumsub non configuré');
+    }
+
+    const method = 'GET';
+    const body = '';
+    const path = `/resources/applicants/${encodeURIComponent(applicantId)}/one`;
+    const ts = Math.floor(Date.now() / 1000);
+    const sig = signSumsubRequest(secret, ts, method, path, body);
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        'X-App-Token': appToken,
+        'X-App-Access-Ts': String(ts),
+        'X-App-Access-Sig': sig,
+      },
+    });
+
+    if (!res.ok) {
+      this.logger.error(`Sumsub getApplicant a échoué — HTTP ${res.status}`);
+      throw new ServiceUnavailableException('Sumsub: récupération applicant échouée');
+    }
+    return res.json();
+  }
+
   // ── Traitement d'un webhook Sumsub `applicantReviewed` ─────────────────────
   // Idempotent, ne jette pas sur les cas normaux (user introuvable / doublon /
   // déjà approuvé). N'ÉCRASE JAMAIS un KYC déjà APPROVED (ancien flux inclus).
@@ -146,6 +249,9 @@ export class SumsubService {
     | 'duplicate'
     | 'approved'
     | 'rejected'
+    | 'created_approved'
+    | 'sumsub_fetch_failed'
+    | 'incomplete_applicant_data'
     | 'no_kyc_row'
     | 'already_approved'
     | 'noop'
@@ -188,48 +294,90 @@ export class SumsubService {
       return 'duplicate';
     }
 
-    // Corrélation du dossier Sumsub sur l'utilisateur (toujours, même si pas de Kyc).
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        sumsubApplicantId: applicantId,
-        sumsubLevelName: levelName,
-        sumsubReviewStatus: reviewStatus,
-      },
-    });
-
     const kyc = user.kyc;
 
+    // Marqueur d'idempotence + corrélation du dossier Sumsub. Écrit SEULEMENT
+    // à la fin, une fois le traitement RÉELLEMENT terminé : si on l'écrivait
+    // avant un échec getApplicant, la relance Sumsub serait vue comme un
+    // doublon et la ligne Kyc ne serait jamais créée.
+    const persistMeta = () =>
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          sumsubApplicantId: applicantId,
+          sumsubLevelName: levelName,
+          sumsubReviewStatus: reviewStatus,
+        },
+      });
+
     if (reviewAnswer === 'GREEN') {
-      if (!kyc) {
-        this.logger.warn(
-          'Sumsub GREEN: aucune ligne Kyc pour cet utilisateur — métadonnées enregistrées, statut non modifié',
-        );
+      if (kyc) {
+        if (kyc.status === 'APPROVED') {
+          // Déjà approuvé (ancien flux ou webhook précédent) — on ne réécrit pas.
+          this.logger.log('Sumsub GREEN: KYC déjà APPROVED — non réécrit');
+          await persistMeta();
+          return 'already_approved';
+        }
+        await this.prisma.kyc.update({
+          where: { id: kyc.id },
+          data: { status: 'APPROVED', reviewedAt: new Date() },
+        });
+        this.logger.log(`Sumsub GREEN: KYC approuvé (kycId=${kyc.id})`);
+        await persistMeta();
+        return 'approved';
+      }
+
+      // Flux Sumsub-first : aucune ligne Kyc → la créer depuis les données Sumsub.
+      if (!applicantId) {
+        this.logger.warn('Sumsub GREEN sans ligne Kyc ni applicantId — rien créé');
+        await persistMeta();
         return 'no_kyc_row';
       }
-      if (kyc.status === 'APPROVED') {
-        // Déjà approuvé (par l'ancien flux ou un webhook précédent) — on ne réécrit pas.
-        this.logger.log('Sumsub GREEN: KYC déjà APPROVED — non réécrit');
-        return 'already_approved';
+      let applicant: any;
+      try {
+        applicant = await this.getApplicant(applicantId);
+      } catch {
+        // Échec de l'appel Sumsub → 200 sans AUCUNE écriture (pas même le
+        // marqueur) pour que Sumsub réessaie le webhook.
+        this.logger.error(
+          'Sumsub GREEN: échec getApplicant — aucune écriture, 200 pour relance Sumsub',
+        );
+        return 'sumsub_fetch_failed';
       }
-      await this.prisma.kyc.update({
-        where: { id: kyc.id },
-        data: { status: 'APPROVED', reviewedAt: new Date() },
+      const fields = extractKycFieldsFromApplicant(applicant, applicantId);
+      if (!fields) {
+        this.logger.warn(
+          'Sumsub GREEN: données applicant incomplètes (identité/document) — aucune ligne Kyc créée',
+        );
+        await persistMeta();
+        return 'incomplete_applicant_data';
+      }
+      const created = await this.prisma.kyc.create({
+        data: {
+          userId: user.id,
+          status: 'APPROVED',
+          reviewedAt: new Date(),
+          ...fields,
+        },
       });
-      this.logger.log(`Sumsub GREEN: KYC approuvé (kycId=${kyc.id})`);
-      return 'approved';
+      this.logger.log(`Sumsub GREEN: ligne Kyc créée + APPROVED (kycId=${created.id})`);
+      await persistMeta();
+      return 'created_approved';
     }
 
     if (reviewAnswer === 'RED') {
       if (!kyc) {
+        // RED sans dossier : on n'invente pas de ligne Kyc, on garde la trace.
         this.logger.warn(
           'Sumsub RED: aucune ligne Kyc pour cet utilisateur — métadonnées enregistrées',
         );
+        await persistMeta();
         return 'no_kyc_row';
       }
       if (kyc.status === 'APPROVED') {
         // NE JAMAIS écraser une approbation existante avec un rejet Sumsub.
         this.logger.warn('Sumsub RED: KYC déjà APPROVED — NON écrasé');
+        await persistMeta();
         return 'already_approved';
       }
       await this.prisma.kyc.update({
@@ -244,12 +392,14 @@ export class SumsubService {
       this.logger.log(
         `Sumsub RED: KYC rejeté (kycId=${kyc.id}) rejectType=${rejectType ?? '?'} labels=[${rejectLabels.join(',')}]`,
       );
+      await persistMeta();
       return 'rejected';
     }
 
     this.logger.log(
       `Sumsub applicantReviewed: reviewAnswer inattendu=${reviewAnswer ?? '?'} — métadonnées enregistrées, statut KYC inchangé`,
     );
+    await persistMeta();
     return 'noop';
   }
 }
