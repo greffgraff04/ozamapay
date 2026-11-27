@@ -4,7 +4,13 @@ import {
   verifySumsubWebhookSignature,
   isSumsubEnabled,
   extractKycFieldsFromApplicant,
+  extractImageRefs,
 } from './sumsub.service';
+
+// ImageKit factice par défaut (upload réussit). Les tests d'images le remplacent.
+function imagekitOk() {
+  return { uploadFile: jest.fn().mockResolvedValue('https://ik.imagekit.io/ozamapay/kyc/x.jpg') };
+}
 import { createHmac } from 'crypto';
 
 const ORIGINAL_ENV = { ...process.env };
@@ -111,7 +117,7 @@ describe('SumsubService.generateWebSdkLink', () => {
     });
     global.fetch = fetchMock as any;
 
-    const service = new SumsubService({} as any);
+    const service = new SumsubService({} as any, {} as any);
     const url = await service.generateWebSdkLink('user-123', 'fr');
 
     expect(url).toBe('https://in.sumsub.com/websdk/abc123');
@@ -139,7 +145,7 @@ describe('SumsubService.generateWebSdkLink', () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as any;
 
-    const service = new SumsubService({} as any);
+    const service = new SumsubService({} as any, {} as any);
     await expect(service.generateWebSdkLink('user-123', 'fr')).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -151,7 +157,7 @@ describe('SumsubService.generateWebSdkLink', () => {
       text: async () => 'unauthorized',
     }) as any;
 
-    const service = new SumsubService({} as any);
+    const service = new SumsubService({} as any, {} as any);
     await expect(service.generateWebSdkLink('user-123', 'fr')).rejects.toThrow();
   });
 });
@@ -221,7 +227,7 @@ describe('SumsubService.processApplicantReviewed', () => {
       user: { id: 'user-1' },
       kyc: { id: 'kyc-1', status: 'PENDING' },
     });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
     expect(out).toBe('approved');
@@ -237,7 +243,7 @@ describe('SumsubService.processApplicantReviewed', () => {
       user: { id: 'user-1' },
       kyc: { id: 'kyc-1', status: 'PENDING' },
     });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(
       reviewedPayload('RED', { reviewRejectType: 'FINAL', rejectLabels: ['SELFIE_MISMATCH', 'ID_BLURRY'] }),
     );
@@ -250,7 +256,7 @@ describe('SumsubService.processApplicantReviewed', () => {
 
   it('utilisateur introuvable → aucune écriture, résultat user_not_found', async () => {
     const prisma = buildFakePrisma({ user: null, kyc: null });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
     expect(out).toBe('user_not_found');
@@ -267,7 +273,7 @@ describe('SumsubService.processApplicantReviewed', () => {
       },
       kyc: { id: 'kyc-1', status: 'PENDING' },
     });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
     expect(out).toBe('duplicate');
@@ -281,7 +287,7 @@ describe('SumsubService.processApplicantReviewed', () => {
       user: { id: 'user-1' },
       kyc: { id: 'kyc-1', status: 'APPROVED', reviewedAt: new Date('2026-01-01') },
     });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
     expect(out).toBe('already_approved');
@@ -294,7 +300,7 @@ describe('SumsubService.processApplicantReviewed', () => {
       user: { id: 'user-1' },
       kyc: { id: 'kyc-1', status: 'APPROVED' },
     });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     const out = await service.processApplicantReviewed(reviewedPayload('RED', { reviewRejectType: 'FINAL' }));
 
     expect(out).toBe('already_approved');
@@ -304,7 +310,7 @@ describe('SumsubService.processApplicantReviewed', () => {
 
   it('GREEN sans ligne Kyc → récupère l’applicant Sumsub et CRÉE un Kyc APPROVED', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -332,7 +338,7 @@ describe('SumsubService.processApplicantReviewed', () => {
 
   it('GREEN sans Kyc + échec getApplicant → aucune écriture, 200 pour retry', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     jest.spyOn(service, 'getApplicant').mockRejectedValue(new Error('503'));
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -346,7 +352,7 @@ describe('SumsubService.processApplicantReviewed', () => {
 
   it('GREEN sans Kyc + applicant incomplet (identité manquante) → rien créé', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
-    const service = new SumsubService(prisma as any);
+    const service = new SumsubService(prisma as any, imagekitOk() as any);
     jest.spyOn(service, 'getApplicant').mockResolvedValue({ info: { firstName: 'Jean' } });
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -406,5 +412,98 @@ describe('extractKycFieldsFromApplicant', () => {
         'x',
       ),
     ).toBeNull();
+  });
+});
+
+// Applicant avec inspectionId + images (recto pièce + selfie).
+function applicantWithImages() {
+  return fakeApplicant({
+    inspectionId: 'insp-1',
+    info: {
+      firstName: 'Jean', lastName: 'Baptiste', dob: '1990-05-14', country: 'HTI',
+      phone: '+50933334444',
+      idDocs: [
+        { idDocType: 'ID_CARD', number: 'HT123456', imageIds: [1001, 1002] },
+        { idDocType: 'SELFIE', imageIds: [2001] },
+      ],
+      addresses: [{ street: '12 Rue Capois', town: 'Port-au-Prince', state: 'Ouest', postCode: 'HT6110' }],
+    },
+  });
+}
+
+describe('extractImageRefs', () => {
+  it('prend le RECTO (1er idDoc non-SELFIE) et le selfie', () => {
+    expect(extractImageRefs(applicantWithImages())).toEqual({
+      inspectionId: 'insp-1', idFrontImageId: '1001', selfieImageId: '2001',
+    });
+  });
+  it('null quand pas d’imageIds / pas d’inspectionId', () => {
+    expect(extractImageRefs(fakeApplicant())).toEqual({
+      inspectionId: null, idFrontImageId: null, selfieImageId: null,
+    });
+  });
+});
+
+describe('SumsubService.processApplicantReviewed — images pièce/selfie', () => {
+  it('image récupérée + uploadée → idImage/userPhoto = URL ImageKit', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn()
+      .mockResolvedValueOnce('https://ik.imagekit.io/ozamapay/kyc/id.jpg')
+      .mockResolvedValueOnce('https://ik.imagekit.io/ozamapay/kyc/selfie.jpg') };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    const getImg = jest.spyOn(service, 'getIdDocImage').mockResolvedValue(Buffer.from('img'));
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('created_approved');
+    expect(getImg).toHaveBeenNthCalledWith(1, 'insp-1', '1001'); // recto
+    expect(getImg).toHaveBeenNthCalledWith(2, 'insp-1', '2001'); // selfie
+    expect(imagekit.uploadFile).toHaveBeenCalledTimes(2);
+    expect(prisma.state.kyc.idImage).toBe('https://ik.imagekit.io/ozamapay/kyc/id.jpg');
+    expect(prisma.state.kyc.userPhoto).toBe('https://ik.imagekit.io/ozamapay/kyc/selfie.jpg');
+  });
+
+  it('échec téléchargement Sumsub → garde la référence sumsub:, ligne Kyc créée quand même', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn() };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    jest.spyOn(service, 'getIdDocImage').mockRejectedValue(new Error('404'));
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('created_approved');
+    expect(imagekit.uploadFile).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
+    expect(prisma.state.kyc.userPhoto).toBe('sumsub:appl-1');
+  });
+
+  it('échec ImageKit → garde la référence sumsub:, ligne Kyc créée quand même', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn().mockRejectedValue(new Error('imagekit down')) };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    jest.spyOn(service, 'getIdDocImage').mockResolvedValue(Buffer.from('img'));
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('created_approved');
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
+  });
+
+  it('applicant sans image → aucun téléchargement, référence sumsub: conservée', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn() };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant()); // pas d'imageIds
+    const getImg = jest.spyOn(service, 'getIdDocImage');
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('created_approved');
+    expect(getImg).not.toHaveBeenCalled();
+    expect(imagekit.uploadFile).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
   });
 });
