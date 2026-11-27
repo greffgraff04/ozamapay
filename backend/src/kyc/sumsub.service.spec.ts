@@ -214,6 +214,7 @@ function reviewedPayload(answer: string, extra: any = {}) {
   return {
     type: 'applicantReviewed',
     applicantId: 'appl-1',
+    inspectionId: 'insp-1',
     levelName: 'id-and-liveness',
     reviewStatus: 'completed',
     externalUserId: 'user-1',
@@ -415,48 +416,47 @@ describe('extractKycFieldsFromApplicant', () => {
   });
 });
 
-// Applicant avec inspectionId + images (recto pièce + selfie).
-function applicantWithImages() {
-  return fakeApplicant({
-    inspectionId: 'insp-1',
-    info: {
-      firstName: 'Jean', lastName: 'Baptiste', dob: '1990-05-14', country: 'HTI',
-      phone: '+50933334444',
-      idDocs: [
-        { idDocType: 'ID_CARD', number: 'HT123456', imageIds: [1001, 1002] },
-        { idDocType: 'SELFIE', imageIds: [2001] },
-      ],
-      addresses: [{ street: '12 Rue Capois', town: 'Port-au-Prince', state: 'Ouest', postCode: 'HT6110' }],
-    },
-  });
+// Liste idDocs renvoyée par getApplicantIdDocs (endpoint dédié). Recto = ID_CARD
+// (imageIds[0]=1001), selfie = SELFIE (imageIds[0]=2001).
+function fakeIdDocs() {
+  return [
+    { idDocType: 'ID_CARD', country: 'HTI', imageIds: [1001, 1002] },
+    { idDocType: 'SELFIE', imageIds: [2001] },
+  ];
 }
 
-describe('extractImageRefs', () => {
-  it('prend le RECTO (1er idDoc non-SELFIE) et le selfie', () => {
-    expect(extractImageRefs(applicantWithImages())).toEqual({
-      inspectionId: 'insp-1', idFrontImageId: '1001', selfieImageId: '2001',
+describe('extractImageRefs (liste idDocs)', () => {
+  it('prend le RECTO (1er doc non-SELFIE) et le selfie', () => {
+    expect(extractImageRefs(fakeIdDocs())).toEqual({
+      idFrontImageId: '1001', selfieImageId: '2001',
     });
   });
-  it('null quand pas d’imageIds / pas d’inspectionId', () => {
-    expect(extractImageRefs(fakeApplicant())).toEqual({
-      inspectionId: null, idFrontImageId: null, selfieImageId: null,
+  it('null quand aucun imageIds', () => {
+    expect(extractImageRefs([{ idDocType: 'ID_CARD' }])).toEqual({
+      idFrontImageId: null, selfieImageId: null,
     });
+  });
+  it('tolère un tableau vide / non-tableau', () => {
+    expect(extractImageRefs([])).toEqual({ idFrontImageId: null, selfieImageId: null });
+    expect(extractImageRefs(undefined as any)).toEqual({ idFrontImageId: null, selfieImageId: null });
   });
 });
 
 describe('SumsubService.processApplicantReviewed — images pièce/selfie', () => {
-  it('image récupérée + uploadée → idImage/userPhoto = URL ImageKit', async () => {
+  it('images listées + téléchargées + uploadées → idImage/userPhoto = URL ImageKit', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
     const imagekit = { uploadFile: jest.fn()
       .mockResolvedValueOnce('https://ik.imagekit.io/ozamapay/kyc/id.jpg')
       .mockResolvedValueOnce('https://ik.imagekit.io/ozamapay/kyc/selfie.jpg') };
     const service = new SumsubService(prisma as any, imagekit as any);
-    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockResolvedValue(fakeIdDocs());
     const getImg = jest.spyOn(service, 'getIdDocImage').mockResolvedValue(Buffer.from('img'));
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
     expect(out).toBe('created_approved');
+    // inspectionId vient du payload webhook ('insp-1'), imageId de la liste idDocs.
     expect(getImg).toHaveBeenNthCalledWith(1, 'insp-1', '1001'); // recto
     expect(getImg).toHaveBeenNthCalledWith(2, 'insp-1', '2001'); // selfie
     expect(imagekit.uploadFile).toHaveBeenCalledTimes(2);
@@ -468,7 +468,8 @@ describe('SumsubService.processApplicantReviewed — images pièce/selfie', () =
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
     const imagekit = { uploadFile: jest.fn() };
     const service = new SumsubService(prisma as any, imagekit as any);
-    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockResolvedValue(fakeIdDocs());
     jest.spyOn(service, 'getIdDocImage').mockRejectedValue(new Error('404'));
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -483,7 +484,8 @@ describe('SumsubService.processApplicantReviewed — images pièce/selfie', () =
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
     const imagekit = { uploadFile: jest.fn().mockRejectedValue(new Error('imagekit down')) };
     const service = new SumsubService(prisma as any, imagekit as any);
-    jest.spyOn(service, 'getApplicant').mockResolvedValue(applicantWithImages());
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockResolvedValue(fakeIdDocs());
     jest.spyOn(service, 'getIdDocImage').mockResolvedValue(Buffer.from('img'));
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -492,11 +494,12 @@ describe('SumsubService.processApplicantReviewed — images pièce/selfie', () =
     expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
   });
 
-  it('applicant sans image → aucun téléchargement, référence sumsub: conservée', async () => {
+  it('listage idDocs vide (aucune image) → aucun téléchargement, référence sumsub: conservée', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
     const imagekit = { uploadFile: jest.fn() };
     const service = new SumsubService(prisma as any, imagekit as any);
-    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant()); // pas d'imageIds
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockResolvedValue([]);
     const getImg = jest.spyOn(service, 'getIdDocImage');
 
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
@@ -504,6 +507,38 @@ describe('SumsubService.processApplicantReviewed — images pièce/selfie', () =
     expect(out).toBe('created_approved');
     expect(getImg).not.toHaveBeenCalled();
     expect(imagekit.uploadFile).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
+  });
+
+  it('échec listage idDocs → repli sumsub:, ligne Kyc créée quand même', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn() };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockRejectedValue(new Error('403'));
+    const getImg = jest.spyOn(service, 'getIdDocImage');
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('created_approved');
+    expect(getImg).not.toHaveBeenCalled();
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
+  });
+
+  it('inspectionId absent du webhook → images non téléchargées, repli sumsub:', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const imagekit = { uploadFile: jest.fn() };
+    const service = new SumsubService(prisma as any, imagekit as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+    jest.spyOn(service, 'getApplicantIdDocs').mockResolvedValue(fakeIdDocs());
+    const getImg = jest.spyOn(service, 'getIdDocImage');
+
+    const payload = reviewedPayload('GREEN');
+    delete (payload as any).inspectionId;
+    const out = await service.processApplicantReviewed(payload);
+
+    expect(out).toBe('created_approved');
+    expect(getImg).not.toHaveBeenCalled();
     expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
   });
 });
