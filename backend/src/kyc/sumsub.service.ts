@@ -127,22 +127,19 @@ export function extractKycFieldsFromApplicant(
   };
 }
 
-// ── Références d'images d'un applicant Sumsub ──────────────────────────────
-// Pure, testable. inspectionId + imageId du RECTO de la pièce (1er idDoc non
-// SELFIE) et du selfie (idDoc SELFIE), à passer à getIdDocImage().
-export function extractImageRefs(applicant: any): {
-  inspectionId: string | null;
+// ── Références d'images à partir de la liste idDocs Sumsub ─────────────────
+// Pure, testable. Prend en entrée le tableau renvoyé par getApplicantIdDocs()
+// (GET /resources/applicants/{id}/info/idDocs?forApprovedImages=true). Retourne
+// l'imageId du RECTO (1er doc non-SELFIE, imageIds[0]) et du selfie (doc SELFIE).
+// L'inspectionId (pour le téléchargement) vient du payload webhook, pas d'ici.
+export function extractImageRefs(idDocs: any[]): {
   idFrontImageId: string | null;
   selfieImageId: string | null;
 } {
-  const inspectionId = applicant?.inspectionId ?? null;
-  const info = applicant?.info || {};
-  const fixed = applicant?.fixedInfo || {};
-  const idDocs = (info.idDocs?.length ? info.idDocs : fixed.idDocs) || [];
-
+  const docs = Array.isArray(idDocs) ? idDocs : [];
   let idFrontImageId: string | null = null;
   let selfieImageId: string | null = null;
-  for (const d of idDocs) {
+  for (const d of docs) {
     const ids = Array.isArray(d?.imageIds) ? d.imageIds : [];
     if (!ids.length) continue;
     if (String(d?.idDocType || '').toUpperCase() === 'SELFIE') {
@@ -151,11 +148,7 @@ export function extractImageRefs(applicant: any): {
       idFrontImageId = String(ids[0]);
     }
   }
-  return {
-    inspectionId: inspectionId != null ? String(inspectionId) : null,
-    idFrontImageId,
-    selfieImageId,
-  };
+  return { idFrontImageId, selfieImageId };
 }
 
 @Injectable()
@@ -274,6 +267,45 @@ export class SumsubService {
     return res.json();
   }
 
+  // ── GET signé {base}/resources/applicants/{applicantId}/info/idDocs
+  //        ?forApprovedImages=true
+  // Liste les documents du candidat (chaque doc: idDocType + imageIds[]).
+  // Normalise en tableau (réponse soit un tableau, soit { idDocs: [...] }).
+  async getApplicantIdDocs(applicantId: string): Promise<any[]> {
+    const appToken = process.env.SUMSUB_APP_TOKEN;
+    const secret = process.env.SUMSUB_SECRET_KEY;
+    if (!appToken || !secret) {
+      this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
+      throw new ServiceUnavailableException('Sumsub non configuré');
+    }
+
+    const method = 'GET';
+    const body = '';
+    const path =
+      `/resources/applicants/${encodeURIComponent(applicantId)}/info/idDocs` +
+      `?forApprovedImages=true`;
+    const ts = Math.floor(Date.now() / 1000);
+    const sig = signSumsubRequest(secret, ts, method, path, body);
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        'X-App-Token': appToken,
+        'X-App-Access-Ts': String(ts),
+        'X-App-Access-Sig': sig,
+      },
+    });
+    if (!res.ok) {
+      this.logger.error(`Sumsub getApplicantIdDocs a échoué — HTTP ${res.status}`);
+      throw new ServiceUnavailableException('Sumsub: listage idDocs échoué');
+    }
+    const data: any = await res.json();
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.idDocs)) return data.idDocs;
+    return [];
+  }
+
   // ── GET signé {base}/resources/inspections/{inspectionId}/resources/{imageId}
   // Renvoie le binaire de l'image (Buffer). Jette sur config absente / HTTP non-ok.
   async getIdDocImage(inspectionId: string, imageId: string): Promise<Buffer> {
@@ -353,6 +385,7 @@ export class SumsubService {
     const applicantId: string | null = payload?.applicantId ?? null;
     const levelName: string | null = payload?.levelName ?? null;
     const reviewStatus: string | null = payload?.reviewStatus ?? null;
+    const inspectionId: string | null = payload?.inspectionId ?? null;
     const reviewAnswer: string | undefined = payload?.reviewResult?.reviewAnswer;
     const rejectType: string | null = payload?.reviewResult?.reviewRejectType ?? null;
     const rejectLabels: string[] = Array.isArray(payload?.reviewResult?.rejectLabels)
@@ -446,22 +479,48 @@ export class SumsubService {
         return 'incomplete_applicant_data';
       }
 
-      // Images : récupère le RECTO de la pièce (+ selfie si dispo) chez Sumsub,
-      // pousse sur ImageKit, remplace la référence `sumsub:` par une vraie URL.
-      // En cas d'échec, on GARDE la référence `sumsub:` (fields inchangés) et on
-      // crée quand même la ligne Kyc — jamais de blocage.
-      const refs = extractImageRefs(applicant);
-      if (refs.inspectionId && refs.idFrontImageId) {
+      // Images : liste via l'endpoint idDocs dédié (download via inspections).
+      // On remplace la référence `sumsub:` par une vraie URL ImageKit. En cas
+      // d'échec (listage/téléchargement/upload), on GARDE la référence `sumsub:`
+      // et on crée quand même la ligne Kyc — jamais de blocage.
+      let idDocs: any[] = [];
+      try {
+        idDocs = await this.getApplicantIdDocs(applicantId);
+      } catch (e: any) {
+        this.logger.error(`Sumsub: échec listage idDocs — repli sumsub: ${e?.message ?? e}`);
+      }
+      // Diagnostic PERMANENT, SANS donnée personnelle : nb de documents, leurs
+      // idDocType, et le nombre d'imageIds par document.
+      this.logger.log(
+        `Sumsub idDocs: ${idDocs.length} document(s)` +
+          (idDocs.length
+            ? ' — ' +
+              idDocs
+                .map(
+                  (d: any, i: number) =>
+                    `#${i} type=${d?.idDocType ?? '?'} images=${Array.isArray(d?.imageIds) ? d.imageIds.length : 0}`,
+                )
+                .join(' | ')
+            : ''),
+      );
+
+      const refs = extractImageRefs(idDocs);
+      if (!inspectionId && (refs.idFrontImageId || refs.selfieImageId)) {
+        this.logger.warn(
+          'Sumsub: inspectionId absent du webhook — images non téléchargées, repli sumsub:',
+        );
+      }
+      if (inspectionId && refs.idFrontImageId) {
         const url = await this.fetchAndStoreSumsubImage(
-          refs.inspectionId,
+          inspectionId,
           refs.idFrontImageId,
           `sumsub-${applicantId}-id-front.jpg`,
         );
         if (url) fields.idImage = url;
       }
-      if (refs.inspectionId && refs.selfieImageId) {
+      if (inspectionId && refs.selfieImageId) {
         const url = await this.fetchAndStoreSumsubImage(
-          refs.inspectionId,
+          inspectionId,
           refs.selfieImageId,
           `sumsub-${applicantId}-selfie.jpg`,
         );
