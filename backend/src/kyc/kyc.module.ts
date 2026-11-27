@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 
 import { KycController } from './kyc.controller';
 
+import { SumsubController } from './sumsub.controller';
+
 import { KycService } from './kyc.service';
+
+import { SumsubService } from './sumsub.service';
 
 import { KycApprovedGuard } from './kyc-approved.guard';
 
@@ -30,9 +34,9 @@ import { ActivationModule } from '../activation/activation.module';
     ActivationModule,
   ],
 
-  controllers: [KycController],
+  controllers: [KycController, SumsubController],
 
-  providers: [KycService, KycApprovedGuard],
+  providers: [KycService, SumsubService, KycApprovedGuard],
 
   exports: [KycService, KycApprovedGuard],
 })
