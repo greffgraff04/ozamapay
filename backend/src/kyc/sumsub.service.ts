@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { ImageKitService } from '../imagekit/imagekit.service';
 
 // ── Sumsub integration — ENTIÈREMENT derrière SUMSUB_ENABLED ───────────────
 // Rien ici ne touche au flux KYC maison existant (/kyc/submit, /kyc/status).
@@ -126,11 +127,45 @@ export function extractKycFieldsFromApplicant(
   };
 }
 
+// ── Références d'images d'un applicant Sumsub ──────────────────────────────
+// Pure, testable. inspectionId + imageId du RECTO de la pièce (1er idDoc non
+// SELFIE) et du selfie (idDoc SELFIE), à passer à getIdDocImage().
+export function extractImageRefs(applicant: any): {
+  inspectionId: string | null;
+  idFrontImageId: string | null;
+  selfieImageId: string | null;
+} {
+  const inspectionId = applicant?.inspectionId ?? null;
+  const info = applicant?.info || {};
+  const fixed = applicant?.fixedInfo || {};
+  const idDocs = (info.idDocs?.length ? info.idDocs : fixed.idDocs) || [];
+
+  let idFrontImageId: string | null = null;
+  let selfieImageId: string | null = null;
+  for (const d of idDocs) {
+    const ids = Array.isArray(d?.imageIds) ? d.imageIds : [];
+    if (!ids.length) continue;
+    if (String(d?.idDocType || '').toUpperCase() === 'SELFIE') {
+      if (selfieImageId == null) selfieImageId = String(ids[0]);
+    } else if (idFrontImageId == null) {
+      idFrontImageId = String(ids[0]);
+    }
+  }
+  return {
+    inspectionId: inspectionId != null ? String(inspectionId) : null,
+    idFrontImageId,
+    selfieImageId,
+  };
+}
+
 @Injectable()
 export class SumsubService {
   private readonly logger = new Logger('SumsubService');
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly imagekit: ImageKitService,
+  ) {}
 
   private get baseUrl(): string {
     return process.env.SUMSUB_BASE_URL || DEFAULT_BASE_URL;
@@ -237,6 +272,64 @@ export class SumsubService {
       throw new ServiceUnavailableException('Sumsub: récupération applicant échouée');
     }
     return res.json();
+  }
+
+  // ── GET signé {base}/resources/inspections/{inspectionId}/resources/{imageId}
+  // Renvoie le binaire de l'image (Buffer). Jette sur config absente / HTTP non-ok.
+  async getIdDocImage(inspectionId: string, imageId: string): Promise<Buffer> {
+    const appToken = process.env.SUMSUB_APP_TOKEN;
+    const secret = process.env.SUMSUB_SECRET_KEY;
+    if (!appToken || !secret) {
+      this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
+      throw new ServiceUnavailableException('Sumsub non configuré');
+    }
+
+    const method = 'GET';
+    const body = '';
+    const path =
+      `/resources/inspections/${encodeURIComponent(inspectionId)}` +
+      `/resources/${encodeURIComponent(imageId)}`;
+    const ts = Math.floor(Date.now() / 1000);
+    const sig = signSumsubRequest(secret, ts, method, path, body);
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method,
+      headers: {
+        'X-App-Token': appToken,
+        'X-App-Access-Ts': String(ts),
+        'X-App-Access-Sig': sig,
+      },
+    });
+    if (!res.ok) {
+      this.logger.error(`Sumsub getIdDocImage a échoué — HTTP ${res.status}`);
+      throw new ServiceUnavailableException('Sumsub: récupération image échouée');
+    }
+    const arrayBuf = await res.arrayBuffer();
+    return Buffer.from(arrayBuf);
+  }
+
+  // Télécharge une image Sumsub et la pousse sur ImageKit (même mécanisme que
+  // l'upload KYC existant). Retourne l'URL ImageKit, ou null si échec
+  // (téléchargement OU upload) — jamais d'exception propagée.
+  private async fetchAndStoreSumsubImage(
+    inspectionId: string,
+    imageId: string,
+    fileName: string,
+  ): Promise<string | null> {
+    try {
+      const buffer = await this.getIdDocImage(inspectionId, imageId);
+      // ImageKitService.uploadFile lit seulement file.buffer et file.originalname.
+      const url = await this.imagekit.uploadFile(
+        { buffer, originalname: fileName, mimetype: 'image/jpeg' } as any,
+        'kyc',
+      );
+      return url;
+    } catch (e: any) {
+      this.logger.error(
+        `Sumsub: échec récupération/upload image (${fileName}) — repli référence sumsub: ${e?.message ?? e}`,
+      );
+      return null;
+    }
   }
 
   // ── Traitement d'un webhook Sumsub `applicantReviewed` ─────────────────────
@@ -352,6 +445,29 @@ export class SumsubService {
         await persistMeta();
         return 'incomplete_applicant_data';
       }
+
+      // Images : récupère le RECTO de la pièce (+ selfie si dispo) chez Sumsub,
+      // pousse sur ImageKit, remplace la référence `sumsub:` par une vraie URL.
+      // En cas d'échec, on GARDE la référence `sumsub:` (fields inchangés) et on
+      // crée quand même la ligne Kyc — jamais de blocage.
+      const refs = extractImageRefs(applicant);
+      if (refs.inspectionId && refs.idFrontImageId) {
+        const url = await this.fetchAndStoreSumsubImage(
+          refs.inspectionId,
+          refs.idFrontImageId,
+          `sumsub-${applicantId}-id-front.jpg`,
+        );
+        if (url) fields.idImage = url;
+      }
+      if (refs.inspectionId && refs.selfieImageId) {
+        const url = await this.fetchAndStoreSumsubImage(
+          refs.inspectionId,
+          refs.selfieImageId,
+          `sumsub-${applicantId}-selfie.jpg`,
+        );
+        if (url) fields.userPhoto = url;
+      }
+
       const created = await this.prisma.kyc.create({
         data: {
           userId: user.id,
