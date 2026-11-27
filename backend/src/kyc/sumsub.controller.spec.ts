@@ -9,6 +9,7 @@ function build(overrides: Partial<SumsubService> = {}) {
     enabled: true,
     generateWebSdkLink: jest.fn().mockResolvedValue('https://in.sumsub.com/websdk/x'),
     verifyWebhook: jest.fn().mockReturnValue(true),
+    processApplicantReviewed: jest.fn().mockResolvedValue('approved'),
     ...overrides,
   } as unknown as SumsubService;
   return { controller: new SumsubController(service), service };
@@ -40,12 +41,23 @@ describe('SumsubController — flag activé', () => {
     expect(service.generateWebSdkLink).toHaveBeenCalledWith('u-42', 'fr');
   });
 
-  it('webhook: bonne signature → 200 { ok: true }', async () => {
+  it('webhook: applicantReviewed + bonne signature → 200 et délègue au traitement', async () => {
     const { controller, service } = build({ verifyWebhook: jest.fn().mockReturnValue(true) });
-    const raw = Buffer.from('{"type":"applicantReviewed"}');
+    const payload = { type: 'applicantReviewed', externalUserId: 'u1', reviewResult: { reviewAnswer: 'GREEN' } };
+    const raw = Buffer.from(JSON.stringify(payload));
     const res = await controller.webhook(raw, 'good-digest');
     expect(res).toEqual({ ok: true });
     expect(service.verifyWebhook).toHaveBeenCalledWith(raw, 'good-digest');
+    expect(service.processApplicantReviewed).toHaveBeenCalledTimes(1);
+    expect((service.processApplicantReviewed as jest.Mock).mock.calls[0][0]).toMatchObject(payload);
+  });
+
+  it('webhook: type ≠ applicantReviewed → 200 sans traitement', async () => {
+    const { controller, service } = build();
+    const raw = Buffer.from('{"type":"applicantPending"}');
+    const res = await controller.webhook(raw, 'good-digest');
+    expect(res).toEqual({ ok: true });
+    expect(service.processApplicantReviewed).not.toHaveBeenCalled();
   });
 
   it('webhook: mauvaise signature → 401', async () => {

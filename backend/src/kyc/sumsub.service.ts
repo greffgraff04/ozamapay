@@ -4,6 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
 
 // ── Sumsub integration — ENTIÈREMENT derrière SUMSUB_ENABLED ───────────────
 // Rien ici ne touche au flux KYC maison existant (/kyc/submit, /kyc/status).
@@ -59,6 +60,8 @@ export function verifySumsubWebhookSignature(
 @Injectable()
 export class SumsubService {
   private readonly logger = new Logger('SumsubService');
+
+  constructor(private readonly prisma: PrismaService) {}
 
   private get baseUrl(): string {
     return process.env.SUMSUB_BASE_URL || DEFAULT_BASE_URL;
@@ -131,5 +134,122 @@ export class SumsubService {
       return false;
     }
     return verifySumsubWebhookSignature(secret, rawBody, digest || '');
+  }
+
+  // ── Traitement d'un webhook Sumsub `applicantReviewed` ─────────────────────
+  // Idempotent, ne jette pas sur les cas normaux (user introuvable / doublon /
+  // déjà approuvé). N'ÉCRASE JAMAIS un KYC déjà APPROVED (ancien flux inclus).
+  // Utilise EXACTEMENT les mêmes champs que l'approbation existante
+  // (Kyc.status + Kyc.reviewedAt) — pas de débit de frais, pas de commission.
+  async processApplicantReviewed(payload: any): Promise<
+    | 'user_not_found'
+    | 'duplicate'
+    | 'approved'
+    | 'rejected'
+    | 'no_kyc_row'
+    | 'already_approved'
+    | 'noop'
+  > {
+    const externalUserId: string | undefined = payload?.externalUserId;
+    const applicantId: string | null = payload?.applicantId ?? null;
+    const levelName: string | null = payload?.levelName ?? null;
+    const reviewStatus: string | null = payload?.reviewStatus ?? null;
+    const reviewAnswer: string | undefined = payload?.reviewResult?.reviewAnswer;
+    const rejectType: string | null = payload?.reviewResult?.reviewRejectType ?? null;
+    const rejectLabels: string[] = Array.isArray(payload?.reviewResult?.rejectLabels)
+      ? payload.reviewResult.rejectLabels
+      : [];
+
+    if (!externalUserId) {
+      this.logger.warn('Sumsub webhook: externalUserId absent — ignoré');
+      return 'user_not_found';
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: externalUserId },
+      include: { kyc: true },
+    });
+    if (!user) {
+      this.logger.warn(
+        `Sumsub webhook: externalUserId introuvable (applicantId=${applicantId}) — ignoré, aucune écriture`,
+      );
+      return 'user_not_found';
+    }
+
+    // Idempotence : même applicantId + reviewStatus déjà traité → on ne réécrit pas.
+    if (
+      applicantId &&
+      user.sumsubApplicantId === applicantId &&
+      user.sumsubReviewStatus === reviewStatus
+    ) {
+      this.logger.log(
+        `Sumsub webhook: doublon (applicantId/reviewStatus déjà traité) — ignoré`,
+      );
+      return 'duplicate';
+    }
+
+    // Corrélation du dossier Sumsub sur l'utilisateur (toujours, même si pas de Kyc).
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        sumsubApplicantId: applicantId,
+        sumsubLevelName: levelName,
+        sumsubReviewStatus: reviewStatus,
+      },
+    });
+
+    const kyc = user.kyc;
+
+    if (reviewAnswer === 'GREEN') {
+      if (!kyc) {
+        this.logger.warn(
+          'Sumsub GREEN: aucune ligne Kyc pour cet utilisateur — métadonnées enregistrées, statut non modifié',
+        );
+        return 'no_kyc_row';
+      }
+      if (kyc.status === 'APPROVED') {
+        // Déjà approuvé (par l'ancien flux ou un webhook précédent) — on ne réécrit pas.
+        this.logger.log('Sumsub GREEN: KYC déjà APPROVED — non réécrit');
+        return 'already_approved';
+      }
+      await this.prisma.kyc.update({
+        where: { id: kyc.id },
+        data: { status: 'APPROVED', reviewedAt: new Date() },
+      });
+      this.logger.log(`Sumsub GREEN: KYC approuvé (kycId=${kyc.id})`);
+      return 'approved';
+    }
+
+    if (reviewAnswer === 'RED') {
+      if (!kyc) {
+        this.logger.warn(
+          'Sumsub RED: aucune ligne Kyc pour cet utilisateur — métadonnées enregistrées',
+        );
+        return 'no_kyc_row';
+      }
+      if (kyc.status === 'APPROVED') {
+        // NE JAMAIS écraser une approbation existante avec un rejet Sumsub.
+        this.logger.warn('Sumsub RED: KYC déjà APPROVED — NON écrasé');
+        return 'already_approved';
+      }
+      await this.prisma.kyc.update({
+        where: { id: kyc.id },
+        data: {
+          status: 'REJECTED',
+          reviewedAt: new Date(),
+          sumsubReviewRejectType: rejectType,
+          sumsubRejectLabels: rejectLabels,
+        },
+      });
+      this.logger.log(
+        `Sumsub RED: KYC rejeté (kycId=${kyc.id}) rejectType=${rejectType ?? '?'} labels=[${rejectLabels.join(',')}]`,
+      );
+      return 'rejected';
+    }
+
+    this.logger.log(
+      `Sumsub applicantReviewed: reviewAnswer inattendu=${reviewAnswer ?? '?'} — métadonnées enregistrées, statut KYC inchangé`,
+    );
+    return 'noop';
   }
 }
