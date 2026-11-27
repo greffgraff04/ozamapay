@@ -3,6 +3,7 @@ import {
   signSumsubRequest,
   verifySumsubWebhookSignature,
   isSumsubEnabled,
+  extractKycFieldsFromApplicant,
 } from './sumsub.service';
 import { createHmac } from 'crypto';
 
@@ -179,7 +180,27 @@ function buildFakePrisma(seed: { user?: any; kyc?: any } = {}) {
         state.kyc = { ...state.kyc, ...data };
         return state.kyc;
       }),
+      create: jest.fn(async ({ data }: any) => {
+        state.kyc = { id: 'kyc-new', ...data };
+        return state.kyc;
+      }),
     },
+  };
+}
+
+// Applicant Sumsub minimal pour un GET …/one réussi.
+function fakeApplicant(overrides: any = {}) {
+  return {
+    info: {
+      firstName: 'Jean',
+      lastName: 'Baptiste',
+      dob: '1990-05-14',
+      country: 'HTI',
+      phone: '+50933334444',
+      idDocs: [{ idDocType: 'PASSPORT', number: 'HT123456' }],
+      addresses: [{ street: '12 Rue Capois', town: 'Port-au-Prince', state: 'Ouest', postCode: 'HT6110' }],
+    },
+    ...overrides,
   };
 }
 
@@ -281,13 +302,109 @@ describe('SumsubService.processApplicantReviewed', () => {
     expect(prisma.state.kyc.status).toBe('APPROVED');
   });
 
-  it('GREEN sans ligne Kyc → métadonnées enregistrées, statut non modifié', async () => {
+  it('GREEN sans ligne Kyc → récupère l’applicant Sumsub et CRÉE un Kyc APPROVED', async () => {
     const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
     const service = new SumsubService(prisma as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue(fakeApplicant());
+
     const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
 
-    expect(out).toBe('no_kyc_row');
-    expect(prisma.kyc.update).not.toHaveBeenCalled();
-    expect(prisma.state.user.sumsubApplicantId).toBe('appl-1');
+    expect(out).toBe('created_approved');
+    expect(service.getApplicant).toHaveBeenCalledWith('appl-1');
+    expect(prisma.kyc.create).toHaveBeenCalledTimes(1);
+    expect(prisma.state.kyc.status).toBe('APPROVED');
+    expect(prisma.state.kyc.reviewedAt).toBeInstanceOf(Date);
+    expect(prisma.state.kyc.userId).toBe('user-1');
+    expect(prisma.state.kyc.firstName).toBe('Jean');
+    expect(prisma.state.kyc.lastName).toBe('Baptiste');
+    expect(prisma.state.kyc.idType).toBe('PASSPORT');
+    expect(prisma.state.kyc.idNumber).toBe('HT123456');
+    expect(prisma.state.kyc.country).toBe('HTI');
+    expect(prisma.state.kyc.phoneNumber).toBe('+50933334444');
+    expect(prisma.state.kyc.line1).toBe('12 Rue Capois');
+    expect(prisma.state.kyc.city).toBe('Port-au-Prince');
+    expect(prisma.state.kyc.zipCode).toBe('HT6110');
+    expect(prisma.state.kyc.idImage).toBe('sumsub:appl-1');
+    expect(prisma.state.kyc.userPhoto).toBe('sumsub:appl-1');
+    // Marqueur d'idempotence écrit APRÈS la création.
+    expect(prisma.state.user.sumsubReviewStatus).toBe('completed');
+  });
+
+  it('GREEN sans Kyc + échec getApplicant → aucune écriture, 200 pour retry', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const service = new SumsubService(prisma as any);
+    jest.spyOn(service, 'getApplicant').mockRejectedValue(new Error('503'));
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('sumsub_fetch_failed');
+    expect(prisma.kyc.create).not.toHaveBeenCalled();
+    // CRUCIAL : pas de marqueur d'idempotence → la relance Sumsub sera retraitée.
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.state.user.sumsubReviewStatus).toBeUndefined();
+  });
+
+  it('GREEN sans Kyc + applicant incomplet (identité manquante) → rien créé', async () => {
+    const prisma = buildFakePrisma({ user: { id: 'user-1' }, kyc: null });
+    const service = new SumsubService(prisma as any);
+    jest.spyOn(service, 'getApplicant').mockResolvedValue({ info: { firstName: 'Jean' } });
+
+    const out = await service.processApplicantReviewed(reviewedPayload('GREEN'));
+
+    expect(out).toBe('incomplete_applicant_data');
+    expect(prisma.kyc.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('extractKycFieldsFromApplicant', () => {
+  it('mappe info + fixedInfo, images en référence sumsub', () => {
+    const fields = extractKycFieldsFromApplicant(
+      {
+        info: {
+          firstName: 'A',
+          lastName: 'B',
+          dob: '1988-01-02',
+          country: 'USA',
+          idDocs: [{ idDocType: 'ID_CARD', number: 'X9' }],
+        },
+        fixedInfo: {
+          phone: '+1555',
+          addresses: [{ street: 'Main St', town: 'NYC', state: 'NY', postCode: '10001' }],
+        },
+      },
+      'appl-xyz',
+    );
+    expect(fields).not.toBeNull();
+    expect(fields!.dateOfBirth).toBeInstanceOf(Date);
+    expect(fields!.phoneNumber).toBe('+1555'); // repli fixedInfo
+    expect(fields!.city).toBe('NYC');
+    expect(fields!.idImage).toBe('sumsub:appl-xyz');
+  });
+
+  it('retourne null si identité/document essentiels manquants', () => {
+    expect(extractKycFieldsFromApplicant({ info: { firstName: 'A' } }, 'x')).toBeNull();
+    expect(
+      extractKycFieldsFromApplicant(
+        { info: { firstName: 'A', lastName: 'B', dob: '1990-01-01', country: 'HTI' } },
+        'x',
+      ),
+    ).toBeNull(); // pas de document
+  });
+
+  it('retourne null si dob invalide', () => {
+    expect(
+      extractKycFieldsFromApplicant(
+        {
+          info: {
+            firstName: 'A',
+            lastName: 'B',
+            dob: 'not-a-date',
+            country: 'HTI',
+            idDocs: [{ idDocType: 'ID', number: '1' }],
+          },
+        },
+        'x',
+      ),
+    ).toBeNull();
   });
 });
