@@ -458,15 +458,53 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
     expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it('blòk lokal: zip vid → mesaj sipò (pa "ajoute l nan pwofil ou")', async () => {
-    const user = buildUser({ zipCode: '' });
+  // 27 nov 2026 — NOUVO KONPÒTMAN : zip vid NE bloque PLUS la création. Il est
+  // déduit de la ville au moment de l'appel (BDD non modifiée) et cardkyc PROCÈDE.
+  it('zip vid → repli code postal déduit de la ville, l’appel cardkyc PROCÈDE', async () => {
+    const user = buildUser({ zipCode: '', city: 'Jacmel' });
     const fakePrisma = buildFakePrisma(user);
     const service = buildService(fakePrisma);
 
-    await expect(service.createAndFundCard('user-1', 3)).rejects.toMatchObject({
-      message: 'Nou pa ka kreye kat la ak enfòmasyon sa yo. Tanpri kontakte sipò OZAMAPAY, nou pral ede w korije l.',
+    (axios.post as jest.Mock)
+      .mockResolvedValueOnce({ data: { success: true, response: { customer_id: 'cust-1', status: 'approved' } } })
+      .mockResolvedValueOnce({ data: { success: true, response: { card_id: 'card-xyz' } } });
+
+    await expect(service.createAndFundCard('user-1', 3)).resolves.toMatchObject({
+      message: expect.stringContaining('siksè'),
     });
-    expect(axios.post).not.toHaveBeenCalled();
+
+    const sentPayload = (axios.post as jest.Mock).mock.calls[0][2]?.params;
+    expect(sentPayload.postal_code).toBe('HT9110'); // Jacmel, déduit de la ville
+  });
+
+  it('zip vid + ville inconnue → défaut HT6110, l’appel cardkyc PROCÈDE', async () => {
+    const user = buildUser({ zipCode: '', city: 'Ville-Inexistante' });
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    (axios.post as jest.Mock)
+      .mockResolvedValueOnce({ data: { success: true, response: { customer_id: 'cust-1', status: 'approved' } } })
+      .mockResolvedValueOnce({ data: { success: true, response: { card_id: 'card-xyz' } } });
+
+    await service.createAndFundCard('user-1', 3);
+
+    const sentPayload = (axios.post as jest.Mock).mock.calls[0][2]?.params;
+    expect(sentPayload.postal_code).toBe('HT6110');
+  });
+
+  it('zip déjà rempli → envoyé tel quel (aucun repli)', async () => {
+    const user = buildUser({ zipCode: 'HT1234', city: 'Jacmel' });
+    const fakePrisma = buildFakePrisma(user);
+    const service = buildService(fakePrisma);
+
+    (axios.post as jest.Mock)
+      .mockResolvedValueOnce({ data: { success: true, response: { customer_id: 'cust-1', status: 'approved' } } })
+      .mockResolvedValueOnce({ data: { success: true, response: { card_id: 'card-xyz' } } });
+
+    await service.createAndFundCard('user-1', 3);
+
+    const sentPayload = (axios.post as jest.Mock).mock.calls[0][2]?.params;
+    expect(sentPayload.postal_code).toBe('HT1234');
   });
 
   it('sove providerReason nan CardCreationFailure sou rejè, san janm sove completion_link/kyc_id/reference', async () => {
@@ -513,5 +551,47 @@ describe('StrowalletService.createAndFundCard — entegrasyon', () => {
     expect(firstAttempt.data.providerReason).toBeDefined();
     expect(secondAttempt.data.providerReason).toBeUndefined();
     expect(secondAttempt.data.errorMessage).toBeDefined();
+  });
+});
+
+describe('StrowalletService.resolveProviderPostalCode — repli code postal depuis la ville', () => {
+  const service = buildService();
+
+  it('ville connue → code mappé (repli utilisé, ville matchée)', () => {
+    const r = service.resolveProviderPostalCode('', 'Pétion-Ville');
+    expect(r).toEqual({ code: 'HT6140', usedFallback: true, matchedCity: true });
+  });
+
+  it('insensible à la casse et aux accents', () => {
+    expect(service.resolveProviderPostalCode('', 'les cayes').code).toBe('HT8110');
+    expect(service.resolveProviderPostalCode('', 'GONAÏVES').code).toBe('HT4110');
+    expect(service.resolveProviderPostalCode('', 'Cap-Haïtien').code).toBe('HT1110');
+  });
+
+  it('ville avec section communale (chiffres) → match sur le nom (ex: "Delmas 71")', () => {
+    expect(service.resolveProviderPostalCode('', 'Delmas 71').code).toBe('HT6120');
+  });
+
+  it('ville inconnue → défaut HT6110', () => {
+    const r = service.resolveProviderPostalCode('', 'Villeneuve-Inexistante');
+    expect(r).toEqual({ code: 'HT6110', usedFallback: true, matchedCity: false });
+  });
+
+  it('zipCode déjà présent → inchangé, aucun repli', () => {
+    const r = service.resolveProviderPostalCode('HT9999', 'Delmas');
+    expect(r).toEqual({ code: 'HT9999', usedFallback: false, matchedCity: false });
+  });
+
+  it('zipCode présent mais entouré d’espaces → trim, pas de repli', () => {
+    expect(service.resolveProviderPostalCode('  6110  ', 'n’importe')).toEqual({
+      code: '6110',
+      usedFallback: false,
+      matchedCity: false,
+    });
+  });
+
+  it('ville vide + zipCode vide → défaut HT6110', () => {
+    expect(service.resolveProviderPostalCode('', '').code).toBe('HT6110');
+    expect(service.resolveProviderPostalCode(null, null).code).toBe('HT6110');
   });
 });

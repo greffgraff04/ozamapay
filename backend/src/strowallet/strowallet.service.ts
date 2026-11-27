@@ -181,6 +181,55 @@ export class StrowalletService {
     return finalize(this.stripDisallowedCitySymbols(split.city), split.line1);
   }
 
+  // 27 nov 2026 — ZiiroPay egzije postal_code ("Postal code is required").
+  // Anpil Kyc gen zipCode vid (ansyen fòm nan pa t kolekte l). Olye nou jete
+  // yon echèk garanti, nou DEDUI kòd postal la apati city a — SÈLMAN nan moman
+  // kreyasyon kat la (resolveProviderPostalCode()). Kyc nan BDD a PA touche.
+  // Konparezon san sansib kas ni aksan (normalizeCityKey).
+  readonly HAITI_CITY_POSTAL: Record<string, string> = {
+    'port-au-prince': 'HT6110',
+    'petion-ville': 'HT6140',
+    delmas: 'HT6120',
+    carrefour: 'HT6130',
+    jacmel: 'HT9110',
+    'les cayes': 'HT8110',
+    'cap-haitien': 'HT1110',
+    gonaives: 'HT4110',
+    'saint-marc': 'HT5110',
+    jeremie: 'HT7110',
+    hinche: 'HT3110',
+    'port-de-paix': 'HT2110',
+    'fort-liberte': 'HT1210',
+    miragoane: 'HT7210',
+  };
+  readonly DEFAULT_HAITI_POSTAL = 'HT6110';
+
+  // Minuscule, sans accents, sans chiffres/symboles (garde lettres/espaces/tirets).
+  // Ex: "Pétion-Ville" → "petion-ville", "Delmas 71" → "delmas".
+  private normalizeCityKey(city: string | null | undefined): string {
+    return (city || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z\s-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Si zipCode déjà rempli → on le garde tel quel (aucun repli). Sinon on le
+  // déduit de la ville ; ville inconnue → DEFAULT_HAITI_POSTAL (HT6110).
+  resolveProviderPostalCode(
+    zipCode: string | null | undefined,
+    city: string | null | undefined,
+  ): { code: string; usedFallback: boolean; matchedCity: boolean } {
+    const trimmed = (zipCode || '').trim();
+    if (trimmed) return { code: trimmed, usedFallback: false, matchedCity: false };
+    const mapped = this.HAITI_CITY_POSTAL[this.normalizeCityKey(city)];
+    return mapped
+      ? { code: mapped, usedFallback: true, matchedCity: true }
+      : { code: this.DEFAULT_HAITI_POSTAL, usedFallback: true, matchedCity: false };
+  }
+
   // Fee constants
   private readonly CARD_CREATION_FEE_USD = 2.50;
   private readonly CARD_RECHARGE_FEE_FLAT_USD = 1.90;
@@ -666,10 +715,17 @@ export class StrowalletService {
     // Kliyan an PA ka korije zip li nan pwofil li apre apwobasyon KYC (wè
     // KYC_FIELD_NEEDS_SUPPORT_MESSAGE pi wo a) — redirije bay sipò olye envite
     // l "ajoute" yon bagay li pa gen aksè pou chanje.
-    const trimmedPostalCode = (user.kyc.zipCode || '').trim();
-    if (!trimmedPostalCode) {
-      throw new BadRequestException(this.KYC_FIELD_NEEDS_SUPPORT_MESSAGE);
+    // 27 nov 2026 — zipCode vid ne doit plus bloquer la création de carte
+    // ("Postal code is required"). On le déduit de la ville à CE moment
+    // uniquement (resolveProviderPostalCode()) — Kyc en BDD jamais modifié.
+    const postal = this.resolveProviderPostalCode(user.kyc.zipCode, user.kyc.city);
+    if (postal.usedFallback) {
+      this.logger.warn(
+        `[postal-fallback] CREATE: zipCode vid — city="${user.kyc.city ?? ''}" → ${postal.code}` +
+          (postal.matchedCity ? '' : ' (défaut, ville inconnue)'),
+      );
     }
+    const trimmedPostalCode = postal.code;
 
     // Kalkile total an HTG — frè $2.50 kreyasyon absòbe pa OZAMAPAY, pa itilizatè
     const exchangeRate = await this.getExchangeRate();
@@ -883,6 +939,16 @@ export class StrowalletService {
       user.kyc?.line1,
     );
 
+    // 27 nov 2026 — même repli code postal que createAndFundCard (zipCode vid
+    // → déduit de la ville à la création uniquement, BDD non modifiée).
+    const replacementPostal = this.resolveProviderPostalCode(user.kyc?.zipCode, user.kyc?.city);
+    if (replacementPostal.usedFallback) {
+      this.logger.warn(
+        `[postal-fallback] REPLACEMENT: zipCode vid — city="${user.kyc?.city ?? ''}" → ${replacementPostal.code}` +
+          (replacementPostal.matchedCity ? '' : ' (défaut, ville inconnue)'),
+      );
+    }
+
     const cardkycParams = {
       first_name: firstName,
       last_name: lastName,
@@ -900,7 +966,7 @@ export class StrowalletService {
       line1: providerLine1,
       city: providerCity,
       state: user.kyc?.state || '',
-      postal_code: user.kyc?.zipCode || '',
+      postal_code: replacementPostal.code,
       country: this.resolveNfcCountry(user.kyc?.country),
       occupation: 'Business Owner',
       employment_status: 'self_employed',
