@@ -6,6 +6,7 @@ import {
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImageKitService } from '../imagekit/imagekit.service';
+import { MailService } from '../mail/mail.service';
 
 // ── Sumsub integration — ENTIÈREMENT derrière SUMSUB_ENABLED ───────────────
 // Rien ici ne touche au flux KYC maison existant (/kyc/submit, /kyc/status).
@@ -158,26 +159,71 @@ export class SumsubService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imagekit: ImageKitService,
+    private readonly mailService: MailService,
   ) {}
 
+  // Envoie le MÊME email d'approbation que le chemin admin (sendKycApproved),
+  // de façon STRICTEMENT NON BLOQUANTE : un échec d'envoi est seulement loggé,
+  // il ne jette jamais → le webhook répond 200, le KYC reste APPROVED, et
+  // Sumsub ne relance pas. Appelé UNIQUEMENT sur une NOUVELLE approbation
+  // (KYC qui vient de passer APPROVED), jamais sur un doublon ni sur un KYC
+  // déjà approuvé (voir les points d'appel).
+  private async sendApprovalEmailSafe(
+    email: string | null | undefined,
+    firstName: string | null | undefined,
+    lastName: string | null | undefined,
+  ): Promise<void> {
+    if (!email) return;
+    try {
+      const name = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+      await this.mailService.sendKycApproved(email, name);
+    } catch (e: any) {
+      this.logger.error(
+        `Sumsub: échec envoi email d'approbation KYC (non bloquant) — ${e?.message ?? e}`,
+      );
+    }
+  }
+
   private get baseUrl(): string {
-    return process.env.SUMSUB_BASE_URL || DEFAULT_BASE_URL;
+    return process.env.SUMSUB_BASE_URL?.trim() || DEFAULT_BASE_URL;
   }
 
   private get levelName(): string {
-    return process.env.SUMSUB_LEVEL_NAME || DEFAULT_LEVEL_NAME;
+    return process.env.SUMSUB_LEVEL_NAME?.trim() || DEFAULT_LEVEL_NAME;
   }
 
   get enabled(): boolean {
     return isSumsubEnabled();
   }
 
+  // Lit le corps d'erreur d'une réponse Sumsub et n'en renvoie QUE des champs
+  // NON sensibles pour le log : description, code, correlationId (jamais le
+  // token, le secret ni la signature). JSON → champs choisis, tronqué à 500
+  // caractères ; sinon → 200 premiers caractères du texte brut.
+  private async safeSumsubErrorDetail(res: Response): Promise<string> {
+    try {
+      const text = await res.text();
+      try {
+        const j: any = JSON.parse(text);
+        return JSON.stringify({
+          description: j?.description,
+          code: j?.code,
+          correlationId: j?.correlationId,
+        }).slice(0, 500);
+      } catch {
+        return text.slice(0, 200);
+      }
+    } catch {
+      return '(corps illisible)';
+    }
+  }
+
   // POST {base}/resources/sdkIntegrations/levels/{LEVEL}/websdkLink
   //        ?ttlInSecs=1800&externalUserId={userId}&lang={lang}  corps {}
   // Retourne l'URL du Web SDK reçue. Aucune écriture en base.
   async generateWebSdkLink(userId: string, lang: string): Promise<string> {
-    const appToken = process.env.SUMSUB_APP_TOKEN;
-    const secret = process.env.SUMSUB_SECRET_KEY;
+    const appToken = process.env.SUMSUB_APP_TOKEN?.trim();
+    const secret = process.env.SUMSUB_SECRET_KEY?.trim();
     if (!appToken || !secret) {
       // Ne jamais logguer les valeurs — juste signaler l'absence de config.
       this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
@@ -210,8 +256,11 @@ export class SumsubService {
     });
 
     if (!res.ok) {
-      // Ne pas logguer le corps complet (peut contenir des détails sensibles).
-      this.logger.error(`Sumsub websdkLink a échoué — HTTP ${res.status}`);
+      // On logge UNIQUEMENT des champs d'erreur NON sensibles (description,
+      // code, correlationId) — jamais token/secret/signature. Voir
+      // safeSumsubErrorDetail().
+      const detail = await this.safeSumsubErrorDetail(res);
+      this.logger.error(`Sumsub websdkLink a échoué — HTTP ${res.status} — ${detail}`);
       throw new ServiceUnavailableException('Sumsub: génération du lien échouée');
     }
 
@@ -220,12 +269,38 @@ export class SumsubService {
       this.logger.error('Sumsub websdkLink: réponse sans `url`');
       throw new ServiceUnavailableException('Sumsub: réponse invalide');
     }
+    await this.resetRejectedKycToPending(userId);
     return data.url as string;
+  }
+
+  // Nouvelle tentative après un refus : dès que le lien est généré, la ligne
+  // Kyc REJECTED repasse PENDING, pour que l'app n'affiche plus l'ancien refus
+  // (et que le client ne relance pas une vérification Sumsub facturée).
+  // - Filtre status=REJECTED DANS la requête : un KYC APPROVED n'est jamais
+  //   remis en attente, même en cas de course avec le webhook.
+  // - updateMany ne crée aucune ligne : sans dossier Kyc, rien ne se passe.
+  // - Seul `status` change : sumsubReviewRejectType / sumsubRejectLabels et
+  //   reviewedAt restent en base pour l'historique.
+  // - NON BLOQUANT : un échec est seulement loggé, le lien est quand même renvoyé.
+  private async resetRejectedKycToPending(userId: string): Promise<void> {
+    try {
+      const { count } = await this.prisma.kyc.updateMany({
+        where: { userId, status: 'REJECTED' },
+        data: { status: 'PENDING' },
+      });
+      if (count > 0) {
+        this.logger.log('Sumsub link: KYC REJECTED remis en PENDING (nouvelle tentative)');
+      }
+    } catch (e: any) {
+      this.logger.error(
+        `Sumsub link: échec de la remise en PENDING du KYC REJECTED — ${e?.message ?? e}`,
+      );
+    }
   }
 
   // Vérifie la signature d'un webhook entrant. true = authentique.
   verifyWebhook(rawBody: Buffer | string, digest?: string): boolean {
-    const secret = process.env.SUMSUB_WEBHOOK_SECRET;
+    const secret = process.env.SUMSUB_WEBHOOK_SECRET?.trim();
     if (!secret) {
       this.logger.error('Sumsub webhook: SUMSUB_WEBHOOK_SECRET manquant');
       return false;
@@ -237,8 +312,8 @@ export class SumsubService {
   // Récupère les données du candidat (nom, prénom, DOB, pays, document, et via
   // fixedInfo le téléphone/adresse). Jette sur config absente ou HTTP non-ok.
   async getApplicant(applicantId: string): Promise<any> {
-    const appToken = process.env.SUMSUB_APP_TOKEN;
-    const secret = process.env.SUMSUB_SECRET_KEY;
+    const appToken = process.env.SUMSUB_APP_TOKEN?.trim();
+    const secret = process.env.SUMSUB_SECRET_KEY?.trim();
     if (!appToken || !secret) {
       this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
       throw new ServiceUnavailableException('Sumsub non configuré');
@@ -261,7 +336,8 @@ export class SumsubService {
     });
 
     if (!res.ok) {
-      this.logger.error(`Sumsub getApplicant a échoué — HTTP ${res.status}`);
+      const detail = await this.safeSumsubErrorDetail(res);
+      this.logger.error(`Sumsub getApplicant a échoué — HTTP ${res.status} — ${detail}`);
       throw new ServiceUnavailableException('Sumsub: récupération applicant échouée');
     }
     return res.json();
@@ -272,8 +348,8 @@ export class SumsubService {
   // Liste les documents du candidat (chaque doc: idDocType + imageIds[]).
   // Normalise en tableau (réponse soit un tableau, soit { idDocs: [...] }).
   async getApplicantIdDocs(applicantId: string): Promise<any[]> {
-    const appToken = process.env.SUMSUB_APP_TOKEN;
-    const secret = process.env.SUMSUB_SECRET_KEY;
+    const appToken = process.env.SUMSUB_APP_TOKEN?.trim();
+    const secret = process.env.SUMSUB_SECRET_KEY?.trim();
     if (!appToken || !secret) {
       this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
       throw new ServiceUnavailableException('Sumsub non configuré');
@@ -297,7 +373,8 @@ export class SumsubService {
       },
     });
     if (!res.ok) {
-      this.logger.error(`Sumsub getApplicantIdDocs a échoué — HTTP ${res.status}`);
+      const detail = await this.safeSumsubErrorDetail(res);
+      this.logger.error(`Sumsub getApplicantIdDocs a échoué — HTTP ${res.status} — ${detail}`);
       throw new ServiceUnavailableException('Sumsub: listage idDocs échoué');
     }
     const data: any = await res.json();
@@ -309,8 +386,8 @@ export class SumsubService {
   // ── GET signé {base}/resources/inspections/{inspectionId}/resources/{imageId}
   // Renvoie le binaire de l'image (Buffer). Jette sur config absente / HTTP non-ok.
   async getIdDocImage(inspectionId: string, imageId: string): Promise<Buffer> {
-    const appToken = process.env.SUMSUB_APP_TOKEN;
-    const secret = process.env.SUMSUB_SECRET_KEY;
+    const appToken = process.env.SUMSUB_APP_TOKEN?.trim();
+    const secret = process.env.SUMSUB_SECRET_KEY?.trim();
     if (!appToken || !secret) {
       this.logger.error('Sumsub: SUMSUB_APP_TOKEN/SUMSUB_SECRET_KEY manquant(s)');
       throw new ServiceUnavailableException('Sumsub non configuré');
@@ -333,7 +410,8 @@ export class SumsubService {
       },
     });
     if (!res.ok) {
-      this.logger.error(`Sumsub getIdDocImage a échoué — HTTP ${res.status}`);
+      const detail = await this.safeSumsubErrorDetail(res);
+      this.logger.error(`Sumsub getIdDocImage a échoué — HTTP ${res.status} — ${detail}`);
       throw new ServiceUnavailableException('Sumsub: récupération image échouée');
     }
     const arrayBuf = await res.arrayBuffer();
@@ -450,6 +528,8 @@ export class SumsubService {
         });
         this.logger.log(`Sumsub GREEN: KYC approuvé (kycId=${kyc.id})`);
         await persistMeta();
+        // Nouvelle approbation (le KYC vient de passer de non-APPROVED à APPROVED).
+        await this.sendApprovalEmailSafe(user.email, kyc.firstName, kyc.lastName);
         return 'approved';
       }
 
@@ -537,6 +617,8 @@ export class SumsubService {
       });
       this.logger.log(`Sumsub GREEN: ligne Kyc créée + APPROVED (kycId=${created.id})`);
       await persistMeta();
+      // Nouvelle approbation (ligne Kyc créée directement en APPROVED).
+      await this.sendApprovalEmailSafe(user.email, fields.firstName, fields.lastName);
       return 'created_approved';
     }
 
