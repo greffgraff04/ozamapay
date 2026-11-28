@@ -167,6 +167,121 @@ describe('SumsubService.generateWebSdkLink', () => {
   });
 });
 
+// ── Lien Web SDK → remise en PENDING d'un KYC REJECTED ──────────────────────
+// Fake Prisma minimal : updateMany applique le filtre `where` comme Postgres.
+function buildLinkPrisma(seedKyc: any | null) {
+  const state = { kyc: seedKyc ? { ...seedKyc } : null };
+  const prisma = {
+    kyc: {
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const k = state.kyc;
+        if (k && k.userId === where.userId && k.status === where.status) {
+          Object.assign(k, data);
+          return { count: 1 };
+        }
+        return { count: 0 };
+      }),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+  };
+  return { prisma, state };
+}
+
+function mockLinkOk() {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ url: 'https://in.sumsub.com/websdk/abc123' }),
+  }) as any;
+}
+
+describe('SumsubService.generateWebSdkLink — KYC REJECTED → PENDING', () => {
+  const rejectedKyc = {
+    id: 'kyc-1',
+    userId: 'user-123',
+    status: 'REJECTED',
+    reviewedAt: new Date('2026-11-20T10:00:00Z'),
+    sumsubReviewRejectType: 'RETRY',
+    sumsubRejectLabels: ['BAD_PROOF_OF_IDENTITY'],
+  };
+
+  it('REJECTED → PENDING, infos de refus conservées', async () => {
+    mockLinkOk();
+    const { prisma, state } = buildLinkPrisma(rejectedKyc);
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    const url = await service.generateWebSdkLink('user-123', 'fr');
+
+    expect(url).toBe('https://in.sumsub.com/websdk/abc123');
+    expect(prisma.kyc.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'user-123', status: 'REJECTED' },
+      data: { status: 'PENDING' },
+    });
+    expect(state.kyc.status).toBe('PENDING');
+    expect(state.kyc.sumsubReviewRejectType).toBe('RETRY');
+    expect(state.kyc.sumsubRejectLabels).toEqual(['BAD_PROOF_OF_IDENTITY']);
+    expect(state.kyc.reviewedAt).toEqual(rejectedKyc.reviewedAt);
+  });
+
+  it('APPROVED → inchangé', async () => {
+    mockLinkOk();
+    const { prisma, state } = buildLinkPrisma({ ...rejectedKyc, status: 'APPROVED' });
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    await service.generateWebSdkLink('user-123', 'fr');
+
+    expect(state.kyc.status).toBe('APPROVED');
+    expect(prisma.kyc.update).not.toHaveBeenCalled();
+  });
+
+  it('PENDING → inchangé', async () => {
+    mockLinkOk();
+    const { prisma, state } = buildLinkPrisma({ ...rejectedKyc, status: 'PENDING' });
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    await service.generateWebSdkLink('user-123', 'fr');
+
+    expect(state.kyc.status).toBe('PENDING');
+  });
+
+  it('aucune ligne Kyc → rien créé', async () => {
+    mockLinkOk();
+    const { prisma, state } = buildLinkPrisma(null);
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    const url = await service.generateWebSdkLink('user-123', 'fr');
+
+    expect(url).toBe('https://in.sumsub.com/websdk/abc123');
+    expect(state.kyc).toBeNull();
+    expect(prisma.kyc.create).not.toHaveBeenCalled();
+  });
+
+  it('échec de la mise à jour → le lien est quand même renvoyé', async () => {
+    mockLinkOk();
+    const { prisma } = buildLinkPrisma(rejectedKyc);
+    prisma.kyc.updateMany.mockRejectedValueOnce(new Error('db down'));
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    await expect(service.generateWebSdkLink('user-123', 'fr')).resolves.toBe(
+      'https://in.sumsub.com/websdk/abc123',
+    );
+  });
+
+  it('échec Sumsub → KYC REJECTED non touché', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'boom',
+    }) as any;
+    const { prisma, state } = buildLinkPrisma(rejectedKyc);
+    const service = new SumsubService(prisma as any, {} as any, {} as any);
+
+    await expect(service.generateWebSdkLink('user-123', 'fr')).rejects.toThrow();
+    expect(prisma.kyc.updateMany).not.toHaveBeenCalled();
+    expect(state.kyc.status).toBe('REJECTED');
+  });
+});
+
 // ── Webhook applicantReviewed → mise à jour statut KYC ───────────────────────
 // Fake Prisma en mémoire, miroir exact des appels de processApplicantReviewed.
 function buildFakePrisma(seed: { user?: any; kyc?: any } = {}) {

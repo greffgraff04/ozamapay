@@ -269,7 +269,33 @@ export class SumsubService {
       this.logger.error('Sumsub websdkLink: réponse sans `url`');
       throw new ServiceUnavailableException('Sumsub: réponse invalide');
     }
+    await this.resetRejectedKycToPending(userId);
     return data.url as string;
+  }
+
+  // Nouvelle tentative après un refus : dès que le lien est généré, la ligne
+  // Kyc REJECTED repasse PENDING, pour que l'app n'affiche plus l'ancien refus
+  // (et que le client ne relance pas une vérification Sumsub facturée).
+  // - Filtre status=REJECTED DANS la requête : un KYC APPROVED n'est jamais
+  //   remis en attente, même en cas de course avec le webhook.
+  // - updateMany ne crée aucune ligne : sans dossier Kyc, rien ne se passe.
+  // - Seul `status` change : sumsubReviewRejectType / sumsubRejectLabels et
+  //   reviewedAt restent en base pour l'historique.
+  // - NON BLOQUANT : un échec est seulement loggé, le lien est quand même renvoyé.
+  private async resetRejectedKycToPending(userId: string): Promise<void> {
+    try {
+      const { count } = await this.prisma.kyc.updateMany({
+        where: { userId, status: 'REJECTED' },
+        data: { status: 'PENDING' },
+      });
+      if (count > 0) {
+        this.logger.log('Sumsub link: KYC REJECTED remis en PENDING (nouvelle tentative)');
+      }
+    } catch (e: any) {
+      this.logger.error(
+        `Sumsub link: échec de la remise en PENDING du KYC REJECTED — ${e?.message ?? e}`,
+      );
+    }
   }
 
   // Vérifie la signature d'un webhook entrant. true = authentique.
