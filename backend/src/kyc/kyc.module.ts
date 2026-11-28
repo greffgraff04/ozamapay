@@ -20,12 +20,17 @@ import { ImageKitModule } from '../imagekit/imagekit.module';
 
 import { StrowalletModule } from '../strowallet/strowallet.module';
 
+import { MailModule } from '../mail/mail.module';
+
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     CommissionsModule,
     ImageKitModule,
+    // Pour injecter MailService dans SumsubService (email d'approbation KYC,
+    // même que le chemin admin). MailModule n'est pas @Global.
+    MailModule,
     // 4 oct 2026 — applyCorrectedAddress() rele StrowalletService dirèkteman
     // pou relanse createAndFundCard()/createReplacementCard() otomatikman
     // apre yon adrès korije (wè CardCreationAddressBlock).

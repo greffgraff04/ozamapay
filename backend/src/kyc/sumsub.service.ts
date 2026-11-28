@@ -6,6 +6,7 @@ import {
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImageKitService } from '../imagekit/imagekit.service';
+import { MailService } from '../mail/mail.service';
 
 // ── Sumsub integration — ENTIÈREMENT derrière SUMSUB_ENABLED ───────────────
 // Rien ici ne touche au flux KYC maison existant (/kyc/submit, /kyc/status).
@@ -158,7 +159,30 @@ export class SumsubService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imagekit: ImageKitService,
+    private readonly mailService: MailService,
   ) {}
+
+  // Envoie le MÊME email d'approbation que le chemin admin (sendKycApproved),
+  // de façon STRICTEMENT NON BLOQUANTE : un échec d'envoi est seulement loggé,
+  // il ne jette jamais → le webhook répond 200, le KYC reste APPROVED, et
+  // Sumsub ne relance pas. Appelé UNIQUEMENT sur une NOUVELLE approbation
+  // (KYC qui vient de passer APPROVED), jamais sur un doublon ni sur un KYC
+  // déjà approuvé (voir les points d'appel).
+  private async sendApprovalEmailSafe(
+    email: string | null | undefined,
+    firstName: string | null | undefined,
+    lastName: string | null | undefined,
+  ): Promise<void> {
+    if (!email) return;
+    try {
+      const name = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+      await this.mailService.sendKycApproved(email, name);
+    } catch (e: any) {
+      this.logger.error(
+        `Sumsub: échec envoi email d'approbation KYC (non bloquant) — ${e?.message ?? e}`,
+      );
+    }
+  }
 
   private get baseUrl(): string {
     return process.env.SUMSUB_BASE_URL?.trim() || DEFAULT_BASE_URL;
@@ -478,6 +502,8 @@ export class SumsubService {
         });
         this.logger.log(`Sumsub GREEN: KYC approuvé (kycId=${kyc.id})`);
         await persistMeta();
+        // Nouvelle approbation (le KYC vient de passer de non-APPROVED à APPROVED).
+        await this.sendApprovalEmailSafe(user.email, kyc.firstName, kyc.lastName);
         return 'approved';
       }
 
@@ -565,6 +591,8 @@ export class SumsubService {
       });
       this.logger.log(`Sumsub GREEN: ligne Kyc créée + APPROVED (kycId=${created.id})`);
       await persistMeta();
+      // Nouvelle approbation (ligne Kyc créée directement en APPROVED).
+      await this.sendApprovalEmailSafe(user.email, fields.firstName, fields.lastName);
       return 'created_approved';
     }
 
