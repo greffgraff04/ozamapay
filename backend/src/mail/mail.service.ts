@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { BrevoClient } from '@getbrevo/brevo';
+import * as nodemailer from 'nodemailer';
 import { isStaging } from '../config/app-env';
+import {
+  RENAISSANCE_PRICING_ENABLED,
+  CARD_CREATION_FEE_HTG,
+  CARD_INITIAL_BALANCE_USD,
+} from '../common/constants';
 
 @Injectable()
 export class MailService {
@@ -10,8 +16,82 @@ export class MailService {
   private readonly frontendUrl =
     process.env.FRONTEND_URL || 'https://ozamapay.com';
 
+  // 25 nov 2026 — Brevo pa gen kredi depi 22 nov (konte "SUCCESS" fo: API a
+  // retounen yon messageId menm lè email la pa janm livre, "insufficient
+  // credits" sèlman nan log Brevo, pa nan repons lan). OTP SÈLMAN ka pase
+  // pa SMTP Hostinger (contact@ozamapay.com) olye Brevo — tout lòt email
+  // (byenveni, konfimasyon depo, elatriye) rete sou Brevo, san chanjman.
+  // Lazy (jamè kreye nan konstriktè a) — menm filozofi ak lòt sèvis nan
+  // koupe sa a (ReloadlyAuthService, StrowalletService): pa kraze demaraj
+  // si SMTP_* yo manke tout tan OTP_EMAIL_PROVIDER pa "hostinger".
+  private hostingerTransport: nodemailer.Transporter | null = null;
+
   constructor() {
     this.brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY as string });
+  }
+
+  private otpEmailProvider(): 'hostinger' | 'brevo' {
+    return process.env.OTP_EMAIL_PROVIDER === 'hostinger' ? 'hostinger' : 'brevo';
+  }
+
+  private getHostingerTransport(): nodemailer.Transporter {
+    if (this.hostingerTransport) return this.hostingerTransport;
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT);
+    const secure = process.env.SMTP_SECURE === 'true';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    if (!host || !Number.isFinite(port) || !user || !pass) {
+      throw new Error('SMTP Hostinger pa konfigire (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS manke)');
+    }
+    this.hostingerTransport = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    return this.hostingerTransport;
+  }
+
+  private async sendViaHostingerSmtp(to: string, subject: string, html: string): Promise<void> {
+    const transport = this.getHostingerTransport();
+    const fromName = process.env.SMTP_FROM_NAME || 'OZAMAPAY';
+    const fromEmail = process.env.SMTP_USER;
+    await transport.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  }
+
+  // OTP SÈLMAN — kontrèman ak send() (pi ba a), erè yo PA avale isit la:
+  // si Hostinger echwe, nou eseye Brevo kòm sekou; si TOUDELE echwe, nou
+  // jete yon erè reyèl (pa yon fo "kòd envoye") pou app la ka montre yon
+  // mesaj klè olye di kliyan an tann yon email ki pa janm ap rive.
+  private async sendOtpWithFallback(to: string, subject: string, html: string): Promise<void> {
+    if (isStaging() && !this.isAllowedInStaging(to)) {
+      console.log(`[staging] OTP email "${subject}" bay ${to} SOTE — pa nan STAGING_EMAIL_ALLOWLIST.`);
+      return;
+    }
+
+    try {
+      console.log(`[DIAG] MailService.sendOtpCode (hostinger): BEFORE smtp.sendMail to=${to}`);
+      await this.sendViaHostingerSmtp(to, subject, html);
+      console.log(`[DIAG] MailService.sendOtpCode (hostinger): SUCCESS to=${to}`);
+      return;
+    } catch (hostingerErr) {
+      const hostingerMessage = (hostingerErr as Error).message;
+      console.error(`[MailService] OTP via SMTP Hostinger echwe pou ${to}: ${hostingerMessage}`);
+
+      try {
+        console.log(`[DIAG] MailService.sendOtpCode: fallback Brevo BEFORE sendTransacEmail to=${to}`);
+        const result = await this.brevo.transactionalEmails.sendTransacEmail({
+          sender: this.SENDER,
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        });
+        console.log(`[DIAG] MailService.sendOtpCode: fallback Brevo SUCCESS to=${to} response=${JSON.stringify(result)}`);
+        return;
+      } catch (brevoErr) {
+        const brevoMessage = (brevoErr as Error).message;
+        console.error(`[MailService] OTP fallback Brevo TOU echwe pou ${to}: ${brevoMessage}`);
+        throw new Error(
+          `Nou pa ka voye kòd OTP la — ni SMTP Hostinger ni Brevo pa reponn (Hostinger: ${hostingerMessage} / Brevo: ${brevoMessage})`,
+        );
+      }
+    }
   }
 
   // ── private helpers ──────────────────────────────────────────────────────
@@ -160,15 +240,23 @@ export class MailService {
       this.p(`Bonjou ${name},`) +
       this.p('Ou fè yon bon chwa jodi a.') +
       this.p('Pandan moun ap peye 10 a 15% nan Western Union pou voye lajan, ou sot chwazi yon altènativ ki koute 2% sèlman. Sa se yon desizyon entèlijan.') +
-      this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit. Frè verifikasyon se $25 USD, yon sèl fwa pou tout lavi kont ou.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit, e li 100% GRATIS.')
+        : this.p('Kont ou pare. Etap kap vini an se verifikasyon idantite ou — sa pran mwens pase 5 minit. Frè verifikasyon se $25 USD, yon sèl fwa pou tout lavi kont ou.')
+      ) +
       this.p('Apre verifikasyon:') +
       this.list([
         'Ou ka resevwa lajan depi nenpòt kote',
-        'Ou ka kreye kat VISA ou — san frè adisyonèl',
+        RENAISSANCE_PRICING_ENABLED
+          ? `Ou ka kreye kat VISA ou pou ${CARD_CREATION_FEE_HTG} HTG, ak $${CARD_INITIAL_BALANCE_USD} ladan l`
+          : 'Ou ka kreye kat VISA ou — san frè adisyonèl',
         'Ou ka voye kòb bay fanmi ou imedyatman',
       ]) +
       this.p('Pa kite opòtinite sa pase.') +
-      this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.accentLine(`KYC gratis. Kat VISA: ${CARD_CREATION_FEE_HTG} HTG sèlman.`)
+        : this.accentLine('Kat VISA ou ap tann — disponib gratis apre KYC.')
+      ) +
       this.btn('Fè KYC Mwen Kounye a →', `${this.frontendUrl}/kyc`),
     );
     await this.send(email, `${name}, byenvini nan OZAMAPAY`, html);
@@ -180,7 +268,10 @@ export class MailService {
       'Verifikasyon Apwouve',
       this.badge('KONFIME') +
       `<div style="height:16px;"></div>` +
-      this.amountBox('$25 USD', 'Frè KYC peye') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.amountBox('GRATIS', 'Verifikasyon KYC')
+        : this.amountBox('$25 USD', 'Frè KYC peye')
+      ) +
       this.p(`Bonjou ${name},`) +
       this.p('Verifikasyon idantite ou apwouve.') +
       this.p('Kont ou kounye a gen aksè konplè. Sa vle di ou ka:') +
@@ -189,7 +280,10 @@ export class MailService {
         'Resevwa Zelle, CashApp, Meru — dirèkteman nan kont ou',
         'Voye ak resevwa kòb san limit',
       ]) +
-      this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.') +
+      (RENAISSANCE_PRICING_ENABLED
+        ? this.p(`Kat VISA ou disponib pou ${CARD_CREATION_FEE_HTG} HTG (ak $${CARD_INITIAL_BALANCE_USD} ladan l). Kreye l kounye a epi kòmanse achte enlign depi Ayiti.`)
+        : this.p('Kat VISA ou disponib gratis. Kreye l kounye a epi kòmanse achte enlign depi Ayiti.')
+      ) +
       this.accentLine('Chak jou san kat se yon jou ou pa ka achte enlign.') +
       this.btn('Kreye Kat VISA Ou →', `${this.frontendUrl}/dashboard`),
     );
@@ -1211,7 +1305,16 @@ export class MailService {
        ${this.p('Si se pa ou ki mande sa, inyore email sa a.<br><span style="font-size:11px;color:#999;">Si vous n\'êtes pas à l\'origine de cette demande, ignorez cet email.</span>')}`,
     );
 
-    await this.send(email, 'Kòd OTP OZAMAPAY', html);
+    const subject = 'Kòd OTP OZAMAPAY';
+
+    // OTP_EMAIL_PROVIDER absan oswa != "hostinger" → chemen Brevo egzat
+    // jan li te ye a (send() avale erè, menm konpòtman ak jodi a — pa gen
+    // chanjman si flag la pa aktive eksplisitman).
+    if (this.otpEmailProvider() === 'hostinger') {
+      await this.sendOtpWithFallback(email, subject, html);
+      return;
+    }
+    await this.send(email, subject, html);
   }
 
   // Plan endpoints-app, lo L2 — déclenché par POST /auth/device/not-me.

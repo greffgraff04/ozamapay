@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { ArrowLeft, TrendingUp, Info } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,7 +16,7 @@ type Example = {
   steps: FeeStep[];
 };
 
-const fees = [
+const baseFees = [
   {
     label: 'Topup Manyèl Lokal',
     sub: 'MonCash · NatCash — depo manyèl, apwobasyon ajan',
@@ -51,6 +52,10 @@ const fees = [
     note: '',
     icon: '↔',
   },
+];
+
+// Ansyen pri (RENAISSANCE_PRICING_ENABLED=false — konpòtman aktyèl la).
+const legacyKycAndCardFees = [
   {
     label: 'KYC Verifikasyon',
     sub: 'Yon sèl fwa',
@@ -63,6 +68,24 @@ const fees = [
     sub: 'Apre KYC apwouve',
     value: 'GRATIS',
     note: '',
+    icon: '◆',
+  },
+];
+
+// Nouvo pri (RENAISSANCE_PRICING_ENABLED=true).
+const renaissanceKycAndCardFees = (cardCreationFeeHtg: number, cardInitialBalanceUsd: number | null) => [
+  {
+    label: 'KYC Verifikasyon',
+    sub: 'Yon sèl fwa',
+    value: 'GRATIS',
+    note: '',
+    icon: '✓',
+  },
+  {
+    label: 'Kreye Kat VISA',
+    sub: `Apre KYC apwouve — ak $${cardInitialBalanceUsd ?? 3} ladan l`,
+    value: `${cardCreationFeeHtg} HTG`,
+    note: 'Gratis pou manm fondatè (ansyen KYC peye)',
     icon: '◆',
   },
 ];
@@ -110,6 +133,28 @@ const examples: Example[] = [
 ];
 
 export default function PricingPage() {
+  const [pricing, setPricing] = useState<{
+    renaissancePricingEnabled: boolean;
+    cardCreationFeeHtg: number;
+    cardInitialBalanceUsd: number | null;
+  }>({ renaissancePricingEnabled: false, cardCreationFeeHtg: 0, cardInitialBalanceUsd: null });
+
+  useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:10000';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    fetch(`${API}/pricing`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setPricing(data); })
+      .catch(() => {});
+  }, []);
+
+  const fees = [
+    ...baseFees,
+    ...(pricing.renaissancePricingEnabled
+      ? renaissanceKycAndCardFees(pricing.cardCreationFeeHtg, pricing.cardInitialBalanceUsd)
+      : legacyKycAndCardFees),
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white pt-32 pb-20">
 

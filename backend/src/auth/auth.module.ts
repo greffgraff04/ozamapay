@@ -12,6 +12,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { AppleAuthService } from './social/apple-auth.service';
+import { GoogleMobileAuthService } from './social/google-mobile-auth.service';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
     OtpService,
     JwtStrategy,
     GoogleStrategy,
+    AppleAuthService,
+    GoogleMobileAuthService,
   ],
   exports: [
     AuthService,
@@ -41,6 +45,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     OtpService,
     JwtStrategy,
     JwtModule,
+    AppleAuthService,
   ],
 })
 export class AuthModule {}

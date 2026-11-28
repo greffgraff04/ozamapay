@@ -1,6 +1,7 @@
 // src/auth/auth.controller.ts
 
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -31,6 +32,8 @@ import {
   SendOtpDto,
   VerifyOtpDto,
   DeviceNotMeDto,
+  AppleLoginDto,
+  GoogleMobileLoginDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -75,6 +78,31 @@ export class AuthController {
     const ip = ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()) || req.ip;
     const userAgent = req.headers['user-agent'] as string | undefined;
     return this.authService.login(dto, ip, userAgent, extractDeviceInfo(req));
+  }
+
+  // =========================
+  // SIGN IN WITH APPLE / GOOGLE MOBIL (13 nov 2026, guideline 4.8) — app
+  // mobil SÈLMAN. GET /auth/google + /auth/google/callback (webapp,
+  // pi ba) rete san touche.
+  // =========================
+  @Post('apple')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  loginWithApple(@Body() dto: AppleLoginDto, @Req() req: any) {
+    const deviceInfo = extractDeviceInfo(req);
+    if (!deviceInfo) {
+      throw new BadRequestException('Koneksyon Apple disponib sèlman nan app mobil la.');
+    }
+    return this.authService.loginWithApple(dto, deviceInfo);
+  }
+
+  @Post('google/mobile')
+  @Throttle({ short: { limit: 5, ttl: 60000 } })
+  loginWithGoogleMobile(@Body() dto: GoogleMobileLoginDto, @Req() req: any) {
+    const deviceInfo = extractDeviceInfo(req);
+    if (!deviceInfo) {
+      throw new BadRequestException('Koneksyon Google mobil disponib sèlman nan app mobil la.');
+    }
+    return this.authService.loginWithGoogleMobile(dto, deviceInfo);
   }
 
   // =========================

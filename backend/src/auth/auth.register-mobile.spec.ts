@@ -52,7 +52,7 @@ function buildService(fakePrisma: any) {
   const mailService = { sendVerificationEmail: jest.fn(), sendWelcome: jest.fn() };
   const twoFactorService = {};
   const tokenBlacklist = { add: jest.fn(), has: jest.fn().mockResolvedValue(false) };
-  return new AuthService(fakePrisma as any, jwtService as any, mailService as any, twoFactorService as any, tokenBlacklist as any);
+  return new AuthService(fakePrisma as any, jwtService as any, mailService as any, twoFactorService as any, tokenBlacklist as any, {} as any, {} as any);
 }
 
 describe('AuthService.register — webapp (sans X-Device-Id) INCHANGÉ', () => {

@@ -51,6 +51,17 @@ model User {
 
   googleId String? @unique
 
+  // 13 nov 2026 — Sign in with Apple (guideline 4.8). `sub` Apple la, pa
+  // janm chanje pou yon kont done. `appleRefreshTokenEncrypted` chifre
+  // (AES-256-GCM, wè apple-token.util.ts) — sèlman si
+  // APPLE_TEAM_ID/KEY_ID/PRIVATE_KEY konfigire, itilize pou revoke Apple
+  // obligatwa lè yon kont sipresyon (executeScheduledDeletions). Google
+  // mobil reyitilize `googleId` ki egziste deja (menm `sub` ak flux web
+  // la) — pa gen nouvo chan "googleUserId" pou evite 2 idantite fragmante
+  // pou menm itilizatè.
+  appleUserId                String? @unique
+  appleRefreshTokenEncrypted String?
+
   photoUrl String?
 
   // ── Sumsub (KYC provider, derrière SUMSUB_ENABLED) — corrélation du dossier.
@@ -375,6 +386,10 @@ model Commission {
   type          CommissionType
   amount        Decimal        @db.Decimal(18, 2)
   createdAt     DateTime       @default(now())
+  // Renaissance pricing — client (pa agent la) ki te deklanche komisyon FIRST_CARD
+  // la. NULL pou KYC/TOPUP/WITHDRAWAL (konpòtman ansyen pa chanje). Gad anti-doublon
+  // reyèl la se l'index inik pasyèl nan migration.sql (userId + type='FIRST_CARD').
+  userId        String?
   agent         Agent          @relation(fields: [agentId], references: [id])
   transaction   Transaction?   @relation(fields: [transactionId], references: [id])
 
@@ -450,6 +465,9 @@ model VirtualCard {
   pendingShortfallHtg  Decimal?   @db.Decimal(18, 2)
   replacedByCardId     String?
   terminatedAt         DateTime?
+  // Renaissance pricing — kat ofri gratis a yon membre fondatè (KYC peye anvan
+  // bascule a) pou premye kat li, finanse pa OZAMAPAY. Itilize pou rapò/audit.
+  isFounderFreeCard    Boolean    @default(false)
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   user                 User       @relation(fields: [userId], references: [id])
@@ -798,6 +816,7 @@ enum CommissionType {
   TOPUP
   WITHDRAWAL
   KYC
+  FIRST_CARD
 }
 
 enum BusinessTier {

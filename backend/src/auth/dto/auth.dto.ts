@@ -1,5 +1,12 @@
 // src/auth/dto/auth.dto.ts
 
+// 13 nov 2026 — @Type() (class-transformer, AppleLoginDto.fullName) itilize
+// Reflect.getMetadata — @nestjs/common/core chaje polyfill sa a kòm efè
+// segondè nòmalman, men fichye sa a pa t janm depann de yon decorator ki
+// bezwen l anvan (okenn lòt DTO isit la pa itilize @Type()). Enpòte l
+// dirèkteman garanti fichye sa a travay kèlkeswa lòd enpòtasyon yon test
+// izole chaje l.
+import 'reflect-metadata';
 import {
   IsEmail,
   IsIn,
@@ -8,7 +15,9 @@ import {
   MinLength,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 // Plan endpoints-app, lo L2 (+ lo L6 pou change_phone) — menm lis kle ak
 // enum Prisma `OtpPurpose`, an miniskil paske se sa app/webapp yo voye
@@ -132,4 +141,44 @@ export class DeviceNotMeDto {
   @IsString()
   @IsNotEmpty()
   challengeToken: string;
+}
+
+// =========================
+// SIGN IN WITH APPLE / GOOGLE MOBIL (13 nov 2026, guideline 4.8) — app
+// mobil sèlman (X-Device-Id obligatwa, wè AuthController). Apple bay
+// non/email SÈLMAN nan premye login — `fullName`/`email` opsyonèl.
+// =========================
+export class AppleFullNameDto {
+  @IsOptional()
+  @IsString()
+  givenName?: string;
+
+  @IsOptional()
+  @IsString()
+  familyName?: string;
+}
+
+export class AppleLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  identityToken: string;
+
+  @IsString()
+  @IsNotEmpty()
+  authorizationCode: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppleFullNameDto)
+  fullName?: AppleFullNameDto;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class GoogleMobileLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  idToken: string;
 }

@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { KycService } from '../kyc/kyc.service';
-import { COMMISSION_AGENT_KYC } from '../common/constants';
+import { COMMISSION_AGENT_KYC, RENAISSANCE_PRICING_ENABLED } from '../common/constants';
 import { isStaging } from '../config/app-env';
 
 const MASTER_ID = process.env.OZAMAPAY_MASTER_ID as string;
@@ -133,96 +133,101 @@ export class AdminService {
 
       // 3. Si yo apwouve l, n ap debite frè KYC a epi aktive Ajan an
       if (status === 'APPROVED') {
-        const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
-        const currentRate = Number(rateEntry?.value || 135);
-        const feeInHTG = 25 * currentRate;
+        // Renaissance pricing: KYC vin gratis — pa gen debi, pa gen Transaction/
+        // LedgerEntry, pa gen komisyon KYC. Konpòtman ansyen an rete EGZAKTEMAN
+        // menm jan lè flag la false (varyab anviwònman, false pa default).
+        if (!RENAISSANCE_PRICING_ENABLED) {
+          const rateEntry = await tx.rate.findUnique({ where: { key: 'USD_HTG' } });
+          const currentRate = Number(rateEntry?.value || 135);
+          const feeInHTG = 25 * currentRate;
 
-        const userWallet = await tx.wallet.findUnique({ where: { userId: kyc.userId } });
-        if (!userWallet) throw new NotFoundException('Wallet itilizatè a pa jwenn');
+          const userWallet = await tx.wallet.findUnique({ where: { userId: kyc.userId } });
+          if (!userWallet) throw new NotFoundException('Wallet itilizatè a pa jwenn');
 
-        if (Number(userWallet.balance) < feeInHTG) {
-          throw new BadRequestException(
-            `Itilizatè a pa gen ase fon pou frè KYC (${feeInHTG} HTG requis)`,
-          );
-        }
+          if (Number(userWallet.balance) < feeInHTG) {
+            throw new BadRequestException(
+              `Itilizatè a pa gen ase fon pou frè KYC (${feeInHTG} HTG requis)`,
+            );
+          }
 
-        const updatedUserWallet = await tx.wallet.update({
-          where: { userId: kyc.userId },
-          data: { balance: { decrement: feeInHTG } },
-        });
-
-        const kycTx = await tx.transaction.create({
-          data: {
-            reference: `KYC-${Date.now()}`,
-            amount: feeInHTG,
-            netAmount: feeInHTG,
-            type: 'PAYMENT',
-            status: 'COMPLETED',
-            title: 'Frè KYC',
-            description: 'Peman KYC $25 - Apwouve pa Admin',
-            senderWalletId: userWallet.id,
-          },
-        });
-
-        await tx.ledgerEntry.create({
-          data: {
-            walletId: userWallet.id,
-            transactionId: kycTx.id,
-            type: 'DEBIT',
-            amount: feeInHTG,
-            balanceBefore: userWallet.balance,
-            balanceAfter: updatedUserWallet.balance,
-          },
-        });
-
-        // Distribute KYC fee: 405 HTG to referring agent, rest to master
-        const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
-
-        if (kyc.agentId) {
-          const agentCommission = COMMISSION_AGENT_KYC;
-          const masterAmount = Math.round((feeInHTG - agentCommission) * 100) / 100;
-
-          const agentRecord = await tx.agent.findUnique({
-            where: { id: kyc.agentId },
-            include: { wallet: true },
+          const updatedUserWallet = await tx.wallet.update({
+            where: { userId: kyc.userId },
+            data: { balance: { decrement: feeInHTG } },
           });
 
-          if (agentRecord?.wallet) {
-            await tx.agentWallet.update({
-              where: { agentId: kyc.agentId },
-              data: { balance: { increment: agentCommission } },
-            });
-            await tx.agent.update({
+          const kycTx = await tx.transaction.create({
+            data: {
+              reference: `KYC-${Date.now()}`,
+              amount: feeInHTG,
+              netAmount: feeInHTG,
+              type: 'PAYMENT',
+              status: 'COMPLETED',
+              title: 'Frè KYC',
+              description: 'Peman KYC $25 - Apwouve pa Admin',
+              senderWalletId: userWallet.id,
+            },
+          });
+
+          await tx.ledgerEntry.create({
+            data: {
+              walletId: userWallet.id,
+              transactionId: kycTx.id,
+              type: 'DEBIT',
+              amount: feeInHTG,
+              balanceBefore: userWallet.balance,
+              balanceAfter: updatedUserWallet.balance,
+            },
+          });
+
+          // Distribute KYC fee: 405 HTG to referring agent, rest to master
+          const masterWallet = await tx.wallet.findFirst({ where: { userId: MASTER_ID } });
+
+          if (kyc.agentId) {
+            const agentCommission = COMMISSION_AGENT_KYC;
+            const masterAmount = Math.round((feeInHTG - agentCommission) * 100) / 100;
+
+            const agentRecord = await tx.agent.findUnique({
               where: { id: kyc.agentId },
-              data: {
-                totalCommission: { increment: agentCommission },
-                totalKyc: { increment: 1 },
-              },
+              include: { wallet: true },
             });
-            await tx.commission.create({
-              data: { agentId: kyc.agentId, amount: agentCommission, type: 'KYC', transactionId: kycTx.id },
-            });
-            if (masterWallet) {
-              await tx.wallet.update({
-                where: { id: masterWallet.id },
-                data: { balance: { increment: masterAmount } },
+
+            if (agentRecord?.wallet) {
+              await tx.agentWallet.update({
+                where: { agentId: kyc.agentId },
+                data: { balance: { increment: agentCommission } },
               });
+              await tx.agent.update({
+                where: { id: kyc.agentId },
+                data: {
+                  totalCommission: { increment: agentCommission },
+                  totalKyc: { increment: 1 },
+                },
+              });
+              await tx.commission.create({
+                data: { agentId: kyc.agentId, amount: agentCommission, type: 'KYC', transactionId: kycTx.id },
+              });
+              if (masterWallet) {
+                await tx.wallet.update({
+                  where: { id: masterWallet.id },
+                  data: { balance: { increment: masterAmount } },
+                });
+              }
+            } else {
+              // Agent record missing wallet — credit full fee to master
+              if (masterWallet) {
+                await tx.wallet.update({
+                  where: { id: masterWallet.id },
+                  data: { balance: { increment: feeInHTG } },
+                });
+              }
             }
           } else {
-            // Agent record missing wallet — credit full fee to master
             if (masterWallet) {
               await tx.wallet.update({
                 where: { id: masterWallet.id },
                 data: { balance: { increment: feeInHTG } },
               });
             }
-          }
-        } else {
-          if (masterWallet) {
-            await tx.wallet.update({
-              where: { id: masterWallet.id },
-              data: { balance: { increment: feeInHTG } },
-            });
           }
         }
 

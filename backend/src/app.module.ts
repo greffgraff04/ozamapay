@@ -34,6 +34,7 @@ import { BusinessModule } from './business/business.module';
 import { ApiModule } from './api/api.module';
 import { TeamModule } from './team/team.module';
 import { TronModule } from './tron/tron.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { TronModule } from './tron/tron.module';
     TrackingModule,
     TeamModule,
     TronModule,
+    PricingModule,
   ],
   controllers: [AppController], // ← AJOUTE SA
   providers: [

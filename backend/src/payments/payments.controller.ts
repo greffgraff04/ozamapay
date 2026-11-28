@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   RawBody,
@@ -18,9 +19,11 @@ import { SkipThrottle } from '@nestjs/throttler';
 
 import { PaymentsService } from './payments.service';
 import { MonCashConnectService } from './moncashconnect.service';
+import { BazikService, verifyBazikWebhookSignature } from './bazik.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReviewAccountBlockGuard } from '../common/review-account/review-account-block.guard';
 import { MonCashTopupDto, MonCashConnectInitiateDto } from './dto/moncash-topup.dto';
+import { BazikInitiateDto } from './dto/bazik-topup.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -29,6 +32,7 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly monCashConnectService: MonCashConnectService,
+    private readonly bazikService: BazikService,
   ) {}
 
   @Post('moncash/topup')
@@ -134,6 +138,74 @@ export class PaymentsController {
       this.logger.warn(`MCConnect webhook: payment.failed for ref=${event.reference}`);
     } else {
       this.logger.log(`MCConnect webhook: unhandled event type "${event.event}" — ignoring`);
+    }
+
+    return { received: true };
+  }
+
+  // ======================================================
+  // BAZIK.IO — MonCash deposits (staging feat/bazik-deposits — see
+  // docs/bazik-api.md). Gated by MONCASH_GATEWAY; "moncashconnect" is the
+  // prod default and leaves everything above this comment untouched.
+  // ======================================================
+
+  // Public, no secrets — lets the frontend decide which initiate route to
+  // call without needing a build-time env var of its own.
+  @Get('gateway')
+  getGateway() {
+    return { moncash: process.env.MONCASH_GATEWAY === 'bazik' ? 'bazik' : 'moncashconnect' };
+  }
+
+  @Post('bazik/initiate')
+  @UseGuards(JwtAuthGuard, ReviewAccountBlockGuard)
+  async initiateBazik(
+    @Req() req: any,
+    @Body() body: BazikInitiateDto,
+  ) {
+    const userId = req.user.id || req.user.sub;
+    return this.bazikService.createPaymentRequest(userId, Number(body.amount));
+  }
+
+  @Post('bazik/webhook')
+  @SkipThrottle()
+  async bazikWebhook(
+    @RawBody() rawBody: Buffer,
+    @Headers('x-bazik-signature') signature?: string,
+    @Headers('x-bazik-timestamp') timestamp?: string,
+    @Headers('x-bazik-event-id') eventId?: string,
+  ) {
+    this.logger.log(`Bazik webhook hit — eventId=${eventId} ts=${timestamp}`);
+
+    if (!rawBody) {
+      this.logger.error('Bazik webhook: rawBody is undefined');
+      throw new BadRequestException('Corps brut manke — pa ka verifye signature webhook');
+    }
+
+    const secret = process.env.BAZIK_WEBHOOK_SECRET;
+    const valid = verifyBazikWebhookSignature(rawBody, signature, timestamp, eventId, secret);
+    if (!valid) {
+      this.logger.warn('Bazik webhook: signature invalide oswa manke — rejte');
+      throw new UnauthorizedException('Signature webhook envalid');
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      throw new BadRequestException('Corps JSON envalid');
+    }
+
+    const orderId: string | undefined = body.orderId;
+    this.logger.log(`Bazik webhook verified: type=${body.type} orderId=${orderId}`);
+
+    // Acknowledge 200 immediately (Bazik expects it within 5s) — the handler
+    // always re-verifies via GET /order/{orderId} before crediting, never on
+    // webhook payload alone. Fire-and-forget; the 5-min cron recovers any
+    // processing failures.
+    if (orderId) {
+      this.bazikService.handleWebhookEvent(orderId).catch((err: any) =>
+        this.logger.error(`Bazik webhook background error: ${err?.message}`, err?.stack),
+      );
     }
 
     return { received: true };
