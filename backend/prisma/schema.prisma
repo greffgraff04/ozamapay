@@ -64,6 +64,13 @@ model User {
 
   photoUrl String?
 
+  // ── Sumsub (KYC provider, derrière SUMSUB_ENABLED) — corrélation du dossier.
+  // sumsubReviewStatus sert aussi de marqueur d'idempotence (applicantId + status).
+  // N'affecte en rien le flux KYC existant.
+  sumsubApplicantId  String?
+  sumsubLevelName    String?
+  sumsubReviewStatus String?
+
   strowalletCustomerId String?
 
   subscriptionTier   String    @default("FREE")
@@ -299,6 +306,9 @@ model Kyc {
   updatedAt   DateTime  @updatedAt
   agentId     String?
   status      KYCStatus @default(PENDING)
+  // Sumsub (derrière flag) — détails de rejet quand reviewAnswer=RED. Vide sinon.
+  sumsubReviewRejectType String?
+  sumsubRejectLabels     String[]  @default([])
   agent       Agent?    @relation(fields: [agentId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
 
